@@ -47,10 +47,21 @@
 # Module 4 — Multi-Agent Systems
 
 - [Overview](module4/README.md)
-- [Multi-Agent & Swarms](module4/01-multi-agent-and-swarms.md)
-- [Autonomous Systems & Operational Safety](module4/02-autonomous-and-operational-safety.md)
-- [Fleet & Loop Engineering](module4/03-fleet-and-loop-engineering.md)
-- [Computer-Use, Coding & Voice](module4/04-computer-use-coding-voice.md)
+- [Why Multi-Agent](module4/01-why-multi-agent.md)
+- [Communication Protocols](module4/02-communication-protocols.md)
+- [The Four Primitives & Orchestration](module4/03-four-primitives-and-orchestration.md)
+- [Debate & Failure Modes](module4/04-debate-and-failure-modes.md)
+- [Long-Horizon & Durable Execution](module4/05-long-horizon-durable-execution.md)
+- [Action Budgets & Cost Governors](module4/06-action-budgets-and-cost-governors.md)
+- [Kill Switches, Circuit Breakers, Canary Tokens](module4/07-kill-switches-circuit-breakers-canary-tokens.md)
+- [HITL & Checkpoints](module4/08-hitl-and-checkpoints.md)
+- [Guardrails](module4/09-guardrails.md)
+- [The Loop](module4/10-the-loop.md)
+- [Loop Patterns](module4/11-loop-patterns.md)
+- [The Fleet](module4/12-the-fleet.md)
+- [Fleet Patterns & Governance-as-Code](module4/13-fleet-patterns.md)
+- [Computer-Use & Coding Agents](module4/14-computer-use-and-coding-agents.md)
+- [Voice Agents & Benchmarks](module4/15-voice-and-benchmarks.md)
 
 # Module 5 — Deploy & Performance Engineering
 
