@@ -11,7 +11,7 @@ editor reviews against `STYLE.md`, update `src/SUMMARY.md`, remove superseded in
 |--------|--------|---------|
 | M1 Foundations | ✅ DONE | 01-dev-environment, 02-your-first-llm-call, 03-attention, 04-transformer-era-nlp, 05-retrieval-and-eval-foundations |
 | M2 LLM Engineering | ✅ DONE | 01-prompt-engineering, 02-context-engineering, 03-rag-system, 04-advanced-rag, 05-evaluation, 06-structured-output-and-tools, 07-the-complexity-ladder |
-| M3 Agent Foundations | 🟩 AUTHORED + VERIFIED (15-lesson hybrid); SHIP pending | 01 agent-loop · 02 planning · 03 learning-from-failure · 04-05 typescript · 06-09 tools&mcp · 10-11 memory · 12-13 frameworks · 14-15 workbench — drafts+verdicts in build-stages/m3/ |
+| M3 Agent Foundations | ✅ SHIPPED (15-lesson hybrid; first real `mdbook build` PASS 2026-06-19) | 01 agent-loop · 02 planning · 03 learning-from-failure · 04-05 typescript · 06-09 tools&mcp · 10-11 memory · 12-13 frameworks · 14-15 workbench — live in src/module3/; ship manifest in build-stages/m3/output/ship/ |
 | M4 Multi-Agent Systems | ⬜ PENDING | multi-agent-swarms, autonomous-safety, fleet-loop, computer-use-coding-voice |
 | M5 Deploy & Perf | ⬜ PENDING | serving-inference, metrics-observability, ops-security-finops, perf-eng-depth, rust-entry |
 | M6 Agent Artifacts | ⬜ PENDING | 4 artifacts (coding agent, RAG chatbot, voice, issue-to-PR) — apply M3, ship skill-*.md |

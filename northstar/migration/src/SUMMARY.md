@@ -28,12 +28,21 @@
 # Module 3 — Agent Foundations
 
 - [Overview](module3/README.md)
-- [Reasoning & Loops](module3/01-reasoning-and-loops.md)
-- [Tools & MCP](module3/02-tools-and-mcp.md)
-- [Memory & State](module3/03-memory-and-state.md)
-- [Frameworks & Patterns](module3/04-frameworks-and-patterns.md)
-- [The Agent Workbench](module3/05-the-agent-workbench.md)
-- [TypeScript (Entry)](module3/06-typescript-entry.md)
+- [The Agent Loop](module3/01-the-agent-loop.md)
+- [Planning](module3/02-planning.md)
+- [Learning from Failure](module3/03-learning-from-failure.md)
+- [TypeScript Break-In](module3/04-typescript-break-in.md)
+- [Typing the Product Layer](module3/05-typing-the-product-layer.md)
+- [Tool Use](module3/06-tool-use.md)
+- [MCP Fundamentals](module3/07-mcp-fundamentals.md)
+- [MCP Capabilities](module3/08-mcp-capabilities.md)
+- [MCP Security and Scale](module3/09-mcp-security-and-scale.md)
+- [Memory Tiers and Stores](module3/10-memory-tiers-and-stores.md)
+- [Memory That Improves](module3/11-memory-that-improves.md)
+- [Frameworks and the Four Primitives](module3/12-frameworks-and-the-four-primitives.md)
+- [Design Patterns and Anti-Patterns](module3/13-design-patterns-and-anti-patterns.md)
+- [The Workbench Surfaces I](module3/14-the-workbench-surfaces-i.md)
+- [The Workbench Surfaces II & the Pack](module3/15-the-workbench-surfaces-ii-and-the-pack.md)
 
 # Module 4 — Multi-Agent Systems
 
