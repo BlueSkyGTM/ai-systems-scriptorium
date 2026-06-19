@@ -150,8 +150,11 @@ Codex) at the M3→M4 line. Decisions with Ray:
 - **M5: one Rust bridge lesson** (rustup + hello + cargo) before the serving-layer Rust lessons.
 - **M8: define the student's active role before M6** ("M7 fleet builds the exam" is an agentic run, not prose
   authoring — design what the learner specifies/reviews/gates, or it's a demo not an exam).
-- **Sequence now:** M3 SHIP (unanimous — `src/module3/` still holds old stubs; run `mdbook build`, the first
-  real build, which also validates M1/M2) → then M4 (author its PLAN first).
+- **Sequence now:** M3 ✅ SHIPPED, M4 ✅ SHIPPED (both via AUTHOR→VERIFY→SHIP, `mdbook build` PASS). **Next: M5
+  (Deploy & Performance Engineering)** — write `build-stages/m5/PLAN.md` first, and fold in at M5 planning time:
+  the **MLOps-inventory pass** (review `_dossier/module5.md` + `synthesis/source/module4/` + `antilibrary.md` to
+  decide surface/keep-cut before authoring), the **Docling data-ingestion lesson**, the **Rust entry** lesson,
+  and the **dry-run-first cloud** strategy. M5 is a large new phase → stage-boundary check-in before launching.
 
 ## Scope reframe + roadmap coverage (2026-06-19) — `build-stages/roadmap-coverage.md`
 
