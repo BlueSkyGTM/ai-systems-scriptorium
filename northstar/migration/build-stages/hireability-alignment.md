@@ -65,6 +65,19 @@ Ray's ~$100k floor is **conservative** vs the guide's US figures (AI Engineer ~$
 career-switcher with portfolio is below market"). The agents/platform specialization aims above the floor.
 Figures are the guide's; geography/market vary — treat as direction, not a guarantee.
 
+## The antilibrary is the accountable home (and a future "Avec Python")
+Everything roadmap-relevant but out of scope is logged in `src/antilibrary.md` — *held, not discarded; known
+and roughly located.* This is precisely **why discernment carries zero risk**: a cut is not a loss, it is a
+deferral with a pointer. Some of it will need review sooner or later — notably **advanced Python** (NumPy/
+Pandas/vectorization, the guide's 94% screen) and **ML math** (the MLE/Path-A prerequisites the splinter left
+behind). Ray is considering a **conceptual companion mdBook, "Avec Python"** (the complement to "Sans Python"):
+not build-and-deploy, but a conceptual compilation of the antilibrary — *enough to communicate with others and
+fill gaps on demand*, in the antilibrary's own spirit ("there's always more to learn").
+
+**Maintenance rule (M5–M8):** every scope cut gets logged to `antilibrary.md` with enough of a pointer that a
+future *Avec Python* could compile it. The M5 MLOps-inventory pass does this for M5 — and should explicitly add
+advanced Python + ML math as named *Avec Python* candidates rather than leaving them implicit.
+
 ## Feeds M5
 The guide's **Step 4 MLOps checklist** (MLflow/W&B experiment tracking, DVC data versioning, model serving
 FastAPI/Triton/BentoML, Docker/K8s, Airflow/Prefect/Kubeflow, Evidently/Prometheus/Grafana monitoring, one
