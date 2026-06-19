@@ -1,0 +1,30 @@
+# Heavy reference material — OneDrive-hydrated source corpus (~767MB).
+# Recoverable from the original sub-repos; not the course deliverable. Not versioned here.
+northstar/migration/synthesis/raw/
+
+# mdBook build output
+northstar/migration/book/
+
+# Language artifacts
+**/.venv/
+**/__pycache__/
+*.pyc
+**/node_modules/
+**/target/
+
+# Model weights / large binaries (per the M1 reproducibility lesson)
+*.pt
+*.pth
+*.safetensors
+*.gguf
+
+# Local agent + tooling state
+.claude/
+.gstack/
+
+# Logs & OS cruft
+*.log
+.DS_Store
+Thumbs.db
+.codex-*.txt
+.roadmap*.png
