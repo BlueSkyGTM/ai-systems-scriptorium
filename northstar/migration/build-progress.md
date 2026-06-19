@@ -11,7 +11,7 @@ editor reviews against `STYLE.md`, update `src/SUMMARY.md`, remove superseded in
 |--------|--------|---------|
 | M1 Foundations | ✅ DONE | 01-dev-environment, 02-your-first-llm-call, 03-attention, 04-transformer-era-nlp, 05-retrieval-and-eval-foundations |
 | M2 LLM Engineering | ✅ DONE | 01-prompt-engineering, 02-context-engineering, 03-rag-system, 04-advanced-rag, 05-evaluation, 06-structured-output-and-tools, 07-the-complexity-ladder |
-| M3 Agent Foundations | ⬜ PENDING | reasoning-loops, tools-mcp, memory-state, frameworks-patterns, agent-workbench, typescript-entry |
+| M3 Agent Foundations | 🟩 AUTHORED + VERIFIED (15-lesson hybrid); SHIP pending | 01 agent-loop · 02 planning · 03 learning-from-failure · 04-05 typescript · 06-09 tools&mcp · 10-11 memory · 12-13 frameworks · 14-15 workbench — drafts+verdicts in build-stages/m3/ |
 | M4 Multi-Agent Systems | ⬜ PENDING | multi-agent-swarms, autonomous-safety, fleet-loop, computer-use-coding-voice |
 | M5 Deploy & Perf | ⬜ PENDING | serving-inference, metrics-observability, ops-security-finops, perf-eng-depth, rust-entry |
 | M6 Agent Artifacts | ⬜ PENDING | 4 artifacts (coding agent, RAG chatbot, voice, issue-to-PR) — apply M3, ship skill-*.md |
@@ -92,3 +92,30 @@ Stage breakdown decided with Ray (directive #1). The reviewable plan + full audi
   TypeScript; `build-stages/m3/dependencies.md` (SUMMARY must be a topological sort); deferred-topic audit.
 - **ICM = verification boundary + audit trail**, not management ceremony (cut excess per-subagent scaffolding).
 - **Sequence:** M2 VERIFY (first) → M3 AUTHOR → M3 VERIFY → M3 SHIP → continue M4→M8.
+
+## Build pipeline — proven on M3 (the engine for M4–M8)
+
+Module-as-stage ICM, run **AUTHOR → VERIFY → SHIP**. Opus = editor-in-chief / orchestrator / review gate;
+Sonnet subagents do the work. Writing is treated as engineering: `STYLE.md` is the spec, lessons are compiled
+against it, Opus is the type-checker (see memory `writing-is-engineering-delegate-to-sonnet`).
+
+- **AUTHOR.** One Sonnet drafter per chapter-group. Each reads `STYLE.md` + voice anchors (`preface`/`README` +
+  approved prior lessons) + the `_dossier/moduleN` ruling + its `src/moduleN` ingredient + the **single-agent
+  source subset** (exclusion rule: open only the named source files, never glob the dir — keeps M4 `fleet-*` /
+  `loop-*` out of M3, etc.). Drafts finished lessons + exercises to `output/author/`; inserts `[MS-Learn: …]`
+  markers where a production pattern needs validation. Opus reviews each draft against STYLE (full-read the
+  pilot chapter to lock the exemplar, then diff-review the fleet).
+- **VERIFY (directive #4 hard gate) — run as code.** A Sonnet fleet (one subagent per chapter-group) runs
+  `STYLE.md` as spec against the drafts: (a) **resolve every `[MS-Learn]` marker via the Microsoft Learn
+  connector — the connector IS available inside subagents**, so marker-resolution scales to a fleet instead of
+  bottlenecking on Opus (the key M3 unlock, "connector per agent"); (b) source-verify cited numbers/claims
+  against `synthesis/source/moduleN`; (c) apply STYLE §8 (vary endings/rhythm, kill the template ending);
+  (d) write a per-lesson `output/verify/<slug>-verdict.md`. Opus reviews via `git diff`, resolves anything the
+  connector can't reach (non-Microsoft products → primary docs), and owns judgment calls. M3 caught real
+  defects this way (wrong SDK shapes, a renamed package, an unverifiable GA date, an unsupported vendor claim).
+- **SHIP.** Relocate `output/author/` → `src/moduleN/` and `output/author/exercises/` → `exercises/moduleN/`;
+  rewrite `src/SUMMARY.md` + the module `README.md` to the real lesson list; delete superseded ingredient
+  files; run `mdbook build` (the real "renders and works" gate); mark the module DONE; commit → `output/ship/`.
+
+Throughput on M3: 15 lessons authored + verified via ~11 Sonnet subagent runs; Opus orchestrated + reviewed.
+Commit each stage to GitHub as it lands. **Reuse this engine unchanged for M4–M8.**
