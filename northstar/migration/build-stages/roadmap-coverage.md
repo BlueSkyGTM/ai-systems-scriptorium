@@ -10,6 +10,11 @@ target role straddles? Checked against the live `developer-roadmap` node lists (
 that named the target and validated the performance-engineering track. **Reference point, not a hardened
 rule.** Coverage bar = "the essentials of both roadmaps," judged at the cusp.
 
+**Origin of the cusp (provenance):** the cusp was born by researching the AI Engineer + MLOps roadmaps and
+comparing them against the prior curriculum draft — which is exactly where the curriculum **splintered off the
+Machine Learning Engineer (MLE) track** (the math-heavy, model-training Path A). That splinter is *why math
+took a backseat* and why PyTorch/training depth is thin. Full rationale: `hireability-alignment.md` → Provenance.
+
 ## AI Engineer roadmap — COVERED (home turf)
 Maps comprehensively: how-LLMs-work/tokens/transformers (M1); the model landscape incl. the Anthropic nodes
 the roadmap itself lists — `anthropic-claude` / `claude-agent-sdk` / `claude-code` / `claude-messages-api`

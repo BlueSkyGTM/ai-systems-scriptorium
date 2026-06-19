@@ -6,6 +6,17 @@ production skills**, leaning on existing AI programming intuition; the **GitHub 
 ("skill fork"). This file maps the Sans Python curriculum to the guide's hireability bar so M5–M8 author
 against it.
 
+## Provenance — the MLE splinter (why the cusp exists, why math backseats)
+The cusp is not arbitrary; it is the point where the curriculum consciously **splintered off the Machine
+Learning Engineer (MLE) track** — the guide's **Path A** (model-centric: train/serve models, PyTorch/TF,
+heavy math). The splinter happened by **researching the AI Engineer + MLOps roadmaps and comparing them
+against the prior curriculum draft**; that comparison is the literal origin of the **AI-Engineer ∪ MLOps cusp**
+(Path B ∩ Path C, *not* Path A). **Math took a backseat as a direct consequence:** linear-algebra / calculus /
+probability *depth* is an MLE/research prerequisite, not an applied-AI-Engineer one (the guide agrees — applied
+roles need conceptual fluency, not derivation). The same splinter explains the thin-PyTorch, no-deep-training,
+and no-classic-ML calls: that is Path-A material the fork deliberately left on Path A. See
+`roadmap-coverage.md` for the coverage reframe this produced.
+
 ## The guide's bar (what it says actually gets you hired)
 - **Path B — AI Engineer (Applied/GenAI):** system integrator turning foundation models into apps — RAG,
   agents, fine-tuning, user-facing AI. Largest volume of 2026 openings. Skills: LangChain/LlamaIndex,
