@@ -152,3 +152,20 @@ Codex) at the M3→M4 line. Decisions with Ray:
   authoring — design what the learner specifies/reviews/gates, or it's a demo not an exam).
 - **Sequence now:** M3 SHIP (unanimous — `src/module3/` still holds old stubs; run `mdbook build`, the first
   real build, which also validates M1/M2) → then M4 (author its PLAN first).
+
+## Scope reframe + roadmap coverage (2026-06-19) — `build-stages/roadmap-coverage.md`
+
+- **Reframe (Ray):** "AI Platform Engineer" is a *pinpointing reference*, not a hard scope wall. The real
+  target is the **cusp of the AI Engineer ∪ MLOps roadmaps**; platform-engineering is the anchor (and what
+  validated the perf-eng track). Judge coverage against *both* roadmaps' essentials, at the cusp.
+- **Verdict (checked vs the live roadmap.sh node lists):** AI Engineer roadmap = **covered** (home turf).
+  MLOps = the platform/deploy overlap (Docker/K8s/cloud/CI/observability) **covered** via M5 + artifacts; the
+  data-platform + model-training halves stay the **conscious inference-platform de-emphasis**.
+- **Decision:** fold in ONE MLOps-native gap — a **Docling-anchored data-ingestion / pipeline thread**. Keep
+  deliberately light/out: IaC/Terraform, explicit experiment-tracking, a multimodal lesson, classic-ML
+  training, edge-AI, Go, image-generation (antilibrary). 
+- **New carried thread — data ingestion (Docling-anchored):** M2 RAG (light, on M1/M2 reconciliation) → M5
+  (data-ingestion/pipeline lesson) → M6 RAG-chatbot artifact (deep: Docling ingestion layer; portable seam =
+  `DoclingDocument`→chunks). **Docling** ([docling-project/docling], LF AI & Data, MIT) is the adopted
+  ingestion stack and a real MCP-server example. Do NOT re-open shipped M2 / verified M3 for it now — it lands
+  in the unwritten modules (M5/M6) and a later M2 reconciliation.
