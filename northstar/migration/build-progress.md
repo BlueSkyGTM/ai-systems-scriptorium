@@ -32,8 +32,14 @@ editor reviews against `STYLE.md`, update `src/SUMMARY.md`, remove superseded in
 
 ## Follow-up polish (non-blocking)
 
-- **M2 got a lighter editorial pass than M1.** M1: all 5 lessons full-read + corrected. M2: 1 of 7 full-read (`01-prompt-engineering`, clean) + structural sweep (all 7 have Core-concepts + handoff, no stray markers). A future pass should full-read M2's other 6.
-- **`02/01-prompt-engineering.md`:** mentions "an assistant prefill you can seed" — assistant prefills now 400 on current Anthropic models (Opus 4.6+/Fable). Fine as a generic-LLM hierarchy concept, but reword so it doesn't read as a recommended Anthropic technique.
+- ✅ **RESOLVED (2026-06-19) — M2 retroactive VERIFY ran** (`build-stages/m2/output/verify/SUMMARY.md`). All 7
+  lessons full-read against STYLE; ~94 cited claims source-verified against `synthesis/source/module2` (7
+  NOT-FOUND, 0 contradictions); MLflow + API claims validated via MS Learn / `claude-api`; `mdbook build` clean.
+- ✅ **RESOLVED (2026-06-19) — the assistant-prefill defect is fixed** in `02/01-prompt-engineering.md`. The
+  hierarchy now describes the assistant tier as conversation history (lowest-trust), not a "prefill you can
+  seed" (which 400s on Opus 4.6+/Fable). Also fixed: MLflow `shadow`→`staging` alias, the stale "Anthropic
+  requires explicit cache_control" caching claim, and an unsourced Spearman ρ≥0.7 hard gate (reframed). See the
+  verify report.
 - **Module READMEs (Overview pages)** for M1/M2 were not re-read; confirm they don't still describe the old chapter structure.
 - The top-level `northstar/CONTEXT.md` "AI Systems Engineering" / "LearnHouse" strings remain (flagged earlier; CONTEXT.md is archival).
 

@@ -31,7 +31,7 @@ Design rules:
 - **Binary over scaled.** "Did the answer correctly cite the source document? Yes or No" is more reliable than "Rate answer quality 1–5." Scales introduce rater drift and make aggregation meaningless.
 - **One criterion per judge.** A judge that scores faithfulness, relevance, and format in one call conflates signals. Run three separate judges.
 - **Freeze the judge model.** Version-pin the model and prompt used to generate scores. A silent model update changes your scores retroactively.
-- **Calibrate against human labels.** Score a set of ~100 human-labeled examples. Require Spearman ρ ≥ 0.7 before treating the judge as trustworthy. Below that threshold, the judge is measuring something, but not what you think.
+- **Calibrate against human labels.** Score a set of human-labeled examples — a hundred is a reasonable target. Treat the judge as trustworthy only at a strong rank correlation with those labels; Spearman ρ around 0.7 or higher is a common bar. Below that, the judge is measuring something, but not what you think.
 - **Avoid self-preference.** A model asked to evaluate its own output is biased toward that output. Use a different model as judge, or a dedicated evaluator.
 
 ### 4. Code-based evaluators

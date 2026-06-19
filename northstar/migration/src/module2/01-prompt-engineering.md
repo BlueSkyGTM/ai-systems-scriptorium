@@ -4,9 +4,9 @@ Every output a model gives you is a function of what you put in. The question is
 
 ## Anatomy of a prompt
 
-An LLM API call carries a tiered instruction hierarchy. The **system** message sets the model's role and constraints — it runs before the user sees anything and carries the highest trust. Below it sits the **user** message, the runtime input. Between turns, the model's prior output returns as an **assistant** prefill you can seed. Some providers add a **developer** tier between system and user for technical overrides that shouldn't be user-editable.
+An LLM API call carries a tiered instruction hierarchy. The **system** message sets the model's role and constraints — it runs before the user sees anything and carries the highest trust. Below it sits the **user** message, the runtime input. The model's prior replies return in the **assistant** role — conversation history, the lowest-trust tier. Some providers add a **developer** tier between system and user for technical overrides that shouldn't be user-editable.
 
-The order matters: instructions closer to the top outweigh instructions lower down. A system-level guardrail survives a user-level override attempt. A user-level instruction survives a crafty assistant prefill. Build with the hierarchy, not against it.
+The order matters: instructions closer to the top outweigh instructions lower down. A system-level guardrail survives a user-level override attempt. A user-level instruction outranks anything the assistant turn carries. Build with the hierarchy, not against it.
 
 **Role prompting** is the most direct use of the system tier. You aren't decorating the model — you're anchoring its capabilities. `You are a triage nurse classifying patient symptoms by urgency` shifts the vocabulary, the reasoning pattern, and the output structure. Use delimiters — XML tags, triple backticks, or clear labeled sections — to separate the parts of your prompt so the model doesn't hallucinate context boundaries.
 
@@ -34,7 +34,7 @@ The cost is steep: exploring a branch to depth can require fifteen to twenty mod
 
 ## The versioning thread
 
-Prompts drift. A prompt you shipped in March behaves differently in September because the model updated, the data shifted, or a well-meaning colleague added a clause. Treat prompts as versioned artifacts — the same way you version code. MLflow's prompt registry stores prompt text with version aliases (`champion`, `challenger`, `shadow`) so you can run experiments and roll back without touching application code.
+Prompts drift. A prompt you shipped in March behaves differently in September because the model updated, the data shifted, or a well-meaning colleague added a clause. Treat prompts as versioned artifacts — the same way you version code. MLflow's prompt registry stores prompt text with version aliases (`champion`, `challenger`, `staging`) so you can run experiments and roll back without touching application code.
 
 **[THREAD: versioning]** — This is a development-time practice, not a production afterthought. Every prompt that matters ships with a registry entry and a version tag. When the model swaps, you recompile; you don't guess.
 

@@ -22,7 +22,7 @@ Five techniques slow the rot:
 
 ## Prompt caching
 
-Provider-side prefix caching reads a warm KV-cache for token-identical prefixes, cutting input cost by fifty to ninety percent and first-token latency by forty to eighty-five percent. Anthropic requires explicit `cache_control` markers; OpenAI applies prefix caching automatically. The economics favor any prompt with a long, stable prefix — a large system prompt, a reference document, a tool schema list — that stays constant across requests while only the user message changes.
+Provider-side prefix caching reads a warm KV-cache for token-identical prefixes, cutting input cost by fifty to ninety percent and first-token latency by forty to eighty-five percent. Anthropic makes you opt in with a `cache_control` marker — on individual blocks, or one top-level marker that auto-caches the longest stable prefix; OpenAI caches automatically with no markers. The economics favor any prompt with a long, stable prefix — a large system prompt, a reference document, a tool schema list — that stays constant across requests while only the user message changes.
 
 Cache-friendly layout: put the stable content first (system prompt, reference material, tool definitions), put the dynamic content last (the user query). Invert that order and you invalidate the cache on every call.
 
