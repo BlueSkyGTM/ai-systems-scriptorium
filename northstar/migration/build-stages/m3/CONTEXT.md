@@ -30,3 +30,10 @@ is the M3 stage.
 ## Locked decisions
 Granularity = Hybrid 15 (see PLAN.md). 15 hardening items accepted. See
 `../../build-progress.md → M3 stage — plan locked`.
+
+**Throughline language (locked 2026-06-19 with Ray, extends hardening #12):** the
+`module3-agent/` artifact is **mixed** — Python for the agent harness / control-flow / ops
+(loop, planner, reflexion, the workbench surface scripts) and **TypeScript** for typed tool
+definitions + MCP contracts, which begin at lesson 06 after TS entry (04-05). Lessons 01-03 are
+pre-TS and author the harness in language-light Python. TS enters at point-of-use (the first typed
+tool), never before it's taught.
