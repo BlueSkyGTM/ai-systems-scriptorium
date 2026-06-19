@@ -118,4 +118,37 @@ against it, Opus is the type-checker (see memory `writing-is-engineering-delegat
   files; run `mdbook build` (the real "renders and works" gate); mark the module DONE; commit → `output/ship/`.
 
 Throughput on M3: 15 lessons authored + verified via ~11 Sonnet subagent runs; Opus orchestrated + reviewed.
-Commit each stage to GitHub as it lands. **Reuse this engine unchanged for M4–M8.**
+Commit each stage to GitHub as it lands. **Reuse this engine for M4–M8 — unchanged for prose (M4/M5),
+extended with a code gate for the build-artifact modules (M6–M8); see the midway decisions below.**
+
+## Midway review — locked (2026-06-19, via `/autoplan`)
+
+Full report: `build-stages/midway-review.md → GSTACK REVIEW REPORT`. Six-voice review (CEO/Eng/DX × Claude +
+Codex) at the M3→M4 line. Decisions with Ray:
+
+- **Build order: module-sequential (M4 next).** Keep strict M4 → M5 → M6–M8; the "pull/artifact-first" reorder
+  was considered and declined.
+- **Artifact→platform binding altitude (directive #2 resolved): capability + one concrete stack + portable
+  seam.** Bind each M6–M8 artifact to a production *capability* (retrieval index, model gateway, eval store,
+  deploy target, tracing, secrets, CI, human gate), implement on ONE real stack (Azure/Databricks/Pipecat/
+  LiveKit/GitHub), and name the portable interface so a swap is config. Not toy abstractions; not vendor lock.
+- **VERIFY extends for code (M6–M8): AUTHOR → VERIFY → BUILD → TEST → SHIP.** `mdbook build` proves *renders*,
+  not *runs*. Add a runnable gate before M6: `tsc --noEmit` / `cargo check` / mocked smoke tests; exercises
+  ship runnable. (M4/M5 prose keep the existing gate.)
+- **Claim-authority map for non-Microsoft platforms.** The MS Learn connector doesn't cover Pipecat/LiveKit/
+  OpenHands/Databricks primary docs — VERIFY subagents resolve those via **WebFetch** (works inside subagents)
+  against named primary-doc URLs; tag each platform claim `mslearn / vendor-doc / spec / repo-example /
+  local-smoke / unverified-cut`.
+- **Cloud-cred strategy for M6–M8 exercises:** dry-run-first (mocks/emulators/fake creds/`.env.example`/
+  `plan`-only) + a local `done-when` fallback per artifact; live cloud is opt-in BYO-account + budget caps +
+  teardown. Add `exercises/module6/_prereqs/CLOUD-SETUP.md`.
+- **M4 gets its own `build-stages/m4/PLAN.md` before authoring:** lock a lesson count; dedupe the kill-switch/
+  HITL threading (it lands in both the safety and fleet chapters); **split Ch03 Fleet & Loop** (11 source
+  files) into Fleet + Loop drafter turns; write a POSITIVE inclusion list — the M3 exclusion rule INVERTS, M4
+  needs all `synthesis/source/module3/fleet-*` + `loop-*` files. Seed `exercises/module4/_harness/` (2 stub
+  agents + orchestrator) so safety lessons have a substrate to govern.
+- **M5: one Rust bridge lesson** (rustup + hello + cargo) before the serving-layer Rust lessons.
+- **M8: define the student's active role before M6** ("M7 fleet builds the exam" is an agentic run, not prose
+  authoring — design what the learner specifies/reviews/gates, or it's a demo not an exam).
+- **Sequence now:** M3 SHIP (unanimous — `src/module3/` still holds old stubs; run `mdbook build`, the first
+  real build, which also validates M1/M2) → then M4 (author its PLAN first).
