@@ -8,27 +8,25 @@ Reflexion (Shinn et al., 2023) adds one step after a failed trial: the agent wri
 
 On ALFWorld and HotpotQA, Reflexion outperforms ReAct by wide margins — not because the model improves, but because the agent stops repeating the failure it already diagnosed. The lesson is stored in working memory for the current task and in episodic memory for future sessions.
 
-This is the same pattern behind `CLAUDE.md` learnings and the `/learn` command in Claude Code: when a trial fails, write a natural-language rule describing why, and prepend it to the next attempt. The agent improves without a fine-tune.
+This is the same pattern behind `CLAUDE.md` learnings and the `/learn` command in Claude Code: when a trial fails, write a natural-language rule describing why, and prepend it to the next attempt. The agent improves without a fine-tune. (That's genuinely underrated — most practitioners reach for fine-tuning before they've tried writing the lesson down.)
 
-**Evaluator types matter.** A scalar evaluator (correct/incorrect) is cheapest but coarsest. A heuristic evaluator (partial credit for each step) is richer for multi-step tasks. A self-evaluated critic (the model grades its own output) is flexible but unreliable on hard facts — which leads directly to the next pattern.
+**Evaluator types matter.** A scalar evaluator (correct/incorrect) is cheapest but coarsest. A heuristic evaluator (partial credit for each step) is richer for multi-step tasks. A self-evaluated critic (the model grades its own output) is flexible but unreliable on hard facts — which leads directly to the next pattern. These three types are a practical framing, not an established taxonomy; the key distinction is whether the quality signal is internal to the model or grounded externally.
 
-[MS-Learn: Azure AI Foundry — agent evaluation and iterative improvement loops]
+Foundry's built-in agent evaluators follow the same logic: `IntentResolution` and `TaskAdherence` score agent runs against defined criteria, enabling the same evaluate-then-improve cycle in a managed runtime.
 
 ## Self-Refine and CRITIC: generate → feedback → refine
 
-Self-Refine (Madaan et al., 2023) runs one model in three roles: generate a draft, critique it, refine based on the critique. It earns +20 absolute points across 7 benchmarks. The loop continues until the critique says the output is good enough or a round budget is exhausted.
+Self-Refine (Madaan et al., 2023) runs one model in three roles: generate a draft, critique it, refine based on the critique. It earns +20 absolute points across 7 tasks. The loop continues until the critique says the output is good enough or a round budget is exhausted.
 
 The vulnerability is self-verification: LLMs are unreliable at catching their own factual errors, because the same model that generated the error is also grading it. CRITIC (Gou et al., 2023) hardens the feedback step by routing verification through external tools — a search engine, a code interpreter, a test runner, a calculator. The model cannot fake a test result.
 
-Anthropic's "evaluator-optimizer" workflow is this pattern: a generator produces output, an evaluator with tool access scores it against ground truth, the generator refines based on the score. The evaluator is a separate call, sometimes a separate model, and it uses tools the generator cannot hallucinate around.
-
-[MS-Learn: Azure AI Foundry — evaluator-optimizer pattern and external verification tools]
+Anthropic's evaluator-optimizer workflow is this pattern: a generator produces output, an evaluator with tool access scores it against ground truth, the generator refines based on the score. The evaluator is a separate call, sometimes a separate model, and it uses tools the generator cannot hallucinate around. Microsoft documents the same pattern explicitly — one LLM generates, another evaluates and feeds back, the loop runs until a termination condition is met.
 
 The two-line rule: use Self-Refine when the quality signal is stylistic (fluency, coherence, tone). Use CRITIC when the quality signal is factual or execution-based (does this code run, is this claim true, does this SQL return the right rows).
 
 ## Reasoning as search: ToT and LATS (cost-gated)
 
-Tree-of-Thoughts (Yao et al., 2023) turns reasoning into a search problem: instead of committing to one chain of thought, the model grows a tree of candidate thoughts, evaluates each node, and expands the most promising branches. On the Game of 24, standard chain-of-thought solves 4% of problems; ToT with BFS solves 74%.
+Tree-of-Thoughts (Yao et al., 2023) turns reasoning into a search problem: instead of committing to one chain of thought, the model grows a tree of candidate thoughts, evaluates each node, and expands the most promising branches. On the Game of 24, standard chain-of-thought solves 4% of problems; ToT with BFS solves 74% — with GPT-4, which was the test model in the original paper.
 
 LATS (Zhou et al., 2024) unifies ToT with ReAct and Reflexion under Monte Carlo Tree Search — select, expand, simulate, backpropagate. It achieves 92.7% on HumanEval by treating each reasoning step as a node, using the model to evaluate branches, and propagating failure signals back up the tree.
 
@@ -39,13 +37,11 @@ Apply the complexity-ladder cost test before reaching for either:
 
 The multiplier is worth it for high-stakes, offline work where the correct answer is hard to find and easy to verify — mathematical proofs, code synthesis against a test suite, complex planning. It is not worth it for latency-sensitive production paths. Apply the cost test: if you can afford 10–15× the tokens and the task is offline, try ToT. If you cannot, stay with Reflexion.
 
-[MS-Learn: Azure AI Foundry — inference-time scaling and search-based reasoning for high-stakes tasks]
-
 ## What you build
 
 You extend `module3-agent/` with a Reflexion layer: an episodic memory that stores post-failure reflections, a Self-Reflector that writes the lesson, and a feedback loop that conditions the next trial. The CRITIC pattern — routing verification to an external tool — wires into the stop condition: the loop continues until the external check passes or the round budget is exhausted.
 
-An AI Platform Engineer who understands Reflexion and CRITIC can build agents that get better within a session, route verification to tools that cannot be fooled, and know exactly when to spend the token budget for search.
+Get the evaluator wrong and every other improvement is noise.
 
 ## Core concepts
 

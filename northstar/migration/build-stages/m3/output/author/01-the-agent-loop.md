@@ -14,9 +14,7 @@ Don't reach for the loop until the problem demands it.
 
 ReAct (Yao et al., 2023) names the loop that every modern agent harness runs: **Observe → Think → Act**. The agent sees the current state, reasons about what to do next, executes a tool call, and brings the result back into the loop as an observation. One cycle. Repeat.
 
-Every harness you'll encounter — Claude Agent SDK, OpenAI Agents SDK, LangGraph, AutoGen v0.4 — runs this loop underneath. The 2026 shift is that models with native reasoning (extended thinking, encrypted reasoning passthrough) generate the `Think` step internally; you don't need to prompt for `Thought:` tokens the way the original ReAct paper did. The shape of the loop is the same.
-
-[MS-Learn: Azure AI Agent Service — agent loop architecture and tool execution lifecycle]
+Every harness you'll encounter — Claude Agent SDK, OpenAI Agents SDK, LangGraph, AutoGen v0.4 — runs this loop underneath. The 2026 shift is that models with native reasoning (extended thinking, encrypted reasoning passthrough) generate the `Think` step internally; you don't need to prompt for `Thought:` tokens the way the original ReAct paper did. The shape of the loop is the same. Microsoft Foundry Agent Service exposes this as the Run/Run Steps model: each Run is one activation of the agent against a Thread, and Run Steps are the individual tool calls and messages the agent produces within it.
 
 ## The five ingredients
 
@@ -28,7 +26,7 @@ A chatbot has a model and a message history. An agent adds five things:
 
 **A stop condition.** The loop terminates when the model signals completion — typically a final answer turn with no tool call, or a sentinel token your harness recognizes. Without a stop condition the loop runs forever.
 
-**A turn budget.** A hard cap on the number of cycles. The stop condition handles the happy path; the turn budget handles the runaway. When the budget is exhausted, the loop stops and returns whatever was collected — or raises an error. [MS-Learn: Azure AI Foundry — configuring agent turn limits and cost controls]
+**A turn budget.** A hard cap on the number of cycles. The stop condition handles the happy path; the turn budget handles the runaway. When the budget is exhausted, the loop stops and returns whatever was collected — or raises an error.
 
 **An observation formatter.** Tool results come back as raw data — JSON, error strings, file contents. The formatter shapes them into the register the model reads well. A poorly formatted observation degrades the next reasoning step as reliably as a bad prompt.
 
@@ -68,7 +66,7 @@ A running agent can call tools with real side effects — it can write files, ca
 
 A **turn budget** is the first line of defense against runaway loops. Set it low for development (5–10 turns); raise it only for tasks that genuinely need depth.
 
-A **kill switch** is a boolean the agent reads but cannot write — a feature flag, a Redis key, an environment variable. When it is set, the loop stops before executing the next tool call. It lives outside the agent's reachable state so the agent cannot disable its own kill switch. [MS-Learn: Azure AI Foundry — implementing safety controls and agent kill switches]
+A **kill switch** is a boolean the agent reads but cannot write — a feature flag, a Redis key, an environment variable. When it is set, the loop stops before executing the next tool call. It lives outside the agent's reachable state so the agent cannot disable its own kill switch. In managed runtimes like Foundry Agent Service, the platform provides stop/block controls at the deployment level; in a self-hosted loop you wire this yourself.
 
 These aren't advanced features. They're table stakes before you run an agent against anything that matters.
 
@@ -76,7 +74,7 @@ These aren't advanced features. They're table stakes before you run an agent aga
 
 You build the skeleton of `module3-agent/` — the artifact that every M3 exercise extends. Lesson by lesson you'll add a planner, a reflexion layer, typed tools, MCP transport, and memory tiers. This lesson scaffolds the loop itself: one stub tool, one stop condition, one turn budget, one green check.
 
-An AI Platform Engineer who understands the five ingredients can reason about any agent harness — and knows exactly which surface to reach for when the loop breaks.
+Miss the turn budget and the kill switch, and you don't have a production agent — you have an expensive infinite loop waiting for the right prompt.
 
 ## Core concepts
 

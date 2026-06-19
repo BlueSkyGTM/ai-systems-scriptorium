@@ -8,7 +8,7 @@ ReWOO (Xu et al., 2023) separates the loop into three roles: a **Planner** that 
 
 The token count tells the story: interleaved ReAct re-conditions the reasoning model on the full observation history at every tool call. ReWOO calls the reasoning model exactly twice — once to plan, once to solve. On HotpotQA this produces roughly 5× fewer tokens and +4% accuracy, because the Solver sees a clean evidence packet instead of a reasoning trace polluted by intermediate retrieval noise.
 
-[MS-Learn: Azure AI Foundry — multi-step agent planning and parallel tool execution]
+Foundry Agent Service's fan-out/fan-in patterns and workflow-oriented multi-agent execution reflect the same principle: independent nodes run in parallel, dependent nodes wait, the orchestrator collects results before synthesis.
 
 ## The plan DAG
 
@@ -36,9 +36,7 @@ Each node's arguments may reference earlier node outputs by ID — `$node_2.resu
 
 LangChain's Plan-and-Execute generalizes ReWOO with a **Replanner** step: after the Worker finishes, the Planner can inspect the evidence and revise the remaining plan. This handles cases where early tool results change what later steps need to do — it restores adaptability without abandoning the decouple.
 
-The tradeoff is a third model call on replan. For tasks where the plan is stable, ReWOO without a replanner is cheaper. For tasks where early evidence frequently redirects the plan, Plan-and-Execute earns its cost.
-
-[MS-Learn: Azure AI Foundry — Plan-and-Execute agent pattern and replanning]
+The tradeoff is a third model call on replan. For tasks where the plan is stable, ReWOO without a replanner is cheaper. For tasks where early evidence frequently redirects the plan, Plan-and-Execute earns its cost. The same logic applies in any runtime that supports conditional re-orchestration: pay for the extra call only when early results reliably change what comes next.
 
 ## Where LLM planners stop
 
@@ -58,7 +56,7 @@ Reach for plan-and-execute when the task has independent sub-problems that can b
 
 The test: draw the plan DAG. If most nodes are independent, planning wins. If each node's input depends on the previous node's output, the DAG is a chain — you have a workflow, not a planning problem, and ReAct or a simple sequential workflow is cheaper.
 
-An AI Platform Engineer chooses between ReAct and planning by drawing the dependency graph, not by reaching for the more impressive algorithm.
+Draw the dependency graph first. The right algorithm follows from the shape of the graph, not from which one sounds more impressive.
 
 ## Core concepts
 
