@@ -35,7 +35,9 @@ Holds across all lessons. This is what makes 280 lessons from 9 sources read as 
 - [ ] **Lead (1–2 sentences):** the problem, and why a seam engineer needs this. The first sentence's only
       job is to make the reader read the second. No throat-clearing, no "In this lesson we will…".
 - [ ] **Ending — the seam line:** one sentence on what this means for an AI Platform Engineer. Then stop.
-      Zinsser: end with a click, the moment the reader didn't quite expect but recognizes as right.
+      Zinsser: end with a click, the moment the reader didn't quite expect but recognizes as right. **Vary the
+      shape** — a consequence, a warning, a cost, a reframe, a question answered — and never reuse a fixed
+      template (see §8). The "An AI Platform Engineer who…" opener is banned as a default; earn the ending fresh.
 - [ ] **Then the handoff:** the copy-button block that hands the work to Claude Code.
 
 ## 5. Core concepts (the retention hook)
@@ -65,6 +67,24 @@ No lesson ships on its first draft. After drafting, run this pass:
 4. Check unity: one pronoun, one tense, one POV, start to end (§1).
 5. Confirm the lead grabs and the ending lands (§4).
 6. Read it aloud. If you stumble, the reader will too. Fix the stumble.
+
+## 8. Variety — don't go mechanical (Zinsser's caution)
+
+Clarity is the goal; monotony is the failure mode it slips into. Short, clean sentences are the default — but a
+whole lesson of identical short em-dash declaratives is its own kind of clutter, and an identical ending across
+every lesson tells the reader a template wrote it, not a person.
+
+- [ ] **Vary the rhythm.** Mix sentence lengths. Let one longer, breathing sentence carry a complex idea, then
+      cut back to short. A drumbeat of `X is Y. Do Z. Never W.` fatigues the reader; break it on purpose.
+- [ ] **No template endings.** Rotate the seam line's shape (see §4). If you can predict a lesson's last
+      sentence from its first, rewrite it.
+- [ ] **Let the writer show.** A dry aside, an unexpected turn, one flash of earned opinion — Zinsser's
+      "warmth." The voice is blunt and confident, not robotic. Aim for one genuinely human moment per lesson.
+- [ ] **Respect the reader's stamina.** When names and acronyms stack up (MemGPT → Letta → Mem0 → Voyager),
+      slow down: gloss, group, or cut. A parade the reader can't hold is lost on them.
+
+This section is the polish layer, not the foundation (§§1–4 come first). But it is the difference between prose
+that is correct and prose that is alive — and for a book that invokes Zinsser by name, it has to be alive.
 
 ## What this is not
 
