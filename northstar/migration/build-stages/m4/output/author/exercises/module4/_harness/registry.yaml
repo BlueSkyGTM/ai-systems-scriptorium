@@ -1,0 +1,33 @@
+# Fleet registry — the machine-readable source of truth for who is in the fleet.
+# Everything-as-code: identity and permissions live here, diffable and reviewable,
+# not buried in a system prompt. Later lessons extend this with budgets, audit, and
+# a kill-switch reference.
+
+fleet: module4-fleet
+version: 0.1.0
+
+agents:
+  - id: researcher-01
+    role: researcher
+    description: Gathers and condenses source material into findings.
+    model: stub            # swap for a real model id (e.g. claude-haiku-4-5) to run live
+    permissions:
+      tools: [search, read_file]
+      can_write: false     # research is read-only by default (least privilege)
+      max_turns: 5
+
+  - id: writer-01
+    role: writer
+    description: Turns findings into a finished, terse summary.
+    model: stub
+    permissions:
+      tools: [draft, read_file]
+      can_write: true      # the writer may produce output artifacts
+      max_turns: 5
+
+# Routing: the supervisor maps a task to a role, then a role to an agent id.
+routing:
+  default_role: researcher
+  roles:
+    researcher: researcher-01
+    writer: writer-01
