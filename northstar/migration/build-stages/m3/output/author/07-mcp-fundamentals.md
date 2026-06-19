@@ -63,7 +63,7 @@ MCP defines two transports: **stdio** and **Streamable HTTP**.
 
 **Streamable HTTP** sends all MCP traffic over a single HTTP endpoint (`POST /mcp`). The server assigns a session ID; the client includes it on subsequent requests. Long-running connections use Server-Sent Events for server-to-client notifications. Remote, shared, and production servers use this transport.
 
-[MS-Learn: Azure API Management — hosting MCP servers with Streamable HTTP transport over Azure-managed endpoints]
+Azure API Management natively supports the MCP server remote mode: it can expose any managed REST API or an existing MCP server as a Streamable HTTP endpoint, applying auth, rate limiting, and audit logging at the gateway layer. (learn.microsoft.com/azure/api-management/mcp-server-overview)
 
 ## Building the TypeScript MCP server
 
@@ -97,7 +97,7 @@ await server.connect(transport);
 
 The tool registered here is the same `searchTool` from `module3-agent/tools/search.ts`. The MCP server is a thin transport wrapper around the typed implementation — no duplication, no reshaping.
 
-[MS-Learn: Azure AI Foundry — publishing MCP tools with the TypeScript MCP SDK and registering tool schemas]
+Azure AI Foundry Agent Service supports the MCP tool primitive directly: you point an agent at a server URL, and it discovers and calls your tools over the same `tools/list` / `tools/call` round trip shown above. The TypeScript MCP SDK (`@modelcontextprotocol/sdk`) is the same SDK consumed by Foundry when it connects to an MCP tool endpoint. (learn.microsoft.com/azure/foundry/agents/how-to/tools/model-context-protocol)
 
 ## Connecting the Python loop as an MCP client
 
@@ -135,9 +135,11 @@ async def call_tool(name: str, arguments: dict) -> str:
 
 The Python loop calls `call_tool("search", {"query": "..."})` instead of `tools.execute("search", {...})`. The protocol is the bridge — the TypeScript tool runs in its own Node.js process; the Python harness talks to it over stdio JSON-RPC.
 
+The snippet above reconnects per call to keep the illustration simple. In production the Python harness should hold a single persistent `ClientSession` for the loop's lifetime and call tools through it — spawning a new subprocess and re-running `initialize` on every tool call adds latency and process overhead that compounds fast in a multi-turn agent loop.
+
 The language seam is now explicit: TypeScript owns the tool implementations and the MCP server; Python owns the agent harness, the planning loop, and the client connection. MCP is the language boundary.
 
-[MS-Learn: Azure AI Foundry — connecting Python agent clients to MCP servers with the Python MCP SDK]
+The Python `mcp` package provides `ClientSession`, `StdioServerParameters`, and `stdio_client` — the three imports shown above. These are the canonical names in the published `mcp` package; verify the installed version matches the server SDK version to avoid protocol-version mismatches. (learn.microsoft.com/azure/foundry/agents/how-to/tools/model-context-protocol)
 
 ## Decoupling as the payoff
 
@@ -145,9 +147,9 @@ The TypeScript tools now run wherever Node.js runs. Connect Claude Desktop's MCP
 
 One more consequence: you can swap the Python harness for a different client without touching the TypeScript tools. You can update the tool implementation without touching the client. The protocol is the only shared contract.
 
-[MS-Learn: Azure API Center — registering MCP servers as managed APIs and discovering them across teams]
+Azure API Center fills the registry role in Azure environments: register your MCP servers as managed API assets, expose a discovery portal to internal consumers, and synchronize with API Management automatically. (learn.microsoft.com/azure/api-center/register-discover-mcp-server)
 
-An AI Platform Engineer who builds this server-client pair stops writing tool integrations per-consumer and starts writing tools once.
+Write the tool once. The protocol handles the rest — that is the whole point.
 
 ## Core concepts
 

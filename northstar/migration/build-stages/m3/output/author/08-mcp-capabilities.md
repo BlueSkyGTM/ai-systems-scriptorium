@@ -29,7 +29,7 @@ server.resource(
 
 Resources support subscription: the server sends a `notifications/resources/updated` message when a subscribed resource changes. The client re-fetches. This is how a live config feed or a watch-mode file diff surfaces to the host without polling.
 
-[MS-Learn: Azure API Management — surfacing Azure resource metadata as MCP resources for agent context injection]
+Azure API Management can expose any REST API as an MCP server endpoint, converting each operation into a tool; the same gateway layer can surface read-only resource data — configuration snapshots, metadata — as context the agent pulls rather than computes. (learn.microsoft.com/azure/api-management/mcp-server-overview)
 
 ## Prompts: server-offered templates
 
@@ -69,7 +69,7 @@ The use case: a server running a multi-step workflow (fetch files, identify whic
 
 Sampling carries a safety requirement the spec makes explicit: the host **must** give the user the opportunity to review and approve any sampling request. A server that samples without user visibility is a covert agent loop — the model is running inside a server the user can't see. Build the approval path before you use sampling in production.
 
-[MS-Learn: Azure AI Foundry — implementing human-in-the-loop review for MCP sampling requests in production agents]
+Azure AI Foundry Agent Service makes this approval requirement concrete: when a tool is marked `require_approval: always`, the agent pauses and returns an `mcp_approval_request` output item before executing — the host presents the request to a human, who approves or rejects it explicitly. The pattern applies equally to sampling: if a server is running model completions without user visibility, that is the failure mode the spec is designed to prevent. (learn.microsoft.com/azure/foundry/agents/how-to/tools/model-context-protocol)
 
 ## Roots: scoped filesystem access
 
@@ -107,7 +107,7 @@ Use **sampling** when the server needs model completions but must not hold model
 Use **roots** when the server accesses the local filesystem — always.
 Use **elicitation** when a tool discovers mid-execution that only the user can supply a required piece of information.
 
-An AI Platform Engineer who knows these six primitives and their decision rules can design an MCP server that does exactly what the protocol intended — and can audit one that doesn't.
+Six primitives, one decision rule each — get them wrong and the server technically works but does the wrong thing. Get them right and the protocol does the composition for you.
 
 ## Core concepts
 

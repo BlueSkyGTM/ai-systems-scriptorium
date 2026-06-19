@@ -16,7 +16,7 @@ Every durable agent memory architecture has three layers. They differ in speed, 
 
 **L3 — semantic memory** holds facts and rules that don't change: entity relationships, user preferences, organizational knowledge. A knowledge graph (Neo4j, AWS Neptune) or a managed service like Mem0 handles this. Queries are relationship traversals, not vector similarity — "what does this user prefer?" not "what is similar to this embedding?" Latency is higher; call this tier when you need a structured fact, not a fuzzy match.
 
-[MS-Learn: Azure Cosmos DB agent memory toolkit — storing turns, summaries, and facts with vector search, full-text search, and hybrid search across all three tiers]
+The Agent Memory Toolkit for Azure Cosmos DB (preview) handles exactly this pattern: it stores turns, summaries, facts, and user profiles as JSON documents, and supports vector search, full-text search, and hybrid search across all of them from a single service. ([Azure Cosmos DB agent memory toolkit](https://learn.microsoft.com/azure/cosmos-db/gen-ai/agent-memory-toolkit))
 
 ## Virtual context: the MemGPT pattern
 
@@ -38,7 +38,7 @@ archival_memory_search(query="hybrid store architecture decision")
 
 `core_memory_*` tools mutate the always-in-context block — a bounded region the agent can inspect and update directly. `archival_memory_*` tools write to and search the external store. The agent decides when to page in; the framework handles serialization. Letta (the 2026 successor to MemGPT) inherits this surface and adds typed memory blocks — more on that in lesson 11.
 
-[MS-Learn: Microsoft Foundry Agent Service memory — long-term memory extraction, consolidation, and cross-session recall using the Memory Store API]
+Azure AI Foundry Agent Service provides a managed long-term memory solution (preview): it extracts meaningful information from conversations, consolidates it into durable knowledge, and makes it available across sessions via the Memory Store API. ([Memory in Azure AI Foundry Agent Service](https://learn.microsoft.com/azure/foundry/agents/concepts/what-is-memory))
 
 ## Hybrid stores: why one store is always wrong
 
@@ -73,19 +73,19 @@ results = client.search(
 
 Azure Cosmos DB for NoSQL is the production substrate for this pattern: it supports vector search (DiskANN, IVF, HNSW), full-text search, and point lookups in a single service with 99.999% availability. You do not need three separate managed services.
 
-[MS-Learn: Azure Cosmos DB integrations for AI — LangGraph checkpointer, long-term memory, vector store, KV store, and semantic cache in one service]
+The Azure Cosmos DB integrations page covers exactly this pattern: LangGraph checkpointer (`CosmosDBSaver`), Agent Framework workflow checkpoint (`CosmosDBWorkflowCheckpointStorage`), vector store, KV store, and semantic cache — all backed by a single NoSQL service. ([Azure Cosmos DB integrations for AI](https://learn.microsoft.com/azure/cosmos-db/gen-ai/integrations))
 
 ## Safety: memory is attackable
 
 Memory persists across sessions, which means a poisoned memory persists too. An attacker who plants a malicious instruction in your archival store via indirect prompt injection has a persistent foothold — unlike a compromised prompt, a compromised memory survives the session reset. Namespace your memory by `user_id` and enforce it at query time so retrieval cannot cross tenants. Apply Azure AI Content Safety Prompt Shields at write time, not just at inference time, to catch injection attempts before they enter your store. Log every memory write with full provenance so you can audit and roll back.
 
-[MS-Learn: Azure Foundry Agent Service memory security — prompt injection detection, retrieval-time Prompt Shields, and memory audit with Microsoft Sentinel]
+Azure AI Foundry Agent Service's memory security guidance recommends Azure AI Content Safety prompt injection detection and regular adversarial testing to prevent malicious content from entering or corrupting memory. ([Memory security in Azure AI Foundry Agent Service](https://learn.microsoft.com/azure/foundry/agents/concepts/what-is-memory#security-risks))
 
 ## What you build
 
 You add a Python memory layer to `module3-agent/`. The harness gains three files: `memory/working.py` (the L1 context manager with KV-cache-aware static-first ordering), `memory/episodic.py` (an L2 stub — `insert` writes to a dict, `search` does keyword match, the interface is API-stable for a real vector store), and `memory/hybrid_store.py` (a Mem0-pattern stub that routes queries to the right tier and returns a fused ranked list). The existing ReAct loop wires episodic memory to the observation formatter: post-turn observations append to L2, and session start fetches the top-3 relevant memories into L1.
 
-An AI Platform Engineer who knows when to add a memory tier and which store answers which query class ships agents that hold state under production load — not agents that lose context when the window fills.
+Get the tier wrong and the agent either pays for every token twice or loses context when it matters most; get it right and state becomes a competitive advantage rather than a liability.
 
 ## Core concepts
 

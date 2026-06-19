@@ -16,7 +16,7 @@ Three defenses:
 
 **Treat untrusted servers as hostile.** A server you didn't write, running code you didn't review, is untrusted. Never connect to an untrusted MCP server from a privileged host context. If you must, sandbox the client session: restrict its access to roots, disable sampling, and log every tool call for audit.
 
-[MS-Learn: Azure API Management — enforcing content policy on MCP tool descriptions and auditing tool registration events]
+Azure API Management applies policies at the MCP server layer — authentication, rate limiting, IP filtering, and audit logging all configure in one place and apply to every tool call that passes through. The same policy layer is where you'd enforce description-integrity checks before a poisoned tool description reaches a live agent. (learn.microsoft.com/azure/api-management/mcp-server-overview, learn.microsoft.com/azure/foundry/agents/how-to/tools/governance)
 
 ## Capability scoping and mutation allowlists
 
@@ -41,7 +41,7 @@ function requiresApproval(toolName: string, clientId: string): boolean {
 
 Apply human approval on every mutating tool call in production. The approval hook from lesson 06 plugs here — wire it to a real gate (Slack notification, UI dialog, audit log entry with a hold period) for tools that have irreversible effects.
 
-[MS-Learn: Azure AI Foundry — implementing role-based access control for MCP tool capabilities and approval workflows]
+Azure AI Foundry Agent Service implements this through the `require_approval` field on MCP tool connections: set it to `always` to gate every call, `never` for read-only tools, or a named allowlist (`{"never": ["search", "get_config"]}`) for mixed-trust tool sets. Azure RBAC on the Foundry resource controls which users and identities can configure those gates. (learn.microsoft.com/azure/foundry/agents/how-to/tools/model-context-protocol)
 
 ## OAuth 2.1 for authenticated servers
 
@@ -63,9 +63,9 @@ def pkce_pair():
     return verifier, challenge
 ```
 
-[MS-Learn: Azure Entra ID — configuring OAuth 2.1 with PKCE for MCP server authentication and audience-pinned token validation]
+Microsoft Entra ID is the identity provider the MCP spec expects here: the server publishes a `/.well-known/oauth-authorization-server` metadata document, and Entra validates tokens with audience checking built in. The `validate-azure-ad-token` policy in Azure API Management rejects any token whose `aud` claim doesn't match the server's registered application URI — audience pinning enforced at the gateway, not the server. (learn.microsoft.com/azure/api-management/secure-mcp-servers, learn.microsoft.com/entra/identity-platform/claims-validation)
 
-[MS-Learn: Azure API Management — enforcing OAuth 2.1 Bearer token validation on MCP Streamable HTTP endpoints]
+Azure API Management supports both subscription-key and OAuth 2.1 Bearer token authentication on MCP Streamable HTTP endpoints — configured as an inbound policy (`validate-azure-ad-token`) that runs before any tool call reaches the backend. (learn.microsoft.com/azure/api-management/secure-mcp-servers)
 
 ## Gateways and registries: one control point
 
@@ -81,9 +81,9 @@ Client → Gateway → [auth, RBAC, rate-limit, hash-verify] → Backend MCP Ser
 
 The gateway is where you apply observability too. Every tool call passes through one point — instrument it once. Forward-pointer: OpenTelemetry GenAI semantic conventions for tracing MCP client dispatch live in Module 5.
 
-[MS-Learn: Azure API Center — registering and discovering MCP servers as managed APIs with centralized governance]
+Azure API Center fills the registry role: register your MCP servers as managed assets, expose a discovery portal with a built-in test console, and synchronize from API Management automatically to keep the catalog current. (learn.microsoft.com/azure/api-center/register-discover-mcp-server)
 
-[MS-Learn: Azure API Management — building an MCP gateway with rate limiting, RBAC, and audit logging for multi-server deployments]
+Azure API Management is exactly this gateway: expose any number of MCP servers through one managed endpoint, enforce rate limits, JWT validation, and IP filtering with declarative policies, and forward all traffic to Azure Monitor for audit logging. One control point across the fleet. (learn.microsoft.com/azure/api-management/mcp-server-overview)
 
 ## A2A handoff (one line)
 
@@ -95,7 +95,7 @@ The security posture across this chapter's four lessons is one thread: least pri
 
 Each layer is thin. Together they make the attack surface explicit — and explicit surfaces can be audited.
 
-An AI Platform Engineer who ships this stack has moved from "I trust everything in my process" to "I verify everything at the boundary" — and that shift is what separates a prototype from a production agent system.
+Prototypes trust everything in the process. Production systems verify at every boundary. That gap is exactly what this chapter's four lessons close — one layer at a time.
 
 ## Core concepts
 

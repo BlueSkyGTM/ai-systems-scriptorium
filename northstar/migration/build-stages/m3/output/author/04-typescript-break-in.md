@@ -28,7 +28,7 @@ function search(args: { query: string }): Promise<string> {
 
 The compiler checks every call site. Pass a number where a string belongs and `tsc` stops the build. The model — which generates `args` from natural language — is a source of type violations; the compiler is the first line of defense.
 
-[MS-Learn: TypeScript tsconfig strict mode and noImplicitAny for Azure SDK projects]
+Azure SDK quickstarts use this same `tsconfig.json` shape — `"strict": true`, `"module": "NodeNext"`, `"target": "ES2022"` — across every TypeScript SDK sample on Microsoft Learn.
 
 ## The type system in three minutes
 
@@ -113,9 +113,7 @@ const searchTool: ToolDefinition = {
 };
 ```
 
-This is the TypeScript surface the loop calls. The `@azure/ai-agents` SDK's `FunctionToolDefinition` interface follows the same shape — `name`, `description`, `parameters` as JSON Schema, a handler — which means the typed tool you define here wires directly into production agent infrastructure without reshaping.
-
-[MS-Learn: Azure AI Agents — FunctionToolDefinition interface and function calling with TypeScript]
+This is the TypeScript surface the loop calls. Production agent SDKs use this same shape — name, description, parameters as JSON Schema, a typed handler — which means the contract you define here wires directly into agent infrastructure without reshaping. (In `@azure/ai-agents`, `FunctionToolDefinition` nests these under a `function: FunctionDefinition` property; the concept is identical, the path is one level deeper.)
 
 ## Configuration: tsconfig
 
@@ -137,7 +135,7 @@ This is the TypeScript surface the loop calls. The `@azure/ai-agents` SDK's `Fun
 
 `"strict": true` is non-negotiable for production agent code — it enables `noImplicitAny`, `strictNullChecks`, and a half-dozen more checks that catch the category of bugs that surface as silent wrong-tool calls at runtime. `"declaration": true` emits `.d.ts` files alongside your compiled JS — important when other packages import your typed tools.
 
-[MS-Learn: TypeScript compilerOptions — strict mode, declaration files, and NodeNext module resolution]
+The `"strict": true` flag and `"NodeNext"` module resolution appear in every Azure AI SDK TypeScript quickstart on Microsoft Learn (learn.microsoft.com/azure/ai-foundry/) — they are the baseline, not a preference.
 
 ## IDE features
 
@@ -162,14 +160,14 @@ npx tsc            # type-check and emit to dist/
 
 You add `module3-agent/tools/` — the TypeScript layer of the mixed-language artifact. One file: `search.ts`, exporting a `ToolDefinition` whose shape matches the loop's `tools.execute(name, args)` contract from lesson 01. The next chapter connects the two over MCP — TypeScript tools, Python harness, one protocol between them. You write `tsconfig.json`, run `tsc --noEmit` clean, and confirm the contract lines up.
 
-An AI Platform Engineer who can read, write, and compile typed TypeScript owns the seam between the model's untyped world and the typed contracts the product layer enforces.
+The compiler is now the first reviewer — every tool call the model generates has to pass `tsc` before it reaches your business logic.
 
 ## Core concepts
 
 - TypeScript is JavaScript with a structural type layer that compiles away — the ecosystem is JS, the safety is TS, and LLM tooling is JS-first by necessity.
 - A typed tool definition — name, description, JSON Schema parameters, typed execute handler — is the compiler-enforced contract between the model's tool calls and your implementation.
 - `"strict": true` in `tsconfig.json` is required for production agent code; it enables the checks that catch silent wrong-tool calls before runtime.
-- Union types with discriminants (`status: "success" | "error"`) let the compiler narrow tool result shapes — the same pattern the `@azure/ai-agents` `ToolDefinitionUnion` uses for built-in tools.
+- Union types with discriminants (`status: "success" | "error"`) let the compiler narrow tool result shapes — the same discriminated-union pattern that `@azure/ai-agents`' `ToolDefinitionUnion` uses to distinguish `FunctionToolDefinition`, `CodeInterpreterToolDefinition`, and other built-in tool types.
 
 <div class="claude-handoff" data-exercise="exercises/module3/04-typescript-break-in/">
 

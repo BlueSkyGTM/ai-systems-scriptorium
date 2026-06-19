@@ -34,7 +34,7 @@ The `parameters` object drives two things: the model's argument generation and y
 
 Schema design choices compound. A tool with an `action: string` parameter that accepts fifteen possible values forces the model to guess. Split it into fifteen specific tools — or at least enumerate the values with `"enum"`. BFCL V4 traces a measurable chunk of tool-selection failures to under-specified descriptions and under-constrained parameter schemas.
 
-[MS-Learn: Azure AI Agents — FunctionToolDefinition and JSON Schema parameter contracts for function calling]
+Azure AI Foundry Agent Service enforces the same contract: the `FunctionTool` interface requires `name`, `description`, and a JSON Schema `parameters` object, and the spec explicitly states that the model uses the description to decide whether to call the function — making schema quality a selection correctness problem, not just a validation one. (learn.microsoft.com/azure/foundry/agents/how-to/tools/function-calling)
 
 ## Argument validation and coercion
 
@@ -61,7 +61,7 @@ function validate(
 
 The validator sits between the model's output and your implementation. It is the type wall.
 
-[MS-Learn: Azure AI Foundry — validating tool call arguments and handling function calling errors]
+Azure AI Foundry's function calling guidance is direct on this: "Treat tool arguments and tool outputs as untrusted input. Validate and sanitize values before using them." It lists returning a descriptive error as a tool output — not throwing an exception — as the recommended error path, so the model can respond to the failure rather than seeing a crash. (learn.microsoft.com/azure/foundry/agents/how-to/tools/function-calling)
 
 ## Execution sandboxing
 
@@ -75,7 +75,7 @@ Three controls belong here from the start:
 
 **Least privilege for side-effecting tools.** Before any tool that mutates state — writes, deletes, POSTs — consider whether a human should approve it. The complexity ladder applies here: a tool that reads data needs no approval; a tool that sends an email does. Build the approval hook now, even if you wire it to auto-approve in development.
 
-[MS-Learn: Azure AI Foundry — configuring least-privilege tool permissions and human-in-the-loop approval gates]
+Azure AI Foundry's security guidance names this explicitly as a core principle: "Apply least privilege to the identity used by DefaultAzureCredential. Avoid side effects unless you explicitly intend them." For tools that change data, it recommends requiring explicit user confirmation before execution — the approval hook belongs in the design, not added later. (learn.microsoft.com/azure/foundry/agents/how-to/tools/function-calling)
 
 ## Wiring the typed tools into the loop registry
 
@@ -116,7 +116,7 @@ The Berkeley Function-Calling Leaderboard V4 (2026 edition) tells a clean story:
 
 Your tool registry, your schema design, and your validator address the last failure mode. The other three are loop-level problems the next chapters address. Know which problem you're solving before you reach for a fix.
 
-An AI Platform Engineer who owns the execute step owns the only place in the system where the model's intentions become real-world actions — which means this is also the only place the harm can actually happen.
+The execute step is the only place in the system where the model's intentions become real-world actions. It is also, therefore, the only place the harm can actually happen — so treat it accordingly.
 
 ## Core concepts
 

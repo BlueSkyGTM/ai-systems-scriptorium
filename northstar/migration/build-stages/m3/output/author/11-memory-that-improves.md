@@ -48,7 +48,7 @@ The claude-haiku-4-5 model is the right choice for the sleep-time agent: cheap, 
 
 This is the pattern behind Claude Code's `CLAUDE.md` learnings and the `/learn` command: when a session ends, the rule you write is a sleep-time consolidation into a persistent block the next session reads on startup.
 
-[MS-Learn: Microsoft Agent Framework memory and ContextProvider — InMemoryHistoryProvider, audit stores, and HistoryProvider chains for durable session state]
+Microsoft Agent Framework formalizes this pattern through `ContextProvider` and `HistoryProvider`: `InMemoryHistoryProvider` keeps history in session state, and a second provider with `store_context_messages=True` acts as an audit store — both chained via `context_providers=[...]`. ([Microsoft Agent Framework memory and persistence](https://learn.microsoft.com/agent-framework/get-started/memory))
 
 ## Skill libraries (Voyager)
 
@@ -63,6 +63,7 @@ The result is a library that gets sharper with use. A skill that fails twice get
 This is the reference architecture for the Claude Agent SDK skills pattern: capabilities are programs stored in a library and loaded on demand, not re-derived from a prompt each session. A skill is named, has a description the retrieval system queries against, and is callable by the agent loop.
 
 ```python
+# A skill decorator (illustrative — your library wires the registration pattern)
 @skill(name="parse_json_schema", description="Parse and validate a JSON Schema, return typed fields")
 def parse_json_schema(schema: str) -> list[dict]:
     import json
@@ -72,9 +73,9 @@ def parse_json_schema(schema: str) -> list[dict]:
     return fields
 ```
 
-The skill decorator registers the function in the library. The agent searches by description at task time, retrieves the matching skill, and calls it — the same composition pattern the agent loop uses for tool calls, but with code that survives sessions.
+A skill decorator such as the one above registers the function in the library with a name and a description the retrieval system queries against. The agent searches by description at task time, retrieves the matching skill, and calls it — the same composition pattern the agent loop uses for tool calls, but with code that survives sessions.
 
-[MS-Learn: Azure AI Foundry agent service skills and tool catalog — registering reusable tools and managing tool governance across agent sessions]
+Azure AI Foundry Agent Service's Toolbox is the production version of this pattern: a curated bundle of versioned tools, configured once and exposed as a single MCP-compatible endpoint that any agent can consume. ([Agent tools overview for Foundry Agent Service](https://learn.microsoft.com/azure/foundry/agents/concepts/tool-catalog))
 
 ## Checkpointing and resume
 
@@ -101,9 +102,9 @@ def load_checkpoint(path: str) -> AgentCheckpoint:
         return AgentCheckpoint(**json.load(f))
 ```
 
-In production, the store is Cosmos DB with a `CosmosCheckpointStorage` provider (Azure Durable Task / Microsoft Agent Framework). The Durable Task runtime checkpoints every state transition automatically and resumes from the last checkpoint on any infrastructure failure — process crash, deployment, scale-in event. You get this without adding retry logic to your agent code.
+In production, the store is Cosmos DB with a `CosmosDBWorkflowCheckpointStorage` provider (Microsoft Agent Framework) or via Azure Durable Task directly. The Durable Task runtime checkpoints every state transition automatically and resumes from the last checkpoint on any infrastructure failure — process crash, deployment, scale-in event. You get this without adding retry logic to your agent code.
 
-[MS-Learn: Azure Durable Task for AI agents — automatic checkpointing, resume from last checkpoint, and configurable retry policies for long-running agent loops]
+Azure Durable Task handles this in production: the runtime checkpoints every state transition — LLM responses, tool results, control flow — and resumes automatically from the last checkpoint on any infrastructure failure, without adding retry logic to your agent code. ([Durable Task for AI agents](https://learn.microsoft.com/azure/durable-task/sdks/durable-task-for-ai-agents))
 
 ## Safety: the memory attack surface expands
 
@@ -113,7 +114,7 @@ Skill libraries and memory blocks extend the attack surface from lesson 10. A po
 
 You extend `module3-agent/` with three additions. First, `memory/blocks.py`: a typed block manager with `block_append`, `block_replace`, and `block_summarize`. Second, `memory/skills.py`: a skill library with `register`, `search` (keyword similarity over descriptions), and `call`. Third, `memory/sleep_agent.py`: a stub sleep-time consolidation loop that reads from recall memory, summarizes with claude-haiku-4-5, and writes back to the human block. The existing checkpoint hook from the agent loop writes a full `AgentCheckpoint` after each turn; a `--resume` flag on the loop entry point reloads from the last checkpoint.
 
-An AI Platform Engineer who ships this knows how to make memory an asset rather than a liability — one that compounds with use, survives failures, and shrinks the cost of every run that follows.
+Memory that gets better with use is not a nice-to-have; it is the difference between an agent that costs the same on run 1000 as on run 1, and one that already knows what works.
 
 ## Core concepts
 

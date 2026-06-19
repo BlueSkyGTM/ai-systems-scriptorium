@@ -8,7 +8,7 @@ You build the first four of seven workbench surfaces inside `module3-agent/workb
 
 ## Instructions: the router and the rules
 
-The agent's first read is `AGENTS.md`. Keep it short — one screen. A 3000-line manual gets ignored; a 12-line router gets followed. The router names the repo, the entry point, the test command, and a pointer to `docs/agent-rules.md`. That's it.
+The agent's first read is `AGENTS.md`. Keep it short — one screen. A long manual no one reads; a short router they actually follow. The router names the repo, the entry point, the test command, and a pointer to `docs/agent-rules.md`. That's it.
 
 ```
 # AGENTS.md
@@ -32,7 +32,7 @@ board: .workbench/task_board.json
 
 Prose wishes ("be careful," "test thoroughly") have no runtime teeth. Machine-checkable rules do. A `rule_checker.py` reads the rules file and emits a diff-friendly `rule_report.json` the verification step reads — turning your intentions into a ledger.
 
-[MS-Learn: Azure AI Foundry Agent Service — capability manifest and per-agent rule enforcement for task adherence]
+Azure AI Foundry's [Task Adherence](https://learn.microsoft.com/azure/ai-services/content-safety/concepts/task-adherence) signal detects when a planned tool invocation deviates from the user's intent — the runtime counterpart to the rule ledger you maintain locally.
 
 ## State: the repo is the system of record
 
@@ -77,7 +77,7 @@ The schema enforces the shape — required fields, types, enum values — so sta
 
 A task that spans three sessions costs nothing extra. The next session reads state, not chat history, and picks up where the prior one stopped.
 
-[MS-Learn: Azure DevOps Pipelines — publishing structured JSON artifacts as pipeline stage outputs for cross-session state continuity]
+In CI, the same JSON files become pipeline artifacts. Azure Pipelines' [PublishPipelineArtifact](https://learn.microsoft.com/azure/devops/pipelines/artifacts/pipeline-artifacts?view=azure-devops) task lets a later stage download exactly the state a prior stage wrote — the same cross-session contract, scaled to a build system.
 
 ## Scope: the contract that prevents creep
 
@@ -126,7 +126,7 @@ def check(contract_path: str) -> dict:
 
 The report goes to `.workbench/scope_report.json`. Downstream, the verification gate reads it. A violation blocks the verdict. The agent cannot edit the scope contract — only you can.
 
-[MS-Learn: Azure AI — access patterns and scope-by-tool permission controls for AI agents acting on files and APIs]
+Azure's [AI-4 security guidance](https://learn.microsoft.com/security/benchmark/azure/mcsb-v2-artificial-intelligence-security#ai-4-apply-least-privilege-for-agent-functions) frames the same principle at the platform layer: define a capability manifest that allows only the tools the agent needs, apply RBAC, and audit every invocation. The scope contract is the local expression of that posture.
 
 ## Feedback: react to facts, not predictions
 
@@ -162,7 +162,7 @@ The agent calls `run_with_feedback` for every command — `pytest`, `ruff check`
 
 The loop refuses to mark a task complete if the feedback log is empty. "Tests pass" backed by a `feedback_record.jsonl` entry with `exit_code: 0` is a fact. "Tests pass" with no record is a hallucination. You enforce the difference at the loop level, not the prompt level.
 
-[MS-Learn: Azure DevOps — publishing test results and exit codes as pipeline artifacts for cross-step fact verification]
+Azure Pipelines surfaces the same discipline at scale: the [Publish Pipeline Artifacts](https://learn.microsoft.com/azure/devops/pipelines/artifacts/pipeline-artifacts?view=azure-devops) task and stage [gates](https://learn.microsoft.com/azure/devops/pipelines/release/approvals/gates?view=azure-devops) let downstream stages read the feedback log before they advance — the same "no record, no pass" rule enforced by the pipeline itself.
 
 ## The thread so far
 
@@ -172,7 +172,7 @@ The next lesson adds the three surfaces that close the loop: verification (the a
 
 ## Core concepts
 
-- A short `AGENTS.md` router plus machine-checkable `docs/agent-rules.md` rules outperform a 3000-line manual because the agent reads the router every turn and the workbench enforces the rules as a ledger, not prose.
+- A short `AGENTS.md` router plus machine-checkable `docs/agent-rules.md` rules outperform a long manual because the agent reads the router every turn and the workbench enforces the rules as a ledger, not prose.
 - Durable state lives in the repo as JSON Schema-validated files written atomically; chat history is volatile and survives nothing.
 - A per-task `scope_contract.json` combined with a post-run `scope_checker.py` diff is the only reliable defense against scope creep — the most under-monitored single-agent failure mode.
 - `run_with_feedback.py` turns every shell command into a persisted fact (argv, exit code, stdout tail, duration); a loop that refuses to advance without a feedback record eliminates "all tests pass" with no evidence.

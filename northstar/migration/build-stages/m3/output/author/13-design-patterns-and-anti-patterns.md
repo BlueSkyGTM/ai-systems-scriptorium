@@ -30,7 +30,7 @@ These are the shapes that recur. Each solves one class of problem; each has a fa
 
 **Golden Set** — a curated dataset of representative inputs and expected outputs used as a regression test. Run it on every change to catch degradation before it ships. Not a pattern for building — a pattern for sustaining. A system without a Golden Set is operating blind.
 
-[MS-Learn: Azure AI Foundry Agent Service — HITL interrupts, checkpointing, and human approval gates in hosted agent workflows]
+Microsoft Agent Framework implements HITL through a request-response mechanism: any executor calls `ctx.request_info()` to pause the workflow and emit a `RequestInfoEvent`; the caller responds, and the workflow resumes. Checkpoints persist pending requests, so a paused workflow survives a process restart. ([Microsoft Agent Framework — Human-in-the-loop](https://learn.microsoft.com/agent-framework/workflows/human-in-the-loop))
 
 ## The anti-patterns that matter most
 
@@ -48,7 +48,7 @@ Anti-patterns are not just mistakes — they are recurring mistakes with recogni
 
 **Vibes-based evaluation.** "It looks good" as the acceptance criterion. No Golden Set, no scoring metric, no regression harness. Every prompt change is a gamble. The fix: 100+ labeled examples, a scoring function, a test runner. This is not advanced infrastructure — it is the minimum to know whether the system is improving or regressing.
 
-[MS-Learn: Microsoft Agent Framework — workflow orchestration anti-patterns and termination conditions for multi-agent systems]
+Microsoft Agent Framework's Magentic orchestration exposes explicit termination knobs — `max_round_count`, `max_stall_count`, `max_reset_count` — precisely because unbounded loops are a known production failure mode. ([AutoGen to Microsoft Agent Framework Migration Guide — Multi-Agent Feature Mapping](https://learn.microsoft.com/agent-framework/migration-guide/from-autogen/#multi-agent-feature-mapping))
 
 ## A small artifact inspection
 
@@ -60,9 +60,9 @@ Open the `module3-agent/` harness you built in lessons 01–03. Find one instanc
 
 Name what pattern each one implements and which anti-pattern it prevents. If any of the three is missing, that is the first finding — note what it would cost if the agent ran against a real API without it.
 
-[MS-Learn: Azure AI Foundry — agent safety controls, cost limits, and observability for production agent workloads]
+Azure AI Foundry Agent Service enforces hard service limits — 128 tools per agent, 100,000 messages per thread — and applies rate limits at the model deployment level, not the agent level. Cost control requires monitoring which tools the agent actually invokes, not just which ones are registered. ([Azure AI Foundry Agent Service — limits, quotas, and observability](https://learn.microsoft.com/azure/foundry/agents/concepts/limits-quotas-regions))
 
-An AI Platform Engineer who can name the pattern, cite the tradeoff, and identify the anti-pattern in a live codebase is the person who prevents the expensive rewrite — not the one who triggers it.
+Pattern vocabulary and anti-pattern recognition are the same skill: both require knowing what a shape is called before you can argue about whether it belongs here.
 
 ## Core concepts
 

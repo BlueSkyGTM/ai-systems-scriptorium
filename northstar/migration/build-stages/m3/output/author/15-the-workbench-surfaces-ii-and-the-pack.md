@@ -67,9 +67,9 @@ The output goes to `.workbench/verification_report.json`. CI reads the same file
 
 Wire the verdict as a CI gate: a GitHub Actions step that reads `verification_report.json` and exits non-zero on `"verdict": "FAIL"` means a failed agent cannot merge.
 
-[MS-Learn: Azure DevOps Pipelines — using gates and approval conditions gated on structured JSON artifact content before stage promotion]
+Azure Pipelines makes this a native step: [deployment gates](https://learn.microsoft.com/azure/devops/pipelines/release/approvals/gates?view=azure-devops) let you configure pre-deployment conditions that read an external source — including a REST API that returns your `verification_report.json` — and block stage promotion until the signal is green.
 
-[MS-Learn: Azure AI Foundry — agent evaluators for task adherence and task completion as system-level quality gates]
+Azure AI Foundry's [agent evaluators](https://learn.microsoft.com/azure/foundry/concepts/evaluation-evaluators/agent-evaluators#system-evaluation) — Task Adherence, Task Completion, Intent Resolution — operate on the same principle at the platform layer: structured scores per run, integrated into the CI/CD pipeline via the [AI Agent Evaluation extension](https://learn.microsoft.com/azure/foundry/how-to/evaluation-azure-devops) for Azure DevOps.
 
 ## Review: a second loop with a different prompt
 
@@ -110,7 +110,7 @@ Use `claude-haiku-4-5` for the rubric-scoring pass — it is fast and cheap, and
 
 The reviewer cannot be the builder. Run them as separate processes with separate prompts. An agent that reviews its own code consistently scores it higher than a second agent does — because it is still executing the same goal.
 
-[MS-Learn: Azure AI Foundry — rubric evaluators scoring agent responses on weighted custom dimensions with pass/fail thresholds]
+Azure AI Foundry's [rubric evaluators](https://learn.microsoft.com/azure/foundry/concepts/evaluation-evaluators/rubric-evaluators) work the same way at scale: define weighted dimensions, set a pass threshold (0.0–1.0), and let the LLM judge score every response. The five-dimension reviewer rubric here follows the same pattern — portable to Foundry once you graduate beyond the single agent.
 
 ## Handoff: turn an hour into a productive next minute
 
@@ -212,15 +212,13 @@ The pack is model-independent. The scripts never call a model; the reviewer loop
 
 **This pack is the foundation of the M6 terminal coding agent.** The M6 agent imports `agent-workbench-pack/` on initialization and does not rebuild it. The schemas, scripts, and rules it installs are the exact ones you authored here — locked, versioned, tested. The capstone exercise produces the artifact; M6 picks it up. Nothing is rebuilt; everything compounds.
 
-[MS-Learn: Azure AI Foundry — rubric evaluators and agent quality CI gates for production agent workflows]
-
-[MS-Learn: Azure DevOps — release gates with pre-deployment approval conditions reading structured verification artifacts]
+Azure Pipelines' [approvals and checks](https://learn.microsoft.com/azure/devops/pipelines/process/approvals?view=azure-devops) let you enforce the same rule at the release level: a stage cannot start until the verification artifact passes the configured gate condition — human review optional, machine check mandatory.
 
 ## Why a single verifiable agent ships where a capable model doesn't
 
 The complexity ladder holds here too. Before you compose agents into teams (Module 4) or point them at production codebases (Module 6), the single agent must be verifiable — meaning you can look at its output and know, from facts rather than confidence, whether the task is done. The workbench is what makes that possible. It is not a workaround for a weak model; it makes any model shippable.
 
-An AI Platform Engineer who ships the `agent-workbench-pack/` has answered the question every skeptic asks: "How do you know the agent actually did it?" The answer is a verdict file, a scope report, a feedback log, and a handoff packet — artifacts, not assurances.
+Ship the `agent-workbench-pack/` and you have an answer to the question every skeptic asks — not a promise, but a verdict file, a scope report, a feedback log, and a handoff packet. Artifacts, not assurances.
 
 ## Core concepts
 

@@ -37,7 +37,7 @@ function registerTool<T extends { name: string }>(tool: T): void {
 }
 ```
 
-[MS-Learn: Azure AI Agents — TypeScript generic tool definitions and ToolDefinitionUnion for typed agent function calling]
+In `@azure/ai-agents`, `ToolDefinitionUnion` is exactly this pattern — a discriminated union of `FunctionToolDefinition | CodeInterpreterToolDefinition | FileSearchToolDefinition | …` keyed on `type` (see learn.microsoft.com/javascript/api/@azure/ai-agents/tooldefinitionunion).
 
 ## Interfaces: MCP server contracts and agent schemas
 
@@ -70,7 +70,7 @@ Both declarations merge — all consumers see the extended shape. This is how `@
 
 Interfaces are open (declaration merging works), type aliases are closed. For shapes that cross package boundaries — MCP contracts, agent schemas, SDK extension points — prefer interfaces.
 
-[MS-Learn: Azure AI Agents — TypeScript agent and MCP tool interface contracts in the @azure/ai-agents SDK]
+The `@azure/ai-agents` SDK extends this pattern: its `Agent` interface carries `tools: ToolDefinitionUnion[]`, and `CreateAgentOptionalParams` / `UpdateAgentOptionalParams` both accept `tools?: ToolDefinitionUnion[]` — the index-signature map you define locally maps directly to what the SDK expects.
 
 ## Declaration files: typing JS-first LLM packages
 
@@ -96,7 +96,7 @@ declare module "untyped-llm-package" {
 
 Both cases enforce the same guarantee: the compiler checks every call site even when the implementation is plain JavaScript. A typed schema is a validation boundary — the model's generated args hit the type wall before they reach your business logic.
 
-[MS-Learn: TypeScript declaration files — acquiring types from DefinitelyTyped and authoring .d.ts for untyped modules]
+Visual Studio and VS Code both auto-acquire `.d.ts` files from DefinitelyTyped for npm packages — the same repository pattern the manual `declare module` block mimics when no `@types/` package exists.
 
 ## Type modifiers: one source of truth
 
@@ -137,7 +137,7 @@ These three work together. `as const` locks the values; `typeof` captures the lo
 
 Advanced type operations — mapped types, conditional types, template-literal types — extend this into full compile-time schema derivation. They attach in Module 4, where multi-agent contract types need them. One forward pointer: if you find yourself writing `{ [K in keyof T]: ... }`, you are in mapped-type territory and that is Module 4 material.
 
-[MS-Learn: TypeScript type operators — keyof, typeof, and as const for deriving agent tool parameter types]
+The `(typeof X)[keyof typeof X]` idiom is live in production Azure SDKs — `@azure/msal-common` uses `(typeof GrantType)[keyof typeof GrantType]` and `(typeof AADAuthorityConstants)[keyof typeof AADAuthorityConstants]` for exactly this purpose.
 
 ## The typed product layer in module3-agent/
 
@@ -153,7 +153,7 @@ module3-agent/tools/
 
 This typed layer is what the Tools & MCP chapter (lesson 06 onward) wires to real transports. The interfaces define the MCP server contract; the declaration files type whatever SDK packages arrive untyped; the `as const` / `keyof` / `typeof` pattern keeps the tool name registry and the JSON Schema parameter names in sync.
 
-An AI Platform Engineer who builds this layer controls the schema boundary — every model-generated argument, every MCP tool call, every agent-state transition passes through types the compiler already checked.
+Without this layer, schema drift is silent — a renamed tool key in the registry and an outdated parameter name in the schema have nothing to catch them until the model calls the wrong function at runtime.
 
 ## Core concepts
 

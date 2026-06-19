@@ -38,9 +38,7 @@ app = graph.compile(checkpointer=sqlite_checkpointer)
 
 The four primitives: Agent (each node), no Handoff (graph edges route, not agents), Shared state (the typed `AgentState`), Orchestrator (the compiled graph is the authority).
 
-[MS-Learn: Microsoft Agent Framework — graph-based workflow orchestration and checkpoint storage patterns]
-
-**Microsoft Agent Framework** (the successor to AutoGen v0.4 and Semantic Kernel) uses a data-flow model where typed messages route along explicit edges between executors — agents, functions, or sub-workflows. Unlike AutoGen's broadcast-based GroupChat, Agent Framework routes data point-to-point with strong types, built-in checkpointing, and HITL request-response that can pause a workflow and wait for human input. The actor intuition from AutoGen survives: each executor has local state and handles one message type. The enterprise features — session management, telemetry, Entra identity, middleware — come from Semantic Kernel's lineage.
+**Microsoft Agent Framework** (the direct successor to both AutoGen and Semantic Kernel, built by the same teams) uses a data-flow model where typed messages route along explicit edges between executors — agents, functions, or sub-workflows. Unlike AutoGen's broadcast-based GroupChat, Agent Framework routes data point-to-point with strong types, built-in checkpointing via `FileCheckpointStorage` or `CosmosCheckpointStorage`, and HITL request-response that can pause a workflow and wait for human input. The executor model from AutoGen survives: each executor has local state and handles one message type. The enterprise features — session management, telemetry, Entra identity, middleware — come from Semantic Kernel's lineage. ([Microsoft Agent Framework — Workflows overview](https://learn.microsoft.com/agent-framework/workflows/))
 
 ```python
 # Microsoft Agent Framework: typed workflow shape
@@ -55,7 +53,7 @@ workflow = builder.build()
 
 The four primitives: Agent (executors), Handoff (typed edges), Shared state (cross-executor `ctx.set_state()`), Orchestrator (the Workflow or a Magentic manager).
 
-[MS-Learn: Microsoft Agent Framework — overview, actor model, and migration from AutoGen]
+([AutoGen to Microsoft Agent Framework Migration Guide](https://learn.microsoft.com/agent-framework/migration-guide/from-autogen/))
 
 **CrewAI** is role-based. An Agent has a role, a goal, and a backstory; a Task assigns work to an agent; a Crew ties them into a process. The split that matters in production is Crews vs Flows. A Crew is autonomous — the manager LLM decides sequence — which is exploratory but brittle. A Flow is event-driven and deterministic, where you own the control graph explicitly. The production recommendation: start with a Flow. Add a Crew only when the task genuinely requires the manager LLM to choose who runs next.
 
@@ -76,7 +74,7 @@ The four primitives: Agent, Handoff (as a first-class SDK concept), no built-in 
 
 ```typescript
 // Claude Agent SDK: subagent dispatch (TypeScript harness, Claude Code native)
-import { query } from "@anthropic-ai/claude-code";
+import { query } from "@anthropic-ai/claude-agent-sdk";
 
 const result = await query({
   prompt: "Analyze this codebase and summarize the architecture",
@@ -108,9 +106,9 @@ Refuse a framework until the architecture draws cleanly as one of four shapes: a
 
 If you cannot draw the shape, adding a framework will not make it clearer. Build the from-scratch loop first — Module 2's complexity ladder still applies here — then reach for the framework that matches the shape.
 
-[MS-Learn: Azure AI Foundry Agent Service — choosing between hosted agents, prompt agents, and bring-your-own framework]
+Azure AI Foundry Agent Service offers two deployment paths: prompt agents (fully managed, no runtime code) and hosted agents, where you bring your own framework — Agent Framework, LangGraph, OpenAI Agents SDK, or custom code — packaged as a container, and Foundry handles scaling, identity, and endpoints. The distinction matters when you're choosing whether to run the four primitives yourself or hand that surface to a managed platform. ([Azure AI Foundry Agent Service — agent types overview](https://learn.microsoft.com/azure/foundry/agents/overview#agent-types))
 
-An AI Platform Engineer who knows the four knobs can onboard any new framework in an afternoon — because every framework is a different set of bets about the same four questions.
+The four knobs don't change when you add a hosting layer. What changes is where the orchestrator lives.
 
 ## Core concepts
 
