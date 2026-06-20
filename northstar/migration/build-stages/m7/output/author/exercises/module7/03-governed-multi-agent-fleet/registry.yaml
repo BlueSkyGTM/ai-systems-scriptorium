@@ -1,0 +1,94 @@
+# Fleet registry — the machine-readable source of truth for the SWE team.
+#
+# Everything-as-code: identity, ownership, permissions, autonomy tier, and budget
+# live HERE, diffable and reviewable in a pull request — not buried in a system
+# prompt. Every governance check in the fleet reads against this file. A malformed
+# entry fails schema validation (schemas/registry.schema.json) before it governs
+# anything.
+#
+# This is the M4 lesson-12/13 team-registry pattern, populated with a five-agent
+# software-engineering team. The M8 operator edits this file to point the fleet
+# at a new problem: budgets, autonomy tiers, and human gates are all inputs.
+
+fleet: swe-team
+version: 1.0.0
+
+# Team-wide spend ceiling. Per-agent caps live on each agent below; this is the
+# total no single runaway — and no swarm of small ones — may exceed.
+team_daily_usd: 1.00
+
+# The kill switch the whole fleet reads before every action. The operator owns
+# the write path; no agent can create this file.
+kill_switch: .FLEET_KILL
+
+agents:
+  - id: architect-01
+    role: architect
+    owner: platform-team            # identity: who is accountable (clause 1 + 2)
+    autonomy_tier: F2               # plans autonomously; its plan is still gated downstream
+    status: active
+    description: Decomposes a feature request into an ordered build plan.
+    permissions:                    # least privilege, declared not implied (clause: authority)
+      tools: [plan]
+      can_write_code: false
+      can_merge: false
+    budget_daily_usd: 0.30          # economics: per-agent cap, not just a team total
+    human_gates: []
+
+  - id: coder-1
+    role: coder
+    owner: platform-team
+    autonomy_tier: F2               # edits code in its own sandbox and self-verifies
+    status: active
+    description: Implements a slice of the plan (the M6 coding-agent loop as a node).
+    permissions:
+      tools: [read_file, write_file, run_tests]
+      can_write_code: true
+      can_merge: false              # a coder proposes a diff; it never merges
+    budget_daily_usd: 0.30
+    human_gates: []
+
+  - id: coder-2
+    role: coder
+    owner: platform-team
+    autonomy_tier: F2
+    status: active
+    description: Implements a second slice in parallel (the M6 loop, second node).
+    permissions:
+      tools: [read_file, write_file, run_tests]
+      can_write_code: true
+      can_merge: false
+    budget_daily_usd: 0.30
+    human_gates: []
+
+  - id: reviewer-01
+    role: reviewer
+    owner: platform-team
+    autonomy_tier: F1               # gates; its verdict is advisory until a human merges
+    status: active
+    description: Reads the coders' diffs and the tester's verdict; approves or blocks.
+    permissions:
+      tools: [read_file]
+      can_write_code: false
+      can_merge: false
+    budget_daily_usd: 0.20
+    human_gates: []
+
+  - id: tester-01
+    role: tester
+    owner: platform-team
+    autonomy_tier: F1
+    status: active
+    description: Runs the suite in the sandbox and returns one deterministic verdict.
+    permissions:
+      tools: [run_tests]
+      can_write_code: false
+      can_merge: false
+    budget_daily_usd: 0.20
+    human_gates: []
+
+# The merge is the one irreversible action on this team, so it is the one human
+# gate. No agent has can_merge: true. The merge proposal lands in the shared HITL
+# inbox and waits for a person — propose-then-commit at fleet scale (M4 lesson 08/13).
+fleet_gates:
+  merge: human   # the merge always needs an inbox approval; never auto-merges

@@ -93,6 +93,9 @@
 # Module 7 — Multi-Agent Artifacts
 
 - [Overview](module7/README.md)
+- [Autonomous Research Agent](module7/01-autonomous-research-agent.md)
+- [DevOps K8s Troubleshooting Agent](module7/02-devops-k8s-agent.md)
+- [Governed Multi-Agent Fleet (Finale)](module7/03-governed-multi-agent-fleet.md)
 
 # Module 8 — Final Systems Engineering Exam
 

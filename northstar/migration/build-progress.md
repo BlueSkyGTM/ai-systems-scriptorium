@@ -15,7 +15,7 @@ editor reviews against `STYLE.md`, update `src/SUMMARY.md`, remove superseded in
 | M4 Multi-Agent Systems | ✅ SHIPPED (15-lesson plan; VERIFY fleet fix-applied; `mdbook build` PASS 2026-06-19) | 01-04 multi-agent · 05-09 op-safety · 10-11 loop · 12-13 fleet · 14-15 thin — live in src/module4/; module4-fleet/ + _harness/ in exercises/module4/; ledger+manifest in build-stages/m4/output/ |
 | M5 Deploy & Perf | ✅ SHIPPED (15 lessons, 6 chapters; MLOps-inventory pass folded in; `mdbook build` PASS 2026-06-19) | 01-03 serving · 04-06 observability/rollout · 07-08 ops/finops · 09-10 perf-depth · 11-13 data/experiments/lifecycle-lite (Docling/MLflow/LoRA) · 14-15 Rust — live in src/module5/; module5-serving/ throughline |
 | M6 Agent Artifacts | ✅ SHIPPED (4 artifacts; AUTHOR→VERIFY→BUILD→TEST→SHIP; 4/4 smoke + 24/24 tests offline; `mdbook build` PASS 2026-06-19) | 01 terminal-coding-agent · 02 production-rag-chatbot · 03 realtime-voice-assistant · 04 issue-to-pr-agent — guides in src/module6/, runnable scaffolds + skill-*.md in exercises/module6/, _prereqs/CLOUD-SETUP.md; ledgers in build-stages/m6/output/ |
-| M7 Multi-Agent Artifacts | ⬜ PENDING | 3 artifacts (research, K8s, governed fleet) — compose M6 agents |
+| M7 Multi-Agent Artifacts | ✅ SHIPPED (3 artifacts; AUTHOR→VERIFY→BUILD→TEST→SHIP; 3/3 smoke + 24/24 tests offline; `mdbook build` PASS 2026-06-19) | 01 autonomous-research-agent · 02 devops-k8s-agent · 03 governed-multi-agent-fleet (FINALE) — guides in src/module7/, composed scaffolds + skill-*.md in exercises/module7/; ledgers in build-stages/m7/output/. Finale = the operator console M8 drives |
 | M8 Final Exam | ⬜ PENDING | M7 fleet builds the exam system; asdg Ch16 case studies as reference |
 
 ## Gotchas learned (save the next drafter time)
@@ -150,13 +150,14 @@ Codex) at the M3→M4 line. Decisions with Ray:
 - **M5: one Rust bridge lesson** (rustup + hello + cargo) before the serving-layer Rust lessons.
 - **M8: define the student's active role before M6** ("M7 fleet builds the exam" is an agentic run, not prose
   authoring — design what the learner specifies/reviews/gates, or it's a demo not an exam).
-- **Sequence now:** M3, M4, M5, M6 ✅ ALL SHIPPED (M6 added the BUILD→TEST gate: 4/4 smoke + 24/24 tests offline).
-  **Next: M7 (Multi-Agent Artifacts)** — compose the M6 agents into governed teams (05 autonomous research, 06
-  DevOps K8s troubleshooting, 10★ governed multi-agent fleet FINALE), wrapping them in the M4 fleet layer
-  (registry/budgets/HITL-inbox/audit/kill-switch). **Finale principle: elevate, don't author** (DRY — reuse the
-  M6 artifacts as nodes, layer governance on). Same AUTHOR→VERIFY→BUILD→TEST→SHIP; expose the operator surfaces
-  the M8 student drives. Then **M8** (the M7 fleet builds a production system; student = operator+judge+architect;
-  `asdg` Ch16 case studies as reference architectures). Write `build-stages/m7/PLAN.md` first.
+- **Sequence now:** M3–M7 ✅ ALL SHIPPED (7 of 8 modules; BUILD→TEST gate green for M6+M7: 7 artifacts, 48
+  tests offline). **Next: M8 (Final Systems Engineering Exam)** — the LAST module. The M7 governed fleet
+  (artifact 03) builds *a version of* a production architecture (eval-gated pipeline / multi-tenant RAG /
+  agentic MLOps), using the 20 `asdg` Ch16 case studies as reference architectures. **No new agent code** — M8 =
+  a guide + an exam exercise: a reference-architecture catalog, an operator runbook for the M7 fleet, and an
+  **acceptance rubric**. Student = operator + judge + architect-of-record (defined in `build-stages/m6/PLAN.md`).
+  Write `build-stages/m8/PLAN.md` first. After M8: course complete — final full `mdbook build`, then a
+  closing pass (carried flags: 73% RAG stat reconciliation, M3 typing exercise banned-frame).
 
 ## Scope reframe + roadmap coverage (2026-06-19) — `build-stages/roadmap-coverage.md`
 
