@@ -7,6 +7,9 @@ how an agent tracks a reader's progress through a book.
 
 - `README.md` — the progress spec: GBrain memory per book + spaced repetition over each lesson's
   `## Core concepts` propositions + "progress = scan completed artifacts."
+- `open-brain.md` — the named spaced-repetition concept: **Open Brain** (open spaced repetition +
+  GBrain), agent-driven adaptive quizzing over the §5 `## Core concepts` bank; build target = an
+  Extra Credit tool.
 
 ## Load / don't-load
 
