@@ -164,6 +164,6 @@ Without this layer, schema drift is silent — a renamed tool key in the registr
 
 <div class="claude-handoff" data-exercise="exercises/module3/05-typing-the-product-layer/">
 
-**Build It in Claude Code** — extend `module3-agent/tools/` with a generic `Tool<TInput, TOutput>` interface, a `TOOL_NAMES as const` registry, a `ToolName` union derived with `keyof typeof`, and a minimal `.d.ts` for any untyped SDK import in the project. All files must compile clean under `strict: true`. Open the repo and run the exercise for this lesson.
+**Build It in Claude Code** — extend `module3-agent/tools/` with a generic `Tool<TInput, TOutput>` interface, a `TOOL_NAMES as const` registry, a `ToolName` union derived with `keyof typeof`, and a minimal `.d.ts` for any untyped SDK import in the project. All files must compile clean under `strict: true`.
 
 </div>

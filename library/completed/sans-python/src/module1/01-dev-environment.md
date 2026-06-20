@@ -133,6 +133,6 @@ An AI Platform Engineer owns the environment that serves models — a reproducib
 
 <div class="claude-handoff" data-exercise="exercises/module1/01-dev-environment/">
 
-**Build It in Claude Code** — verify your four-layer stack and produce a passing `verify.py`. Open the repo and run the exercise for this lesson.
+**Build It in Claude Code** — verify your four-layer stack and produce a passing `verify.py`.
 
 </div>

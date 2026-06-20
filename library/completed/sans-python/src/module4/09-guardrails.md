@@ -60,6 +60,6 @@ The decision this lesson hands you is not "which guardrail." It is *where each l
 
 <div class="claude-handoff" data-exercise="exercises/module4/09-guardrails/">
 
-**Build It in Claude Code** — add a guardrail hook to the `_harness/` agents: an input/output classifier pass (a Llama-Guard-style screen, or a cheap model classifier) that flags unsafe content on the way in and the way out, plus a small constitution config with hardcoded prohibitions the agent config cannot disable. Then prove the caveat: craft an obfuscated input that slips past the classifier, and show that the deterministic layer underneath — the kill switch, budget, or HITL gate from the prior lessons — still stops the action the classifier missed. Open the repo and run the exercise for this lesson.
+**Build It in Claude Code** — add a guardrail hook to the `_harness/` agents: an input/output classifier pass (a Llama-Guard-style screen, or a cheap model classifier) that flags unsafe content on the way in and the way out, plus a small constitution config with hardcoded prohibitions the agent config cannot disable. Then prove the caveat: craft an obfuscated input that slips past the classifier, and show that the deterministic layer underneath — the kill switch, budget, or HITL gate from the prior lessons — still stops the action the classifier missed.
 
 </div>

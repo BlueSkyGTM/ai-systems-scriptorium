@@ -50,6 +50,6 @@ Single agent to many is the seam's defining move. The AI Engineer half asks *wil
 
 <div class="claude-handoff" data-exercise="exercises/module4/01-why-multi-agent/">
 
-**Build It in Claude Code** — start the `module4-fleet/` throughline by deciding, on paper and in code, when a single agent is enough and when it isn't. Run the `_harness/` orchestrator, force a task past one of the three walls, and document the ceiling you hit. Open the repo and run the exercise for this lesson.
+**Build It in Claude Code** — start the `module4-fleet/` throughline by deciding, on paper and in code, when a single agent is enough and when it isn't. Run the `_harness/` orchestrator, force a task past one of the three walls, and document the ceiling you hit.
 
 </div>

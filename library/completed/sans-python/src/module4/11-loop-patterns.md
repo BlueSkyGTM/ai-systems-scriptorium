@@ -99,6 +99,6 @@ Pick the pattern that fits the trigger, give it a worktree and a verifier that r
 
 <div class="claude-handoff" data-exercise="exercises/module4/11-loop-patterns/">
 
-**Build It in Claude Code** — implement one concrete loop pattern end-to-end against the `_harness/`. Build a **CI-sweeper**: an event trigger (a failing-check signal) with a green-CI early exit; an action that drafts a minimal fix in an **isolated git worktree**; an independent **verifier** that runs the project's real CI command (not a cached shortcut), defaults to REJECT, and caps at three attempts before escalating; and the lesson-07 kill-switch blocking denylisted paths. Then declare the pattern in a `registry.yaml` and validate it against a `registry.schema.json` (id, cadence, risk enum, human_gates, cost) — prove a malformed entry fails validation. Open the repo and run the exercise for this lesson.
+**Build It in Claude Code** — implement one concrete loop pattern end-to-end against the `_harness/`. Build a **CI-sweeper**: an event trigger (a failing-check signal) with a green-CI early exit; an action that drafts a minimal fix in an **isolated git worktree**; an independent **verifier** that runs the project's real CI command (not a cached shortcut), defaults to REJECT, and caps at three attempts before escalating; and the lesson-07 kill-switch blocking denylisted paths. Then declare the pattern in a `registry.yaml` and validate it against a `registry.schema.json` (id, cadence, risk enum, human_gates, cost) — prove a malformed entry fails validation.
 
 </div>

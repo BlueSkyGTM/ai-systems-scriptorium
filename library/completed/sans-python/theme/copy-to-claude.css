@@ -13,6 +13,21 @@
   margin: 0 0 0.75rem;
 }
 
+/* The specific exercise this block links to — makes each block self-evidently
+   distinct instead of blurring behind the shared "Build It…" wrapper. */
+.claude-handoff-ex {
+  font-family: var(--mono-font, "Source Code Pro", monospace);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--links, #2b79a2);
+  margin-bottom: 0.6rem;
+}
+.claude-handoff-ex::before {
+  content: "Exercise · ";
+  opacity: 0.6;
+  font-weight: 400;
+}
+
 .claude-handoff-btn {
   display: flex;
   width: fit-content;

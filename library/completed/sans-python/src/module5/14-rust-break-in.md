@@ -152,6 +152,6 @@ One `Cargo.toml`, one `cargo check`, and the compiler tells you — before anyth
 
 <div class="claude-handoff" data-exercise="exercises/module5/14-rust-break-in/">
 
-**Build It in Claude Code** — `cargo new` a small Rust program that models a typed inference request and response with structs and a `Result`-returning handler, then make it compile clean with `cargo check`. Deliberately trigger one ownership error (use a value after moving it) and read what the compiler tells you before you fix it. Open the repo and run the exercise for this lesson.
+**Build It in Claude Code** — `cargo new` a small Rust program that models a typed inference request and response with structs and a `Result`-returning handler, then make it compile clean with `cargo check`. Deliberately trigger one ownership error (use a value after moving it) and read what the compiler tells you before you fix it.
 
 </div>

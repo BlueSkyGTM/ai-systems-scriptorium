@@ -57,6 +57,6 @@ Notice what this lesson did not do. It did not write a training loop, tune a lea
 
 <div class="claude-handoff" data-exercise="exercises/module5/13-fine-tuning-in-proportion/">
 
-**Build It in Claude Code** — a decision exercise, no GPU and no training. Given a written scenario, argue fine-tune vs RAG vs prompt against cost, data, latency, and reversibility, and write a short defense of the call. If the answer is fine-tune, sketch a minimal `LoraConfig` (or QLoRA variant) and justify each parameter in a comment — reasoning about the config, not running it. Open the repo and run the exercise for this lesson.
+**Build It in Claude Code** — a decision exercise, no GPU and no training. Given a written scenario, argue fine-tune vs RAG vs prompt against cost, data, latency, and reversibility, and write a short defense of the call. If the answer is fine-tune, sketch a minimal `LoraConfig` (or QLoRA variant) and justify each parameter in a comment — reasoning about the config, not running it.
 
 </div>

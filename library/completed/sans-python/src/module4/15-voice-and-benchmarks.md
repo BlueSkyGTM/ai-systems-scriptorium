@@ -49,6 +49,6 @@ The discipline is the same for all of them: a benchmark measures one slice of on
 
 <div class="claude-handoff" data-exercise="exercises/module4/15-voice-and-benchmarks/">
 
-**Inspect it in Claude Code** — no build here; the voice assistant is a Module 6 artifact. Sketch a voice pipeline's latency budget: lay out VAD → STT → LLM → TTS → transport, assign a plausible millisecond cost to each hop, and find where the ~450–600ms budget breaks. Then read one benchmark card from this lesson and write down its composition, its contamination story, and three things it does not measure. Open the repo and run the exercise for this lesson.
+**Inspect It in Claude Code** — no build here; the voice assistant is a Module 6 artifact. Sketch a voice pipeline's latency budget: lay out VAD → STT → LLM → TTS → transport, assign a plausible millisecond cost to each hop, and find where the ~450–600ms budget breaks. Then read one benchmark card from this lesson and write down its composition, its contamination story, and three things it does not measure.
 
 </div>

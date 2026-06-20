@@ -52,6 +52,6 @@ Get the evaluator wrong and every other improvement is noise.
 
 <div class="claude-handoff" data-exercise="exercises/module3/03-learning-from-failure/">
 
-**Build It in Claude Code** — extend `module3-agent/` with a Reflexion layer: an episodic memory buffer, a Self-Reflector that writes a verbal lesson after each failure, and a feedback loop that prepends the reflection to the next trial. Wire a CRITIC-style stop condition: the loop passes only when an external check (a stub verifier) confirms the output. Open the repo and run the exercise for this lesson.
+**Build It in Claude Code** — extend `module3-agent/` with a Reflexion layer: an episodic memory buffer, a Self-Reflector that writes a verbal lesson after each failure, and a feedback loop that prepends the reflection to the next trial. Wire a CRITIC-style stop condition: the loop passes only when an external check (a stub verifier) confirms the output.
 
 </div>

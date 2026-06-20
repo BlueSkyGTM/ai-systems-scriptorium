@@ -56,6 +56,6 @@ This is the outer loop at literacy depth, and that is the right depth for the se
 
 <div class="claude-handoff" data-exercise="exercises/module5/12-experiment-tracking/">
 
-**Build It in Claude Code** — wrap the `module5-serving/` eval step in MLflow tracking against a local file store: run three configurations (different prompt versions or retriever settings), log each as a run with its params, metrics, and the prompt artifact, then open `mlflow ui` and compare them to pick a winner by metric. No server, no cloud. Open the repo and run the exercise for this lesson.
+**Build It in Claude Code** — wrap the `module5-serving/` eval step in MLflow tracking against a local file store: run three configurations (different prompt versions or retriever settings), log each as a run with its params, metrics, and the prompt artifact, then open `mlflow ui` and compare them to pick a winner by metric. No server, no cloud.
 
 </div>

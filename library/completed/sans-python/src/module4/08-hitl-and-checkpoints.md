@@ -90,6 +90,6 @@ Build the gate so the approve button means something — a persisted proposal, a
 
 <div class="claude-handoff" data-exercise="exercises/module4/08-hitl-and-checkpoints/">
 
-**Build It in Claude Code** — put a propose-then-commit gate in front of the `_harness/` agents' mutating actions: persist each proposal with an idempotency key and a surfaced case (intent, blast radius, rollback plan), commit only on positive acknowledgement, and verify the side effect after. Then prove the double-execute defense — commit an action, simulate a crash-and-retry with the same idempotency key, and confirm it returns the prior result instead of firing twice. Add a challenge-and-response checklist for high-blast-radius actions. Open the repo and run the exercise for this lesson.
+**Build It in Claude Code** — put a propose-then-commit gate in front of the `_harness/` agents' mutating actions: persist each proposal with an idempotency key and a surfaced case (intent, blast radius, rollback plan), commit only on positive acknowledgement, and verify the side effect after. Then prove the double-execute defense — commit an action, simulate a crash-and-retry with the same idempotency key, and confirm it returns the prior result instead of firing twice. Add a challenge-and-response checklist for high-blast-radius actions.
 
 </div>

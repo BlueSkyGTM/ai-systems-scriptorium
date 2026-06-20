@@ -125,6 +125,6 @@ Memory that gets better with use is not a nice-to-have; it is the difference bet
 
 <div class="claude-handoff" data-exercise="exercises/module3/11-memory-that-improves/">
 
-**Build It in Claude Code** — extend `module3-agent/` with typed memory blocks (block_append/replace/summarize), a skill library with register/search/call, and a sleep-time consolidation stub using claude-haiku-4-5. Wire a checkpoint/resume hook into the agent loop: save state after each turn, add a --resume flag that reloads from the last checkpoint. Open the repo and run the exercise for this lesson.
+**Build It in Claude Code** — extend `module3-agent/` with typed memory blocks (block_append/replace/summarize), a skill library with register/search/call, and a sleep-time consolidation stub using claude-haiku-4-5. Wire a checkpoint/resume hook into the agent loop: save state after each turn, add a --resume flag that reloads from the last checkpoint.
 
 </div>

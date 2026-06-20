@@ -89,6 +89,6 @@ Set the caps too high and they never fire, which is the same as not having them;
 
 <div class="claude-handoff" data-exercise="exercises/module4/06-action-budgets-and-cost-governors/">
 
-**Build It in Claude Code** — add a `budget.py` cost governor to the `_harness/` orchestrator: a per-task dollar budget, an iteration cap, and a velocity limit (spend-per-window). Wrap each agent action so cumulative spend is charged before the next action runs, and prove all three caps independently — a slow grind hits the per-task cap, a stuck loop hits the iteration cap, and a burst hits the velocity limit and cuts mid-run. On any breach, raise the breach and stop the run. Open the repo and run the exercise for this lesson.
+**Build It in Claude Code** — add a `budget.py` cost governor to the `_harness/` orchestrator: a per-task dollar budget, an iteration cap, and a velocity limit (spend-per-window). Wrap each agent action so cumulative spend is charged before the next action runs, and prove all three caps independently — a slow grind hits the per-task cap, a stuck loop hits the iteration cap, and a burst hits the velocity limit and cuts mid-run. On any breach, raise the breach and stop the run.
 
 </div>

@@ -211,6 +211,6 @@ proposal, surface intent/blast-radius/rollback, commit only on Approve, verify a
 tests: a specialist write attempt is refused, the gate blocks an unapproved
 remediation, an approved one applies exactly once and is audited, and the kill-switch
 halts the team. Run `python smoke.py` and `python -m pytest tests/` — stdlib only,
-offline. Open the repo and run the exercise for this lesson.
+offline.
 
 </div>

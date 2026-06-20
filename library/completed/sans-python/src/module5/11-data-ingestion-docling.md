@@ -61,6 +61,6 @@ That habit is the bridge into the next lesson. Once inputs are versioned, the ru
 
 <div class="claude-handoff" data-exercise="exercises/module5/11-data-ingestion-docling/">
 
-**Build It in Claude Code** — add an ingestion front door to `module5-serving/`: install Docling, run it locally on a sample PDF to produce a `DoclingDocument`, chunk it with the `HybridChunker` against a tokenizer, and feed the chunks into a tiny in-memory index the serving app can query. Record the corpus + chunking config so the index is reproducible. No cloud, no GPU. Open the repo and run the exercise for this lesson.
+**Build It in Claude Code** — add an ingestion front door to `module5-serving/`: install Docling, run it locally on a sample PDF to produce a `DoclingDocument`, chunk it with the `HybridChunker` against a tokenizer, and feed the chunks into a tiny in-memory index the serving app can query. Record the corpus + chunking config so the index is reproducible. No cloud, no GPU.
 
 </div>

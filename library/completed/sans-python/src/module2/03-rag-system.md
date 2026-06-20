@@ -59,6 +59,6 @@ For small static corpora (under 50,000 tokens), skip the retrieval pipeline enti
 
 <div class="claude-handoff" data-exercise="exercises/module2/03-rag-system/">
 
-**Build It in Claude Code** — assemble a working RAG pipeline: ingest a small corpus, chunk with parent-child splitting, build a hybrid search index, add a cross-encoder reranker, and verify retrieval quality with recall metrics. Open the repo and run the exercise for this lesson.
+**Build It in Claude Code** — assemble a working RAG pipeline: ingest a small corpus, chunk with parent-child splitting, build a hybrid search index, add a cross-encoder reranker, and verify retrieval quality with recall metrics.
 
 </div>

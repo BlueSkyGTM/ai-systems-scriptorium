@@ -73,6 +73,6 @@ Pattern vocabulary and anti-pattern recognition are the same skill: both require
 
 <div class="claude-handoff" data-exercise="exercises/module3/13-design-patterns-and-anti-patterns/">
 
-**Inspect it in Claude Code** — open the `module3-agent/` harness and produce a pattern audit: identify which patterns from this lesson are present (with file and line), which anti-patterns exist or are one missed line away, and what a production-ready version of the harness would add. No building required — this is a read and annotate exercise. Open the repo and run the exercise for this lesson.
+**Inspect It in Claude Code** — open the `module3-agent/` harness and produce a pattern audit: identify which patterns from this lesson are present (with file and line), which anti-patterns exist or are one missed line away, and what a production-ready version of the harness would add. No building required — this is a read and annotate exercise.
 
 </div>

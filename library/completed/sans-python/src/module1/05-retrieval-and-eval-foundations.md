@@ -33,7 +33,7 @@ An AI Platform Engineer who knows these components can look at a failing RAG pip
 
 <div class="claude-handoff" data-exercise="exercises/module1/05-retrieval-and-eval-foundations/">
 
-**Try it in Claude Code** — measure embedding context-length truncation: embed the same fact at positions 10%, 50%, and 90% of an embedding model's advertised context window, then run a similarity search to see where retrieval quality degrades.
+**Try It in Claude Code** — measure embedding context-length truncation: embed the same fact at positions 10%, 50%, and 90% of an embedding model's advertised context window, then run a similarity search to see where retrieval quality degrades.
 
 Open the repo and pick up from this lesson.
 

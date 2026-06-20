@@ -91,6 +91,6 @@ A streaming voice pipeline against a hard latency budget: a Pipecat-shaped frame
 
 <div class="claude-handoff" data-exercise="exercises/module6/03-realtime-voice-assistant/">
 
-**Build It in Claude Code** — assemble the real-time voice assistant: a Pipecat-shaped frame model, the mock VAD → STT → LLM → TTS → transport cascade with a simulated per-stage latency, a `VoicePipeline` that drives one turn, a latency layer that measures and enforces the ~450–600 ms budget, and barge-in that cancels an in-flight turn. Prove it: `python smoke.py` exits zero printing a within-budget turn, a blocked blown-budget turn, and a cancelled barge-in, and `python -m pytest tests/` is green. Then swap a mock stage for real Pipecat behind the guarded import. Open the repo and run the exercise for this lesson.
+**Build It in Claude Code** — assemble the real-time voice assistant: a Pipecat-shaped frame model, the mock VAD → STT → LLM → TTS → transport cascade with a simulated per-stage latency, a `VoicePipeline` that drives one turn, a latency layer that measures and enforces the ~450–600 ms budget, and barge-in that cancels an in-flight turn. Prove it: `python smoke.py` exits zero printing a within-budget turn, a blocked blown-budget turn, and a cancelled barge-in, and `python -m pytest tests/` is green. Then swap a mock stage for real Pipecat behind the guarded import.
 
 </div>

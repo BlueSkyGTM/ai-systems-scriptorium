@@ -47,6 +47,6 @@ A REST server scales by adding stateless replicas. An inference engine scales by
 
 <div class="claude-handoff" data-exercise="exercises/module5/02-inside-the-engine/">
 
-**Build It in Claude Code** — replace the naive request handler in `module5-serving/` with a continuous-batching scheduler and a paged KV-cache allocator, both simulated (no GPU, no real attention math). Model prefill and decode as separate timed phases, let sequences join and leave the batch between decode steps, allocate the KV cache in fixed blocks with a block table, and measure simulated TTFT and throughput against the static-batching baseline to show the gain. Open the repo and run the exercise for this lesson.
+**Build It in Claude Code** — replace the naive request handler in `module5-serving/` with a continuous-batching scheduler and a paged KV-cache allocator, both simulated (no GPU, no real attention math). Model prefill and decode as separate timed phases, let sequences join and leave the batch between decode steps, allocate the KV cache in fixed blocks with a block table, and measure simulated TTFT and throughput against the static-batching baseline to show the gain.
 
 </div>

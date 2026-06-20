@@ -96,6 +96,6 @@ Get the tier wrong and the agent either pays for every token twice or loses cont
 
 <div class="claude-handoff" data-exercise="exercises/module3/10-memory-tiers-and-stores/">
 
-**Build It in Claude Code** — add a Python memory layer to `module3-agent/`: an L1 context manager with static-first KV-cache ordering, an L2 episodic stub with insert/search, and a hybrid-store stub that fuses results from all three tiers. Wire episodic memory into the ReAct loop so session start injects the top-3 relevant memories into L1. Open the repo and run the exercise for this lesson.
+**Build It in Claude Code** — add a Python memory layer to `module3-agent/`: an L1 context manager with static-first KV-cache ordering, an L2 episodic stub with insert/search, and a hybrid-store stub that fuses results from all three tiers. Wire episodic memory into the ReAct loop so session start injects the top-3 relevant memories into L1.
 
 </div>

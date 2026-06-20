@@ -49,6 +49,6 @@ You can't improve what you don't measure. The RAG triad measures end-to-end corr
 
 <div class="claude-handoff" data-exercise="exercises/module2/04-advanced-rag/">
 
-**Try it in Claude Code** — extend the RAG pipeline from the previous lesson: add a HyDE query transformation, implement a simple CRAG reliability gate that routes low-confidence retrievals to a fallback, and measure the change in retrieval recall. Open the repo and pick up from this lesson.
+**Try It in Claude Code** — extend the RAG pipeline from the previous lesson: add a HyDE query transformation, implement a simple CRAG reliability gate that routes low-confidence retrievals to a fallback, and measure the change in retrieval recall. Open the repo and pick up from this lesson.
 
 </div>

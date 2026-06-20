@@ -101,8 +101,11 @@ One convention, applied everywhere: **sentence case** for every heading (H1 page
 The one-shot conversion that established this lives at `build-log/caps-sweep.py` (skips fenced code blocks,
 guards proper nouns); re-run it after a bulk authoring pass to catch drift.
 
-- [ ] **One deliberate exception:** the exercise handoff call-to-action **`**Build It in Claude Code**`** is a
-      UI action label, not a heading — keep it title case. It is the only title-case string in body text.
+- [ ] **One deliberate exception:** the exercise handoff call-to-action — **Build It / Inspect It / Try It in
+      Claude Code** (verb chosen by exercise type) — is a UI action label, not a heading; keep it title case.
+      It is the only title-case string in body text. The block's redundant "open the repo…" tail is cut: the
+      copied payload already carries that instruction, and the visible `Exercise · <path>` tag (injected by
+      `theme/copy-to-claude.js`) makes each block self-evidently distinct.
 
 ## What this is not
 
