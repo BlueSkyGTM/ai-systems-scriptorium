@@ -47,5 +47,13 @@ Mirrors the live task tracker (task ids there don't persist across sessions; thi
     learner's exercise-work is saved so it stays off the public main (fork model / gitignored `work/` /
     separate progress repo). Strategic decision, not a code task yet.
 
+    **Proposed 3-home model (recorded, not decided):** (a) *Private build repo* — this one, tidied: the platform
+    + `synthesis/` ingredients + build ledgers; where the build runs and its history lives. (b) *Public course
+    repo* — extracted: `src/` + `exercises/` (starters) + `theme/` + `book.toml` + a learner README;
+    Vercel-hosted, learner-clonable; the SHIP stage (generalized) publishes into it. (c) *Learner progress = a
+    fork* — learners commit exercise-work to their own fork; Ray keeps his learner-work in a personal fork /
+    private progress repo, off the public main. Boundaries are already clean, so the extraction is mechanical;
+    renaming follows from the split.
+
 > Also still noted in `build-progress.md` (long-standing, not re-raised here): M1 reconciliation + deeper
 > ICM-phase formalization. Pull into this backlog if/when they become active.
