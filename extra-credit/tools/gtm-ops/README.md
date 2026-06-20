@@ -42,6 +42,19 @@ signals ──▶ ingest/enrich ──▶ score (engine) ──▶ governed pipe
 The seam to keep portable: a typed **Signal → Score → Action** contract, so the engine doesn't care
 whether the source is Clay, a CSV, or a webhook, and the CRM target is swappable.
 
+## Constraints — free-tier only
+
+Webhook Clay and HubSpot **only to utilize their free features** — never integration for its own sake.
+Every external call must earn its keep on a free tier:
+
+- **Clay** — free credits are scarce; gate every enrichment behind the M4 cost governor and skip any
+  call that doesn't change a decision. No paid waterfalls by default.
+- **HubSpot** — use the free CRM surface (contacts / deals / properties / basic associations) and design
+  around free API limits; do not assume paid workflows or automation.
+
+If a step needs a paid feature to work, that's the signal to keep it **inside the engine** rather than
+webhook out. The integration is a means, not the point.
+
 ## Connections
 
 Run by the connect protocol ([`../../CONTEXT.md`](../../CONTEXT.md)) against our material — GTM Ops is
