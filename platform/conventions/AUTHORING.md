@@ -9,20 +9,20 @@ finished mdBook lesson **and** its Claude Code exercise, in the locked voice, wi
 
 | Input | Output |
 |-------|--------|
-| `src/moduleN/<chapter>.md` (ingredients — substance + resolutions) | finished lesson(s): `src/moduleN/<lesson-slug>.md` |
-| `_dossier/moduleN.md` (the keep/cut/merge/thread ruling) | — (read-only; tells you what belongs and why) |
+| `ingredients/source/moduleN/*.md` (distilled source — substance + resolutions) | finished lesson(s): `src/moduleN/<lesson-slug>.md` |
+| `ingredients/dossiers/moduleN.md` (the keep/cut/merge/thread ruling) | — (read-only; tells you what belongs and why) |
 | Microsoft Learn (via connector) | validated production pattern woven into the lesson |
-| `_templates/concept-lesson.md` / `build-lesson.md` | the skeleton each lesson fills |
+| `platform/templates/concept-lesson.md` / `build-lesson.md` | the skeleton each lesson fills |
 | your seam framing | the "why an AI Platform Engineer needs this" in every lead |
 
 ## The three sources (rule 10 — non-negotiable)
 
 No lesson is authored from one source. Every lesson combines:
 
-1. **Migration ingredient** — the raw material. Two layers: the organized view in `src/moduleN/<chapter>.md`
-   (substance + resolutions) **and** the full extraction detail one level up in
-   `../sub-repos/synthesis/source/moduleN/*.md` (every kept lesson, with its tools/examples/time estimates).
-   Read the `src/` view first for what belongs; reach up to `synthesis/source/` for the depth.
+1. **Distilled ingredient** — the raw material, in `ingredients/`. Two layers: the dossier ruling in
+   `ingredients/dossiers/moduleN.md` (what belongs and why) **and** the full extraction detail in
+   `ingredients/source/moduleN/*.md` (every kept lesson, with its tools/examples/time estimates).
+   Read the dossier first for what belongs; reach into `ingredients/source/` for the depth.
 2. **Microsoft Learn** — the production pattern / validation. **Use the connector. Do not assume from
    memory.** Confirm the architecture maps to current practice (LLMOps inner/outer loop, eval-driven
    development, the complexity ladder, prompt versioning).
@@ -33,14 +33,15 @@ If you have only one source, you are not authoring — you are copying. Stop and
 
 ## How To — author one lesson
 
-1. **Orient.** Read `STYLE.md`. Read the target `src/moduleN/<chapter>.md` and its `_dossier/moduleN.md`
-   ruling. Note the threads tagged for this material (eval, versioning, safety, complexity ladder).
+1. **Orient.** Read `STYLE.md`. Read the target `ingredients/source/moduleN/*.md` and its
+   `ingredients/dossiers/moduleN.md` ruling. Note the threads tagged for this material (eval, versioning,
+   safety, complexity ladder).
 2. **Split into lessons.** One idea per lesson (STYLE §3). A chapter ingredient may become 1–5 lessons.
-3. **Pick the skeleton.** Concept (understand) or Build (ship code). Copy from `_templates/`.
-4. **Pull the three sources.** Substance from `src/`; pattern from Microsoft Learn (connector); seam framing
-   from you.
+3. **Pick the skeleton.** Concept (understand) or Build (ship code). Copy from `platform/templates/`.
+4. **Pull the three sources.** Substance from `ingredients/source/`; pattern from Microsoft Learn
+   (connector); seam framing from you.
 5. **Draft** against the skeleton. Author in the threaded language at point-of-use — TypeScript from Module
-   3, Rust from Module 5 (`snapshot/language-tracks.md`). Surface the relevant thread inline where it belongs.
+   3, Rust from Module 5 (per the language-tracks ruling in the dossiers). Surface the relevant thread inline where it belongs.
 6. **Run the Zinsser pass** (STYLE §6): cut 15–25%, kill qualifiers/passive/jargon, verify unity, confirm
    lead and ending. Read it aloud.
 7. **Write the lesson** to `src/moduleN/<lesson-slug>.md`. Add its entry to `src/SUMMARY.md` in prereq order.
@@ -94,6 +95,6 @@ Rules that keep the fleet from drifting:
 
 ## When the repo ships
 
-This file, `STYLE.md`, `_templates/`, and `_dossier/` are the **workshop** — they guide authoring and stay
-in the build repo. The shipped course is `book.toml` + `src/` + `exercises/` + `theme/`. (If you lift this
+This file, `STYLE.md`, `platform/templates/`, and `ingredients/dossiers/` are the **workshop** — they guide
+authoring and stay in the build repo. The shipped course is `book.toml` + `src/` + `exercises/` + `theme/`. (If you lift this
 out as a standalone Claude Code repo, rename this file to `CLAUDE.md` so the agent reads it on entry.)

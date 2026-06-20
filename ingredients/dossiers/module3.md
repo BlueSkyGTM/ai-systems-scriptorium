@@ -1,6 +1,6 @@
 # Module 3 — Migration Dossier (Agent Foundations)
 
-Source: `../sub-repos/synthesis/source/module3/` (Tracks A–D) + `module1/ts-*` (threaded in). This is the
+Source: `ingredients/source/module3/` (Tracks A–D) + `module1/ts-*` (threaded in). This is the
 **single-agent** half of the old Module 3 split. The multi-agent half (Tracks E–H) → Module 4.
 
 ## Source files in

@@ -1,6 +1,11 @@
 # The vault — heavy reference ore (~767MB), crawler direct-access, on disk only.
 # Manifest-primary: recoverable from the original sub-repos via vault/MANIFEST.md; not versioned here.
-vault/
+# Ignore the vault's CONTENTS (not the dir itself) so git still descends and the
+# two negations below can re-include the committed routing docs.
+vault/*
+# ...but the routing docs for the vault MUST commit so a cold agent can route there.
+!vault/CONTEXT.md
+!vault/MANIFEST.md
 
 # mdBook build output
 library/completed/sans-python/book/

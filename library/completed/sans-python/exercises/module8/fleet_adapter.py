@@ -8,7 +8,7 @@ returned `Fleet`).
 
 Resolution walks up from this file looking for the canonical M7 path:
 
-    .../northstar/migration/exercises/module7/03-governed-multi-agent-fleet/
+    .../library/completed/sans-python/exercises/module7/03-governed-multi-agent-fleet/
 
 When found, that directory is prepended to ``sys.path`` so its in-package imports
 (`fleet`, `governance.*`, `agents.*`, `mock_llm`, `policy`, `schema`) resolve

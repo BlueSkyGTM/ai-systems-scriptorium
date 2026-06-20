@@ -1,0 +1,12 @@
+# Adversarial fixture — STATUS / pick next work ("what should I work on next").
+# Near-miss: the status check must read CATALOG + BACKLOG from root only; it MUST
+# NOT route into a book, the pipeline, or the vault to "just check."
+intent: check status and pick the next piece of work
+start: root
+load:
+  - catalog
+  - backlog
+must_not_load:
+  - book_sans_python
+  - platform_pipeline
+  - vault

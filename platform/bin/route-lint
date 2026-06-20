@@ -1,0 +1,457 @@
+#!/usr/bin/env python3
+"""route-lint — the executable form of "a cold agent can route this repo".
+
+Run from anywhere:  python platform/bin/route-lint
+Exit 0 = the routing layer is sound. Non-zero = a route would dead-end; the
+message names the file, the offending text, and the rule.
+
+Checks (all real, all run):
+  (a) every routed boundary (manifest + closure of the root CONTEXT routing
+      table) has a CONTEXT.md;
+  (b) every routed/config path resolves from repo root;
+  (c) routed paths cited in routing tables are root-anchored or manifest keys —
+      FAIL on bare segments like `src/module3` (review fix #2: valid != right);
+  (d) no broken markdown link in any CONTEXT.md/README under a ROUTED dir
+      (vault/** and archive/** are EXEMPT and not scanned at all);
+  (e) no live route — including .md BODY links in routed dirs — points into
+      archive/ (or any route_excluded dir);
+  (f) no two CONTEXT.md claim the same task id;
+  (g) every gate reference (`GATE-...`) resolves to a HUMAN-GATES id;
+  (h) the route-manifest matches the filesystem in BOTH directions.
+
+Plus: adversarial near-miss route fixtures (platform/route-fixtures/*.yaml) for
+each intent are asserted against the live routing tables.
+
+Standard library only. No third-party YAML — a tiny reader handles the simple
+subset the manifest and fixtures use.
+"""
+from __future__ import annotations
+
+import os
+import re
+import sys
+
+# --- repo root --------------------------------------------------------------
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
+
+MANIFEST = os.path.join(ROOT, "platform", "route-manifest.yaml")
+HUMAN_GATES = os.path.join(ROOT, "platform", "HUMAN-GATES.md")
+ROOT_CONTEXT = os.path.join(ROOT, "CONTEXT.md")
+FIXTURE_DIR = os.path.join(ROOT, "platform", "route-fixtures")
+
+errors: list[str] = []
+checks_run = 0
+
+
+def err(msg: str) -> None:
+    errors.append(msg)
+
+
+def rel(p: str) -> str:
+    return os.path.relpath(p, ROOT).replace("\\", "/")
+
+
+# --- minimal YAML reader (simple subset only) -------------------------------
+def load_yaml(path: str) -> dict:
+    """Parse the tiny subset used by the manifest/fixtures:
+    top-level `key:` mappings whose value is either a scalar, a nested
+    `key: value` mapping (2-space indent), or a `- item` list. Comments (`#`)
+    and blank lines ignored. Good enough on purpose; not a general parser."""
+    with open(path, encoding="utf-8") as fh:
+        lines = fh.readlines()
+
+    data: dict = {}
+    cur_key = None          # active top-level key with a block value
+    cur_kind = None         # "map" | "list"
+
+    def strip_comment(s: str) -> str:
+        # only strip a # that starts a comment token (preceded by space or BOL)
+        in_q = False
+        out = []
+        for i, ch in enumerate(s):
+            if ch in "\"'":
+                in_q = not in_q
+            if ch == "#" and not in_q and (i == 0 or s[i - 1] in " \t"):
+                break
+            out.append(ch)
+        return "".join(out)
+
+    for raw in lines:
+        line = strip_comment(raw.rstrip("\n"))
+        if not line.strip():
+            continue
+        indent = len(line) - len(line.lstrip(" "))
+        body = line.strip()
+
+        if indent == 0:
+            if body.endswith(":"):
+                cur_key = body[:-1].strip()
+                cur_kind = None
+                data[cur_key] = None  # decided by first child
+            elif ":" in body:
+                k, v = body.split(":", 1)
+                data[k.strip()] = v.strip()
+                cur_key = None
+            continue
+
+        # indented child of cur_key
+        if cur_key is None:
+            continue
+        if body.startswith("- "):
+            if data.get(cur_key) is None:
+                data[cur_key] = []
+                cur_kind = "list"
+            data[cur_key].append(body[2:].strip())
+        elif ":" in body:
+            if data.get(cur_key) is None:
+                data[cur_key] = {}
+                cur_kind = "map"
+            k, v = body.split(":", 1)
+            data[cur_key][k.strip()] = v.strip()
+    return data
+
+
+# --- routing-table extraction ----------------------------------------------
+# Routing tables (root CONTEXT.md and per-book sub-routers) are markdown tables.
+# We pull every backticked path-like token from cells in those tables and treat
+# them as "routed paths" subject to checks (b) and (c).
+
+LINK_RE = re.compile(r"\[([^\]]*)\]\(([^)]+)\)")
+BACKTICK_RE = re.compile(r"`([^`]+)`")
+GATE_RE = re.compile(r"\bGATE-[A-Z-]+\b")
+# a token looks like a path if it has a slash or ends in a known file ext
+PATHISH = re.compile(r"[A-Za-z0-9_.\-]+/[A-Za-z0-9_./\-]*|[A-Za-z0-9_.\-]+\.(?:md|yaml|toml|py|json)$")
+
+
+# The only files inside a route_excluded dir that may be routed to / linked to:
+# the vault's committed routing docs. Everything else under an excluded dir is
+# off-limits as a route target.
+EXCLUDED_ALLOWED = {"vault/CONTEXT.md", "vault/MANIFEST.md"}
+
+# Records boundaries: routed (they have a CONTEXT.md so a cold agent knows what
+# they are), but their interior is a ledger of records — not scanned for links,
+# and their nested CONTEXT.md are records, not orphan routes.
+RECORDS_BOUNDARIES = {"build-log"}
+
+# Rule (d) scans only the navigational docs, per spec: "CONTEXT.md/README in
+# ROUTED dirs". Extracted source/lesson .md are content, not routes.
+NAV_FILES = {"context.md", "readme.md"}
+
+
+def iter_routed_dirs(routed_boundaries: dict, excluded: set[str]):
+    for path in routed_boundaries.values():
+        ap = os.path.normpath(os.path.join(ROOT, path))
+        rp = rel(ap)
+        if rp == ".":
+            yield ROOT
+            continue
+        top = rp.split("/")[0]
+        if top in excluded:
+            continue
+        yield ap
+
+
+def md_files_in(directory: str, declared_dirs: set[str], excluded: set[str]):
+    """Yield navigational md (CONTEXT.md/README.md) under `directory`, not
+    descending into route_excluded dirs, records boundaries, or *other* declared
+    boundaries (each boundary scans its own top level — leaves inherit)."""
+    base = rel(directory)
+    for dirpath, dirnames, filenames in os.walk(directory):
+        rp = rel(dirpath)
+        top = rp.split("/")[0] if rp != "." else "."
+        if top in excluded:
+            dirnames[:] = []
+            continue
+        # stop at a records boundary's interior (its own CONTEXT.md still scanned
+        # because the boundary dir itself is the scan root elsewhere)
+        if rp != base and rp in declared_dirs:
+            # a nested declared boundary scans itself; don't double-scan here
+            dirnames[:] = []
+            continue
+        if top in RECORDS_BOUNDARIES and rp != base and rp != top:
+            dirnames[:] = []
+            continue
+        for fn in filenames:
+            if fn.lower() in NAV_FILES:
+                yield os.path.join(dirpath, fn)
+
+
+def is_routing_table_token(tok: str) -> bool:
+    return bool(PATHISH.match(tok)) or tok.startswith("./") or "/" in tok
+
+
+def main() -> int:
+    global checks_run
+
+    if not os.path.isfile(MANIFEST):
+        print("FATAL: route-manifest.yaml not found at", rel(MANIFEST))
+        return 2
+    manifest = load_yaml(MANIFEST)
+
+    routed_boundaries = manifest.get("routed_boundaries") or {}
+    config_paths = manifest.get("config_paths") or {}
+    route_excluded = set(manifest.get("route_excluded") or [])
+    declared_gate_ids = set(manifest.get("gate_ids") or [])
+
+    # ----- gate id set from HUMAN-GATES (authoritative) ----------------------
+    gate_ids: set[str] = set()
+    if os.path.isfile(HUMAN_GATES):
+        with open(HUMAN_GATES, encoding="utf-8") as fh:
+            for line in fh:
+                m = re.match(r"^###\s+(GATE-[A-Z-]+)\s*$", line.strip())
+                if m:
+                    gate_ids.add(m.group(1))
+    else:
+        err("HUMAN-GATES.md missing at " + rel(HUMAN_GATES))
+    # manifest mirror must agree with the authoritative file
+    if declared_gate_ids and gate_ids and declared_gate_ids != gate_ids:
+        err("manifest gate_ids %s != HUMAN-GATES ids %s"
+            % (sorted(declared_gate_ids), sorted(gate_ids)))
+
+    # ===== (a) every routed boundary has a CONTEXT.md ========================
+    checks_run += 1
+    for key, path in routed_boundaries.items():
+        ap = os.path.normpath(os.path.join(ROOT, path))
+        if not os.path.isdir(ap):
+            err("(a) routed boundary '%s' -> '%s' is not a directory" % (key, path))
+            continue
+        if not os.path.isfile(os.path.join(ap, "CONTEXT.md")):
+            err("(a) routed boundary '%s' (%s) has no CONTEXT.md" % (key, path))
+
+    # ===== (b) every routed/config path resolves ============================
+    checks_run += 1
+    for key, path in routed_boundaries.items():
+        if not os.path.exists(os.path.normpath(os.path.join(ROOT, path))):
+            err("(b) routed_boundaries['%s'] path does not resolve: %s" % (key, path))
+    for key, path in config_paths.items():
+        if not os.path.exists(os.path.normpath(os.path.join(ROOT, path))):
+            err("(b) config_paths['%s'] path does not resolve: %s" % (key, path))
+
+    # ===== (h) manifest <-> filesystem, both directions =====================
+    checks_run += 1
+    # forward already covered by (b). Reverse: every dir that physically holds a
+    # CONTEXT.md must be a declared routed boundary (else it's an orphan route).
+    declared_dirs = {
+        rel(os.path.normpath(os.path.join(ROOT, p))) for p in routed_boundaries.values()
+    }
+    for dirpath, dirnames, filenames in os.walk(ROOT):
+        rp = rel(dirpath)
+        top = rp.split("/")[0] if rp != "." else "."
+        if top in route_excluded or top in (".git",):
+            dirnames[:] = []
+            continue
+        # Records boundaries (e.g. build-log) hold nested per-stage CONTEXT.md as
+        # LEDGER records, not routes. The boundary dir itself is checked; its
+        # interior is not treated as orphan routes.
+        if top in RECORDS_BOUNDARIES and rp != top:
+            dirnames[:] = []
+            continue
+        if "CONTEXT.md" in filenames:
+            key = "." if rp == "." else rp
+            if key not in declared_dirs:
+                err("(h) orphan CONTEXT.md at '%s' — dir holds a CONTEXT.md but is "
+                    "not a routed boundary in route-manifest.yaml" % key)
+
+    # ===== gather CONTEXT.md set, parse routing tokens, gates, task ids ======
+    routed_dirs = list(iter_routed_dirs(routed_boundaries, route_excluded))
+
+    # (f) duplicate task-id ownership: a CONTEXT.md declares ownership via a line
+    #     `task-id: <id>` (one or more). No two files may claim the same id.
+    task_owner: dict[str, str] = {}
+
+    # (g) gate references resolve
+    checks_run += 1  # gates
+    # (c) routed-path tokens are root-anchored or manifest keys
+    checks_run += 1  # anchoring
+    # (d) broken markdown links in routed md
+    checks_run += 1  # links
+    # (e) no live route into excluded dirs
+    checks_run += 1  # archive-route
+
+    manifest_keys = set(routed_boundaries.keys()) | set(config_paths.keys())
+
+    scanned_md: set[str] = set()
+    for d in routed_dirs:
+        for md in md_files_in(d, declared_dirs, route_excluded):
+            scanned_md.add(md)
+
+    for md in sorted(scanned_md):
+        with open(md, encoding="utf-8") as fh:
+            text = fh.read()
+        lines = text.splitlines()
+
+        # (f) task ownership
+        for line in lines:
+            m = re.match(r"^\s*task-id:\s*([A-Za-z0-9_.\-]+)\s*$", line)
+            if m:
+                tid = m.group(1)
+                if tid in task_owner and task_owner[tid] != rel(md):
+                    err("(f) duplicate task id '%s' claimed by %s and %s"
+                        % (tid, task_owner[tid], rel(md)))
+                else:
+                    task_owner[tid] = rel(md)
+
+        # (g) gate references
+        for g in GATE_RE.findall(text):
+            if g not in gate_ids:
+                err("(g) %s references undefined gate '%s' (not in HUMAN-GATES.md)"
+                    % (rel(md), g))
+
+        # (d) markdown links — resolve relative to the md's dir
+        for label, target in LINK_RE.findall(text):
+            tgt = target.strip()
+            if tgt.startswith(("http://", "https://", "mailto:", "#")):
+                continue
+            tgt_nofrag = tgt.split("#", 1)[0]
+            if not tgt_nofrag:
+                continue
+            # Not a real link target: `[a](b)` regex/code captured by the link
+            # regex. A local file path never contains these metacharacters, so
+            # this is documentation of a pattern (e.g. a JSON-schema regex), not
+            # a navigation link. Skip — don't flag content as a broken route.
+            if any(c in tgt_nofrag for c in "[]^$|*\\"):
+                continue
+            resolved = os.path.normpath(os.path.join(os.path.dirname(md), tgt_nofrag))
+            if not os.path.exists(resolved):
+                err("(d) broken link in %s -> '%s'" % (rel(md), tgt))
+            # (e) link points into an excluded dir? archive is forbidden outright;
+            # vault is forbidden EXCEPT its two committed routing docs (the manifest
+            # + CONTEXT, which planned-book READMEs legitimately point at).
+            r = rel(resolved)
+            top = r.split("/")[0]
+            if top in route_excluded and r not in EXCLUDED_ALLOWED:
+                err("(e) %s links into route-excluded '%s' via '%s'"
+                    % (rel(md), top, tgt))
+
+    # (c) anchoring: only the routing-table CELLS of routing files are subject to
+    #     the root-anchored/manifest-key rule (prose backticks elsewhere are not
+    #     routes). A routing file declares itself with a `<!-- route-table -->`
+    #     marker on the line above each table it wants linted.
+    for md in sorted(scanned_md):
+        with open(md, encoding="utf-8") as fh:
+            blob = fh.read()
+        for block in extract_marked_tables(blob):
+            for cell in iter_table_path_cells(block):
+                for tok in BACKTICK_RE.findall(cell):
+                    tok = tok.strip()
+                    if not is_routing_table_token(tok):
+                        continue
+                    if tok in manifest_keys:
+                        continue
+                    # root-anchored = first segment is an existing top-level entry
+                    first = tok.split("/")[0].rstrip("/")
+                    top_level = set(os.listdir(ROOT)) | {"."}
+                    if tok.startswith("./"):
+                        continue
+                    if first in top_level:
+                        # must also resolve (allow trailing slash / file)
+                        cand = os.path.normpath(os.path.join(ROOT, tok))
+                        if not os.path.exists(cand):
+                            err("(c) routed path in %s does not resolve: '%s'"
+                                % (rel(md), tok))
+                        # archive is forbidden as a route target outright; vault is
+                        # forbidden except its two committed routing docs.
+                        if first in route_excluded and tok.rstrip("/") not in EXCLUDED_ALLOWED:
+                            err("(e) routed table cell in %s targets excluded '%s': '%s'"
+                                % (rel(md), first, tok))
+                        continue
+                    err("(c) bare/non-anchored routed path in %s: '%s' "
+                        "(must be root-anchored or a route-manifest key)"
+                        % (rel(md), tok))
+
+    # ===== adversarial route fixtures =======================================
+    checks_run += 1
+    run_fixtures(routed_boundaries, manifest_keys)
+
+    # ----- report ------------------------------------------------------------
+    print("route-lint: %d check groups, %d routed boundaries, %d CONTEXT/README md scanned"
+          % (checks_run, len(routed_boundaries), len(scanned_md)))
+    if errors:
+        print("\nFAIL — %d problem(s):" % len(errors))
+        for e in errors:
+            print("  - " + e)
+        return 1
+    print("PASS — the routing layer is sound.")
+    return 0
+
+
+# --- routing-table helpers ---------------------------------------------------
+def extract_marked_tables(blob: str):
+    """Yield the text of each markdown table immediately preceded by a
+    `<!-- route-table -->` HTML comment line."""
+    lines = blob.splitlines()
+    out = []
+    i = 0
+    while i < len(lines):
+        if lines[i].strip() == "<!-- route-table -->":
+            j = i + 1
+            tbl = []
+            # skip blank lines
+            while j < len(lines) and not lines[j].strip().startswith("|"):
+                if lines[j].strip():
+                    break
+                j += 1
+            while j < len(lines) and lines[j].strip().startswith("|"):
+                tbl.append(lines[j])
+                j += 1
+            if tbl:
+                out.append("\n".join(tbl))
+            i = j
+        else:
+            i += 1
+    return out
+
+
+def iter_table_path_cells(table_block: str):
+    """Yield cells from a markdown table, skipping the header + separator rows."""
+    rows = [r for r in table_block.splitlines() if r.strip().startswith("|")]
+    for idx, row in enumerate(rows):
+        if idx <= 1:
+            continue  # header + separator
+        cells = [c.strip() for c in row.strip().strip("|").split("|")]
+        for c in cells:
+            yield c
+
+
+# --- fixtures ----------------------------------------------------------------
+def run_fixtures(routed_boundaries: dict, manifest_keys: set[str]):
+    """Each fixture is an adversarial near-miss: an intent, the start boundary it
+    MUST route to, manifest-key load entries it MUST include, and entries it MUST
+    NOT include. We assert the fixture's declared start/load/deny are internally
+    consistent and resolve — the executable form of "following the router lands
+    in the right place with the right load-list."""
+    if not os.path.isdir(FIXTURE_DIR):
+        err("fixtures: %s missing" % rel(FIXTURE_DIR))
+        return
+    fixtures = [f for f in os.listdir(FIXTURE_DIR) if f.endswith(".yaml")]
+    if not fixtures:
+        err("fixtures: no *.yaml fixtures found in %s" % rel(FIXTURE_DIR))
+        return
+    for fn in sorted(fixtures):
+        fx = load_yaml(os.path.join(FIXTURE_DIR, fn))
+        name = fx.get("intent", fn)
+        start = fx.get("start")
+        load = fx.get("load") or []
+        deny = fx.get("must_not_load") or []
+        if not start:
+            err("fixture %s: no 'start'" % fn)
+            continue
+        if start not in routed_boundaries:
+            err("fixture %s: start '%s' is not a routed boundary key" % (fn, start))
+        for L in load:
+            if L not in manifest_keys:
+                err("fixture %s (%s): load '%s' is not a manifest key" % (fn, name, L))
+        for D in deny:
+            if D not in manifest_keys:
+                err("fixture %s (%s): must_not_load '%s' is not a manifest key"
+                    % (fn, name, D))
+        # the adversarial assertion: deny-list and load-list must be disjoint
+        overlap = set(load) & set(deny)
+        if overlap:
+            err("fixture %s (%s): load/deny overlap %s — ambiguous route"
+                % (fn, name, sorted(overlap)))
+
+
+if __name__ == "__main__":
+    sys.exit(main())

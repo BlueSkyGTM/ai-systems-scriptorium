@@ -1,0 +1,13 @@
+# Adversarial fixture — FIX a shipped lesson (near-miss: "patch typo in shipped
+# M4 lesson"). The fix load-list spans the BOOK dir AND build_log (for the verify
+# verdict), but MUST NOT load the pipeline internals — that's the trap the typo
+# patcher falls into. Disjoint from authoring's pipeline pull.
+intent: patch a typo in a shipped lesson
+start: book_sans_python
+load:
+  - book_sans_python
+  - build_log
+must_not_load:
+  - platform_pipeline
+  - vault
+  - ingredients

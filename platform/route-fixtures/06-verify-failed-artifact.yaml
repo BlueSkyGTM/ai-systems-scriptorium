@@ -1,0 +1,11 @@
+# Adversarial fixture — VERIFY a failed artifact (re-run the verify gate on an
+# exercise smoke/pytest that failed). Routes into the book (the artifact lives in
+# exercises/) plus the pipeline VERIFY stage; MUST NOT pull the vault ore.
+intent: verify a failed artifact
+start: book_sans_python
+load:
+  - book_sans_python
+  - platform_pipeline
+must_not_load:
+  - vault
+  - ingredients

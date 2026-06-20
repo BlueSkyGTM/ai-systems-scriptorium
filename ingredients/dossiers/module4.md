@@ -1,6 +1,6 @@
 # Module 4 — Migration Dossier (Multi-Agent Systems)
 
-Source: `../sub-repos/synthesis/source/module3/` (Tracks E–H) — the **multi-agent** half of the old-M3 split,
+Source: `ingredients/source/module3/` (Tracks E–H) — the **multi-agent** half of the old-M3 split,
 plus fleet + loop. The seam's defining material: single agent → runs safely for hours → coordinates with
 many → governed as a fleet.
 

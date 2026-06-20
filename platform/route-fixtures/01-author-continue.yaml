@@ -1,0 +1,13 @@
+# Adversarial fixture — AUTHOR / CONTINUE a book.
+# Near-miss guarded: author must NOT collide with the fix-a-lesson load-list
+# (build_log) nor pull the raw vault. Start at the book, not the platform alone.
+intent: author or continue a book
+start: book_sans_python
+load:
+  - book_sans_python
+  - platform_conventions
+  - platform_pipeline
+  - ingredients
+must_not_load:
+  - vault
+  - build_log

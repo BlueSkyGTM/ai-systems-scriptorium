@@ -1,0 +1,63 @@
+# route-manifest.yaml — the SINGLE SOURCE OF TRUTH for paths in the Scriptorium.
+#
+# Every routed boundary and every config-consumed path lives here exactly once.
+# CONTEXT.md routes reference these locations; configs (vercel.json, book.toml,
+# fleet_adapter.py) consume the paths below. `platform/bin/route-lint` reads this
+# file and checks it against the filesystem in BOTH directions.
+#
+# Parser note: route-lint ships a tiny stdlib-only YAML reader. Keep this file to
+# the simple subset used below — top-level mappings, `key: value`, and `- item`
+# lists. No anchors, flow maps, or multi-line scalars.
+
+# --- Routed boundaries -------------------------------------------------------
+# A "routed boundary" is a directory a cold agent is sent INTO by the routing
+# tables. Each MUST hold a CONTEXT.md. Leaf dirs below a boundary inherit it and
+# are NOT listed (review fix #11: every routed BOUNDARY, not every dir).
+# Keys are stable manifest ids; values are repo-root-anchored paths.
+routed_boundaries:
+  root: .
+  library: library
+  book_sans_python: library/completed/sans-python
+  in_progress_everything_else: library/in-progress/everything-else
+  planned_getting_hired: library/planned/getting-hired
+  planned_simple_systems: library/planned/simple-systems
+  platform: platform
+  platform_pipeline: platform/pipeline
+  platform_conventions: platform/conventions
+  platform_templates: platform/templates
+  ingredients: ingredients
+  progression: progression
+  build_log: build-log
+  vault: vault
+  archive: archive
+
+# --- Config-consumed paths ---------------------------------------------------
+# Paths baked into configs/tooling. route-lint asserts each resolves from root.
+config_paths:
+  book_root: library/completed/sans-python          # vercel buildCommand target
+  mdbook_src: library/completed/sans-python/src     # book.toml `src` (relative to book_root)
+  mdbook_output: library/completed/sans-python/book # vercel outputDirectory
+  vercel_config: vercel.json
+  m7_fleet: library/completed/sans-python/exercises/module7/03-governed-multi-agent-fleet
+  fleet_adapter: library/completed/sans-python/exercises/module8/fleet_adapter.py
+  human_gates: platform/HUMAN-GATES.md
+  style_contract: platform/conventions/STYLE.md
+  catalog: CATALOG.md
+  backlog: BACKLOG.md
+
+# --- Archive (route-excluded) ------------------------------------------------
+# Listed so route-lint knows the set of dirs that must NEVER be a live route
+# target and whose contents are NOT scanned for links.
+route_excluded:
+  - archive
+  - vault
+
+# --- Gate registry mirror ----------------------------------------------------
+# The authoritative gate definitions live in platform/HUMAN-GATES.md. route-lint
+# parses that file for the canonical id list; this mirror documents the ids the
+# manifest expects so a missing/renamed gate is caught here too.
+gate_ids:
+  - GATE-LOCK-PLAN
+  - GATE-APPROVE-SHIP
+  - GATE-NAME-BOOK
+  - GATE-PUBLISH

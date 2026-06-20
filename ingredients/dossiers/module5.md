@@ -1,6 +1,6 @@
 # Module 5 — Migration Dossier (Deploy & Performance Engineering)
 
-Source: `../sub-repos/synthesis/source/module4/` (old Deploy module) + `module1/rust-*` (threaded in). The
+Source: `ingredients/source/module4/` (old Deploy module) + `module1/rust-*` (threaded in). The
 seam's home turf — the infrastructure MLOps engineers and app devs *use*. **Built, not described.**
 
 ## Source files in

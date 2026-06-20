@@ -1,6 +1,6 @@
 # Module 2 — Migration Dossier
 
-Source: `../sub-repos/synthesis/source/module2/`. The densest, most-overlapped module — curation here is
+Source: `ingredients/source/module2/`. The densest, most-overlapped module — curation here is
 **dedup/merge**, not resequencing.
 
 ## Source files in

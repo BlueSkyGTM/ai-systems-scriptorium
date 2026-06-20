@@ -1,0 +1,11 @@
+# Adversarial fixture — PUBLISH a book's public copy.
+# Near-miss: publish must route to the book + the SHIP pipeline stage and stop at
+# GATE-PUBLISH; it MUST NOT pull the vault ore or the raw ingredients.
+intent: publish a public copy of a book
+start: book_sans_python
+load:
+  - book_sans_python
+  - platform_pipeline
+must_not_load:
+  - vault
+  - ingredients

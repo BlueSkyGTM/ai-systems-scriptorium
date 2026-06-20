@@ -1,0 +1,12 @@
+# Adversarial fixture — PROCESS ore into a new (planned) book.
+# Near-miss: "continue a planned book from its dossier" — the agent must start in
+# the vault/ingredients path, NOT in a shipped book, and must NOT load the
+# finished sans-python book as if it were the work.
+intent: process raw ore into a new book
+start: vault
+load:
+  - vault
+  - ingredients
+  - platform_pipeline
+must_not_load:
+  - book_sans_python

@@ -1,7 +1,7 @@
 # Module 1 — Migration Dossier
 
 Ledger for what migrated into `src/module1/`, what was cut, and what threaded out. Source:
-`../sub-repos/synthesis/source/module1/`.
+`ingredients/source/module1/`.
 
 ## Source files in
 

@@ -1,7 +1,7 @@
 # Modules 6–7–8 — Migration Dossier (Artifacts + Exam)
 
-Source: `../sub-repos/synthesis/source/module5/aefs-module5-capstone.md` (17 Part-1 capstones + 68-component
-Part-2 build sequence) + `../sub-repos/synthesis/output/snapshot/artifacts-plan.md` (the reconciled
+Source: `ingredients/source/module5/aefs-module5-capstone.md` (17 Part-1 capstones + 68-component
+Part-2 build sequence) + the reconciled artifacts plan (build-time snapshot, now in `archive/synthesis-byproducts/`) (the reconciled
 own-module + compounding plan). These three modules **apply** the teaching modules; they don't introduce new
 concepts.
 

@@ -1,7 +1,7 @@
-# Synthesis Source — Master Index
+# Ingredients Source — Master Index
 
-This folder is the consolidated, crawlable mirror of all 9 sub-repo extractions.
-Everything in `synthesis/source/` is listed here. Nothing is uncatalogued.
+This folder (`ingredients/source/`) is the consolidated, crawlable mirror of all 9 sub-repo
+extractions. Everything here is listed in this index. Nothing is uncatalogued.
 
 **What this is:** a librarian's inventory. Content is organized by module (the unit a
 later extraction task is pointed at). Per-repo metadata that can't split by module lives
@@ -33,7 +33,7 @@ Every content filename starts with a prefix identifying its origin repo.
 ## Folder map
 
 ```
-synthesis/source/
+ingredients/source/
 ├── INDEX.md          ← this file
 ├── module1/          ← 5 content files
 ├── module2/          ← 5 content files
