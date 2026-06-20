@@ -1,8 +1,21 @@
 # Backlog — proposed changes (post-build)
 
-Collected 2026-06-19 (the course itself is complete: all 8 modules shipped, `mdbook build` PASS). These are
-proposed changes from Ray's design review + the deferred polish — **not yet implemented; collected for tracking.**
-Mirrors the live task tracker (task ids there don't persist across sessions; this file does).
+Collected 2026-06-19. Mirrors the live task tracker (ids there don't persist; this file does).
+
+## RESOLVED (2026-06-19) — 10 of 12 done; 2 are Ray's external actions
+- **#1, #2 (design):** DONE — button centered; `theme/syntax-polish.css` (Ayu-magic palette + Rust-light bump + code-card). Pending Ray's visual review.
+- **#3 (learner CLAUDE.md):** DONE — `library/completed/sans-python/exercises/CLAUDE.md`.
+- **#4 (git-repository-url):** DECIDED — left unset (private-first; 404s for visitors). Set at `GATE-PUBLISH`.
+- **#5 (Vercel deploy):** RAY'S ACTION — `vercel.json` ready + path-fixed; needs the dashboard import + subdomain. Can't be done for him.
+- **#6 (browser click-test):** RAY'S ACTION — book served + button assets verified (HTTP 200); the actual click is his to make.
+- **#7 (73% RAG stat):** DONE — attributed as a soft industry estimate across M2 `03-rag-system` + M5 L11.
+- **#8 (banned frame):** DONE — M3 typing exercise "Why" line rewritten to a concrete seam line.
+- **#9 (M1/M2 READMEs):** DONE — M1 README fixed (it omitted lessons); M2 was already accurate.
+- **#10 (conclusion):** DONE — `src/conclusion.md` send-off + SUMMARY entry.
+- **#11 (antilibrary close):** DONE — closing section ties back to the thesis.
+- **#12 (platform/course split):** DONE — the restructure (platform/library/ingredients + progression spec); private-first supersedes the public-course framing below.
+
+The original collected items (kept as the record):
 
 ## Design (from the live book review — hold, don't implement yet)
 1. **Center the "Copy for Claude Code" button** — `theme/copy-to-claude.css`; the `.claude-handoff-btn` is
