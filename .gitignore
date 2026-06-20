@@ -1,9 +1,9 @@
-# Heavy reference material — OneDrive-hydrated source corpus (~767MB).
-# Recoverable from the original sub-repos; not the course deliverable. Not versioned here.
-northstar/migration/synthesis/raw/
+# The vault — heavy reference ore (~767MB), crawler direct-access, on disk only.
+# Manifest-primary: recoverable from the original sub-repos via vault/MANIFEST.md; not versioned here.
+vault/
 
 # mdBook build output
-northstar/migration/book/
+library/completed/sans-python/book/
 
 # Language artifacts
 **/.venv/
