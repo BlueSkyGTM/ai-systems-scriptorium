@@ -1,0 +1,7 @@
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+outputs/pr-*.md
+outputs/escalation-*.md
+outputs/KILL

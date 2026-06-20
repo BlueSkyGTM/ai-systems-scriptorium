@@ -28,3 +28,6 @@ northstar/migration/book/
 Thumbs.db
 .codex-*.txt
 .roadmap*.png
+__pycache__/
+.pytest_cache/
+.env

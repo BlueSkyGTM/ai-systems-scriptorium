@@ -1,0 +1,41 @@
+{
+  "description": "Labeled acceptance set for the regulated RAG chatbot. Each item names the question, the expected source document (relevant_doc) the answer must cite, and answer_keywords the faithful answer should contain. Used by eval.py to score retrieval precision and answer faithfulness.",
+  "items": [
+    {
+      "id": "q1",
+      "question": "How long must customer account records be retained after the account is closed?",
+      "relevant_doc": "data-retention-policy.md",
+      "answer_keywords": ["seven years", "account is closed"]
+    },
+    {
+      "id": "q2",
+      "question": "Can a customer record be deleted before its retention period expires if the customer asks?",
+      "relevant_doc": "data-retention-policy.md",
+      "answer_keywords": ["may not be deleted", "regulators", "audit"]
+    },
+    {
+      "id": "q3",
+      "question": "Is multi-factor authentication required to access systems holding customer PII?",
+      "relevant_doc": "access-control-policy.md",
+      "answer_keywords": ["multi-factor authentication", "required", "PII"]
+    },
+    {
+      "id": "q4",
+      "question": "How often must access rights be reviewed?",
+      "relevant_doc": "access-control-policy.md",
+      "answer_keywords": ["ninety days", "reviewed"]
+    },
+    {
+      "id": "q5",
+      "question": "Within how many hours must a confirmed personal-data breach be reported to the supervisory authority?",
+      "relevant_doc": "incident-response-policy.md",
+      "answer_keywords": ["seventy-two hours", "supervisory authority"]
+    },
+    {
+      "id": "q6",
+      "question": "What overrides all retention periods and stops record disposal?",
+      "relevant_doc": "data-retention-policy.md",
+      "answer_keywords": ["legal hold", "disposed"]
+    }
+  ]
+}

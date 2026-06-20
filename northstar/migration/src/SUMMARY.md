@@ -85,6 +85,10 @@
 # Module 6 — Agent Artifacts
 
 - [Overview](module6/README.md)
+- [Terminal Coding Agent](module6/01-terminal-coding-agent.md)
+- [Production RAG Chatbot](module6/02-production-rag-chatbot.md)
+- [Real-Time Voice Assistant](module6/03-realtime-voice-assistant.md)
+- [Issue-to-PR Autonomous Agent](module6/04-issue-to-pr-agent.md)
 
 # Module 7 — Multi-Agent Artifacts
 
