@@ -1,16 +1,16 @@
-# The Workbench Surfaces II: Verification, Review, Handoff — and the Pack
+# The Workbench Surfaces II: Verification, Review, Handoff; and the Pack
 
 The previous four surfaces constrain the agent and capture facts. These three close the loop: the agent does not grade its own work, a second loop catches what verification misses, and a handoff packet makes the next session productive from its first minute. Then you package all seven into the artifact M6 imports.
 
 ## What You Build
 
-You build the final three surfaces — `verify_agent.py`, a reviewer loop, and `generate_handoff.py` — then package all seven surfaces into a drop-in `agent-workbench-pack/` that installs into any repo with a single script. That pack is the foundation of the M6 terminal coding agent; M6 imports it, not rebuilds it.
+You build the final three surfaces; `verify_agent.py`, a reviewer loop, and `generate_handoff.py`; then package all seven surfaces into a drop-in `agent-workbench-pack/` that installs into any repo with a single script. That pack is the foundation of the M6 terminal coding agent; M6 imports it, not rebuilds it.
 
 ## Verification: the Agent Does Not Mark Its Own Work Done
 
-An agent that decides it is finished is not done — it is optimistic. Self-grading is structurally unreliable: the agent generated the code, predicted the tests would pass, and now evaluates whether its prediction was correct. That is not verification; it is a second guess.
+An agent that decides it is finished is not done; it is optimistic. Self-grading is structurally unreliable: the agent generated the code, predicted the tests would pass, and now evaluates whether its prediction was correct. That is not verification; it is a second guess.
 
-`verify_agent.py` is a deterministic program — no model, no judgment — that reads four artifacts and emits one verdict:
+`verify_agent.py` is a deterministic program, no model, no judgment, that reads four artifacts and emits one verdict:
 
 ```python
 # module3-agent/workbench/verify_agent.py
@@ -63,17 +63,17 @@ def verify(scope_report: str, rule_report: str, feedback_log: str, diff: str) ->
     return {"verdict": verdict, "checks": checks, "blocked_by": [c["name"] for c in blocked]}
 ```
 
-The output goes to `.workbench/verification_report.json`. CI reads the same file. The human reviewer reads the same file. One source of truth — no ambiguity about whether "the agent said it was done" and "the verification passed" mean the same thing.
+The output goes to `.workbench/verification_report.json`. CI reads the same file. The human reviewer reads the same file. One source of truth; no ambiguity about whether "the agent said it was done" and "the verification passed" mean the same thing.
 
 Wire the verdict as a CI gate: a GitHub Actions step that reads `verification_report.json` and exits non-zero on `"verdict": "FAIL"` means a failed agent cannot merge.
 
-Azure Pipelines makes this a native step: [deployment gates](https://learn.microsoft.com/azure/devops/pipelines/release/approvals/gates?view=azure-devops) let you configure pre-deployment conditions that read an external source — including a REST API that returns your `verification_report.json` — and block stage promotion until the signal is green.
+Azure Pipelines makes this a native step: [deployment gates](https://learn.microsoft.com/azure/devops/pipelines/release/approvals/gates?view=azure-devops) let you configure pre-deployment conditions that read an external source; including a REST API that returns your `verification_report.json`; and block stage promotion until the signal is green.
 
-Azure AI Foundry's [agent evaluators](https://learn.microsoft.com/azure/foundry/concepts/evaluation-evaluators/agent-evaluators#system-evaluation) — Task Adherence, Task Completion, Intent Resolution — operate on the same principle at the platform layer: structured scores per run, integrated into the CI/CD pipeline via the [AI Agent Evaluation extension](https://learn.microsoft.com/azure/foundry/how-to/evaluation-azure-devops) for Azure DevOps.
+Azure AI Foundry's [agent evaluators](https://learn.microsoft.com/azure/foundry/concepts/evaluation-evaluators/agent-evaluators#system-evaluation), Task Adherence, Task Completion, Intent Resolution, operate on the same principle at the platform layer: structured scores per run, integrated into the CI/CD pipeline via the [AI Agent Evaluation extension](https://learn.microsoft.com/azure/foundry/how-to/evaluation-azure-devops) for Azure DevOps.
 
 ## Review: a Second Loop with a Different Prompt
 
-Verification is deterministic and fast. It cannot catch "solved the wrong half of the bug" — a task where every check passes but the solution misunderstands the problem. That is what the reviewer catches.
+Verification is deterministic and fast. It cannot catch "solved the wrong half of the bug"; a task where every check passes but the solution misunderstands the problem. That is what the reviewer catches.
 
 The reviewer is a second agent loop, a different system prompt, and read-only access to everything the builder produced. It cannot write files. It reads the diff, the scope contract, the verification report, and the handoff, then scores five dimensions:
 
@@ -106,17 +106,17 @@ def review(diff: str, scope_report: str, verification_report: str, handoff: str)
     return json.loads(response.content[0].text)
 ```
 
-Use `claude-haiku-4-5` for the rubric-scoring pass — it is fast and cheap, and the rubric constrains the judgment enough that a smaller model is reliable. Reserve `claude-opus-4-8` for the builder loop where reasoning depth matters.
+Use `claude-haiku-4-5` for the rubric-scoring pass; it is fast and cheap, and the rubric constrains the judgment enough that a smaller model is reliable. Reserve `claude-opus-4-8` for the builder loop where reasoning depth matters.
 
-The reviewer cannot be the builder. Run them as separate processes with separate prompts. An agent that reviews its own code consistently scores it higher than a second agent does — because it is still executing the same goal.
+The reviewer cannot be the builder. Run them as separate processes with separate prompts. An agent that reviews its own code consistently scores it higher than a second agent does; because it is still executing the same goal.
 
-Azure AI Foundry's [rubric evaluators](https://learn.microsoft.com/azure/foundry/concepts/evaluation-evaluators/rubric-evaluators) work the same way at scale: define weighted dimensions, set a pass threshold (0.0–1.0), and let the LLM judge score every response. The five-dimension reviewer rubric here follows the same pattern — portable to Foundry once you graduate beyond the single agent.
+Azure AI Foundry's [rubric evaluators](https://learn.microsoft.com/azure/foundry/concepts/evaluation-evaluators/rubric-evaluators) work the same way at scale: define weighted dimensions, set a pass threshold (0.0–1.0), and let the LLM judge score every response. The five-dimension reviewer rubric here follows the same pattern; portable to Foundry once you graduate beyond the single agent.
 
 ## Handoff: Turn an Hour into a Productive Next Minute
 
 A handoff packet exists because the next session starts cold. Without one, the new session probes the repo, reads the diff, guesses at what was tried, and wastes the first ten minutes reconstructing context the prior session held.
 
-`generate_handoff.py` reads the workbench artifacts and writes a structured packet — not a long narrative, a short one with seven fields:
+`generate_handoff.py` reads the workbench artifacts and writes a structured packet; not a long narrative, a short one with seven fields:
 
 ```python
 # module3-agent/workbench/generate_handoff.py
@@ -175,7 +175,7 @@ agent-workbench-pack/
     └── install.sh                     # idempotent installer
 ```
 
-`bin/install.sh` copies the pack into the target repo without overwriting files that already exist — idempotent, so running it twice is safe:
+`bin/install.sh` copies the pack into the target repo without overwriting files that already exist; idempotent, so running it twice is safe:
 
 ```bash
 #!/usr/bin/env bash
@@ -208,27 +208,27 @@ install_file "scripts/reviewer.py"
 install_file "scripts/generate_handoff.py"
 ```
 
-The pack is model-independent. The scripts never call a model; the reviewer loop takes a model name as a parameter. Swap `claude-haiku-4-5` for anything else — the workbench doesn't care.
+The pack is model-independent. The scripts never call a model; the reviewer loop takes a model name as a parameter. Swap `claude-haiku-4-5` for anything else; the workbench doesn't care.
 
-**This pack is the foundation of the M6 terminal coding agent.** The M6 agent imports `agent-workbench-pack/` on initialization and does not rebuild it. The schemas, scripts, and rules it installs are the exact ones you authored here — locked, versioned, tested. The capstone exercise produces the artifact; M6 picks it up. Nothing is rebuilt; everything compounds.
+**This pack is the foundation of the M6 terminal coding agent.** The M6 agent imports `agent-workbench-pack/` on initialization and does not rebuild it. The schemas, scripts, and rules it installs are the exact ones you authored here; locked, versioned, tested. The capstone exercise produces the artifact; M6 picks it up. Nothing is rebuilt; everything compounds.
 
-Azure Pipelines' [approvals and checks](https://learn.microsoft.com/azure/devops/pipelines/process/approvals?view=azure-devops) let you enforce the same rule at the release level: a stage cannot start until the verification artifact passes the configured gate condition — human review optional, machine check mandatory.
+Azure Pipelines' [approvals and checks](https://learn.microsoft.com/azure/devops/pipelines/process/approvals?view=azure-devops) let you enforce the same rule at the release level: a stage cannot start until the verification artifact passes the configured gate condition; human review optional, machine check mandatory.
 
 ## Why a Single Verifiable Agent Ships Where a Capable Model Doesn't
 
-The complexity ladder holds here too. Before you compose agents into teams (Module 4) or point them at production codebases (Module 6), the single agent must be verifiable — meaning you can look at its output and know, from facts rather than confidence, whether the task is done. The workbench is what makes that possible. It is not a workaround for a weak model; it makes any model shippable.
+The complexity ladder holds here too. Before you compose agents into teams (Module 4) or point them at production codebases (Module 6), the single agent must be verifiable; meaning you can look at its output and know, from facts rather than confidence, whether the task is done. The workbench is what makes that possible. It is not a workaround for a weak model; it makes any model shippable.
 
-Ship the `agent-workbench-pack/` and you have an answer to the question every skeptic asks — not a promise, but a verdict file, a scope report, a feedback log, and a handoff packet. Artifacts, not assurances.
+Ship the `agent-workbench-pack/` and you have an answer to the question every skeptic asks; not a promise, but a verdict file, a scope report, a feedback log, and a handoff packet. Artifacts, not assurances.
 
 ## Core Concepts
 
-- A deterministic `verify_agent.py` reads scope, rules, feedback, and diff and emits one verdict that CI and the human reviewer both read — the agent never grades its own work.
+- A deterministic `verify_agent.py` reads scope, rules, feedback, and diff and emits one verdict that CI and the human reviewer both read; the agent never grades its own work.
 - A reviewer loop with a different system prompt and read-only access scores a five-dimension rubric; it catches "solved the wrong half of the bug," which verification cannot.
-- `generate_handoff.py` turns workbench artifacts into a seven-field packet that makes the next session's first action deterministic — without it, context recovery costs ten minutes every session.
-- The `agent-workbench-pack/` packages all seven surfaces as a drop-in installer; the M6 coding agent imports this pack and does not rebuild it — that is what compounding means.
+- `generate_handoff.py` turns workbench artifacts into a seven-field packet that makes the next session's first action deterministic; without it, context recovery costs ten minutes every session.
+- The `agent-workbench-pack/` packages all seven surfaces as a drop-in installer; the M6 coding agent imports this pack and does not rebuild it; that is what compounding means.
 
 <div class="claude-handoff" data-exercise="exercises/module3/15-the-workbench-surfaces-ii-and-the-pack/">
 
-**Build It in Claude Code** — Complete the workbench and ship the pack: implement `verify_agent.py` reading scope/rules/feedback artifacts and emitting `verification_report.json` with block-severity checks; implement a reviewer loop in `reviewer.py` scoring the five-dimension rubric against the diff and verification report using `claude-haiku-4-5`, emitting `review_report.json`; implement `generate_handoff.py` producing `handoff.json` from all artifacts; then assemble `agent-workbench-pack/` with all seven surfaces, JSON Schemas, and `bin/install.sh`, and run the installer against a sample FastAPI repo to prove it lays down cleanly. Use `claude-opus-4-8` for the builder loop in the demo run; use `claude-haiku-4-5` for the reviewer.
+**Build It in Claude Code**: Complete the workbench and ship the pack: implement `verify_agent.py` reading scope/rules/feedback artifacts and emitting `verification_report.json` with block-severity checks; implement a reviewer loop in `reviewer.py` scoring the five-dimension rubric against the diff and verification report using `claude-haiku-4-5`, emitting `review_report.json`; implement `generate_handoff.py` producing `handoff.json` from all artifacts; then assemble `agent-workbench-pack/` with all seven surfaces, JSON Schemas, and `bin/install.sh`, and run the installer against a sample FastAPI repo to prove it lays down cleanly. Use `claude-opus-4-8` for the builder loop in the demo run; use `claude-haiku-4-5` for the reviewer.
 
 </div>

@@ -5,7 +5,7 @@
 
 ---
 
-# Module 1 — Foundations
+# Module 1: Foundations
 
 - [Overview](module1/README.md)
 - [The Day-One Stack](module1/01-dev-environment.md)
@@ -14,7 +14,7 @@
 - [Transformer-Era NLP](module1/04-transformer-era-nlp.md)
 - [Foundations of Retrieval and Evaluation](module1/05-retrieval-and-eval-foundations.md)
 
-# Module 2 — LLM Engineering
+# Module 2: LLM Engineering
 
 - [Overview](module2/README.md)
 - [Prompt Engineering](module2/01-prompt-engineering.md)
@@ -25,7 +25,7 @@
 - [Structured Output & Tools](module2/06-structured-output-and-tools.md)
 - [The Complexity Ladder](module2/07-the-complexity-ladder.md)
 
-# Module 3 — Agent Foundations
+# Module 3: Agent Foundations
 
 - [Overview](module3/README.md)
 - [The Agent Loop](module3/01-the-agent-loop.md)
@@ -44,7 +44,7 @@
 - [The Workbench Surfaces I](module3/14-the-workbench-surfaces-i.md)
 - [The Workbench Surfaces II & the Pack](module3/15-the-workbench-surfaces-ii-and-the-pack.md)
 
-# Module 4 — Multi-Agent Systems
+# Module 4: Multi-Agent Systems
 
 - [Overview](module4/README.md)
 - [Why Multi-Agent](module4/01-why-multi-agent.md)
@@ -63,7 +63,7 @@
 - [Computer-Use & Coding Agents](module4/14-computer-use-and-coding-agents.md)
 - [Voice Agents & Benchmarks](module4/15-voice-and-benchmarks.md)
 
-# Module 5 — Deploy & Performance Engineering
+# Module 5: Deploy & Performance Engineering
 
 - [Overview](module5/README.md)
 - [Serving Engines](module5/01-serving-engines.md)
@@ -82,7 +82,7 @@
 - [Rust Break-In](module5/14-rust-break-in.md)
 - [async Rust for Serving](module5/15-async-rust-for-serving.md)
 
-# Module 6 — Agent Artifacts
+# Module 6: Agent Artifacts
 
 - [Overview](module6/README.md)
 - [Terminal Coding Agent](module6/01-terminal-coding-agent.md)
@@ -90,14 +90,14 @@
 - [Real-Time Voice Assistant](module6/03-realtime-voice-assistant.md)
 - [Issue-to-PR Autonomous Agent](module6/04-issue-to-pr-agent.md)
 
-# Module 7 — Multi-Agent Artifacts
+# Module 7: Multi-Agent Artifacts
 
 - [Overview](module7/README.md)
 - [Autonomous Research Agent](module7/01-autonomous-research-agent.md)
 - [DevOps K8s Troubleshooting Agent](module7/02-devops-k8s-agent.md)
 - [Governed Multi-Agent Fleet (Finale)](module7/03-governed-multi-agent-fleet.md)
 
-# Module 8 — Final Systems Engineering Exam
+# Module 8: Final Systems Engineering Exam
 
 - [Overview](module8/README.md)
 - [The Exam](module8/01-the-exam.md)

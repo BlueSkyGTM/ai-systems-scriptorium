@@ -1,12 +1,12 @@
 # MCP Fundamentals
 
-The typed tools from lessons 04–06 live inside your process. MCP moves them outside it — and that's where the language bridge becomes real.
+The typed tools from lessons 04–06 live inside your process. MCP moves them outside it; and that's where the language bridge becomes real.
 
 ## What MCP Solves
 
 In-process tools are fast and simple, but they don't compose. Claude Desktop can't call your TypeScript tool. Another team's Python agent can't call it. Claude Code can't call it. Every consumer writes its own integration.
 
-The Model Context Protocol fixes this with a standard: one server exposes your tools over a defined wire format; any MCP client — Claude Desktop, Claude Code, your Python harness, a colleague's agent — connects and calls them without renegotiation. One implementation, many hosts. That is the compounding value.
+The Model Context Protocol fixes this with a standard: one server exposes your tools over a defined wire format; any MCP client, Claude Desktop, Claude Code, your Python harness, a colleague's agent, connects and calls them without renegotiation. One implementation, many hosts. That is the compounding value.
 
 MCP is JSON-RPC 2.0, nothing more exotic. The spec defines what messages flow, in what order, over what transports. Learning the protocol is learning seven message types and a lifecycle.
 
@@ -18,7 +18,7 @@ In `initialize`, the client announces its capabilities; the server announces its
 
 In `operation`, the client sends requests (`tools/list`, `tools/call`, `resources/read`, `prompts/get`) and the server responds. The server can also send notifications to the client without a pending request.
 
-`shutdown` is a graceful close — the client sends a notification, the server drains, the transport closes.
+`shutdown` is a graceful close; the client sends a notification, the server drains, the transport closes.
 
 The wire shape of a `tools/list` round trip:
 
@@ -53,13 +53,13 @@ And a `tools/call`:
 ]}}
 ```
 
-The schema your TypeScript tool already carries (`name`, `description`, `parameters`) maps directly to the `tools/list` response. No reshaping needed — the TypeScript `ToolDefinition` from lesson 05 is the MCP server manifest.
+The schema your TypeScript tool already carries (`name`, `description`, `parameters`) maps directly to the `tools/list` response. No reshaping needed; the TypeScript `ToolDefinition` from lesson 05 is the MCP server manifest.
 
 ## Transports
 
 MCP defines two transports: **stdio** and **Streamable HTTP**.
 
-**stdio** runs the server as a child process. The client writes newline-delimited JSON to stdin; the server writes responses to stdout. Local tools, Claude Code extensions, and development setups use stdio. It is dead simple — no ports, no auth, no firewall rules.
+**stdio** runs the server as a child process. The client writes newline-delimited JSON to stdin; the server writes responses to stdout. Local tools, Claude Code extensions, and development setups use stdio. It is dead simple; no ports, no auth, no firewall rules.
 
 **Streamable HTTP** sends all MCP traffic over a single HTTP endpoint (`POST /mcp`). The server assigns a session ID; the client includes it on subsequent requests. Long-running connections use Server-Sent Events for server-to-client notifications. Remote, shared, and production servers use this transport.
 
@@ -95,13 +95,13 @@ const transport = new StdioServerTransport();
 await server.connect(transport);
 ```
 
-The tool registered here is the same `searchTool` from `module3-agent/tools/search.ts`. The MCP server is a thin transport wrapper around the typed implementation — no duplication, no reshaping.
+The tool registered here is the same `searchTool` from `module3-agent/tools/search.ts`. The MCP server is a thin transport wrapper around the typed implementation; no duplication, no reshaping.
 
 Azure AI Foundry Agent Service supports the MCP tool primitive directly: you point an agent at a server URL, and it discovers and calls your tools over the same `tools/list` / `tools/call` round trip shown above. The TypeScript MCP SDK (`@modelcontextprotocol/sdk`) is the same SDK consumed by Foundry when it connects to an MCP tool endpoint. (learn.microsoft.com/azure/foundry/agents/how-to/tools/model-context-protocol)
 
 ## Connecting the Python Loop as an MCP Client
 
-This is the bridge. The Python agent harness — the loop, planner, and reflexion layers from lessons 01–03 — connects to the TypeScript MCP server as an MCP client over stdio. Python's MCP SDK handles the protocol:
+This is the bridge. The Python agent harness, the loop, planner, and reflexion layers from lessons 01–03, connects to the TypeScript MCP server as an MCP client over stdio. Python's MCP SDK handles the protocol:
 
 ```python
 # module3-agent/harness/mcp_client.py
@@ -133,33 +133,33 @@ async def call_tool(name: str, arguments: dict) -> str:
             return result.content[0].text
 ```
 
-The Python loop calls `call_tool("search", {"query": "..."})` instead of `tools.execute("search", {...})`. The protocol is the bridge — the TypeScript tool runs in its own Node.js process; the Python harness talks to it over stdio JSON-RPC.
+The Python loop calls `call_tool("search", {"query": "..."})` instead of `tools.execute("search", {...})`. The protocol is the bridge; the TypeScript tool runs in its own Node.js process; the Python harness talks to it over stdio JSON-RPC.
 
-The snippet above reconnects per call to keep the illustration simple. In production the Python harness should hold a single persistent `ClientSession` for the loop's lifetime and call tools through it — spawning a new subprocess and re-running `initialize` on every tool call adds latency and process overhead that compounds fast in a multi-turn agent loop.
+The snippet above reconnects per call to keep the illustration simple. In production the Python harness should hold a single persistent `ClientSession` for the loop's lifetime and call tools through it; spawning a new subprocess and re-running `initialize` on every tool call adds latency and process overhead that compounds fast in a multi-turn agent loop.
 
 The language seam is now explicit: TypeScript owns the tool implementations and the MCP server; Python owns the agent harness, the planning loop, and the client connection. MCP is the language boundary.
 
-The Python `mcp` package provides `ClientSession`, `StdioServerParameters`, and `stdio_client` — the three imports shown above. These are the canonical names in the published `mcp` package; verify the installed version matches the server SDK version to avoid protocol-version mismatches. (learn.microsoft.com/azure/foundry/agents/how-to/tools/model-context-protocol)
+The Python `mcp` package provides `ClientSession`, `StdioServerParameters`, and `stdio_client`; the three imports shown above. These are the canonical names in the published `mcp` package; verify the installed version matches the server SDK version to avoid protocol-version mismatches. (learn.microsoft.com/azure/foundry/agents/how-to/tools/model-context-protocol)
 
 ## Decoupling as the Payoff
 
-The TypeScript tools now run wherever Node.js runs. Connect Claude Desktop's MCP host to the same server — it calls your tools. Connect Claude Code — same. Connect a colleague's LangGraph agent with its own MCP client — same tools, same implementation, zero duplication.
+The TypeScript tools now run wherever Node.js runs. Connect Claude Desktop's MCP host to the same server; it calls your tools. Connect Claude Code; same. Connect a colleague's LangGraph agent with its own MCP client; same tools, same implementation, zero duplication.
 
 One more consequence: you can swap the Python harness for a different client without touching the TypeScript tools. You can update the tool implementation without touching the client. The protocol is the only shared contract.
 
 Azure API Center fills the registry role in Azure environments: register your MCP servers as managed API assets, expose a discovery portal to internal consumers, and synchronize with API Management automatically. (learn.microsoft.com/azure/api-center/register-discover-mcp-server)
 
-Write the tool once. The protocol handles the rest — that is the whole point.
+Write the tool once. The protocol handles the rest; that is the whole point.
 
 ## Core Concepts
 
 - MCP is JSON-RPC 2.0 with a defined lifecycle (initialize → operation → shutdown) and two transports: stdio for local child-process tools, Streamable HTTP for remote shared servers.
-- The TypeScript `ToolDefinition` from lesson 05 maps directly to the MCP `tools/list` response — the MCP server is a transport wrapper, not a new implementation.
+- The TypeScript `ToolDefinition` from lesson 05 maps directly to the MCP `tools/list` response; the MCP server is a transport wrapper, not a new implementation.
 - The Python agent harness connects as an MCP client over stdio, making MCP the language bridge: TypeScript typed tools server-side, Python control-flow client-side.
-- One MCP server serves any MCP host — Claude Desktop, Claude Code, your Python loop — without per-consumer integration work.
+- One MCP server serves any MCP host, Claude Desktop, Claude Code, your Python loop, without per-consumer integration work.
 
 <div class="claude-handoff" data-exercise="exercises/module3/07-mcp-fundamentals/">
 
-**Build It in Claude Code** — Expose `module3-agent/tools/` as a runnable MCP server (`module3-agent/mcp-server/index.ts`) over stdio using the TypeScript MCP SDK, then connect the Python harness as an MCP client (`module3-agent/harness/mcp_client.py`). The end-to-end test: the Python loop calls `search` via `session.call_tool()`, receives a result, and prints the JSON-RPC round trip.
+**Build It in Claude Code**: Expose `module3-agent/tools/` as a runnable MCP server (`module3-agent/mcp-server/index.ts`) over stdio using the TypeScript MCP SDK, then connect the Python harness as an MCP client (`module3-agent/harness/mcp_client.py`). The end-to-end test: the Python loop calls `search` via `session.call_tool()`, receives a result, and prints the JSON-RPC round trip.
 
 </div>

@@ -1,10 +1,10 @@
 # Typing the Product Layer
 
-A single typed tool is a contract. A fleet of typed tools — reusable across agents, composable into MCP servers, derivable from a single source of truth — is an architecture. The four patterns in this lesson turn the `ToolDefinition` from lesson 04 into a typed product layer the next chapter extends.
+A single typed tool is a contract. A fleet of typed tools, reusable across agents, composable into MCP servers, derivable from a single source of truth, is an architecture. The four patterns in this lesson turn the `ToolDefinition` from lesson 04 into a typed product layer the next chapter extends.
 
 ## Generics: Reusable Tool Wrappers
 
-The `ToolDefinition` interface from lesson 04 uses `Record<string, unknown>` for both input and output — safe, but unspecific. Every caller casts. Generics fix that by letting you parameterize the types the compiler infers at each use site.
+The `ToolDefinition` interface from lesson 04 uses `Record<string, unknown>` for both input and output; safe, but unspecific. Every caller casts. Generics fix that by letting you parameterize the types the compiler infers at each use site.
 
 ```typescript
 interface Tool<TInput, TOutput> {
@@ -27,7 +27,7 @@ const searchTool: Tool<SearchInput, SearchOutput> = {
 };
 ```
 
-The compiler knows `searchTool.execute` returns `Promise<SearchOutput>`. Every call site gets type-safe access to `results` without a cast. Add a new tool with different shapes — `Tool<SummarizeInput, SummarizeOutput>` — and the same wrapper contract applies.
+The compiler knows `searchTool.execute` returns `Promise<SearchOutput>`. Every call site gets type-safe access to `results` without a cast. Add a new tool with different shapes, `Tool<SummarizeInput, SummarizeOutput>`, and the same wrapper contract applies.
 
 Type parameter constraints keep generics honest. A registry that needs every tool to have a `name` property can enforce it:
 
@@ -37,13 +37,13 @@ function registerTool<T extends { name: string }>(tool: T): void {
 }
 ```
 
-In `@azure/ai-agents`, `ToolDefinitionUnion` is exactly this pattern — a discriminated union of `FunctionToolDefinition | CodeInterpreterToolDefinition | FileSearchToolDefinition | …` keyed on `type` (see learn.microsoft.com/javascript/api/@azure/ai-agents/tooldefinitionunion).
+In `@azure/ai-agents`, `ToolDefinitionUnion` is exactly this pattern; a discriminated union of `FunctionToolDefinition | CodeInterpreterToolDefinition | FileSearchToolDefinition | …` keyed on `type` (see learn.microsoft.com/javascript/api/@azure/ai-agents/tooldefinitionunion).
 
 ## Interfaces: MCP Server Contracts and Agent Schemas
 
-Interfaces describe the shape of objects that cross process boundaries — MCP request/response pairs, agent schemas, server manifests. Two interface features matter here beyond what lesson 04 covered.
+Interfaces describe the shape of objects that cross process boundaries; MCP request/response pairs, agent schemas, server manifests. Two interface features matter here beyond what lesson 04 covered.
 
-**Index signatures** describe objects whose keys are unknown at compile time but whose values share a type — exactly the shape of an MCP server's tool map or an agent's parameter schema:
+**Index signatures** describe objects whose keys are unknown at compile time but whose values share a type; exactly the shape of an MCP server's tool map or an agent's parameter schema:
 
 ```typescript
 interface ToolMap {
@@ -66,15 +66,15 @@ interface AgentContext {
 }
 ```
 
-Both declarations merge — all consumers see the extended shape. This is how `@types/node` extends globals, and how you extend agent SDK types to carry infrastructure state without modifying the upstream package.
+Both declarations merge; all consumers see the extended shape. This is how `@types/node` extends globals, and how you extend agent SDK types to carry infrastructure state without modifying the upstream package.
 
-Interfaces are open (declaration merging works), type aliases are closed. For shapes that cross package boundaries — MCP contracts, agent schemas, SDK extension points — prefer interfaces.
+Interfaces are open (declaration merging works), type aliases are closed. For shapes that cross package boundaries, MCP contracts, agent schemas, SDK extension points, prefer interfaces.
 
-The `@azure/ai-agents` SDK extends this pattern: its `Agent` interface carries `tools: ToolDefinitionUnion[]`, and `CreateAgentOptionalParams` / `UpdateAgentOptionalParams` both accept `tools?: ToolDefinitionUnion[]` — the index-signature map you define locally maps directly to what the SDK expects.
+The `@azure/ai-agents` SDK extends this pattern: its `Agent` interface carries `tools: ToolDefinitionUnion[]`, and `CreateAgentOptionalParams` / `UpdateAgentOptionalParams` both accept `tools?: ToolDefinitionUnion[]`; the index-signature map you define locally maps directly to what the SDK expects.
 
 ## Declaration Files: Typing JS-First LLM Packages
 
-Many LLM packages ship as CommonJS JavaScript with no type definitions — or with types that lag behind the JS surface. Declaration files (`.d.ts`) let you add a type layer without touching the original package.
+Many LLM packages ship as CommonJS JavaScript with no type definitions; or with types that lag behind the JS surface. Declaration files (`.d.ts`) let you add a type layer without touching the original package.
 
 The pattern has two cases.
 
@@ -92,11 +92,11 @@ declare module "untyped-llm-package" {
 }
 ```
 
-**Case 2: your own compiled output.** With `"declaration": true` in `tsconfig.json`, `tsc` emits a `.d.ts` alongside every compiled `.js`. Any package that imports your tool registry gets the types automatically — no manual declaration file needed.
+**Case 2: your own compiled output.** With `"declaration": true` in `tsconfig.json`, `tsc` emits a `.d.ts` alongside every compiled `.js`. Any package that imports your tool registry gets the types automatically; no manual declaration file needed.
 
-Both cases enforce the same guarantee: the compiler checks every call site even when the implementation is plain JavaScript. A typed schema is a validation boundary — the model's generated args hit the type wall before they reach your business logic.
+Both cases enforce the same guarantee: the compiler checks every call site even when the implementation is plain JavaScript. A typed schema is a validation boundary; the model's generated args hit the type wall before they reach your business logic.
 
-Visual Studio and VS Code both auto-acquire `.d.ts` files from DefinitelyTyped for npm packages — the same repository pattern the manual `declare module` block mimics when no `@types/` package exists.
+Visual Studio and VS Code both auto-acquire `.d.ts` files from DefinitelyTyped for npm packages; the same repository pattern the manual `declare module` block mimics when no `@types/` package exists.
 
 ## Type Modifiers: One Source of Truth
 
@@ -115,7 +115,7 @@ type ToolName = typeof TOOL_NAMES[keyof typeof TOOL_NAMES];
 // → "search" | "summarize" | "classify"
 ```
 
-Change a tool name once in `TOOL_NAMES` and the `ToolName` type updates everywhere — no string literals scattered across the codebase, no silent mismatch between registry key and schema name.
+Change a tool name once in `TOOL_NAMES` and the `ToolName` type updates everywhere; no string literals scattered across the codebase, no silent mismatch between registry key and schema name.
 
 **`keyof`** extracts the set of keys from a type as a union. The `ToolName` derivation above uses it. It also validates tool registry lookups at compile time:
 
@@ -135,9 +135,9 @@ type AgentConfig = typeof agentConfig;
 
 These three work together. `as const` locks the values; `typeof` captures the locked shape; `keyof` extracts the keys. Together they let the tool registry, the parameter validator, and the MCP schema all derive from one definition instead of three.
 
-Advanced type operations — mapped types, conditional types, template-literal types — extend this into full compile-time schema derivation. They attach in Module 4, where multi-agent contract types need them. One forward pointer: if you find yourself writing `{ [K in keyof T]: ... }`, you are in mapped-type territory and that is Module 4 material.
+Advanced type operations, mapped types, conditional types, template-literal types, extend this into full compile-time schema derivation. They attach in Module 4, where multi-agent contract types need them. One forward pointer: if you find yourself writing `{ [K in keyof T]: ... }`, you are in mapped-type territory and that is Module 4 material.
 
-The `(typeof X)[keyof typeof X]` idiom is live in production Azure SDKs — `@azure/msal-common` uses `(typeof GrantType)[keyof typeof GrantType]` and `(typeof AADAuthorityConstants)[keyof typeof AADAuthorityConstants]` for exactly this purpose.
+The `(typeof X)[keyof typeof X]` idiom is live in production Azure SDKs; `@azure/msal-common` uses `(typeof GrantType)[keyof typeof GrantType]` and `(typeof AADAuthorityConstants)[keyof typeof AADAuthorityConstants]` for exactly this purpose.
 
 ## The Typed Product Layer in Module3-agent/
 
@@ -153,17 +153,17 @@ module3-agent/tools/
 
 This typed layer is what the Tools & MCP chapter (lesson 06 onward) wires to real transports. The interfaces define the MCP server contract; the declaration files type whatever SDK packages arrive untyped; the `as const` / `keyof` / `typeof` pattern keeps the tool name registry and the JSON Schema parameter names in sync.
 
-Without this layer, schema drift is silent — a renamed tool key in the registry and an outdated parameter name in the schema have nothing to catch them until the model calls the wrong function at runtime.
+Without this layer, schema drift is silent; a renamed tool key in the registry and an outdated parameter name in the schema have nothing to catch them until the model calls the wrong function at runtime.
 
 ## Core Concepts
 
 - Generic `Tool<TInput, TOutput>` separates the stable wrapper shape from the per-tool data shapes, so one registry contract covers every tool without losing per-tool type safety.
 - Interfaces with index signatures describe MCP server contracts and agent schemas where key sets are open; declaration merging lets you extend upstream SDK interfaces without forking them.
-- Declaration files (`.d.ts`) add a type layer over JS-first LLM packages — a typed schema is a validation boundary the compiler enforces before args reach business logic.
+- Declaration files (`.d.ts`) add a type layer over JS-first LLM packages; a typed schema is a validation boundary the compiler enforces before args reach business logic.
 - `as const` + `keyof` + `typeof` derive the `ToolName` union and the `AgentConfig` type from a single runtime definition, so name and type stay in sync as the tool registry grows.
 
 <div class="claude-handoff" data-exercise="exercises/module3/05-typing-the-product-layer/">
 
-**Build It in Claude Code** — Extend `module3-agent/tools/` with a generic `Tool<TInput, TOutput>` interface, a `TOOL_NAMES as const` registry, a `ToolName` union derived with `keyof typeof`, and a minimal `.d.ts` for any untyped SDK import in the project. All files must compile clean under `strict: true`.
+**Build It in Claude Code**: Extend `module3-agent/tools/` with a generic `Tool<TInput, TOutput>` interface, a `TOOL_NAMES as const` registry, a `ToolName` union derived with `keyof typeof`, and a minimal `.d.ts` for any untyped SDK import in the project. All files must compile clean under `strict: true`.
 
 </div>

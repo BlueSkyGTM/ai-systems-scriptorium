@@ -1,6 +1,6 @@
 # The Workbench Surfaces I: Instructions, State, Scope, Feedback
 
-Drop a frontier model into a real repo and it fails — not on the language, but on the work. It has no idea what "done" means, where it can write, or which tests are authoritative. The workbench fixes that. Swap the model and keep the surfaces; never the reverse.
+Drop a frontier model into a real repo and it fails; not on the language, but on the work. It has no idea what "done" means, where it can write, or which tests are authoritative. The workbench fixes that. Swap the model and keep the surfaces; never the reverse.
 
 ## What You Build
 
@@ -8,7 +8,7 @@ You build the first four of seven workbench surfaces inside `module3-agent/workb
 
 ## Instructions: the Router and the Rules
 
-The agent's first read is `AGENTS.md`. Keep it short — one screen. A long manual no one reads; a short router they actually follow. The router names the repo, the entry point, the test command, and a pointer to `docs/agent-rules.md`. That's it.
+The agent's first read is `AGENTS.md`. Keep it short; one screen. A long manual no one reads; a short router they actually follow. The router names the repo, the entry point, the test command, and a pointer to `docs/agent-rules.md`. That's it.
 
 ```
 # AGENTS.md
@@ -20,7 +20,7 @@ state: .workbench/agent_state.json
 board: .workbench/task_board.json
 ```
 
-`docs/agent-rules.md` is where the actual constraints live — away from the root, versioned alongside the code. Organize it under five headings the workbench checks at runtime:
+`docs/agent-rules.md` is where the actual constraints live; away from the root, versioned alongside the code. Organize it under five headings the workbench checks at runtime:
 
 | Section | Example rule |
 |---------|-------------|
@@ -30,13 +30,13 @@ board: .workbench/task_board.json
 | **Uncertainty** | Stop and emit a structured question. Do not guess. |
 | **Approval** | Any write to a file in `db/migrations/` requires a human approval step. |
 
-Prose wishes ("be careful," "test thoroughly") have no runtime teeth. Machine-checkable rules do. A `rule_checker.py` reads the rules file and emits a diff-friendly `rule_report.json` the verification step reads — turning your intentions into a ledger.
+Prose wishes ("be careful," "test thoroughly") have no runtime teeth. Machine-checkable rules do. A `rule_checker.py` reads the rules file and emits a diff-friendly `rule_report.json` the verification step reads; turning your intentions into a ledger.
 
-Azure AI Foundry's [Task Adherence](https://learn.microsoft.com/azure/ai-services/content-safety/concepts/task-adherence) signal detects when a planned tool invocation deviates from the user's intent — the runtime counterpart to the rule ledger you maintain locally.
+Azure AI Foundry's [Task Adherence](https://learn.microsoft.com/azure/ai-services/content-safety/concepts/task-adherence) signal detects when a planned tool invocation deviates from the user's intent; the runtime counterpart to the rule ledger you maintain locally.
 
 ## State: the Repo Is the System of Record
 
-Chat is volatile. When the session ends, the agent loses everything — unless you wrote it down somewhere that survives. The repo is that place.
+Chat is volatile. When the session ends, the agent loses everything; unless you wrote it down somewhere that survives. The repo is that place.
 
 Two files carry all durable state:
 
@@ -46,7 +46,7 @@ Two files carry all durable state:
   task_board.json    # queue of tasks, status per task, owner, timestamps
 ```
 
-Both live under a JSON Schema so a bad write is caught before it corrupts the workbench. The `StateManager` loads, validates, mutates, and persists atomically — it writes to a `.tmp` file first, then renames it, so a crash mid-write leaves the prior state intact.
+Both live under a JSON Schema so a bad write is caught before it corrupts the workbench. The `StateManager` loads, validates, mutates, and persists atomically; it writes to a `.tmp` file first, then renames it, so a crash mid-write leaves the prior state intact.
 
 ```python
 # module3-agent/workbench/state_manager.py
@@ -73,11 +73,11 @@ class StateManager:
         os.replace(tmp_path, self.state_path)           # atomic rename
 ```
 
-The schema enforces the shape — required fields, types, enum values — so state drift is a loud error, not a silent corruption. Every field is diff-friendly: git history becomes a complete audit of what the agent believed at each step.
+The schema enforces the shape, required fields, types, enum values, so state drift is a loud error, not a silent corruption. Every field is diff-friendly: git history becomes a complete audit of what the agent believed at each step.
 
 A task that spans three sessions costs nothing extra. The next session reads state, not chat history, and picks up where the prior one stopped.
 
-In CI, the same JSON files become pipeline artifacts. Azure Pipelines' [PublishPipelineArtifact](https://learn.microsoft.com/azure/devops/pipelines/artifacts/pipeline-artifacts?view=azure-devops) task lets a later stage download exactly the state a prior stage wrote — the same cross-session contract, scaled to a build system.
+In CI, the same JSON files become pipeline artifacts. Azure Pipelines' [PublishPipelineArtifact](https://learn.microsoft.com/azure/devops/pipelines/artifacts/pipeline-artifacts?view=azure-devops) task lets a later stage download exactly the state a prior stage wrote; the same cross-session contract, scaled to a build system.
 
 ## Scope: the Contract That Prevents Creep
 
@@ -124,7 +124,7 @@ def check(contract_path: str) -> dict:
     return {"task_id": contract["task_id"], "violations": violations, "passed": not violations}
 ```
 
-The report goes to `.workbench/scope_report.json`. Downstream, the verification gate reads it. A violation blocks the verdict. The agent cannot edit the scope contract — only you can.
+The report goes to `.workbench/scope_report.json`. Downstream, the verification gate reads it. A violation blocks the verdict. The agent cannot edit the scope contract; only you can.
 
 Azure's [AI-4 security guidance](https://learn.microsoft.com/security/benchmark/azure/mcsb-v2-artificial-intelligence-security#ai-4-apply-least-privilege-for-agent-functions) frames the same principle at the platform layer: define a capability manifest that allows only the tools the agent needs, apply RBAC, and audit every invocation. The scope contract is the local expression of that posture.
 
@@ -158,15 +158,15 @@ def run(argv: list[str], log_path: str, agent_note: str = "") -> dict:
     return record
 ```
 
-The agent calls `run_with_feedback` for every command — `pytest`, `ruff check`, `git diff`, anything. The record goes to `.workbench/feedback_record.jsonl`. The loop reads the actual `exit_code` back into its context before the next reasoning step.
+The agent calls `run_with_feedback` for every command; `pytest`, `ruff check`, `git diff`, anything. The record goes to `.workbench/feedback_record.jsonl`. The loop reads the actual `exit_code` back into its context before the next reasoning step.
 
 The loop refuses to mark a task complete if the feedback log is empty. "Tests pass" backed by a `feedback_record.jsonl` entry with `exit_code: 0` is a fact. "Tests pass" with no record is a hallucination. You enforce the difference at the loop level, not the prompt level.
 
-Azure Pipelines surfaces the same discipline at scale: the [Publish Pipeline Artifacts](https://learn.microsoft.com/azure/devops/pipelines/artifacts/pipeline-artifacts?view=azure-devops) task and stage [gates](https://learn.microsoft.com/azure/devops/pipelines/release/approvals/gates?view=azure-devops) let downstream stages read the feedback log before they advance — the same "no record, no pass" rule enforced by the pipeline itself.
+Azure Pipelines surfaces the same discipline at scale: the [Publish Pipeline Artifacts](https://learn.microsoft.com/azure/devops/pipelines/artifacts/pipeline-artifacts?view=azure-devops) task and stage [gates](https://learn.microsoft.com/azure/devops/pipelines/release/approvals/gates?view=azure-devops) let downstream stages read the feedback log before they advance; the same "no record, no pass" rule enforced by the pipeline itself.
 
 ## The Thread so Far
 
-Instructions constrain what the agent may do. State makes multi-session work cheap. Scope locks the blast radius. Feedback anchors every claim to a real execution record. Together the four surfaces turn a capable model into a predictable one — without changing the model at all.
+Instructions constrain what the agent may do. State makes multi-session work cheap. Scope locks the blast radius. Feedback anchors every claim to a real execution record. Together the four surfaces turn a capable model into a predictable one; without changing the model at all.
 
 The next lesson adds the three surfaces that close the loop: verification (the agent doesn't grade its own work), review (a second loop catches what verification misses), and handoff (the capstone that packages all seven into the `agent-workbench-pack/` the M6 coding agent imports).
 
@@ -174,11 +174,11 @@ The next lesson adds the three surfaces that close the loop: verification (the a
 
 - A short `AGENTS.md` router plus machine-checkable `docs/agent-rules.md` rules outperform a long manual because the agent reads the router every turn and the workbench enforces the rules as a ledger, not prose.
 - Durable state lives in the repo as JSON Schema-validated files written atomically; chat history is volatile and survives nothing.
-- A per-task `scope_contract.json` combined with a post-run `scope_checker.py` diff is the only reliable defense against scope creep — the most under-monitored single-agent failure mode.
+- A per-task `scope_contract.json` combined with a post-run `scope_checker.py` diff is the only reliable defense against scope creep; the most under-monitored single-agent failure mode.
 - `run_with_feedback.py` turns every shell command into a persisted fact (argv, exit code, stdout tail, duration); a loop that refuses to advance without a feedback record eliminates "all tests pass" with no evidence.
 
 <div class="claude-handoff" data-exercise="exercises/module3/14-the-workbench-surfaces-i/">
 
-**Build It in Claude Code** — Add the first four workbench surfaces to `module3-agent/workbench/`: write `AGENTS.md` and `docs/agent-rules.md` with all five rule sections; implement `StateManager` with atomic writes and JSON Schema validation for `agent_state.json` and `task_board.json`; implement `scope_checker.py` that diffs against a `scope_contract.json` and emits `scope_report.json`; implement `run_with_feedback.py` that wraps a subprocess and appends to `feedback_record.jsonl`. A smoke-test script must run all four surfaces against a sample task and print a summary.
+**Build It in Claude Code**: Add the first four workbench surfaces to `module3-agent/workbench/`: write `AGENTS.md` and `docs/agent-rules.md` with all five rule sections; implement `StateManager` with atomic writes and JSON Schema validation for `agent_state.json` and `task_board.json`; implement `scope_checker.py` that diffs against a `scope_contract.json` and emits `scope_report.json`; implement `run_with_feedback.py` that wraps a subprocess and appends to `feedback_record.jsonl`. A smoke-test script must run all four surfaces against a sample task and print a summary.
 
 </div>

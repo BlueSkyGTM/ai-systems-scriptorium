@@ -2,8 +2,8 @@
 
 Most courses teach you everything and prepare you for nothing.
 
-This one is built the other way around. It teaches a single job — AI Platform Engineer, the person who
-builds, serves, and governs the systems that run models — and it cuts everything that doesn't serve that
+This one is built the other way around. It teaches a single job; AI Platform Engineer, the person who
+builds, serves, and governs the systems that run models; and it cuts everything that doesn't serve that
 job. What's left is dense on purpose.
 
 You will notice the writing is short. That is not a shortcut; it is the method. This book follows William
@@ -13,7 +13,7 @@ and one voice. If a page reads fast, that is the work, not the absence of it. Yo
 is wasting your attention.
 
 The book holds the concepts. You build everything else. Each lesson ends with a button that hands its work
-to Claude Code, open beside this page in your editor — the lesson tells you what to build and where you left
+to Claude Code, open beside this page in your editor; the lesson tells you what to build and where you left
 off, and you build it. Reading happens here; the doing happens there. The two are one loop.
 
 You will also notice what is missing. There is no chapter on training a model from scratch, no deep dive on

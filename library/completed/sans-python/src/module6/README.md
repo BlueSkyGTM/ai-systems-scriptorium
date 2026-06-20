@@ -1,15 +1,15 @@
-# Module 6 — Agent Artifacts
+# Module 6: Agent Artifacts
 
 Single-agent portfolio builds, each solving a real business problem and shipping a skill artifact. This is
-where Module 3 becomes proof — and where the build gate changes: from here on, an exercise isn't done because
+where Module 3 becomes proof; and where the build gate changes: from here on, an exercise isn't done because
 it renders, it's done because it **runs**. Each artifact passes a local, offline BUILD→TEST gate (a `smoke`
 run + tests with a deterministic mock model, no cloud or GPU required) and exposes the **operator surfaces** —
-budget, kill-switch, an audit/verification gate, an acceptance eval — that you will drive as the operator in
+budget, kill-switch, an audit/verification gate, an acceptance eval; that you will drive as the operator in
 Module 8.
 
 Built in Claude Code on the Module 3 **agent-workbench pack** and the Module 5 **`module5-serving/`** platform.
 Each binds to a real platform (capability + one concrete stack + a portable seam), and runs dry-run-first:
-mocks and `.env.example` locally, the real service opt-in. The "strong project" bar holds throughout — a real
+mocks and `.env.example` locally, the real service opt-in. The "strong project" bar holds throughout; a real
 entry point (not a notebook), a README that frames the business problem, evaluation, tests, versioned.
 
 | # | Artifact | Competency it proves | Reused in Module 7 as |

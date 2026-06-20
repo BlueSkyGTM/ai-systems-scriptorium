@@ -58,24 +58,8 @@
     node.appendChild(btn);
   }
 
-  function addExerciseTag(node) {
-    // Surface WHICH exercise this block is — each links to a distinct folder,
-    // but that uniqueness is otherwise invisible behind the shared CTA wrapper.
-    const raw = node.getAttribute("data-exercise") || "";
-    if (!raw) return;
-    const label = raw.replace(/^exercises\//, "").replace(/\/$/, "");
-    if (!label) return;
-    const tag = document.createElement("div");
-    tag.className = "claude-handoff-ex";
-    tag.textContent = label;
-    node.insertBefore(tag, node.firstChild);
-  }
-
   function init() {
-    document.querySelectorAll(".claude-handoff").forEach(function (node) {
-      addExerciseTag(node);
-      addButton(node);
-    });
+    document.querySelectorAll(".claude-handoff").forEach(addButton);
   }
 
   if (document.readyState === "loading") {

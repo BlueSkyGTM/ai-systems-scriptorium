@@ -2,11 +2,11 @@
 
 Every lesson from Module 2 onward assumes you can reach a model. That assumption starts here.
 
-**You build** a working API call that sends a prompt to Claude and prints a real response — no SDK, no Python, no framework. Plain HTTP.
+**You build** a working API call that sends a prompt to Claude and prints a real response; no SDK, no Python, no framework. Plain HTTP.
 
 ## Get Your API Key
 
-Go to [console.anthropic.com](https://console.anthropic.com), create an account, and generate an API key. Copy it once — you will not see it again.
+Go to [console.anthropic.com](https://console.anthropic.com), create an account, and generate an API key. Copy it once; you will not see it again.
 
 ## Store the Key Safely
 
@@ -22,7 +22,7 @@ Add that line to your `~/.zshrc` or `~/.bashrc` so it loads in every shell sessi
 echo $ANTHROPIC_API_KEY
 ```
 
-If you see the key, you are set. If you see nothing, the export did not persist — add it to the shell config file and open a new terminal.
+If you see the key, you are set. If you see nothing, the export did not persist; add it to the shell config file and open a new terminal.
 
 **The rule:** env vars for secrets, `.gitignore` for `.env` files, never source-control a key. A key in git history is compromised even after deletion.
 
@@ -72,21 +72,21 @@ Four fields matter now: `content[0].text` is the reply, `model` confirms which m
 
 ## What Just Happened
 
-You sent a structured HTTP request with your key in the header and a message array in the body. The model returned a structured JSON response. This is the whole API surface — every SDK, every framework, every agent library makes this same call underneath. Understanding the shape means you can debug anything built on top of it.
+You sent a structured HTTP request with your key in the header and a message array in the body. The model returned a structured JSON response. This is the whole API surface; every SDK, every framework, every agent library makes this same call underneath. Understanding the shape means you can debug anything built on top of it.
 
-SDKs — `anthropic` in Python, `@anthropic-ai/sdk` in TypeScript — arrive at their language's point-of-use. Use them then. For now, knowing the wire format is enough.
+SDKs, `anthropic` in Python, `@anthropic-ai/sdk` in TypeScript, arrive at their language's point-of-use. Use them then. For now, knowing the wire format is enough.
 
-Everything from Module 2 onward assumes you can call a model — this is the door the whole course walks through.
+Everything from Module 2 onward assumes you can call a model; this is the door the whole course walks through.
 
 ## Core Concepts
 
 - An LLM API is an HTTP POST with your key in a header and a message array in the body; every SDK wraps this and nothing more.
-- Secrets live in environment variables, never in code or git history — a committed key is compromised even after deletion.
+- Secrets live in environment variables, never in code or git history; a committed key is compromised even after deletion.
 - The response shape (`content`, `model`, `stop_reason`, `usage`) stays constant across calls; `usage` is your billing meter.
 - `max_tokens` bounds cost and latency; always set it.
 
 <div class="claude-handoff" data-exercise="exercises/module1/02-your-first-llm-call/">
 
-**Build It in Claude Code** — Get a key, store it safely, fire the curl call, and parse the response.
+**Build It in Claude Code**: Get a key, store it safely, fire the curl call, and parse the response.
 
 </div>

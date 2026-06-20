@@ -24,6 +24,8 @@ Holds across all lessons. This is what makes 280 lessons from 9 sources read as 
       → "help"; "at this point in time" → "now". No `-ize` coinages.
 - [ ] **Active voice.** "The gateway routes the request," not "the request is routed by the gateway."
 - [ ] **Concrete nouns, active verbs.** Show the thing doing the thing.
+- [ ] **No em-dashes.** They read as an AI tell. Join two independent clauses with a semicolon, introduce
+      with a colon, set off a parenthetical aside with commas. Lesson sweep: `build-log/em-dash-sweep.py`.
 
 ## 3. One idea per lesson
 
@@ -71,7 +73,7 @@ No lesson ships on its first draft. After drafting, run this pass:
 ## 8. Variety — don't go mechanical (Zinsser's caution)
 
 Clarity is the goal; monotony is the failure mode it slips into. Short, clean sentences are the default — but a
-whole lesson of identical short em-dash declaratives is its own kind of clutter, and an identical ending across
+whole lesson of identical short declaratives is its own kind of clutter, and an identical ending across
 every lesson tells the reader a template wrote it, not a person.
 
 - [ ] **Vary the rhythm.** Mix sentence lengths. Let one longer, breathing sentence carry a complex idea, then
