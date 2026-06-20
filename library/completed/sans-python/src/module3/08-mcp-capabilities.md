@@ -118,6 +118,6 @@ Six primitives, one decision rule each — get them wrong and the server technic
 
 <div class="claude-handoff" data-exercise="exercises/module3/08-mcp-capabilities/">
 
-**Build It in Claude Code** — extend the MCP server from lesson 07 with: a `config://module3-agent/config` resource returning the agent's runtime config as JSON; a `review-tool-schema` prompt template that builds a review message for any registered tool; and roots enforcement (reject any tool call that would access a path outside the declared roots). Verify with the Python MCP client: list tools, list resources, fetch the config resource, and get the prompt.
+**Build It in Claude Code** — Extend the MCP server from lesson 07 with: a `config://module3-agent/config` resource returning the agent's runtime config as JSON; a `review-tool-schema` prompt template that builds a review message for any registered tool; and roots enforcement (reject any tool call that would access a path outside the declared roots). Verify with the Python MCP client: list tools, list resources, fetch the config resource, and get the prompt.
 
 </div>

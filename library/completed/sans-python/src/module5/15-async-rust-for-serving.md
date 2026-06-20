@@ -112,6 +112,6 @@ That division is the whole mixed-language thesis made concrete: Python where ite
 
 <div class="claude-handoff" data-exercise="exercises/module5/15-async-rust-for-serving/">
 
-**Build It in Claude Code** — add a `proxy/` to `module5-serving/`: a tokio async proxy that forwards a request to the module's mock inference endpoint and adds one operational concern (a `timeout`, or a `Semaphore` concurrency cap). It must build with `cargo build` and run locally — no GPU, no cloud.
+**Build It in Claude Code** — Add a `proxy/` to `module5-serving/`: a tokio async proxy that forwards a request to the module's mock inference endpoint and adds one operational concern (a `timeout`, or a `Semaphore` concurrency cap). It must build with `cargo build` and run locally — no GPU, no cloud.
 
 </div>

@@ -35,6 +35,6 @@ SRE-for-AI extends into incident response, where the 2026 pattern grounds an LLM
 
 <div class="claude-handoff" data-exercise="exercises/module5/06-observability-sre-for-ai/">
 
-**Build It in Claude Code** — instrument `module5-serving/` with OpenTelemetry spans using the GenAI semantic conventions (emit `gen_ai.usage.input_tokens` / `output_tokens` and a model attribute per call), expose a Prometheus-scrapeable `/metrics` endpoint, and stand up a local dashboard that reads it. Add a sampled quality check that runs an LLM-as-judge stub over a fraction of traffic, tracks pass rate against a baseline, and fires an alert when a declared SLO (p99 TTFT, goodput, or quality) is breached. Mock metrics are fine.
+**Build It in Claude Code** — Instrument `module5-serving/` with OpenTelemetry spans using the GenAI semantic conventions (emit `gen_ai.usage.input_tokens` / `output_tokens` and a model attribute per call), expose a Prometheus-scrapeable `/metrics` endpoint, and stand up a local dashboard that reads it. Add a sampled quality check that runs an LLM-as-judge stub over a fraction of traffic, tracks pass rate against a baseline, and fires an alert when a declared SLO (p99 TTFT, goodput, or quality) is breached. Mock metrics are fine.
 
 </div>

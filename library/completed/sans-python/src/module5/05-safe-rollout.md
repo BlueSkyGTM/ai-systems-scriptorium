@@ -37,6 +37,6 @@ Rollback is the weapon the whole structure exists to keep loaded. Keep the *poli
 
 <div class="claude-handoff" data-exercise="exercises/module5/05-safe-rollout/">
 
-**Build It in Claude Code** — add a shadow/canary router to `module5-serving/` that fronts two model backends behind one endpoint: in shadow mode it mirrors every request to the candidate and logs a diff without affecting the response, and in canary mode it splits traffic by a configurable weight and reverts to 0% when a gated metric (cost, latency p99, or refusal rate) crosses a threshold. Prove the flip and the auto-revert happen as config changes, with no restart.
+**Build It in Claude Code** — Add a shadow/canary router to `module5-serving/` that fronts two model backends behind one endpoint: in shadow mode it mirrors every request to the candidate and logs a diff without affecting the response, and in canary mode it splits traffic by a configurable weight and reverts to 0% when a gated metric (cost, latency p99, or refusal rate) crosses a threshold. Prove the flip and the auto-revert happen as config changes, with no restart.
 
 </div>

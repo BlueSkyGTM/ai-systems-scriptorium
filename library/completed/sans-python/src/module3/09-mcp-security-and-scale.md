@@ -106,6 +106,6 @@ Prototypes trust everything in the process. Production systems verify at every b
 
 <div class="claude-handoff" data-exercise="exercises/module3/09-mcp-security-and-scale/">
 
-**Build It in Claude Code** — harden the MCP server from lesson 08: add a description linter that runs at startup and fails the server if any tool description matches injection patterns; add SHA-256 hash pinning that rejects a tool whose description changed after registration; add a mutation allowlist that gates write-capable tools behind an approval hook; and sketch an OAuth 2.1 PKCE flow (client-side only — generate the verifier/challenge pair and confirm the `aud` claim check). Use `claude-opus-4-8` for any model calls in the exercise; use `claude-haiku-4-5` for cheap classification steps (e.g., the linter's model-assisted pattern detection).
+**Build It in Claude Code** — Harden the MCP server from lesson 08: add a description linter that runs at startup and fails the server if any tool description matches injection patterns; add SHA-256 hash pinning that rejects a tool whose description changed after registration; add a mutation allowlist that gates write-capable tools behind an approval hook; and sketch an OAuth 2.1 PKCE flow (client-side only — generate the verifier/challenge pair and confirm the `aud` claim check). Use `claude-opus-4-8` for any model calls in the exercise; use `claude-haiku-4-5` for cheap classification steps (e.g., the linter's model-assisted pattern detection).
 
 </div>

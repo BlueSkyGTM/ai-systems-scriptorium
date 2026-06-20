@@ -59,6 +59,6 @@ The four primitives are where the AI Engineer's design taste meets the MLOps eng
 
 <div class="claude-handoff" data-exercise="exercises/module4/03-four-primitives-and-orchestration/">
 
-**Build It in Claude Code** — turn the `module4-fleet/` harness orchestrator into a real supervisor-worker system: the supervisor delegates to the researcher and writer through direct tool calls, owning every context boundary, with no supervisor library. Map your system's defaults on all four primitives and justify the topology.
+**Build It in Claude Code** — Turn the `module4-fleet/` harness orchestrator into a real supervisor-worker system: the supervisor delegates to the researcher and writer through direct tool calls, owning every context boundary, with no supervisor library. Map your system's defaults on all four primitives and justify the topology.
 
 </div>

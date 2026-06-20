@@ -49,6 +49,6 @@ The prompt is the program — and an AI Platform Engineer treats it as versioned
 
 <div class="claude-handoff" data-exercise="exercises/module2/01-prompt-engineering/">
 
-**Build It in Claude Code** — build a prompt-testing harness that versions three prompt variants in an MLflow registry and scores them against a rubric.
+**Build It in Claude Code** — Build a prompt-testing harness that versions three prompt variants in an MLflow registry and scores them against a rubric.
 
 </div>

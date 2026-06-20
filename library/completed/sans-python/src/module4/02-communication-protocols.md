@@ -76,6 +76,6 @@ A protocol is where the AI Engineer's question (can these agents coordinate at a
 
 <div class="claude-handoff" data-exercise="exercises/module4/02-communication-protocols/">
 
-**Build It in Claude Code** — in `module4-fleet/`, give the two harness agents a real wire-format handoff: the supervisor discovers the worker's skills via an Agent Card and delegates a task over a typed A2A message, reusing your Module 3 MCP types for the wire contract. Prove a malformed handoff fails at the boundary, not downstream.
+**Build It in Claude Code** — In `module4-fleet/`, give the two harness agents a real wire-format handoff: the supervisor discovers the worker's skills via an Agent Card and delegates a task over a typed A2A message, reusing your Module 3 MCP types for the wire contract. Prove a malformed handoff fails at the boundary, not downstream.
 
 </div>

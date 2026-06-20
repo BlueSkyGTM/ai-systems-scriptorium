@@ -47,6 +47,6 @@ The decision, then, is one question asked four times — what hardware, what sca
 
 <div class="claude-handoff" data-exercise="exercises/module5/01-serving-engines/">
 
-**Build It in Claude Code** — stand up `module5-serving/`: a local mock serving engine behind a FastAPI endpoint, plus an `engine_selector` that takes a workload profile (hardware, scale, latency target, traffic shape) and returns a recommended engine with a reason. No GPU, no model weights — the engine is a stub that simulates token generation so the whole stack runs offline. This is the throughline every later Module 5 lesson extends.
+**Build It in Claude Code** — Stand up `module5-serving/`: a local mock serving engine behind a FastAPI endpoint, plus an `engine_selector` that takes a workload profile (hardware, scale, latency target, traffic shape) and returns a recommended engine with a reason. No GPU, no model weights — the engine is a stub that simulates token generation so the whole stack runs offline. This is the throughline every later Module 5 lesson extends.
 
 </div>

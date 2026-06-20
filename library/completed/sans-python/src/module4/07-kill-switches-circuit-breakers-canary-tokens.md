@@ -110,6 +110,6 @@ A control plane the agent can edit is not a control plane — it is a suggestion
 
 <div class="claude-handoff" data-exercise="exercises/module4/07-kill-switches-circuit-breakers-canary-tokens/">
 
-**Build It in Claude Code** — give the `_harness/` agents a control plane they cannot subvert: a kill switch backed by a key the agents' credentials can read but not write, checked before every action; a circuit breaker that trips on five identical tool calls in a row (closed/open/half-open); and a canary token — a decoy credential in the agent's environment that alarms and trips the kill switch the instant an agent reads it. Prove the agent cannot turn off its own switch.
+**Build It in Claude Code** — Give the `_harness/` agents a control plane they cannot subvert: a kill switch backed by a key the agents' credentials can read but not write, checked before every action; a circuit breaker that trips on five identical tool calls in a row (closed/open/half-open); and a canary token — a decoy credential in the agent's environment that alarms and trips the kill switch the instant an agent reads it. Prove the agent cannot turn off its own switch.
 
 </div>

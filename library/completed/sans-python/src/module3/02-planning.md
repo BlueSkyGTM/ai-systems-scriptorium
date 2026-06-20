@@ -67,6 +67,6 @@ Draw the dependency graph first. The right algorithm follows from the shape of t
 
 <div class="claude-handoff" data-exercise="exercises/module3/02-planning/">
 
-**Build It in Claude Code** — extend `module3-agent/` with a planner: add a `Planner` that produces a plan DAG for a multi-source research task, a `Worker` that executes tool nodes in dependency order, and a `Solver` that synthesizes the results. The loop should print the plan before executing it.
+**Build It in Claude Code** — Extend `module3-agent/` with a planner: add a `Planner` that produces a plan DAG for a multi-source research task, a `Worker` that executes tool nodes in dependency order, and a `Solver` that synthesizes the results. The loop should print the plan before executing it.
 
 </div>

@@ -73,6 +73,6 @@ One caution before you reach for an hours-long horizon: capability is not reliab
 
 <div class="claude-handoff" data-exercise="exercises/module4/05-long-horizon-durable-execution/">
 
-**Build It in Claude Code** — wrap the `_harness/` orchestrator in a durable runner: persist each agent step to a JSON checkpoint store keyed by `thread_id`, kill the process mid-run, and prove that a fresh process replays the completed steps from disk and resumes from the first unfinished one — without re-calling the model on the replayed steps.
+**Build It in Claude Code** — Wrap the `_harness/` orchestrator in a durable runner: persist each agent step to a JSON checkpoint store keyed by `thread_id`, kill the process mid-run, and prove that a fresh process replays the completed steps from disk and resumes from the first unfinished one — without re-calling the model on the replayed steps.
 
 </div>

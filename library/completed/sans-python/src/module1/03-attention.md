@@ -23,7 +23,7 @@ Knowing that attention is a learned, position-weighted sum over all input tokens
 
 <div class="claude-handoff" data-exercise="exercises/module1/03-attention/">
 
-**Try It in Claude Code** — probe a live LLM API to see attention-driven position effects: place the same fact at the start, middle, and end of a long prompt and measure retrieval accuracy across positions.
+**Try It in Claude Code** — Probe a live LLM API to see attention-driven position effects: place the same fact at the start, middle, and end of a long prompt and measure retrieval accuracy across positions.
 
 Open the repo and pick up from this lesson.
 

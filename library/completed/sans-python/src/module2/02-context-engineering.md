@@ -52,6 +52,6 @@ Context is a scarce, attackable resource — budgeting and defending it is platf
 
 <div class="claude-handoff" data-exercise="exercises/module2/02-context-engineering/">
 
-**Build It in Claude Code** — build a token-budget manager that enforces a context ceiling, compacts conversation history when it approaches the limit, and reports cache hit/miss cost savings.
+**Build It in Claude Code** — Build a token-budget manager that enforces a context ceiling, compacts conversation history when it approaches the limit, and reports cache hit/miss cost savings.
 
 </div>

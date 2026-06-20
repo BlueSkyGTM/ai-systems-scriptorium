@@ -171,6 +171,6 @@ The compiler is now the first reviewer — every tool call the model generates h
 
 <div class="claude-handoff" data-exercise="exercises/module3/04-typescript-break-in/">
 
-**Build It in Claude Code** — add `module3-agent/tools/` with a typed `ToolDefinition` interface, a `search.ts` tool implementation, and a `tsconfig.json` that compiles clean. The typed tool must satisfy the `tools.execute(name, args)` contract from lesson 01.
+**Build It in Claude Code** — Add `module3-agent/tools/` with a typed `ToolDefinition` interface, a `search.ts` tool implementation, and a `tsconfig.json` that compiles clean. The typed tool must satisfy the `tools.execute(name, args)` contract from lesson 01.
 
 </div>

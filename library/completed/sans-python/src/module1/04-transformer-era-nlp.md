@@ -37,7 +37,7 @@ Tokenization and structured outputs are where prompt cost, context budget, and t
 
 <div class="claude-handoff" data-exercise="exercises/module1/04-transformer-era-nlp/">
 
-**Try It in Claude Code** — inspect a tokenizer to measure how token counts differ across content types: tokenize identical information expressed as English prose, JSON, Python code, and a non-Latin script, then compute the ratio.
+**Try It in Claude Code** — Inspect a tokenizer to measure how token counts differ across content types: tokenize identical information expressed as English prose, JSON, Python code, and a non-Latin script, then compute the ratio.
 
 Open the repo and pick up from this lesson.
 

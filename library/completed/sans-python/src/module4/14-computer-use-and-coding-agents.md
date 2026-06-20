@@ -56,6 +56,6 @@ This is the seed for **Module 6 artifact 01**, where you build a coding agent fo
 
 <div class="claude-handoff" data-exercise="exercises/module4/14-computer-use-and-coding-agents/">
 
-**Inspect It in Claude Code** — no build here; the coding agent is a Module 6 artifact. Read a coding-agent run trace (a real one, or the `_harness/` orchestrator's trace) and tag every place the agent consumes untrusted input — tool output, file content, fetched page, screen text — versus the direct user instruction that is the only real permission. Mark where a sandbox boundary must sit and what would breach if it were missing.
+**Inspect It in Claude Code** — No build here; the coding agent is a Module 6 artifact. Read a coding-agent run trace (a real one, or the `_harness/` orchestrator's trace) and tag every place the agent consumes untrusted input — tool output, file content, fetched page, screen text — versus the direct user instruction that is the only real permission. Mark where a sandbox boundary must sit and what would breach if it were missing.
 
 </div>

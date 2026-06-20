@@ -72,6 +72,6 @@ For the AI Platform Engineer, this is the habit the title is built on: you are t
 
 <div class="claude-handoff" data-exercise="exercises/module5/09-measure-before-you-optimize/">
 
-**Build It in Claude Code** — instrument the `module5-serving/` mock serving layer with phase timers (input staging, prefill, decode, queue wait), run a profiling pass against a synthetic load, and read off which phase dominates. The layer hides a deliberate bottleneck — a serialized queue drain that starves the "GPU" while the model sits idle. Attribute it from the timeline before you touch it, apply the one fix that targets the actual limiter, and report the measured before/after delta in both throughput and latency. Then prove a *wrong* fix (quantizing the already-idle compute path) buys nothing.
+**Build It in Claude Code** — Instrument the `module5-serving/` mock serving layer with phase timers (input staging, prefill, decode, queue wait), run a profiling pass against a synthetic load, and read off which phase dominates. The layer hides a deliberate bottleneck — a serialized queue drain that starves the "GPU" while the model sits idle. Attribute it from the timeline before you touch it, apply the one fix that targets the actual limiter, and report the measured before/after delta in both throughput and latency. Then prove a *wrong* fix (quantizing the already-idle compute path) buys nothing.
 
 </div>

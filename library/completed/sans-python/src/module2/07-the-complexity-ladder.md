@@ -47,6 +47,6 @@ An AI Platform Engineer adds complexity only when the problem demands it — tha
 
 <div class="claude-handoff" data-exercise="exercises/module2/07-the-complexity-ladder/">
 
-**Try It in Claude Code** — take one task and implement it three ways: direct model call, single agent with tools, and a two-agent orchestration. Measure latency and token cost for each. Identify the simplest rung that actually solves the problem. Open the repo and pick up from this lesson.
+**Try It in Claude Code** — Take one task and implement it three ways: direct model call, single agent with tools, and a two-agent orchestration. Measure latency and token cost for each. Identify the simplest rung that actually solves the problem. Open the repo and pick up from this lesson.
 
 </div>

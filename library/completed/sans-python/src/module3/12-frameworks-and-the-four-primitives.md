@@ -119,6 +119,6 @@ The four knobs don't change when you add a hosting layer. What changes is where 
 
 <div class="claude-handoff" data-exercise="exercises/module3/12-frameworks-and-the-four-primitives/">
 
-**Build It in Claude Code** — take the from-scratch ReAct loop you built in lessons 01–03 and re-implement it in LangGraph: define the same task as a `StateGraph`, add the same tool, wire the same stop condition as a conditional edge, and enable checkpointing. Compare what the framework buys (checkpointing, streaming, conditional routing) against what it costs (setup, dependency footprint, compilation step).
+**Build It in Claude Code** — Take the from-scratch ReAct loop you built in lessons 01–03 and re-implement it in LangGraph: define the same task as a `StateGraph`, add the same tool, wire the same stop condition as a conditional edge, and enable checkpointing. Compare what the framework buys (checkpointing, streaming, conditional routing) against what it costs (setup, dependency footprint, compilation step).
 
 </div>

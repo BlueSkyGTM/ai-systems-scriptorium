@@ -41,6 +41,6 @@ Reach for these in order of blast radius. Quantization is a config change you ca
 
 <div class="claude-handoff" data-exercise="exercises/module5/03-optimization-levers/">
 
-**Build It in Claude Code** — add an optimization layer to `module5-serving/` that simulates all three levers: a `quantization` setting that lowers per-token decode time but also lowers a simulated quality score, a `speculative_decoding` mode with a tunable acceptance rate that goes net-negative below a threshold, and a `disaggregated` mode that splits prefill and decode and charges a KV-transfer tax. Run the same simulated workload through each lever, print TTFT/TPOT/throughput and the quality score before and after, and show the regime where each lever turns net-negative.
+**Build It in Claude Code** — Add an optimization layer to `module5-serving/` that simulates all three levers: a `quantization` setting that lowers per-token decode time but also lowers a simulated quality score, a `speculative_decoding` mode with a tunable acceptance rate that goes net-negative below a threshold, and a `disaggregated` mode that splits prefill and decode and charges a KV-transfer tax. Run the same simulated workload through each lever, print TTFT/TPOT/throughput and the quality score before and after, and show the regime where each lever turns net-negative.
 
 </div>

@@ -63,6 +63,6 @@ The through-line across this chapter is the through-line of the whole guide's se
 
 <div class="claude-handoff" data-exercise="exercises/module5/07-security-and-compliance/">
 
-**Build It in Claude Code** — add a security layer to `module5-serving/`: a `secrets.py` that resolves the provider key from an environment-backed "vault" at startup and refuses to run if the key is hardcoded or missing, and an access-check middleware that gates every request on an `(identity, role, tenant)` tuple — rejecting a caller whose role lacks the route and rejecting any request whose `tenant_id` doesn't match the resource it asks for. Prove cross-tenant access is denied and that a missing-secret startup fails loudly. Local only — no cloud, no real vault; simulate the vault with environment variables and the identity with a signed header.
+**Build It in Claude Code** — Add a security layer to `module5-serving/`: a `secrets.py` that resolves the provider key from an environment-backed "vault" at startup and refuses to run if the key is hardcoded or missing, and an access-check middleware that gates every request on an `(identity, role, tenant)` tuple — rejecting a caller whose role lacks the route and rejecting any request whose `tenant_id` doesn't match the resource it asks for. Prove cross-tenant access is denied and that a missing-secret startup fails loudly. Local only — no cloud, no real vault; simulate the vault with environment variables and the identity with a signed header.
 
 </div>

@@ -54,6 +54,6 @@ Debate is the AI Engineer's question — can coordination produce a better answe
 
 <div class="claude-handoff" data-exercise="exercises/module4/04-debate-and-failure-modes/">
 
-**Try It in Claude Code** — in `module4-fleet/`, run a debate between the harness agents with both full-mesh and star topology and confirm the star matches accuracy at far lower token cost. Then add a failure-mode tagger that labels traces with the five recurring MAST modes, and trigger one on purpose.
+**Try It in Claude Code** — In `module4-fleet/`, run a debate between the harness agents with both full-mesh and star topology and confirm the star matches accuracy at far lower token cost. Then add a failure-mode tagger that labels traces with the five recurring MAST modes, and trigger one on purpose.
 
 </div>

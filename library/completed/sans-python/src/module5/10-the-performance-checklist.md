@@ -71,6 +71,6 @@ That honesty is the whole value of the artifact. A checklist exists to produce a
 
 <div class="claude-handoff" data-exercise="exercises/module5/10-the-performance-checklist/">
 
-**Build It in Claude Code** — turn this lesson into a runnable audit against the `module5-serving/` stack. Encode the curated checklist as a script that probes the stack and the host (`nvidia-smi topo -m` where a GPU exists, batching/cache config, telemetry presence, version pinning), classifies each item green / partial / skipped / open-finding with a reason, and emits a prioritized findings document ranked by impact. Mark hardware you don't have as skipped, never fake-green; produce the doc a teammate could act on cold.
+**Build It in Claude Code** — Turn this lesson into a runnable audit against the `module5-serving/` stack. Encode the curated checklist as a script that probes the stack and the host (`nvidia-smi topo -m` where a GPU exists, batching/cache config, telemetry presence, version pinning), classifies each item green / partial / skipped / open-finding with a reason, and emits a prioritized findings document ranked by impact. Mark hardware you don't have as skipped, never fake-green; produce the doc a teammate could act on cold.
 
 </div>

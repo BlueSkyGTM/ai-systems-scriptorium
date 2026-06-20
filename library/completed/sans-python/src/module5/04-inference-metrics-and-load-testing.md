@@ -45,6 +45,6 @@ This is the same eval discipline as Module 2, pointed at a different question. T
 
 <div class="claude-handoff" data-exercise="exercises/module5/04-inference-metrics-and-load-testing/">
 
-**Build It in Claude Code** — add a metrics middleware to `module5-serving/` that records TTFT, TPOT, and throughput per request and exposes p50/p90/p99 plus goodput against a declared SLO, then write a local load-test script that drives the endpoint with varied-length prompts in steady, ramp, and spike shapes and prints the concurrency at which goodput collapses.
+**Build It in Claude Code** — Add a metrics middleware to `module5-serving/` that records TTFT, TPOT, and throughput per request and exposes p50/p90/p99 plus goodput against a declared SLO, then write a local load-test script that drives the endpoint with varied-length prompts in steady, ramp, and spike shapes and prints the concurrency at which goodput collapses.
 
 </div>

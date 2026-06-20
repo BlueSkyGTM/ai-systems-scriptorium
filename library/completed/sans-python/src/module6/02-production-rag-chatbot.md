@@ -93,6 +93,6 @@ A citation-enforced, guardrailed RAG chatbot for a regulated corpus: Docling-or-
 
 <div class="claude-handoff" data-exercise="exercises/module6/02-production-rag-chatbot/">
 
-**Build It in Claude Code** — assemble the production RAG chatbot: ingest a small regulated corpus into the `Chunk` contract, build the pure-Python `VectorIndex`, retrieve with a relevance floor, answer with citations through the mock LLM, screen input and output with the guardrail, log a drift reading, and run the eval acceptance gate. Prove it: `python smoke.py` exits zero with a cited answer and a blocked attack, and `python -m pytest tests/` shows a low-faithfulness build failing the gate. Then swap the local index for Azure AI Search behind the same interface.
+**Build It in Claude Code** — Assemble the production RAG chatbot: ingest a small regulated corpus into the `Chunk` contract, build the pure-Python `VectorIndex`, retrieve with a relevance floor, answer with citations through the mock LLM, screen input and output with the guardrail, log a drift reading, and run the eval acceptance gate. Prove it: `python smoke.py` exits zero with a cited answer and a blocked attack, and `python -m pytest tests/` shows a low-faithfulness build failing the gate. Then swap the local index for Azure AI Search behind the same interface.
 
 </div>

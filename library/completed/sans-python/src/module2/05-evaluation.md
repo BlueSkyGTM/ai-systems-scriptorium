@@ -81,6 +81,6 @@ Build owns the prompt. Deploy owns the serving layer. Neither owns the eval pipe
 
 <div class="claude-handoff" data-exercise="exercises/module2/05-evaluation/">
 
-**Build It in Claude Code** — build an eval framework that traces a RAG pipeline, scores outputs on the RAG triad with an LLM-as-judge, runs statistical correction with confidence intervals, and produces a pass/block report.
+**Build It in Claude Code** — Build an eval framework that traces a RAG pipeline, scores outputs on the RAG triad with an LLM-as-judge, runs statistical correction with confidence intervals, and produces a pass/block report.
 
 </div>
