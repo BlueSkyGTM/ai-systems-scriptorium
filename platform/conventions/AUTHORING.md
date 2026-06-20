@@ -65,8 +65,8 @@ ones; the threads (TS, Rust, eval, safety) only make sense in sequence.
 - **Three sources, always** (rule 10). Microsoft Learn via the connector, not memory.
 - **Don't reproduce, link.** Do not rebuild `ai-engineering-from-scratch`'s 500+ from-scratch lessons —
   link them as reference. The spine is business-application artifacts.
-- **The antilibrary stays cut.** Material in `src/antilibrary.md` is named and located, never authored into a
-  lesson. If a lesson pulls toward it, you've drifted off the seam.
+- **Out-of-scope stays cut.** Material outside the seam is left out, not authored into a lesson — routed to a
+  focused companion book if it deserves one. If a lesson pulls toward it, you've drifted off the seam.
 - **Compounding holds.** M6 agents are reused in M7 teams; M7's team builds the M8 system. Author the
   artifacts so the reuse is real, not restated.
 
