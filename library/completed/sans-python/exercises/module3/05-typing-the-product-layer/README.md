@@ -6,7 +6,7 @@ Extend `module3-agent/tools/` into a full typed product layer: a generic `Tool<T
 
 ## Why
 
-An AI Platform Engineer who controls the schema boundary — where every model-generated arg and every MCP tool call passes through compiler-checked types — ships agent systems that fail at build time, not at 2 AM.
+The schema boundary is where every model-generated arg and every MCP tool call enters your code. Type it, and a malformed call breaks the build. Leave it untyped, and the same call breaks production at 2 AM.
 
 ## Steps
 

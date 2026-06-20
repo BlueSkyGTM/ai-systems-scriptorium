@@ -40,7 +40,7 @@ The tradeoff is latency: cross-encoders run at 10–100ms per pair, not sub-mill
 
 ## Production concerns
 
-RAG fails in retrieval roughly 73% of the time in enterprise deployments. Invest in the knowledge source — chunking quality, freshness, index maintenance — before tuning prompts or swapping models.
+By widely-cited industry estimates, the large majority of enterprise RAG failures — on the order of three in four — trace to retrieval, not generation. The exact figure is soft, drawn from practitioner reports rather than a controlled study, but every team that has run RAG in production recognizes the shape of it. Invest in the knowledge source — chunking quality, freshness, index maintenance — before tuning prompts or swapping models.
 
 Route queries by complexity. Simple queries with exact-match answers go directly to sparse retrieval; semantic queries go to hybrid; multi-document synthesis queries need the full pipeline. A lightweight classifier at the router pays for itself in latency and cost.
 
@@ -55,7 +55,7 @@ For small static corpora (under 50,000 tokens), skip the retrieval pipeline enti
 - RAG grounds model responses in private data through retrieval at query time — no retraining, zero-cost data updates.
 - Hierarchical (parent-child) chunking indexes small chunks for retrieval precision but returns the parent chunk to the model for reasoning context.
 - Hybrid search — dense plus sparse merged via RRF — is the production baseline; dense-only retrieval misses exact matches.
-- Because 73% of production RAG failures trace to retrieval, the knowledge source quality is the highest-leverage investment in any RAG system.
+- Because most production RAG failures trace to retrieval — by widely-cited industry estimates, roughly three in four — the knowledge source quality is the highest-leverage investment in any RAG system.
 
 <div class="claude-handoff" data-exercise="exercises/module2/03-rag-system/">
 

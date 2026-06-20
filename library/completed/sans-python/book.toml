@@ -12,4 +12,4 @@ default-theme = "rust"
 preferred-dark-theme = "ayu"
 git-repository-url = ""
 additional-js = ["theme/copy-to-claude.js"]
-additional-css = ["theme/copy-to-claude.css"]
+additional-css = ["theme/copy-to-claude.css", "theme/syntax-polish.css"]

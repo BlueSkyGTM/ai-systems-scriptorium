@@ -54,3 +54,17 @@ ops — the ~94%-of-postings screen the point-of-use "Sans Python" approach does
 discarded; reached for when communicating with others, filling a gap, or remembering there is always more to
 learn — zero risk in being discerning. See `build-stages/hireability-alignment.md` and
 `build-stages/roadmap-coverage.md`.
+
+---
+
+None of this is a confession. A book that cut nothing would be a reading list, not a path, and a path is the
+only thing that gets you to the job. Every entry above was left out so the sequence could hold — so you could
+build on day one instead of grinding through a wall that was never load-bearing. The discernment that drew
+these lines is the same discernment the job rewards: knowing what to learn next is worth as much as knowing
+what you already know, and it costs nothing to hold a thing in reserve until a real problem asks for it.
+
+So read this page as a map, not a deficit. When retrieval breaks in a way chunking can't fix, when a model
+genuinely needs fine-tuning and the decision you learned to make now needs the build behind it, when the math
+under an eval stops being a black box you can trust — you will know the name of what you need and roughly
+where it lives. That is not a gap. That is the next move, already located. There is always more to learn; the
+skill is knowing it exists, and knowing when it's your turn to go get it.
