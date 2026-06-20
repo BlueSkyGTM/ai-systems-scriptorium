@@ -6,7 +6,7 @@ produces them live together, and where an arriving agent can navigate and do the
 
 ## What it is
 
-Three things, in one repo:
+Four things, in one repo:
 
 1. **The books** (`library/`) — technical books on AI systems engineering, each self-contained
    (`src/` + `exercises/` + `theme/` + `book.toml`, built with mdBook). The first, *Sans Python —
@@ -18,6 +18,9 @@ Three things, in one repo:
    book builder; that framing is retired.
 3. **The ore** (`vault/`) — nine raw source repos the books are distilled from, plus `ingredients/`,
    the distilled, in-git inputs the pipeline actually authors against.
+4. **The lab** (`extra-credit/`) — a sandbox where the agent generates repo scaffolds on demand, for
+   experiments and keeper tools, each one born connected to the logged material. Where the work stays
+   active between curriculum phases.
 
 ## Why artifacts
 

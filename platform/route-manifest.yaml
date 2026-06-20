@@ -27,6 +27,7 @@ routed_boundaries:
   platform_templates: platform/templates
   ingredients: ingredients
   progression: progression
+  extra_credit: extra-credit
   build_log: build-log
   vault: vault
   archive: archive

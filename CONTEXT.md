@@ -20,6 +20,7 @@ NOT load**, hand off where it says, and stop only at the named gate (defined in
 | Fix / edit a shipped lesson | `library/completed/sans-python` | book's `CONTEXT.md` → its fix-a-lesson sub-route; the lesson + `build-log/sans-python` verify verdict | `platform/pipeline`, `vault`, `ingredients` | the book's `CONTEXT.md` intent sub-router | none (autonomous) |
 | Process raw ore into a new book | `vault` | `vault/CONTEXT.md`, `vault/MANIFEST.md`, `ingredients`, `platform/pipeline` | `library/completed/sans-python` (don't author against a shipped book) | `platform/pipeline/CONTEXT.md` | `GATE-NAME-BOOK`, `GATE-LOCK-PLAN` |
 | Publish a book's artifacts | `library/completed/sans-python` | book's `CONTEXT.md` → its `publish` sub-route; `platform/pipeline` SHIP | `vault`, `ingredients` | `platform/pipeline/CONTEXT.md` SHIP stage | `GATE-PUBLISH` |
+| Generate a lab repo / experiment | `extra-credit` | `extra-credit/CONTEXT.md`, `platform/conventions` | `vault`, `archive`, the books | scan logged material for connections | none (autonomous); `GATE-PUBLISH` to graduate a tool |
 | Check status / pick next work | `.` | `CATALOG.md`, `BACKLOG.md` | everything else | — | none (autonomous) |
 
 ## The fixed points
@@ -36,4 +37,4 @@ NOT load**, hand off where it says, and stop only at the named gate (defined in
 `library` · `library/completed/sans-python` · `library/in-progress/everything-else` ·
 `library/planned/getting-hired` · `library/planned/simple-systems` · `platform` ·
 `platform/pipeline` · `platform/conventions` · `platform/templates` · `ingredients` ·
-`progression` · `build-log` · `vault` · `archive` (HISTORICAL — never route here).
+`progression` · `extra-credit` · `build-log` · `vault` · `archive` (HISTORICAL — never route here).
