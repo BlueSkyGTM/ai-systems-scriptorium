@@ -29,8 +29,11 @@ stays in M4.)
 
 **M5 — model-centric depth.** `ai-performance-engineering` training & CUDA subset (ch01–14: distributed
 training FSDP/TP/PP, CUDA kernels, Triton, GPU-architecture deep dive) — perf-eng is inference-only.
-Made-with-ML model-centric MLOps (training pipelines, experiment tracking, model lifecycle) — the deploy/
-serving/CI subset stays.
+Made-with-ML *deep* model-centric MLOps: training pipelines, model lifecycle, deep data-versioning (DVC) and
+pipeline orchestration (Airflow/Prefect/Kubeflow), and fine-tuning *implementation* (training loops, dataset
+engineering, optimizer internals). **Brought back at literacy depth in M5 ch5 (lessons 11–13):** data
+ingestion (Docling), experiment tracking (MLflow), and fine-tuning *decisions* (LoRA/QLoRA literacy) — enough
+to build the common case and speak to the rest; the deep build stays here → *Avec Python*.
 
 **M6–M8 — model-training builds.** GPT-from-scratch (capstone Part-2, 30–49: BPE → embeddings → attention →
 transformer block → GPT assembly → training loop → SFT → DPO) + distributed training from scratch (76–81:
@@ -43,3 +46,11 @@ Math foundations (linear algebra/calculus for backprop, matrix ops), ML fundamen
 computer vision, speech/audio, reinforcement learning, LLMs-from-scratch (Karpathy territory). `asdg`
 antilibrary subset: Ch01 (LLM internals at implementation depth), Ch03 (training/adaptation), Ch04 (inference
 optimization — handled in M5 via aipe).
+
+**Named *Avec Python* candidates** (the conceptual companion that may one day compile this antilibrary): the
+**ML math** above (linear algebra / calculus / probability — the Machine-Learning-Engineer / Path-A
+prerequisites the cusp splinter deliberately left behind) and **advanced Python** (NumPy / Pandas / vectorized
+ops — the ~94%-of-postings screen the point-of-use "Sans Python" approach does not drill). Held, not
+discarded; reached for when communicating with others, filling a gap, or remembering there is always more to
+learn — zero risk in being discerning. See `build-stages/hireability-alignment.md` and
+`build-stages/roadmap-coverage.md`.

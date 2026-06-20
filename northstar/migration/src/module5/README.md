@@ -1,21 +1,37 @@
 # Module 5 — Deploy & Performance Engineering
 
 The densest concentration of the seam: the infrastructure MLOps engineers and app devs *use* — serving
-engines, GPU scheduling, gateways, observability, finops, inference performance. **Built, not described** —
-every concept has a hands-on counterpart. Core thesis: **performance engineering > machine learning.**
+engines, GPU scheduling, gateways, observability, FinOps, inference performance. **Built, not described.**
+Core thesis: **performance engineering > machine learning.** This is the hiring separator — the step that
+turns "can call an API" into "can run it in production." The throughline artifact is `module5-serving/`: a
+production serving + observability + ops stack each lesson extends, and the Module 6 artifacts later deploy onto.
 
-Chapters:
+The fifteen lessons, six chapters:
 
-1. **Serving & Inference Optimization** — engine selection, vLLM internals, speculative decoding,
-   quantization, disaggregation, KV-cache management.
-2. **Metrics, Observability & Rollout** — the eval thread's outer loop: inference metrics, load testing,
-   shadow/canary/A-B, AI gateways, SRE-for-AI.
-3. **Operations: Security, Compliance, FinOps** — secrets, compliance (SOC2/HIPAA/EU-AI-Act), token finops,
-   cost optimization.
-4. **Performance Engineering Depth** — profiling, roofline, NVLink topology, the 200-item checklist.
-5. **Rust (entry)** — the ownership on-ramp + async serving, at the serving layer.
+**Serving & inference optimization (01–03)** — serving engines and engine selection (vLLM/TGI/TensorRT-LLM,
+wrapped by FastAPI/Triton/BentoML); inside the engine (continuous batching, paged KV-cache); the optimization
+levers (quantization, speculative decoding, disaggregation).
 
-roadmap.sh MLOps front-loads data engineering + model training; **Northstar is inference-centric and defers
-ops to here** (deviation D2). Model-centric MLOps (training pipelines) and `aipe` training/CUDA are in the
-[Antilibrary](../antilibrary.md). Relocated Deploy artifacts (11 observability, 13 MCP governance, 14
-inference server, 07 fine-tune pipeline) live here.
+**Metrics, observability & rollout (04–06)** — inference metrics & load testing (TTFT/TPOT/throughput/p99);
+safe rollout (shadow/canary/A-B + AI gateways) — the **outer loop** of the eval thread; observability &
+SRE-for-AI (OpenTelemetry GenAI, Prometheus/Grafana, drift).
+
+**Operations (07–08)** — security & compliance for AI ops (secrets, access, SOC 2 / HIPAA / EU AI Act as
+operational requirements); token FinOps & cost optimization (the platform-scale read of Module 4's budget
+governor).
+
+**Performance engineering depth (09–10)** — measure before you optimize (profiling, roofline, attribution —
+the thesis core); the production performance checklist (topology awareness, the reference distilled).
+
+**Data, experiments & the model lifecycle [lite] (11–13)** — the MLOps-native skills the hiring bar rewards,
+brought back at *literacy depth*: data ingestion at production scale (**Docling**, the RAG front door);
+experiment tracking & the LLMOps outer loop (MLflow); fine-tuning in proportion (LoRA/QLoRA literacy — when to
+fine-tune vs RAG vs prompt). The deep model-training build stays in the [Antilibrary](../antilibrary.md) (a
+future *Avec Python*).
+
+**Rust (entry) (14–15)** — the second compiled language enters at point-of-use: Rust break-in (ownership,
+borrowing) and async Rust for serving (tokio, an inference proxy on the hot path), with Python still the
+control plane.
+
+roadmap.sh MLOps front-loads data engineering + model training; this course is **inference-centric** and keeps
+model-centric depth at literacy level (deviation D2). **→ The platform the Module 6 artifacts deploy onto.**

@@ -13,7 +13,7 @@ editor reviews against `STYLE.md`, update `src/SUMMARY.md`, remove superseded in
 | M2 LLM Engineering | ✅ DONE | 01-prompt-engineering, 02-context-engineering, 03-rag-system, 04-advanced-rag, 05-evaluation, 06-structured-output-and-tools, 07-the-complexity-ladder |
 | M3 Agent Foundations | ✅ SHIPPED (15-lesson hybrid; first real `mdbook build` PASS 2026-06-19) | 01 agent-loop · 02 planning · 03 learning-from-failure · 04-05 typescript · 06-09 tools&mcp · 10-11 memory · 12-13 frameworks · 14-15 workbench — live in src/module3/; ship manifest in build-stages/m3/output/ship/ |
 | M4 Multi-Agent Systems | ✅ SHIPPED (15-lesson plan; VERIFY fleet fix-applied; `mdbook build` PASS 2026-06-19) | 01-04 multi-agent · 05-09 op-safety · 10-11 loop · 12-13 fleet · 14-15 thin — live in src/module4/; module4-fleet/ + _harness/ in exercises/module4/; ledger+manifest in build-stages/m4/output/ |
-| M5 Deploy & Perf | ⬜ PENDING | serving-inference, metrics-observability, ops-security-finops, perf-eng-depth, rust-entry |
+| M5 Deploy & Perf | ✅ SHIPPED (15 lessons, 6 chapters; MLOps-inventory pass folded in; `mdbook build` PASS 2026-06-19) | 01-03 serving · 04-06 observability/rollout · 07-08 ops/finops · 09-10 perf-depth · 11-13 data/experiments/lifecycle-lite (Docling/MLflow/LoRA) · 14-15 Rust — live in src/module5/; module5-serving/ throughline |
 | M6 Agent Artifacts | ⬜ PENDING | 4 artifacts (coding agent, RAG chatbot, voice, issue-to-PR) — apply M3, ship skill-*.md |
 | M7 Multi-Agent Artifacts | ⬜ PENDING | 3 artifacts (research, K8s, governed fleet) — compose M6 agents |
 | M8 Final Exam | ⬜ PENDING | M7 fleet builds the exam system; asdg Ch16 case studies as reference |
@@ -150,11 +150,14 @@ Codex) at the M3→M4 line. Decisions with Ray:
 - **M5: one Rust bridge lesson** (rustup + hello + cargo) before the serving-layer Rust lessons.
 - **M8: define the student's active role before M6** ("M7 fleet builds the exam" is an agentic run, not prose
   authoring — design what the learner specifies/reviews/gates, or it's a demo not an exam).
-- **Sequence now:** M3 ✅ SHIPPED, M4 ✅ SHIPPED (both via AUTHOR→VERIFY→SHIP, `mdbook build` PASS). **Next: M5
-  (Deploy & Performance Engineering)** — write `build-stages/m5/PLAN.md` first, and fold in at M5 planning time:
-  the **MLOps-inventory pass** (review `_dossier/module5.md` + `synthesis/source/module4/` + `antilibrary.md` to
-  decide surface/keep-cut before authoring), the **Docling data-ingestion lesson**, the **Rust entry** lesson,
-  and the **dry-run-first cloud** strategy. M5 is a large new phase → stage-boundary check-in before launching.
+- **Sequence now:** M3, M4, M5 ✅ ALL SHIPPED (AUTHOR→VERIFY→SHIP, `mdbook build` PASS each). **Next: M6
+  (Agent Artifacts)** — the runnable **BUILD→TEST gate begins here** (`tsc --noEmit` / `cargo check` /
+  smoke-with-mocks; `mdbook build` proves *renders*, not *runs*). Write `build-stages/m6/PLAN.md` first and lock:
+  artifact→platform bindings (capability + one concrete stack + portable seam), the **dry-run-first cloud**
+  prereqs (`exercises/module6/_prereqs/CLOUD-SETUP.md`, mocks/emulators/`.env.example`/plan-only + local
+  done-when), the **M8 student-role** (define before M6 design locks — it shapes M6/M7 artifacts), and the
+  hireability "strong project" bar (deployed + README framing the problem + eval + tests + versioned). Artifacts
+  compound M6 → M7 → M8; M6 builds 4 single-agent artifacts on the M3 spine + the M5 `module5-serving/` platform.
 
 ## Scope reframe + roadmap coverage (2026-06-19) — `build-stages/roadmap-coverage.md`
 

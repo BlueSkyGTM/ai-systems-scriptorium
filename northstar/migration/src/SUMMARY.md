@@ -66,11 +66,21 @@
 # Module 5 — Deploy & Performance Engineering
 
 - [Overview](module5/README.md)
-- [Serving & Inference Optimization](module5/01-serving-and-inference-optimization.md)
-- [Metrics, Observability & Rollout](module5/02-metrics-observability-rollout.md)
-- [Operations: Security, Compliance, FinOps](module5/03-operations-security-compliance-finops.md)
-- [Performance Engineering Depth](module5/04-performance-engineering-depth.md)
-- [Rust (Entry)](module5/05-rust-entry.md)
+- [Serving Engines](module5/01-serving-engines.md)
+- [Inside the Engine](module5/02-inside-the-engine.md)
+- [Optimization Levers](module5/03-optimization-levers.md)
+- [Inference Metrics & Load Testing](module5/04-inference-metrics-and-load-testing.md)
+- [Safe Rollout](module5/05-safe-rollout.md)
+- [Observability & SRE-for-AI](module5/06-observability-sre-for-ai.md)
+- [Security & Compliance](module5/07-security-and-compliance.md)
+- [Token FinOps](module5/08-token-finops.md)
+- [Measure Before You Optimize](module5/09-measure-before-you-optimize.md)
+- [The Performance Checklist](module5/10-the-performance-checklist.md)
+- [Data Ingestion (Docling)](module5/11-data-ingestion-docling.md)
+- [Experiment Tracking](module5/12-experiment-tracking.md)
+- [Fine-Tuning in Proportion](module5/13-fine-tuning-in-proportion.md)
+- [Rust Break-In](module5/14-rust-break-in.md)
+- [Async Rust for Serving](module5/15-async-rust-for-serving.md)
 
 # Module 6 — Agent Artifacts
 
