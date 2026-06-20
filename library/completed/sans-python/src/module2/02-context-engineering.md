@@ -30,7 +30,7 @@ Cache-friendly layout: put the stable content first (system prompt, reference ma
 
 ## Prompt-injection defense
 
-**[THREAD: safety]** — The context window is attackable. Prompt injection is the LLM-era SQL injection: OWASP LLM Top 10, risk number one. Direct injection comes from a malicious user query. Indirect injection comes from content the agent retrieves — a web page, a document, a database record — that contains instructions designed to hijack the model.
+The context window is attackable. Prompt injection is the LLM-era SQL injection: OWASP LLM Top 10, risk number one. Direct injection comes from a malicious user query. Indirect injection comes from content the agent retrieves — a web page, a document, a database record — that contains instructions designed to hijack the model.
 
 Architectural defenses, not prompt-writing, are the answer:
 

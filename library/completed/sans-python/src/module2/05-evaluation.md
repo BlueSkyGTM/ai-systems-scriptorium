@@ -1,4 +1,4 @@
-# Evaluation `[THREAD: eval]`
+# Evaluation
 
 You can't ship what you can't measure. LLM applications fail silently — a prompt change that helps one case breaks three others, and you find out from a user complaint six weeks later. Eval-driven development breaks that cycle by making quality visible before it escapes.
 

@@ -1,7 +1,7 @@
 # Antilibrary
 
 Material held, not discarded — known and roughly located, reached for when a specific problem surfaces. This
-page records what each module cut and why. (See `SYLLABUS.md` Antilibrary for the authoritative list.)
+page records what each module cut and why.
 
 > *We don't need to read all of it. We just need to know it exists and roughly where to find it.*
 
@@ -9,7 +9,7 @@ page records what each module cut and why. (See `SYLLABUS.md` Antilibrary for th
 
 **The platform engineer builds and operates the platform; they don't train the models or set frontier-safety
 policy.** Keep the decisions and the operations; antilibrary the training implementation and the research
-survey. ([[optimize-archetype-ruling]])
+survey.
 
 ## By module
 
@@ -41,7 +41,7 @@ DDP/FSDP/ZeRO/pipeline). The sharpest cuts — building a model, not a platform.
 
 ## Course-wide foundations depth
 
-`ai-engineering-from-scratch` 500+ from-scratch lessons — **linked, not reproduced** ([[antilibrary-principle]]).
+`ai-engineering-from-scratch` 500+ from-scratch lessons — **linked, not reproduced**.
 Math foundations (linear algebra/calculus for backprop, matrix ops), ML fundamentals, deep-learning core,
 computer vision, speech/audio, reinforcement learning, LLMs-from-scratch (Karpathy territory). `asdg`
 antilibrary subset: Ch01 (LLM internals at implementation depth), Ch03 (training/adaptation), Ch04 (inference
@@ -52,8 +52,7 @@ optimization — handled in M5 via aipe).
 prerequisites the cusp splinter deliberately left behind) and **advanced Python** (NumPy / Pandas / vectorized
 ops — the ~94%-of-postings screen the point-of-use "Sans Python" approach does not drill). Held, not
 discarded; reached for when communicating with others, filling a gap, or remembering there is always more to
-learn — zero risk in being discerning. See `build-stages/hireability-alignment.md` and
-`build-stages/roadmap-coverage.md`.
+learn — zero risk in being discerning.
 
 ---
 

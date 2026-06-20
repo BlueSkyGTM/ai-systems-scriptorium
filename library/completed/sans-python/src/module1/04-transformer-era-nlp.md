@@ -16,8 +16,6 @@ The practical split: BPE is used by GPT, Llama, Gemma, Mistral, and Qwen. Unigra
 
 Why this matters for platform engineering: the tokenizer determines prompt cost, context budget, and the way code, numbers, and non-English text consume tokens. A 1,000-word English prompt is not the same token count as a 1,000-word Japanese prompt.
 
-[MS-Learn: Verify Azure OpenAI tokenization behavior for non-Latin scripts and code in production deployments]
-
 ## Structured outputs and constrained decoding
 
 Getting structured JSON from an LLM has three reliability tiers. Prompting works roughly 80% of the time — it fails on complex schemas and adversarial inputs. Native structured-output APIs (OpenAI's `response_format`, Anthropic tool use, Gemini JSON mode) move you past that, but still rely on the model following instructions. Constrained decoding is the ceiling: a logit processor sets invalid-token logits to −∞ before sampling, so it's structurally impossible to produce invalid output. Implementations include Outlines, XGrammar, vLLM's `guided_json`, and Instructor.

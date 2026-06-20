@@ -36,7 +36,7 @@ The cost is steep: exploring a branch to depth can require fifteen to twenty mod
 
 Prompts drift. A prompt you shipped in March behaves differently in September because the model updated, the data shifted, or a well-meaning colleague added a clause. Treat prompts as versioned artifacts — the same way you version code. MLflow's prompt registry stores prompt text with version aliases (`champion`, `challenger`, `staging`) so you can run experiments and roll back without touching application code.
 
-**[THREAD: versioning]** — This is a development-time practice, not a production afterthought. Every prompt that matters ships with a registry entry and a version tag. When the model swaps, you recompile; you don't guess.
+This is a development-time practice, not a production afterthought. Every prompt that matters ships with a registry entry and a version tag. When the model swaps, you recompile; you don't guess.
 
 The prompt is the program — and an AI Platform Engineer treats it as versioned, testable infrastructure, not a string in a config file.
 
