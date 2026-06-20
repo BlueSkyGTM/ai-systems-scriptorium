@@ -64,6 +64,25 @@ lessons; that is rote-learning a project-based skill.
    the recommendation; on-the-fly loses the schedule.
 3. **Cadence** — on-demand ("quiz me") first; a scheduled nudge only if reviews actually happen.
 
+## Algorithm reference (FSRS)
+
+Canonical source of truth for the implementation:
+**https://github.com/open-spaced-repetition/awesome-fsrs/wiki/The-Algorithm** — pull the exact formulas,
+the weight vector, and the current version (FSRS-5/6) from here at build time; the sketch below is
+orientation only.
+
+FSRS models memory with three latent variables (the **DSR** model):
+- **Difficulty (D)** — how hard the item is; nudged by each grade.
+- **Stability (S)** — memory strength, defined as the days for recall probability to fall to 90%.
+- **Retrievability (R)** — probability of recall *now*, a power-law function of elapsed time `t` and
+  stability `S` (the forgetting curve).
+
+Each review takes a grade — **again | hard | good | easy** — which updates `D` and `S` through the
+model's trained weights. Scheduling picks the next interval so `R` decays to a chosen **desired
+retention** (e.g. 0.9): higher retention → shorter intervals → more reviews. Defaults ship sane; the
+FSRS optimizer can later retune the weights from real review history. For Open Brain, the grade is
+**inferred by the agent from the answer**, not clicked.
+
 ## Build plan (when greenlit)
 
 An Extra Credit tool: `extra-credit/tools/open-brain/` — a stdlib FSRS implementation + a thin GBrain
