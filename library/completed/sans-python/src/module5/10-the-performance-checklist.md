@@ -1,6 +1,6 @@
 # The Production Performance Checklist
 
-The previous lesson taught you to measure before you optimize. This one is what you reach for once the measurement points somewhere — a prioritized list of the checks that actually move production inference, and the hardware facts you need to reason about them. The source is a 200-plus-item reference checklist from the performance-engineering literature. Reproducing 200 items would be its own kind of clutter; most of them are training- and kernel-deep and live in the antilibrary. What follows is the load-bearing subset — the roughly two dozen an AI Platform Engineer runs against a serving stack before it ships, in the order the evidence says to run them.
+The previous lesson taught you to measure before you optimize. This one is what you reach for once the measurement points somewhere — a prioritized list of the checks that actually move production inference, and the hardware facts you need to reason about them. The source is a 200-plus-item reference checklist from the performance-engineering literature. Reproducing 200 items would be its own kind of clutter; most of them are training- and kernel-deep and out of scope here. What follows is the load-bearing subset — the roughly two dozen an AI Platform Engineer runs against a serving stack before it ships, in the order the evidence says to run them.
 
 ## Read It in Priority Order, Not Top to Bottom
 

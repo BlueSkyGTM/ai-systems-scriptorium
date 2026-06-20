@@ -32,6 +32,6 @@ the build is the Module 6 artifact it seeds (coding → artifact 01, voice → a
 
 roadmap.sh treats multi-agent as a few subtopics; **this course makes it a full module** — agent
 infrastructure and governance *is* the discipline. The frontier-safety *research/policy* layer (RSP, FSF,
-METR, recursive self-improvement) is in the [Antilibrary](../antilibrary.md); the *operational* safety here is
+METR, recursive self-improvement) is out of scope; the *operational* safety here is
 kept. **→ Culminates in Module 7 (Multi-Agent Artifacts):** the fleet you assemble in lesson 13 is the
 governance the finale runs on.

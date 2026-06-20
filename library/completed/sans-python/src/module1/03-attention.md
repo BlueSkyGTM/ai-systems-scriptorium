@@ -10,7 +10,7 @@ Bahdanau (2014) introduced the additive form: score the alignment between a deco
 
 The transformer did not invent attention. It took attention and made it the architecture: parallel heads, no recurrence, positional encoding to restore order, scaled dot-product to prevent softmax saturation. "Attention plus engineering" is a fair summary of *Attention Is All You Need* (Vaswani et al., 2017). Every frontier LLM you call today is a descendant of that design.
 
-The pre-attention half — seq2seq, RNNs, CNNs for text — is in the [Antilibrary](../antilibrary.md). You don't need it to reason about what LLM APIs can and can't do.
+The pre-attention half — seq2seq, RNNs, CNNs for text — is out of scope here. You don't need it to reason about what LLM APIs can and can't do.
 
 Knowing that attention is a learned, position-weighted sum over all input tokens explains why context windows exist, why prompt position affects recall, and why long-context limits are a real engineering constraint — not marketing numbers to ignore.
 

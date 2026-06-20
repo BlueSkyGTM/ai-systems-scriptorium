@@ -18,8 +18,7 @@ off, and you build it. Reading happens here; the doing happens there. The two ar
 
 You will also notice what is missing. There is no chapter on training a model from scratch, no deep dive on
 diffusion, no survey of frontier-safety policy. That is deliberate. Those things are real and worth knowing
-they exist — they live in the **Antilibrary** at the back, named and located, so you know where to look when
-a problem sends you there. They are not on the path to this job, so they are not on the path of this book.
+they exist. They are not on the path to this job, so they are not on the path of this book.
 
 How the work compounds: you build single agents, you compose those agents into teams, and the team builds
 the final system. Nothing is busywork. Every artifact solves a real problem and earns a place in a

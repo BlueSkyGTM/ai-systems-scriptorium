@@ -9,7 +9,7 @@ LLM-related assumes. Two chapters:
 2. **NLP: Transformer-Forward** — from **attention** forward, through transformer-era NLP and into the
    retrieval and evaluation foundations the rest of the book builds on. How transformers work is seam
    knowledge for every engineer who designs prompts and evals. The pre-transformer half (classical NLP,
-   RNN/LSTM, seq2seq) is in the [Antilibrary](../antilibrary.md).
+   RNN/LSTM, seq2seq) is out of scope here.
 
 **Languages install here, but you learn them later.** You set up the TypeScript and Rust toolchains in
 Setup & Tooling, but the *teaching* is threaded to point-of-use: TypeScript arrives in Module 3 (your first

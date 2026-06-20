@@ -24,9 +24,7 @@ Those artifacts are the point. A certificate says you sat through something; a r
 you can throw away now that the lesson is over. They are the evidence. When someone asks what you can do, you
 do not describe it. You open the repo.
 
-You did not learn everything about AI. That was never the offer, and the Antilibrary at the back is the honest
-ledger of what you set aside on purpose — held, located, waiting for the day a real problem sends you to it.
-What you learned instead is one job, done well enough to prove: the engineer who owns the seam where building
+You did not learn everything about AI. That was never the offer. What you learned instead is one job, done well enough to prove: the engineer who owns the seam where building
 and deploying converge, who can stand up the platform that the model runs on and keep it standing under real
 traffic.
 

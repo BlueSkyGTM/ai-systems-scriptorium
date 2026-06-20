@@ -1,7 +1,7 @@
 # Antilibrary gap report — ranked by hireability (2026-06-19)
 
 What *Sans Python* deliberately cut, ranked against the 2026 hiring screens (% of postings) from
-[`hireability-alignment.md`](hireability-alignment.md). Source of the cuts: [`../../library/completed/sans-python/src/antilibrary.md`](../../library/completed/sans-python/src/antilibrary.md)
+[`hireability-alignment.md`](hireability-alignment.md). Source of the cuts: [`antilibrary-archived.md`](antilibrary-archived.md) (the antilibrary page, dropped from the shipped book 2026-06-20 and preserved here)
 and the scope rationale in [`roadmap-coverage.md`](roadmap-coverage.md). Also a GBrain node: `antilibrary-gap-report`.
 
 The point of the report: a cut is not a loss, it is a deferral with a pointer. This ranks the deferrals

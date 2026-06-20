@@ -105,7 +105,3 @@
 - [Operating and Grading](module8/03-operating-and-grading.md)
 
 - [Conclusion](conclusion.md)
-
----
-
-[Antilibrary](antilibrary.md)

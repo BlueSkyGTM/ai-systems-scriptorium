@@ -12,7 +12,7 @@ This is the part of the job an AI Engineer and an MLOps engineer both reach for 
 
 Start by unlearning a reflex. The stack that *trains* a model — data-parallel clusters, gradient all-reduce, checkpoints measured in terabytes, jobs that run for days — has almost nothing to do with the stack that *serves* it. Training is a throughput job you run a few times; serving is a latency job you run forever. They optimize different things, fail in different ways, and run on different software.
 
-The training rigs, the CUDA kernels, the optimizer math — that depth is real, and it lives in the antilibrary. It is not on the road to this job. What is on the road is the serving layer: the program that holds the model weights in GPU memory, accepts requests over HTTP, batches them, and streams tokens back. That program is an **inference serving engine**, and choosing one is the first real decision of the module.
+The training rigs, the CUDA kernels, the optimizer math — that depth is real, but it is not on the road to this job. What is on the road is the serving layer: the program that holds the model weights in GPU memory, accepts requests over HTTP, batches them, and streams tokens back. That program is an **inference serving engine**, and choosing one is the first real decision of the module.
 
 ## The Engines You Choose Between
 

@@ -45,7 +45,7 @@ Weights & Biases (W&B) is the common commercial alternative, with the same primi
 
 ## The Honest Scope
 
-This is the outer loop at literacy depth, and that is the right depth for the seam. MLflow has a Projects packaging format, a deployment server, and deep pipeline-orchestration territory — Airflow, Prefect, Kubeflow — that schedules and chains these runs into automated retraining pipelines. That orchestration layer is real and it is largely the data-platform and model-training work the curriculum consciously left on Path A; it lives in the antilibrary, named and located, a candidate for a focused companion book. What you need to own here is narrower and sharper: make every eval run a logged, comparable experiment, and promote winners through a registry the gateway can route to. Do that, and eval-driven development stops being a thing you did once and becomes a thing your platform remembers.
+This is the outer loop at literacy depth, and that is the right depth for the seam. MLflow has a Projects packaging format, a deployment server, and deep pipeline-orchestration territory — Airflow, Prefect, Kubeflow — that schedules and chains these runs into automated retraining pipelines. That orchestration layer is real and it is largely the data-platform and model-training work the curriculum consciously left on Path A; it is out of scope here, a candidate for a focused companion book. What you need to own here is narrower and sharper: make every eval run a logged, comparable experiment, and promote winners through a registry the gateway can route to. Do that, and eval-driven development stops being a thing you did once and becomes a thing your platform remembers.
 
 ## Core Concepts
 

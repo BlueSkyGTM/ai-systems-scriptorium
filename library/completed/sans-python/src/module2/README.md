@@ -16,4 +16,4 @@ Four chapters:
 
 **Data is given here.** RAG runs on pre-curated corpora so you build pipeline intuition on clean data first;
 building the data layer comes in Module 5. **Fine-tune vs prompt** is taught as a *decision* you own; the
-LoRA/QLoRA *implementation* is in the Antilibrary. **Generative media** (GANs, diffusion) is cut entirely.
+LoRA/QLoRA *implementation* is out of scope. **Generative media** (GANs, diffusion) is cut entirely.
