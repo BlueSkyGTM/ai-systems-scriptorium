@@ -4,8 +4,7 @@
 .claude-handoff {
   margin: 3rem 0 1.5rem;
   padding: 1.25rem 1.25rem;
-  border: 1px solid var(--quote-border, #e3d9c6);
-  border-left: 4px solid #b7410e;            /* rust accent */
+  border: 4px solid #b7410e;                 /* uniform rust frame: the left-border size, all around */
   border-radius: 6px;
   background: rgba(183, 65, 14, 0.05);       /* warm rust tint */
 }
@@ -53,8 +52,7 @@
 .ayu .claude-handoff,
 .navy .claude-handoff,
 .coal .claude-handoff {
-  border: 1px solid rgba(255, 143, 64, 0.25);
-  border-left: 4px solid #ff8f40;
+  border: 4px solid #ff8f40;                 /* uniform Ayu-orange frame, matching the light theme */
   background: rgba(255, 143, 64, 0.07);
 }
 .ayu .claude-handoff-btn,

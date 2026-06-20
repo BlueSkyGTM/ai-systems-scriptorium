@@ -10,13 +10,22 @@ Keep this current whenever a front-end choice changes.
 - **`theme/syntax-polish.css`** deepens code blocks toward the real VS Code Rust look and the Ayu palette:
   a deeper-than-page canvas so blocks pop, saturated high-contrast tokens (orange keywords, lime strings,
   gold functions, blue types, purple numbers, italic comments), and a code-as-card container (rounded,
-  inset border, padding). Scoped per theme class (`.ayu` vs `.rust`/`.light`).
+  padding, a thin per-theme border). Scoped per theme class (`.ayu` vs `.rust`/`.light`).
+- **Code-block edge + scrollbar fix (2026-06-20).** `pre > code` now uses `box-sizing: border-box`, which
+  removes a spurious horizontal scrollbar that showed on every block: as `content-box` the left/right padding
+  pushed the border-box wider than the parent, tripping `overflow-x: auto` even with nothing to scroll. The
+  faint universal inset ring became a real thin border, tinted per theme so a block separates from the
+  near-same-color page: orange (`rgba(255,143,64,0.30)`) in Ayu, faint rust (`rgba(165,49,15,0.16)`) in
+  light/Rust.
 
 ## The Claude Code handoff block (`theme/copy-to-claude.{css,js}`)
 
-- Each exercise lesson ends with a **rust-accented box** (left border + warm tint) carrying a one-line,
+- Each exercise lesson ends with a **rust-accented box** (uniform rust frame + warm tint) carrying a one-line,
   **per-exercise** description and a **"Copy for Claude Code"** button. The button copies a structured
   payload (course, lesson, lesson file, exercise path, task) for pasting into Claude Code.
+- **Uniform border (2026-06-20).** The box had a 4px rust `border-left` plus a 1px border on the other three
+  sides; the mismatch read as inconsistent. It is now a single uniform `4px` frame on all sides (rust
+  `#b7410e` in light/Rust, Ayu-orange `#ff8f40` in dark): the left-border weight, applied all around.
 - **Button:** centered, fit-content, rust in light/Rust theme (`#b7410e`), Ayu-orange with dark text in
   dark themes (`#ff8f40`), green "Copied ✓" confirm. Sized for comfortable padding (not cramped).
 - **Button text size = `font-size: inherit` (2026-06-20).** It now matches the exercise description (the
