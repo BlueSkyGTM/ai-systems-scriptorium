@@ -1,3 +1,4 @@
+<!-- /autoplan restore point: /c/Users/raymo/.gstack/projects/BlueSkyGTM-sans-python/main-autoplan-restore-20260619-201514.md -->
 # Spec — Repo restructure: "AI Systems Scriptorium" (an AI-engineering library + build system)
 
 Status: DRAFT v2 (Phase 4, via `/spec`). For review → `/autoplan` → execute on approval. Repo name
@@ -183,3 +184,74 @@ not destructive.
 Lift+place (CC ~20m) · **generate the ICM CONTEXT layer (CC ~40m — the high-value step)** · path fixes + verify
 builds/gates (CC ~30m, the risk) · fresh root docs (CC ~30m) · vault LFS + push (CC ~15m). Human review at the
 `/autoplan` gate + final approval.
+
+---
+
+# GSTACK REVIEW REPORT (/autoplan)
+
+Phases: CEO + Eng + DX (Design skipped — no UI). Voices: Claude subagent ×3 + Codex ×3 (the Eng codex voice =
+the earlier `/spec` quality gate). Convergence was unusually strong — the headline findings appeared
+independently across models.
+
+## The headline (a USER CHALLENGE — both CEO voices agree, NOT auto-decided)
+**Don't execute the full restructure now. Phase it.** Both CEO voices independently said the same thing:
+- This is a *structure* project at a moment that calls for *distribution/validation*. Book 1 is built but **not
+  deployed** (backlog #5/#6), has **zero external readers**, and the artifact-as-portfolio thesis is **untested**.
+- Designing the generalized `platform/` + full ICM from **one** book (n=1) risks codifying sans-python-specific
+  accidents as "the method." The right abstraction is **earned from book 2's real friction**, not designed before it.
+- **Recommended phasing:** (A) do the cheap, clearly-right half NOW — lift book 1 into
+  `library/completed/sans-python/`, fix the 3 real path refs (vercel / fleet_adapter docstring / verify
+  book.toml), retire the "Workspace Builder" root `CLAUDE.md`, and **back up the unbacked 767M vault now**; (B)
+  defer the expensive/speculative half (full per-dir ICM, route-manifest, route-lint, fixtures, generalized
+  pipeline, LFS) until **book 2 is underway**; (C) **deploy book 1 + validate the thesis** before betting on a
+  4-book library.
+
+## CEO consensus
+| Dimension | Claude | Codex | Consensus |
+|---|---|---|---|
+| Premises valid? | partial (private-first contradicts backlog #12, unargued) | partial ("structure is the constraint" unproven) | DISAGREE-on-framing -> confirm/reconcile |
+| Right problem NOW? | no — distribution > structure | no — start book 2 / validate first | CONFIRMED — wrong timing; phase it |
+| Scope calibration | over-scoped (do cheap half, defer rest) | over-scoped (ICM overbuilt for n=1) | CONFIRMED over-scoped |
+| Alternatives explored? | no (do-nothing / start-book-2 never compared) | no | CONFIRMED gap |
+| 6-month trajectory | regret: beautiful private lib, undeployed book | same | CONFIRMED risk |
+| "Don't genericize" premise | conflates generic vs reusable | same (routing/manifests SHOULD be domain-agnostic) | refine: don't genericize the *pipeline*; reusable parts can be |
+
+## Eng consensus
+| Dimension | Claude | Codex(gate) | Consensus |
+|---|---|---|---|
+| Migration sound? | mostly; cadence bug (move+fix must be same stage) | yes (3.4M .git, vault uncommitted, no CI) | DISAGREE -> fix cadence |
+| Path defenses sufficient? | no — ref sweep undersold 10x (synthesis/source in 30 files; northstar/migration in 11; stale `../sub-repos/` spelling) | no — single-source-of-truth missing | CONFIRMED gaps |
+| route-lint right guard? | partial — must EXEMPT vault/** + archive/** (else scans 9032 vault files w/ their own workflows) | partial — checks existence, not the manifest both ways | CONFIRMED needs hardening |
+| vault -> LFS? | hazards: global `**/target,node_modules,.venv` ignores silently TRUNCATE the vault; 767M/9032 obj vs 1GB free quota; "light clones" false by default; license/redistribution of 9 third-party repos | "LFS is not a backup" | CONFIRMED — reconsider manifest-primary; back up ore now regardless |
+| `fleet_adapter` change | REGRESSION — `git rev-parse` breaks a copied-out book; the `__file__` walk-up is already cwd-robust | (same, gate) | CONFIRMED — DON'T rewrite; keep walk-up, fix docstring, add test matrix |
+| Mid-flight risk | 12 open tasks touch moving paths (#4 book.toml, #5 vercel, #8 M3 ex) | — | CONFIRMED -> land/freeze path-touching tasks first |
+
+## DX consensus (the route chain — Ray's core worry)
+| Dimension | Claude | Codex | Consensus |
+|---|---|---|---|
+| Cold agent self-routes? | no as-specified | no | CONFIRMED |
+| route-lint catches breaks? | checks EXISTENCE, not INTENT — bare relatives (`src/module3`, `output/author`) resolve WRONG across multiple books, lint stays green | same — "valid link != right route" | CONFIRMED — the #1 fix |
+| Intent disambiguation? | author/fix/publish collide on the book CONTEXT.md (different load-lists) | same — root rows overlap | CONFIRMED -> per-book intent sub-router |
+| Precedence unambiguous? | no — "root policy wins, local detail wins" is self-referential in the SHIP-gate case | no — define typed MUST/NEVER vs narrowable | CONFIRMED -> closed enumerated policy list |
+| Gates clear? | two homes (registry + per-folder) -> drift -> over-asking | gates not executable, only examples | CONFIRMED -> gates defined ONLY in HUMAN-GATES, referenced by ID |
+| Fixtures adversarial? | no — happy-path exact words | no — need near-miss negative fixtures | CONFIRMED -> adversarial fixtures, router as an executable API |
+
+## Decision audit (mechanical fixes — adopt into the spec regardless of phasing)
+1. Keep `fleet_adapter` `__file__` walk-up; do NOT switch to `git rev-parse` (P5; it's a regression). Fix the docstring; ensure M7+M8 move together; add a copied-out-book test. (Spec item 8 was wrong.)
+2. route-lint = correctness, not just existence: routed paths must be root-anchored or manifest keys (no bare segments); resolve from root AND local, fail on disagreement; exempt `vault/**` + `archive/**`; scan live `.md` BODY links for archive routes; add orphan-CONTEXT + handoff-cycle checks; define the routed-dir set; bidirectional manifest<->fs check. (P1)
+3. Per-book CONTEXT.md carries a second-level intent sub-router (author/fix/publish/status, distinct load-lists); fixtures are adversarial near-miss prompts. (P1)
+4. Precedence = closed enumerated policy list (HUMAN-GATES + precedence + STYLE = MUST/NEVER, un-overridable; everything else local-narrowable). Gates defined only in `HUMAN-GATES.md`, referenced by ID; lint local contradictions. (P5)
+5. Rewrite root README/CLAUDE.md/CONTEXT.md as the FIRST migration step (the most-read file is unshimmed); lint the literal "Workspace Builder" as a stale-identity smell. (P1)
+6. Vault: reconsider manifest-primary (clone URLs + commit SHAs; the ore is already declared "recoverable") as the DEFAULT, LFS only if frozen bytes are truly needed; if LFS, negate `**/target,node_modules,.venv` under `vault/**` or record per-repo counts in MANIFEST; cost the push honestly (batch per-repo); document `GIT_LFS_SKIP_SMUDGE=1` or drop "light clone." Back up the ore now, independent of this restructure. (P1)
+7. Ref sweep: surface is ~30 (`synthesis/source`) + ~11 (`northstar/migration`) files + the stale `../sub-repos/synthesis/source` spelling + bare relatives (`src/`, `output/`, `_dossier/`); re-run after moves. (P1)
+8. Cadence: move + path-fix in the SAME stage (verify per stage), not all fixes deferred to stage 5. (P3)
+9. Resolve contradictions: `northstar/MOVED.md` shim vs archiving `northstar/` (leave a thin shell, or drop the shim); reconcile backlog #12 (public-course) with the spec (private) — Ray's latest direction is private-first, so supersede #12. (P4)
+10. Decouple dir cleanup (now) from the GitHub rename (defer until public/private settled). "Sans Python" has thesis equity if it ever goes public. (P3)
+11. "every dir has a CONTEXT.md" -> "every routed BOUNDARY has one" (leaf dirs inherit) to avoid route noise. (P3)
+12. Land/freeze the path-touching open tasks (#4, #5, #8) before the migration, or restructure first and rebase. (P3)
+
+## STATUS: DONE_WITH_CONCERNS -> owner gate
+The architecture is coherent and the mechanical defenses are above-bar. Two non-auto-decided calls go to the
+owner: (1) premise confirmation (private-first + don't-genericize, with the #12 reconciliation); (2) the USER
+CHALLENGE on phasing (full-now vs cheap-now / defer-rest / validate-first). The 12 mechanical fixes are adopted
+into whichever path is chosen.
