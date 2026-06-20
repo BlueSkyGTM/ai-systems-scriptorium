@@ -1,14 +1,14 @@
-# Transformer-era NLP
+# Transformer-Era NLP
 
 You won't implement these models. You will call them, configure them, and debug them — and the decisions that cost you production headaches live at the tokenizer and the output format, not inside the architecture.
 
-## Pretrained encoder-decoders
+## Pretrained Encoder-Decoders
 
 Machine translation and summarization are the clearest examples of what a pretrained encoder-decoder does: encode the source sequence into a rich representation, decode it into the target sequence. You don't train these from scratch. You pick a pretrained checkpoint (NLLB-200 for translation, BART or T5 for summarization), configure the decoding (beam width, length penalty), and evaluate the output (BLEU/chrF for translation, ROUGE for summarization).
 
 Abstractive summarization is fluent but hallucination-prone; extractive summarization is always grammatical but misses distributed content. The failure modes are different — knowing which model family you're using tells you which failures to expect.
 
-## Subword tokenization
+## Subword Tokenization
 
 Every frontier LLM ships on subword tokenization — BPE, WordPiece, or Unigram — for one reason: it eliminates the out-of-vocabulary problem. Word-level vocabularies fail on rare words, new terms, and code; character-level vocabularies produce extremely long sequences. Subwords split rare words into reusable pieces. Byte-level BPE goes further: it operates on raw bytes, so the vocabulary covers every possible input and the `[UNK]` token disappears entirely.
 
@@ -16,7 +16,7 @@ The practical split: BPE is used by GPT, Llama, Gemma, Mistral, and Qwen. Unigra
 
 Why this matters for platform engineering: the tokenizer determines prompt cost, context budget, and the way code, numbers, and non-English text consume tokens. A 1,000-word English prompt is not the same token count as a 1,000-word Japanese prompt.
 
-## Structured outputs and constrained decoding
+## Structured Outputs and Constrained Decoding
 
 Getting structured JSON from an LLM has three reliability tiers. Prompting works roughly 80% of the time — it fails on complex schemas and adversarial inputs. Native structured-output APIs (OpenAI's `response_format`, Anthropic tool use, Gemini JSON mode) move you past that, but still rely on the model following instructions. Constrained decoding is the ceiling: a logit processor sets invalid-token logits to −∞ before sampling, so it's structurally impossible to produce invalid output. Implementations include Outlines, XGrammar, vLLM's `guided_json`, and Instructor.
 
@@ -28,7 +28,7 @@ This feeds Module 3's reliable tool calls directly. A tool call is a structured 
 
 Tokenization and structured outputs are where prompt cost, context budget, and tool-call reliability are decided — before a single agent runs.
 
-## Core concepts
+## Core Concepts
 
 - Subword tokenization (BPE/WordPiece/Unigram) eliminates `[UNK]` by splitting rare words into reusable pieces; byte-level BPE guarantees zero unknown tokens by operating on raw bytes.
 - The tokenizer is part of the model contract — BPE and Unigram models are not interchangeable, and token counts vary significantly across languages and content types.

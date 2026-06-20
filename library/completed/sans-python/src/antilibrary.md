@@ -5,13 +5,13 @@ page records what each module cut and why.
 
 > *We don't need to read all of it. We just need to know it exists and roughly where to find it.*
 
-## The throughline (Optimize ruling)
+## The Throughline (Optimize Ruling)
 
 **The platform engineer builds and operates the platform; they don't train the models or set frontier-safety
 policy.** Keep the decisions and the operations; antilibrary the training implementation and the research
 survey.
 
-## By module
+## By Module
 
 **M1 — pre-transformer NLP.** Text processing, bag-of-words/TF-IDF, word2vec, GloVe/fastText, sentiment, NER,
 POS/parsing, CNN/RNN for text, seq2seq, pre-transformer generation, rule-to-neural chatbots. The 09→10 seam
@@ -39,7 +39,7 @@ to build the common case and speak to the rest; the deep build stays here, defer
 transformer block → GPT assembly → training loop → SFT → DPO) + distributed training from scratch (76–81:
 DDP/FSDP/ZeRO/pipeline). The sharpest cuts — building a model, not a platform.
 
-## Course-wide foundations depth
+## Course-Wide Foundations Depth
 
 `ai-engineering-from-scratch` 500+ from-scratch lessons — **linked, not reproduced**.
 Math foundations (linear algebra/calculus for backprop, matrix ops), ML fundamentals, deep-learning core,

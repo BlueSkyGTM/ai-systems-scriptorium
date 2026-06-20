@@ -1,8 +1,8 @@
-# Inference metrics & load testing
+# Inference Metrics & Load Testing
 
 A REST endpoint has one latency number, and it tells you everything. An LLM endpoint has at least four, and the average of any of them lies to you. Before you put a serving stack in front of users, you have to know which numbers decide whether it works — and you have to learn them by pushing the endpoint until it breaks, not by reading the model card.
 
-## A token stream is not a request
+## A Token Stream Is Not a Request
 
 The serving engine you built in chapter 1 does not return a response; it returns a stream. The first token arrives, then the rest dribble out one at a time. That shape forces a vocabulary a normal service never needs.
 
@@ -14,7 +14,7 @@ The serving engine you built in chapter 1 does not return a response; it returns
 
 To make the shape concrete: in one TensorRT-LLM benchmark, a Llama-3.1-8B landed around a 162-millisecond mean TTFT and a 7.3-millisecond TPOT, for a roughly one-second end-to-end on a medium answer. Treat that as one data point on one engine and one GPU, not a target — change the model, the hardware, or the prompt mix and every number moves. Your numbers will differ. The discipline is to measure your own.
 
-## The average is the enemy
+## The Average Is the Enemy
 
 Report the mean latency and you have hidden the failure. LLM latency is right-skewed — a long tail of slow requests sits above a fast bulk — so the mean tells you about a request almost nobody made. Always report percentiles: p50 (the median, the typical request), p90, and p99 (the slow one your heaviest users hit several times a session). A deployment with a great p50 and an ugly p99 is a deployment that feels broken to your most active users, and the mean will never show it.
 
@@ -22,7 +22,7 @@ There is a metric above latency that the others feed into: **goodput** — the f
 
 On Azure, the same numbers surface as platform metrics rather than something you scrape by hand: Azure Monitor and Application Insights collect latency and token-usage telemetry from Azure OpenAI deployments and the gateway in front of them, so the percentile views and token-per-minute counters exist before you write any instrumentation.
 
-## Load-test before you ship, and don't trust the load tester
+## Load-Test Before You Ship, and Don't Trust the Load Tester
 
 You do not know your TTFT, TPOT, or goodput until you have driven the endpoint under realistic concurrency. A model that streams beautifully for one request can fall over at fifty, because the batch fills, the queue grows, and TTFT walks off the chart. Load testing is how you find the concurrency at which goodput collapses — the number that sizes your fleet and sets your autoscaling trigger.
 
@@ -36,7 +36,7 @@ Run four shapes, each catching a different failure: **steady** load to find the 
 
 This is the same eval discipline as Module 2, pointed at a different question. There you scored *output quality* with an LLM-as-judge before shipping a prompt; here you measure *serving performance* before shipping an endpoint. Module 2 was the inner loop — quality at development time. This chapter is the outer loop — the production control plane that watches both quality and performance live, and the next two lessons build out the rollout and observability halves of it.
 
-## Core concepts
+## Core Concepts
 
 - An LLM endpoint has four core metrics, not one: TTFT (the wait for the first token), TPOT (the per-token decode gap, memory-bandwidth-bound), throughput (fleet tokens per second), and end-to-end latency = TTFT + TPOT × output length.
 - Report percentiles (p50/p90/p99), never the mean — LLM latency is right-skewed, so the mean describes a request almost nobody made; goodput, the fraction of requests meeting every SLO at once, is the honest top-line the rest diagnose.

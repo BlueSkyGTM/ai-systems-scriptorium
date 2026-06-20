@@ -1,4 +1,4 @@
-# Module 2 — LLM engineering
+# Module 2 — LLM Engineering
 
 The LLM engineering core: prompting → embeddings/RAG → evaluation → the agent on-ramp. Everything is
 **tool-first** — you use foundation models as APIs, not train them. This is the densest module; the work is

@@ -1,8 +1,8 @@
-# The terminal coding agent
+# The Terminal Coding Agent
 
 A chatbot writes code you paste. A coding agent reads the repository, makes the edit, runs the tests, and keeps going until they pass — and the gap between those two things is the entire job of this build.
 
-## The business problem
+## The Business Problem
 
 The most expensive line on a software team's ledger is the developer hour, and a large share of it goes to work that is mechanical without being trivial: reproduce the failure, open the file, change three lines, run the suite, read the red, try again. By 2026 the settled answer to that drain is the terminal coding agent — a harness around a frontier model that runs the loop end to end, command line in, verified diff out.
 
@@ -10,7 +10,7 @@ Here is the part that surprises people who have only watched a model autocomplet
 
 So the hard part is not the model call. It is the harness: the tool surface that turns the model's intent into a file write, the sandbox that runs untrusted test code without hanging the loop, the budget that stops a runaway before it bills you for ten thousand turns, and the gate that refuses to call a task done because the model felt confident. Get those right and any model is shippable. Get them wrong and you have an expensive infinite loop waiting for the right prompt.
 
-## The capability, the one stack, and the portable seam
+## The Capability, the One Stack, and the Portable Seam
 
 The capability is narrow and complete: **plan, act, observe, repeat, under a cost ceiling and a verification gate.** You build it once, here, on one stack.
 
@@ -23,7 +23,7 @@ But one stack is a teaching choice, not a lock-in, and the design protects you f
 
 Those two seams are the portable core. Everything vendor-specific lives behind the model seam in one adapter file; everything that decides truth lives behind the verification interface. Hold that line and the agent outlives the stack you built it on.
 
-## The build sequence
+## The Build Sequence
 
 The Module 5 capstone lays the harness down as a dependency-ordered arc — components 20 through 29 — and your artifact is the condensed payoff of that arc. You do not build all ten as separate modules; you build the spine they describe.
 
@@ -38,7 +38,7 @@ The Module 5 capstone lays the harness down as a dependency-ordered arc — comp
 
 That last move is the one to internalize. A scripted policy and a frontier model are interchangeable at the seam, so you can prove the harness works without spending a cent, then swap the model in for production. The harness is what you were building all along.
 
-## The operator surfaces
+## The Operator Surfaces
 
 Module 8 hands the running system to a student who is the operator — they set the budgets, hold the kill switch, and judge the output against a rubric. So every artifact has to expose those controls for real, not as decoration. This one exposes three.
 
@@ -48,25 +48,25 @@ Module 8 hands the running system to a student who is the operator — they set 
 
 **The verification gate.** An agent that decides it is finished is not finished — it is optimistic. The gate is the antidote: deterministic code, no model, that runs the fixture's tests and returns one verdict. The default is REJECT. It accepts only on a clean pass; failing tests, a timeout, an import error all reject. The agent never marks its own work done, and that is not a nicety — it is the difference between a demo and a thing you would let near a codebase.
 
-## The BUILD→TEST gate
+## The BUILD→TEST Gate
 
 This module adds a runnable code gate, and the agent has to pass it locally and offline before it ships. The bar is exact: `python smoke.py` and `python -m pytest tests/` run on the **standard library plus pytest alone** — no Docker, no cloud, no network, no API key. Every third-party import sits behind a guard, and the real model is opt-in through `.env`.
 
 The smoke run copies the broken fixture to a throwaway directory, drives the loop with the deterministic mock, and prints the trace: read the file, write the fix, run the tests, verify ACCEPT, exit zero. The test suite then pins each claim the harness makes — the smoke run fixes the fixture, a budget breach stops the run, the kill switch halts before the next action, and the verify gate REJECTs a bad patch even when the model declares success. That last test is the one that earns the gate's trust: a model saying "I fixed it" is not evidence, and the test proves the gate catches the lie.
 
-## The strong-project bar
+## The Strong-Project Bar
 
 Hireability is the whole point of these artifacts, and "strong project" has a checklist. This build meets it: a real entry point you run from a terminal, not a notebook; a README that frames the business problem before the code; an evaluation that is a genuine pass/fail acceptance check, with the model's self-report shown to be the weaker approach the gate has to backstop; tests covering the smoke path and every operator surface; a clean, versioned layout with no secrets committed; and a shipped `outputs/skill-terminal-coding-agent.md`. The done-when is not "it runs once" — it is "it runs green on the gate, offline, and a stranger can read the README and know why it exists."
 
-## What you build
+## What You Build
 
 You build a terminal coding agent that fixes a bug in a small Python project and proves it. The loop reads the failing file, writes a corrected version, runs the suite in a subprocess sandbox, and stops only when a deterministic gate accepts the result — the whole time bounded by a dollar-and-turn budget and a kill switch it cannot touch. A deterministic mock model drives the offline smoke run so the build gate is reproducible; a one-line swap puts a live Anthropic model behind the same seam. It is small enough to read in a sitting and real enough to become the coder node of a software team.
 
-## What M7 reuses
+## What M7 Reuses
 
 Nothing here is a throwaway. In Module 7 this exact agent becomes the **coder node** of the multi-agent software team: an architect plans, the coder edits and self-verifies in its sandbox, a reviewer gates, a tester confirms. M7 imports this loop — the tool surface, the sandbox, the budget, the kill switch, the verify gate — and composes it. It does not rebuild it. And the reason the reviewer can trust the coder at all is the verification interface you built here: the coder hands over a verdict file, not a promise. That is what compounding means — the single agent you make verifiable today is the team member you can govern tomorrow.
 
-## Core concepts
+## Core Concepts
 
 - The hard part of a coding agent is the harness — tool surface, sandbox, budget, verification gate — not the model call; a capable model is the easy half.
 - The model seam (`respond(messages)`) and the verification interface (`verify(project_dir)`) are the portable core: they make the agent model-agnostic and make "done" a fact from running tests rather than a claim from the model.

@@ -2,7 +2,7 @@
 
 Every control in this chapter so far is mechanical — a budget that counts, a switch that flips, a gate that waits for a human. Guardrails are the layer that tries to govern the agent's *content*: what it should refuse, what it should never do, what crosses a line. They are necessary, and they are the layer most likely to give you false confidence, so this lesson does two jobs — show you how they work, and show you exactly where they don't.
 
-## Two kinds of guardrail, two places they live
+## Two Kinds of Guardrail, Two Places They Live
 
 Content governance comes in two shapes, and conflating them is a common mistake. One bakes values into the model's training; the other classifies traffic at the edges of the running system. You want both, and you want to know which is which.
 
@@ -35,7 +35,7 @@ def guarded_turn(agent, user_input: str, guard) -> str:
 
 Constitutional AI shapes what the model *is*; Llama Guard checks what passes *through*. The first is alignment; the second is a filter. Defense in depth wants both — and even both is not enough, which is the part of this lesson you must not skip.
 
-## The honest caveat: a classifier is a layer, not a solution
+## The Honest Caveat: a Classifier Is a Layer, Not a Solution
 
 It is tempting to wire up Llama Guard, watch it catch a batch of obvious attacks, and conclude the agent is safe. It is not, and the evidence is blunt. A 2025 study of evasion attacks against six production guard systems — among them Azure Prompt Shield, Meta Prompt Guard, and NeMo Guard — found that **Emoji Smuggling**, which hides malicious instructions inside emoji-adjacent Unicode the classifier reads as benign, reached a **100% attack-success rate against all six**. One technique, total bypass, across the field.
 
@@ -43,7 +43,7 @@ Sit with what that means. A classifier is a model, and a model can be fooled by 
 
 This is not an argument against guardrails. It is an argument about what they are *for*. A guardrail classifier is one probabilistic layer in a stack — it catches the unsophisticated majority and buys you signal. What it cannot be is the thing standing between a determined attacker and an irreversible action.
 
-## Layer the soft with the hard
+## Layer the Soft with the Hard
 
 The resolution is the through-line of this whole chapter: layer the probabilistic guardrails *on top of* the deterministic limits that don't bend. A classifier might be smuggled past; a per-task dollar budget cannot be talked into raising itself, a kill switch the agent can't write cannot be jailbroken into the off-to-on direction, and an idempotency-keyed HITL gate on a wire transfer does not care how clever the prompt was — the human still has to approve, and the action still runs at most once.
 
@@ -51,7 +51,7 @@ So the safe posture is concrete. Put a guardrail classifier on input and output 
 
 The decision this lesson hands you is not "which guardrail." It is *where each layer earns trust*. Trust the classifier to reduce noise and catch the careless. Trust the budget, the switch, and the human gate to be the thing that holds when content governance fails — because against a real adversary, it will. An agent guarded only by classifiers is an agent guarded by something that has already been beaten 100% of the time; the limits that don't bend are why it still can't spend your money or drop your table.
 
-## Core concepts
+## Core Concepts
 
 - Constitutional AI trains the model to resolve principle conflicts by a four-tier priority — safety/oversight → ethics → Anthropic's guidelines → helpfulness — and separately splits rules into hardcoded prohibitions (un-overridable) and operator-adjustable defaults (your knobs, bounded).
 - Llama Guard 3/4 is a separate classifier that screens input and output against a hazard taxonomy; it is a runtime filter, not alignment, and complements (does not replace) a trained constitution.

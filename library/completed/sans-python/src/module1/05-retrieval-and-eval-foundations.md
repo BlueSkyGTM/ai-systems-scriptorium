@@ -1,8 +1,8 @@
-# Foundations of retrieval and evaluation
+# Foundations of Retrieval and Evaluation
 
 A RAG system that fails is not a mystery — it is a combination of components, and at least one of them is misbehaving. Knowing the components lets you debug the system instead of blaming the model.
 
-## Retrieval components
+## Retrieval Components
 
 **Question answering** is the root architecture: a retriever finds candidate passages, a reader extracts or generates an answer from them. That retriever→reader split is the bedrock of every RAG system. The question isn't whether your system uses it; it's whether you've built each half to match the query type.
 
@@ -12,7 +12,7 @@ A RAG system that fails is not a mystery — it is a combination of components, 
 
 **Chunking** influences retrieval quality as much as the embedding model does. The rule that beats defaults: match chunk size to query type. Factoid questions retrieve better with 256–512 token chunks; multi-hop questions need 512–1024; whole-section questions need 1024–2048. Overlap between chunks gives roughly zero benefit under sparse retrieval. Contextual retrieval (Anthropic, 2024) prepends a summary of each chunk's document context before embedding, which reduces retrieval failures by 35–50%.
 
-## Evaluation components
+## Evaluation Components
 
 **NLI — Natural Language Inference** — is the mechanism under RAG faithfulness. The task is three-way classification: given a premise and a hypothesis, does the premise entail, contradict, or stay neutral toward the hypothesis? Every faithfulness metric in RAGAS and DeepEval runs NLI under the hood: it checks whether the retrieved passage entails the generated answer. Understanding NLI means you can read a faithfulness score and know exactly what it measures.
 
@@ -24,7 +24,7 @@ Module 2 takes these components and builds them into a RAG system and an eval lo
 
 An AI Platform Engineer who knows these components can look at a failing RAG pipeline and name which layer broke — retrieval recall, reranker precision, chunk size mismatch, or judge calibration — instead of treating the whole system as a black box.
 
-## Core concepts
+## Core Concepts
 
 - The retriever→reader split is the structural foundation of RAG; the IR pipeline under the retriever has four layers (BM25 sparse, dense, RRF fusion, cross-encoder rerank) that catch different failure modes.
 - Effective embedding context length is roughly 60–70% of the advertised number — building a RAG system to the stated limit causes silent retrieval degradation.

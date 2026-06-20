@@ -1,8 +1,8 @@
-# Measure before you optimize: profiling & roofline
+# Measure Before You Optimize: Profiling & Roofline
 
 Chapter 1 handed you the levers — continuous batching, quantization, paged attention, disaggregated prefill and decode. This lesson is the discipline that decides which lever to pull. An optimization applied to the wrong bottleneck is not a small win; it is negative work — added complexity, no speedup, and a slower path to the fix that would have mattered. The serving lessons taught you the moves. This one teaches you to earn the right to make one.
 
-## Optimization without measurement is guessing with a budget
+## Optimization Without Measurement Is Guessing with a Budget
 
 Here is the thesis of the whole module, stated as a working rule: you do not get to optimize a system you have not profiled. The reflex — "decode feels slow, let me quantize" — is the expensive reflex. Quantization helps a workload bound by memory bandwidth or weight size. If your decode is actually stalling on a scheduler that drains the queue one request at a time, you can quantize to four bits and watch the latency sit exactly where it was, because you spent your effort on a part of the system that was never the limiter.
 
@@ -10,7 +10,7 @@ The reference checklist behind this chapter states it flatly: *profile before an
 
 This is also the seam's sharpest edge. The machine-learning instinct is to reach for a better model, a bigger model, a fine-tune. The platform-engineering instinct is to ask where the time actually goes — and the answer, more often than the ML instinct expects, is a queue, a copy, or a CPU thread starving the GPU. Knowing whether you need a kernel change or a trip to the store for more memory bandwidth is a deployable, demonstrable skill. It is the one that separates the engineer who ships a 4x speedup from the one who ships a clever change nobody can measure.
 
-## The four bounds: name the limiter before you touch it
+## The Four Bounds: Name the Limiter Before You Touch It
 
 Every inference workload is limited by one of four things at any moment, and your only job in the first profiling pass is to find out which:
 
@@ -21,7 +21,7 @@ Every inference workload is limited by one of four things at any moment, and you
 
 The reference puts it in one line worth memorizing: you can't optimize what you don't measure; profiling reveals whether you're compute-bound, memory-bound, I/O-bound, or network-bound, so you target the right fix. The four bounds map to four different toolboxes. Quantization and better attention kernels attack a compute or memory-traffic bound. A bigger data-loader pool or pinned host memory attacks I/O. Topology-aware placement attacks communication. Pick the toolbox before the tool, and pick it from evidence.
 
-## The roofline: a picture of the ceiling you are under
+## The Roofline: a Picture of the Ceiling You Are Under
 
 The roofline model is the one diagram worth keeping in your head for this work. It answers the single question — *am I bandwidth-limited or compute-limited?* — by plotting two numbers against the hardware's actual ceilings.
 
@@ -47,7 +47,7 @@ Plot your kernel as a point. Under the diagonal, your fix is to *move less data*
 
 Why this matters for an LLM specifically: decode is structurally memory-bound. Each generated token reloads the weights and the growing KV cache to produce one token's worth of math, so arithmetic intensity is low and you sit on the diagonal — which is exactly why the chapter-1 levers that *cut bytes* (paged and pooled KV cache, quantized cache, lower precision) buy so much there, and why a faster matmul kernel often buys nothing. Prefill is the opposite: a full prompt's worth of arithmetic per byte loaded, far to the right, compute-bound. One model, two regimes, two toolboxes. The roofline is how you stop confusing them.
 
-## Systems first, then kernels: the two-step attribution loop
+## Systems First, Then Kernels: the Two-Step Attribution Loop
 
 Knowing the bound is half the discipline. The other half is *attribution* — pinning the lost time to a specific cause before you change code. The reference prescribes a two-step flow, and it is the right order.
 
@@ -57,13 +57,13 @@ Knowing the bound is half the discipline. The other half is *attribution* — pi
 
 The measured deltas from the serving chapters only mean anything inside this loop. In the reference's own benchmark runs, a tensor-core decode kernel showed a 15.65x speedup on one target; cache-aware reuse of the rotary-position and query path showed 23.53x; a smarter routing policy showed 7.07x with the underlying workload unchanged. Those are not numbers to quote at a stranger's stack. They are numbers that were *attributed* — profiled deep-dive to confirm the win came from the cache movement, the scheduling, or the decode behavior the engineer claimed it did, not from a lucky batch. Re-measure on your own hardware before you treat any published delta as a threshold. A speedup you cannot reproduce on your machine is a rumor, not a result.
 
-## Measure honestly or don't bother
+## Measure Honestly or Don't Bother
 
 The fastest way to lie to yourself is a sloppy measurement, so the reference fences the method as hard as the optimization. Align the runs before timing — clamp the random seed, the preprocessing, the batch shapes — so the delta comes from your change and not from a different workload sneaking in. Measure the *steady state* — warm up first, run the compile and the cache-fill before you start the clock — so first-iteration noise never lands in the reported number. Track throughput and latency *together*; tokens per second next to milliseconds, because an optimization that improves one while quietly wrecking the other is a regression wearing a win's clothes. And log the environment every run — GPU, driver, toolkit, the exact command — so a number is replayable and a regression is traceable to the thing that changed.
 
 For the AI Platform Engineer, this is the habit the title is built on: you are the person who can say *where the time goes* and prove it, before anyone spends a sprint optimizing a part of the system that was already at its roof. Measure first. The lever comes second, and only the measurement tells you which one.
 
-## Core concepts
+## Core Concepts
 
 - Optimization without measurement is negative work: a fix applied to a part of the system that was not the bottleneck adds complexity and buys nothing, so you do not optimize a workload you have not profiled.
 - Every inference workload is compute-bound, memory-bound, I/O-bound, or communication-bound at any moment; naming the bound first picks the toolbox — quantization and kernel work for compute/memory, data-loader and pinned-memory work for I/O, topology-aware placement for communication.

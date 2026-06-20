@@ -1,12 +1,12 @@
-# Communication protocols (MCP / A2A / ACP / ANP)
+# Communication Protocols (MCP / A2A / ACP / ANP)
 
 Two agents that talk by passing raw strings will, eventually, lie to each other. One emits "done — see results above," the other parses "results" from the wrong field, and the bug surfaces three steps later as a confident wrong answer. The fix is a wire contract: a typed, discoverable, addressable format that makes a handoff checkable instead of hopeful — and in 2026 that contract is a four-layer protocol stack you should be able to read top to bottom.
 
-## You build a real agent-to-agent handoff
+## You Build a Real Agent-to-Agent Handoff
 
 You build a handoff where one agent discovers another's tools over MCP and delegates a task to it over A2A — a typed wire message, not a string shoved into a prompt. The point is to feel the difference between "I told the other agent what I wanted" and "I sent it a message that either validates or fails loud."
 
-## The stack, as four layers
+## The Stack, as Four Layers
 
 The 2026 protocol sprawl looks like alphabet soup until you stack it by what each layer addresses. Each expands on first use; hold the four.
 
@@ -20,7 +20,7 @@ The 2026 protocol sprawl looks like alphabet soup until you stack it by what eac
 
 Read bottom to top: discover and call tools (MCP), delegate to peers (A2A), audit the runs (ACP), trust strangers (ANP). Most systems you build live in the bottom two. The top two matter the moment your fleet crosses a team or company boundary.
 
-## The heritage: which "innovations" are reinventions
+## The Heritage: Which "Innovations" Are Reinventions
 
 Here is the thing the announcements won't tell you. Almost none of this is new.
 
@@ -28,7 +28,7 @@ In 2002 the FIPA standards bodies published FIPA-ACL — an Agent Communication 
 
 Look at A2A's task lifecycle and you are looking at FIPA's contract-net with JSON instead of XML and a natural-language ontology instead of a formal one. The performatives came back as task states. The content language came back as typed Artifacts. This is not a criticism — JSON-native and LLM-native are genuine improvements — but it is leverage. Knowing the heritage tells you which marketed "innovations" are reinventions, and warns you which old failure modes the new specs will rediscover: ambiguous performatives, deadlocked negotiations, ontology mismatch between teams. The 1990s agent community hit all three. So will you.
 
-## Why raw strings fail
+## Why Raw Strings Fail
 
 Skip the protocol and pass strings, and three failures are waiting.
 
@@ -38,7 +38,7 @@ Skip the protocol and pass strings, and three failures are waiting.
 
 **Scale.** Two agents you wrote can share a private convention. Ten agents from four teams cannot. The contract is what lets a team you've never met delegate to your agent without a meeting — the Agent Card *is* the meeting.
 
-## Reuse the M3 wire contract
+## Reuse the M3 Wire Contract
 
 You already typed an MCP message in Module 3 — the TypeScript `tools/call` request and result, schema-validated end to end. Reuse it. MCP for tool discovery stays exactly as you built it; A2A is the new piece, and it rhymes. The Agent Card is a typed manifest like an MCP tool schema. The Task is a typed request like a `tools/call`. Type the A2A wire format the same way you typed MCP: a schema the sender fills and the receiver validates, so a malformed handoff fails at the boundary instead of three steps downstream. Control plane stays Python; the wire contract is the place a strong type earns its keep, so it stays TypeScript.
 
@@ -64,11 +64,11 @@ interface A2AResult {
 
 The receiver validates `skill` against its own Agent Card and the input against the skill's schema. A mismatch is a `failed` state with a reason, returned at the wire — not a wrong answer three turns later that you spend an afternoon tracing.
 
-## The seam this sits on
+## The Seam This Sits On
 
 A protocol is where the AI Engineer's question (can these agents coordinate at all) meets the MLOps question (is every handoff typed, discoverable, and auditable). String-passing fails both: it can't scale the coordination and it can't be audited. Type the wire and you've made the seam's two halves agree — the agents talk, and you can prove what they said.
 
-## Core concepts
+## Core Concepts
 
 - The four-protocol stack layers by concern: MCP (agent ↔ tool discovery and invocation), A2A (agent ↔ agent delegation via Agent Cards and a task lifecycle), ACP (enterprise audit and trajectory metadata), ANP (decentralized identity and trust).
 - Today's agent protocols are largely a JSON-native, LLM-native rehash of FIPA-ACL (2000) and KQML (1993); knowing the heritage tells you which "innovations" are reinventions and which old failure modes — ambiguous performatives, deadlock, ontology mismatch — the new specs will rediscover.

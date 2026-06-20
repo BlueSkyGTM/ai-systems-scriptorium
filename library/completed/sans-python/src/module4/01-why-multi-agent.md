@@ -1,8 +1,8 @@
-# Why multi-agent — the single-agent ceiling
+# Why Multi-Agent — the Single-Agent Ceiling
 
 You built one agent that runs a loop, holds memory, and stays inside a budget. The temptation now is to make it bigger — more tools, a longer system prompt, a wider window. That instinct is wrong, and knowing why is the first thing this module teaches: past a certain point you don't scale an agent, you split it, and that split is where governance starts to cost real money.
 
-## The complexity ladder, one rung higher
+## The Complexity Ladder, One Rung Higher
 
 Module 2 gave you the complexity ladder, and Module 3 made you climb it. A direct model call when the answer comes from training or assembled context. A workflow when the steps are knowable up front. A single agent when the next step genuinely depends on the last. Each rung earns its place only when the rung below it can't do the job.
 
@@ -18,7 +18,7 @@ There are three walls, and they are concrete.
 
 If your problem hits none of these, you do not have a multi-agent problem. You have a prompt you haven't tightened yet.
 
-## More agents, not a bigger agent
+## More Agents, Not a Bigger Agent
 
 This is the load-bearing reframe. When a single agent strains, the engineer's reflex is to give it more — more tools in the registry, more context stuffed in, more instructions piled on. Each addition makes the agent slower to reason and easier to confuse. A tool registry of sixty tools is a worse agent than one of six, because the model now spends its attention choosing badly among options it half-understands.
 
@@ -26,7 +26,7 @@ The move past the ceiling is *more agents, not a bigger agent*. Three focused ag
 
 Fresh context per agent is the whole trick. It is also what makes the system harder to run.
 
-## The bill comes due
+## The Bill Comes Due
 
 Multi-agent is not free, and the costs are not footnotes. Three of them will shape every decision in this module.
 
@@ -38,11 +38,11 @@ Multi-agent is not free, and the costs are not footnotes. Three of them will sha
 
 So multi-agent buys you scale and pays for it in latency, money, and observability. That trade is the whole reason the back half of this module exists: budgets, kill switches, human checkpoints, and fleet governance are what make the trade survivable in production.
 
-## The seam this module sits on
+## The Seam This Module Sits On
 
 Single agent to many is the seam's defining move. The AI Engineer half asks *will the coordination produce a better answer* — topology, debate, role specialization. The MLOps half asks *what does it cost to run, and how do I stop it when it goes wrong* — budgets, identity, audit, kill switches. A bigger agent hides both questions inside one process. Splitting into many forces both into the open, which is exactly why an AI Platform Engineer has to own them. The next lesson starts at the open question: once you have many agents, how do they talk without lying to each other.
 
-## Core concepts
+## Core Concepts
 
 - Multi-agent is the next rung of the complexity ladder: reach for it only when a single agent hits a nameable wall — context overflow, mixed expertise in one prompt, or a sequential bottleneck.
 - The move past the single-agent ceiling is more agents, not a bigger agent; a focused agent with a fresh context outperforms one agent carrying every role, and fresh-context-per-agent is the mechanism that earns the gain.

@@ -1,14 +1,14 @@
-# Async Rust for serving
+# async Rust for Serving
 
 A proxy in front of your serving engine spends almost all of its time waiting — for the upstream model to start streaming, for a slow client to read, for the next connection. Spend one operating-system thread per request and you cap out at a few thousand before the machine drowns in context switches. Async Rust is how a handful of threads hold tens of thousands of in-flight requests at once, which is the only shape that makes a Rust proxy worth putting on the hot path.
 
-## Why async, here
+## Why async, Here
 
 The work on the serving edge is I/O-bound, not compute-bound. The proxy isn't doing math; it's holding open sockets and waiting on the network. Blocking a whole thread to wait on a socket is the waste async exists to remove — while one request waits on the upstream engine, the same thread runs another that's ready.
 
 Python solved this with `asyncio`; you already think in `async`/`await`. Rust borrows the same two keywords, so the *shape* of the code transfers directly. What's new underneath is that Rust has no built-in async runtime — the language gives you `async`/`await`, and you bring the engine that runs it. On the serving layer, that engine is **tokio** (the asynchronous runtime for Rust, named for "Tokyo" + I/O), which provides the building blocks for writing networking applications.
 
-## async and await: the same shape, new rules
+## async and await: the Same Shape, New Rules
 
 An `async fn` does not run when you call it. Calling it returns a *future* — a value describing work to be done — and the work happens only when something `.await`s it. Rust futures are inert: they make progress only when polled.
 
@@ -24,7 +24,7 @@ This reads like the Python you know. The difference is what `.await` does: it is
 
 The `?` operator from lesson 14 works inside async functions exactly as it does in sync ones — a failed `.await` short-circuits and returns the error. Async did not change how Rust handles failure; it only changed when the work runs.
 
-## tokio: the runtime you bring
+## tokio: the Runtime You Bring
 
 You declare the runtime with one macro on `main`. `#[tokio::main]` rewrites your `async fn main` into a synchronous one that starts the runtime and blocks on your top-level future:
 
@@ -50,7 +50,7 @@ A tokio task is not an OS thread. It is an asynchronous green thread — under t
 
 Two rules come straight from the ownership lessons. A spawned task must be `'static` (its type's lifetime must be `'static`, so it can outlive the function that spawned it) and `Send` (tasks spawned by `tokio::spawn` must implement `Send`, so they can move between worker threads). This is why you see `async move` — the task takes ownership of what it captures, so nothing it touches can be freed out from under it. The borrow checker you met in lesson 14 is the same checker proving your concurrency is sound; async didn't loosen it.
 
-## The hot path: a tokio inference proxy
+## The Hot Path: a tokio Inference Proxy
 
 Here is where Rust earns its place in the AI platform. You put a thin async proxy in front of `module5-serving/` — the mock inference endpoint the rest of this module built against. The proxy is the hot path; Python remains the control plane behind and beside it.
 
@@ -97,13 +97,13 @@ drop(permit);                                  // release the slot
 
 `Arc` — an atomically reference-counted pointer — is how the limiter is shared across every task safely; this is the `Arc`/concurrency thread the ownership lessons set up, arriving exactly where serving needs it. The semaphore is the FinOps and reliability lever from earlier in this module, now enforced in the one place that sees every request before it costs you a token.
 
-## Where the seam lands
+## Where the Seam Lands
 
 The proxy is a few hundred lines, and it does what no Python tier on the hot path does for free: hold tens of thousands of connections on a few threads, enforce a deadline the compiler won't let you skip, and cap concurrency with a primitive that can't deadlock the way a hand-rolled lock can. Behind it, Python still owns everything that isn't latency-critical — the config, the quotas, the rollout decisions, the dashboards you wired in this module.
 
 That division is the whole mixed-language thesis made concrete: Python where iteration speed wins, Rust on the one tier where a millisecond is a contract. You didn't replace your platform. You put the right language on the hottest inch of it.
 
-## Core concepts
+## Core Concepts
 
 - Async serving is I/O-bound waiting, and `.await` is a yield point that hands the thread to another ready task — so a few tokio worker threads carry tens of thousands of concurrent requests instead of one thread per request.
 - Rust has no built-in async runtime; you bring tokio, declare it with `#[tokio::main]`, and `tokio::spawn` a future onto its multi-threaded work-stealing scheduler, getting back a `JoinHandle`.

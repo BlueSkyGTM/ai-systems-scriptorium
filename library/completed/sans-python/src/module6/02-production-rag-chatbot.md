@@ -1,10 +1,10 @@
-# Production RAG chatbot (regulated vertical)
+# Production RAG Chatbot (Regulated Vertical)
 
 A bank's compliance team answers the same policy questions all day, by hand, with no record of who said what. You can replace that with a chatbot — but the moment the domain is regulated, an answer without a source is not a feature, it is a liability someone signs their name under. This is the most-shipped production AI shape of 2026, and it is the one where the hard parts are the parts a demo skips: the citation, the guardrail, the gate that says ship or don't.
 
 You have built the pieces already. Module 2 gave you the RAG spine and the evaluation triad; Module 5 gave you the Docling front door and quality-drift observability; Module 4 gave you guardrails. This artifact assembles them into one system a regulator could audit, and it makes the seams real enough to reuse.
 
-## The business problem
+## The Business Problem
 
 Strip the romance off and the job is narrow. A compliance team owns a corpus of policy documents — retention schedules, access-control rules, incident-response timelines — and a stream of questions that already have answers buried in those documents. Today a person finds the answer, or guesses it, and nobody can reconstruct later why the answer was what it was.
 
@@ -12,7 +12,7 @@ A regulated vertical changes the acceptance bar in two specific ways, and both a
 
 That reframes the build. You are not building a chatbot that happens to cite; you are building a citation-and-refusal machine that happens to use retrieval to do it.
 
-## Capability and one stack
+## Capability and One Stack
 
 The capability is RAG with three things bolted on that a toy RAG omits: **citations**, **guardrails**, and **drift observability**. The reference stack, one concrete choice end to end:
 
@@ -24,7 +24,7 @@ The capability is RAG with three things bolted on that a toy RAG omits: **citati
 
 One stack, named, so the choices are honest. But the stack is not the lesson. The seam is.
 
-## The portable seam
+## The Portable Seam
 
 Two interfaces carry this whole system, and getting them right is what lets you swap a cloud service for a laptop without touching the rest.
 
@@ -42,7 +42,7 @@ The default backend is a pure-Python in-memory index: hashed bag-of-words embedd
 
 This is the same swappable-engine stance the serving stack took and the same one Docling's seam took. You are not learning a new idea here; you are watching it pay off a third time.
 
-## The build sequence
+## The Build Sequence
 
 Build it in the order the dependencies force, each step runnable before the next:
 
@@ -56,7 +56,7 @@ Build it in the order the dependencies force, each step runnable before the next
 
 The mock LLM is doing real work, not papering over a gap. A deterministic policy at the generation seam is what makes the whole pipeline testable in CI; the interesting parts — retrieval, citation, refusal, the gate — are exactly the parts that don't need a live model to prove out.
 
-## The operator surfaces
+## The Operator Surfaces
 
 Module 8 hands the student the operator's chair: set the thresholds, watch the signals, hold the go/no-go. So this artifact exposes three surfaces the student will drive, and they are real, not decorative.
 
@@ -66,25 +66,25 @@ Module 8 hands the student the operator's chair: set the thresholds, watch the s
 
 **The acceptance gate.** Eval scores two metrics from the RAG triad against a labeled evalset: **retrieval precision** (did the top chunk come from the document that holds the answer?) and **answer faithfulness** (does the answer contain the expected facts, drawn from a cited source?). The gate is a threshold on each. A build below it does not ship. Both checks are deterministic — no LLM judge needed offline — so the gate runs in CI and means the same thing every time.
 
-## The BUILD→TEST gate
+## The BUILD→TEST Gate
 
 The whole artifact runs on the Python standard library alone, no cloud, no network, no GPU. `python smoke.py` ingests the corpus, builds the index, answers a real question with a correct citation, blocks an unsafe query at the guardrail, records a drift reading, and runs the eval gate — exiting zero only if every surface behaves. `python -m pytest tests/` asserts the surfaces hold: an answer cites a real source chunk, the guardrail blocks the unsafe query, eval returns scores, and a deliberately degraded low-faithfulness answer **fails** the gate — proving the gate has teeth.
 
 Every third-party import — Docling, FAISS, Azure, Anthropic — is guarded behind `try/except ImportError` with a stdlib fallback on the smoke path. Real services are opt-in through `.env`. The gate you can run on a plane is the gate that runs in CI.
 
-## Strong-project done-when
+## Strong-Project Done-When
 
 This clears the hireability bar: a real entry point you run from a shell, not a notebook; a README that frames the business problem before the code; evaluation with metrics and a pass/fail gate; tests covering the smoke path and every operator surface; a clean, versioned layout; and a shipped `outputs/skill-production-rag-chatbot.md`. Done means the smoke gate is green and a stranger can read the README, run two commands, and see a cited answer and a blocked attack.
 
-## What Module 7 reuses
+## What Module 7 Reuses
 
 This artifact is the **knowledge/retrieval service**. In Module 7 the `Retriever` stops being something a person queries and becomes a tool a governed agent fleet calls. The citation contract travels with it — an agent that retrieves through this service inherits cited answers for free — and so does the eval gate, which becomes one of the acceptance checks the fleet's operator runs. You are not rebuilding retrieval in M7; you are wiring this seam into a larger machine. That is the compounding the course promised: the single agent you ship here is a node in the team you ship next.
 
-## What you build
+## What You Build
 
 A citation-enforced, guardrailed RAG chatbot for a regulated corpus: Docling-or-stdlib ingestion into a `Chunk` contract, a swappable `VectorIndex` (pure-Python default, Azure AI Search opt-in), a retriever with a relevance floor, a cited-answer path over a mock or real LLM, a Module 4 guardrail, a drift monitor, and an eval acceptance gate — all passing an offline, stdlib-only BUILD→TEST smoke gate.
 
-## Core concepts
+## Core Concepts
 
 - In a regulated vertical, citations and refusal are the acceptance bar, not features: an uncited claim is a liability, so the system is a citation-and-refusal machine that uses retrieval, not a chatbot that happens to cite.
 - The portable seam is two interfaces — the `Chunk` citation contract and the `VectorIndex` retriever — so swapping Azure AI Search for a local index is one constructor call and the chatbot, guardrail, eval, and drift code never change.

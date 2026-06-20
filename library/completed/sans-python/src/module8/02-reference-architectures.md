@@ -1,14 +1,14 @@
-# Reference architectures
+# Reference Architectures
 
 You do not invent the system you build for the exam. You replicate one. This chapter is the catalog — twenty production architectures, distilled from Chapter 16 of the systems-design case studies — and your job is to pick one, name the seam you must keep, and scope a version you can ship.
 
-## Why a catalog instead of a prompt
+## Why a Catalog Instead of a Prompt
 
 A blank page is a trap. Asked to design a multi-tenant RAG system from nothing, most engineers produce something that works in a demo and falls over the first time two tenants share a shard. The architectures below were not invented in a demo; they were paid for in incidents. Each one carries the design decision that a real version cannot drop — the *seam* — and that seam is what the exam grades. Replicating a known architecture is not a shortcut around the thinking. It is the thinking, done by people who already hit the wall you would otherwise hit yourself.
 
 Read the catalog as a menu of solved problems. Each row names the architecture type, what you replicate, and the seam. Pick the row whose seam you want to prove you can hold.
 
-## The full catalog
+## The Full Catalog
 
 | # · Case study | Architecture type | What you replicate | Seam |
 |---|---|---|---|
@@ -33,7 +33,7 @@ Read the catalog as a menu of solved problems. Each row names the architecture t
 | 19 · Customer-Specific Distillation | Model distillation | Production-trace distillation with eval-gated canary rollout | The eval-gated canary |
 | 20 · Enterprise MCP Knowledge Agent | MCP knowledge agent | Multi-system MCP agent with OAuth audience binding, STDIO sandboxing, IPI trust-tagging | The trust boundary |
 
-## Grouped by track
+## Grouped by Track
 
 The exam's three tracks each anchor to a handful of these. Start from your track, then pick the row whose seam you want to hold.
 
@@ -45,7 +45,7 @@ The exam's three tracks each anchor to a handful of these. Start from your track
 
 The other case studies — fraud detection, voice-to-EHR, recommendation — are real, but they lean on infrastructure outside this fleet's reach (sub-100ms inference, on-prem ASR, an ANN index). Note where they live; reach for the rows your fleet can ship.
 
-## How to choose and scope "a version of"
+## How to Choose and Scope "a Version Of"
 
 Choosing is three decisions, in order.
 
@@ -57,7 +57,7 @@ Choosing is three decisions, in order.
 
 The catalog is twenty answers to "how was this solved already." Choosing one and scoping it honestly is the difference between a portfolio that says *I can design a system* and one that says *I read a real design and shipped a version that holds the line that matters.*
 
-## Core concepts
+## Core Concepts
 
 - The exam replicates a known architecture, never invents one from a blank page; each case study carries a seam — the one design decision a real version cannot drop — and that seam is what the rubric grades.
 - The three tracks each anchor to specific case studies: eval-gated CI/CD (#18/#19/#17, seam = the eval gate), multi-tenant RAG (#08/#01/#12/#15, seam = isolation), agentic system (#07/#09/#16/#20, seam = the governed loop).

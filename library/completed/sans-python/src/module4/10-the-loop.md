@@ -1,8 +1,8 @@
-# The loop — a single agent-system as governed infrastructure
+# The Loop — a Single Agent-System as Governed Infrastructure
 
 You stop typing the next prompt. Something else discovers the work, hands it to an agent, checks the result, and stops when the money runs out — and the day you build that something, you have crossed from running an agent to operating one.
 
-## Replacing yourself as the prompter
+## Replacing Yourself as the Prompter
 
 Module 3 built an agent: a loop that observes, thinks, acts, and stops on a condition you defined. You were still the trigger. You opened the session, gave it a goal, watched it run, and read what it produced. The agent was capable; you were the scheduler, the dispatcher, and the verifier, all by hand.
 
@@ -10,7 +10,7 @@ A *loop* — in the sense this lesson means — removes you from that seat. It i
 
 This is the AI-Engineer ∪ MLOps cusp stated plainly. The AI Engineer makes the agent good at the task. The platform engineer makes the agent *runnable unattended* — on a schedule, against real repositories, with a verdict gate and a kill switch, leaving an audit trail. A capable agent nobody can run safely overnight is a demo. The loop is what turns it into infrastructure.
 
-## The shape: trigger → action → verification → budget/kill-switch
+## The Shape: Trigger → Action → Verification → Budget/Kill-switch
 
 Every loop, whatever it does, has the same four-stage shape. Learn the shape once and you can read any loop pattern in the next lesson at a glance.
 
@@ -46,7 +46,7 @@ def run_loop(pattern, switch, budget):
 
 The whole loop is a dozen lines. The judgment lives in `pattern.action`; the safety lives in the three stages around it. Notice what the shape forbids: there is no path from `action` to `commit` that skips `verify`. The verifier is in the wire, not in the agent's good intentions.
 
-## The L1/L2/L3 autonomy ladder
+## The L1/L2/L3 Autonomy Ladder
 
 The shape tells you *what* a loop does. The autonomy ladder tells you *how much you let it do* — and the rule is that you climb it, you do not start at the top.
 
@@ -60,19 +60,19 @@ The ladder is not a preference; it is a calibration sequence. A loop run at L3 o
 
 Measure before you climb. Graduate L1 to L2 when triage accuracy is high and the verifier has been tested independently; graduate L2 to L3 almost never, and only on a path where a wrong action is cheap to undo.
 
-## A loop is the unit; this is where it already runs
+## A Loop Is the Unit; This Is Where It Already Runs
 
 The four-stage loop is not a curriculum abstraction — it is the shape production platforms ship. Microsoft Foundry's *routines* are exactly this: a named automation rule with a trigger (a cron schedule or a one-shot timer) and an action (invoke one agent), where the platform queues the invocation, runs the agent, and stores a run record you inspect later. The trigger fires, Foundry creates a run record, invokes the agent with its configured model, tools, and identity, and links the run to its trace — trigger to action, with the run log and the project-scoped governance built in.
 
 The same docs draw the exact line this chapter is built on. A routine invokes *one* agent; coordinating *many* agents with branching and shared state is a different construct — a workflow. One loop, one agent, governed on its own. Many loops, coordinated, governed together. That second thing is the fleet, and it is the next half of this chapter. A loop is the unit that lives inside it.
 
-## What you build
+## What You Build
 
 You take a stub agent from the seeded `_harness/` and wrap it as a governed loop: a trigger with a no-op early exit, the agent action, an independent verifier that defaults to REJECT, and the budget plus kill-switch from lessons 06 and 07 wired as the stop. You run it at L1 — report to a state file, act on nothing — because that is where every loop starts, and because the rung you skip is the one that bites you.
 
 A loop is the smallest thing you can run unattended and still trust. Build it so the verifier sits in the wire and the off switch sits in your hand, and you have infrastructure; skip either and you have an automated way to be wrong faster than you can read.
 
-## Core concepts
+## Core Concepts
 
 - A loop is one agent system run as governed infrastructure: you build the machinery that triggers it, verifies it, budgets it, and persists its state, instead of being that machinery by hand.
 - Every loop has the shape trigger → action → verification → budget/kill-switch; the verification gate (from the M3 workbench, lesson 15) and the budget/kill-switch (from lessons 06–07) are non-negotiable stages, referenced here, not redefined — and no path skips the verifier.

@@ -2,7 +2,7 @@
 
 The ReAct loop is deliberate and slow by design — one tool call per turn, each observation feeding the next decision. For tasks where the steps are knowable upfront, this is wasteful: you're paying reasoning tokens to re-plan between every action when you could have planned once and executed in parallel.
 
-## Decouple planning from execution
+## Decouple Planning from Execution
 
 ReWOO (Xu et al., 2023) separates the loop into three roles: a **Planner** that produces the full plan DAG before any tool is called, a **Worker** that executes tool calls in parallel across the plan's independent nodes, and a **Solver** that synthesizes the collected evidence into a final answer.
 
@@ -10,7 +10,7 @@ The token count tells the story: interleaved ReAct re-conditions the reasoning m
 
 Foundry Agent Service's fan-out/fan-in patterns and workflow-oriented multi-agent execution reflect the same principle: independent nodes run in parallel, dependent nodes wait, the orchestrator collects results before synthesis.
 
-## The plan DAG
+## The Plan DAG
 
 A plan is a directed acyclic graph where each node is a tool call and each edge is a data dependency. Independent nodes execute in parallel; dependent nodes wait.
 
@@ -38,7 +38,7 @@ LangChain's Plan-and-Execute generalizes ReWOO with a **Replanner** step: after 
 
 The tradeoff is a third model call on replan. For tasks where the plan is stable, ReWOO without a replanner is cheaper. For tasks where early evidence frequently redirects the plan, Plan-and-Execute earns its cost. The same logic applies in any runtime that supports conditional re-orchestration: pay for the extra call only when early results reliably change what comes next.
 
-## Where LLM planners stop
+## Where LLM Planners Stop
 
 LLM planners are good at decomposing goals described in natural language. They are not sound-by-construction — a plan they produce may be logically inconsistent, reuse a resource before it exists, or silently skip a step.
 
@@ -50,7 +50,7 @@ Two cases where LLM planners fail and classical planning belongs:
 
 The principle behind both: the LLM is an amplifier, not a replacement. It generates candidates; a stronger external check validates them.
 
-## The complexity ladder, applied to planning
+## The Complexity Ladder, Applied to Planning
 
 Reach for plan-and-execute when the task has independent sub-problems that can be fetched in parallel — multi-source research, fanout lookups, batch transformations. Stay with ReAct when the next action is genuinely unknowable until the prior result arrives.
 
@@ -58,7 +58,7 @@ The test: draw the plan DAG. If most nodes are independent, planning wins. If ea
 
 Draw the dependency graph first. The right algorithm follows from the shape of the graph, not from which one sounds more impressive.
 
-## Core concepts
+## Core Concepts
 
 - Decoupling planning from execution — one plan DAG, parallel evidence fetches, one solver call — cuts token cost roughly 5× versus interleaved ReAct for tasks with independent sub-problems.
 - Per-node failure localization is a structural benefit of the plan DAG: a failed node identifies the missing evidence piece rather than leaving the loop in an ambiguous state.

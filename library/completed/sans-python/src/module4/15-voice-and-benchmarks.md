@@ -1,8 +1,8 @@
-# Voice agents & benchmark literacy
+# Voice Agents & Benchmark Literacy
 
 Two skills round out this chapter, and neither is a build. The first is reading a voice agent's architecture against a latency budget so brutal it shapes every design choice. The second is reading a benchmark number well enough not to be fooled by it — including the ones you've been quoting all chapter. Both are thin here; the voice agent itself is a Module 6 artifact.
 
-## Voice: a pipeline ruled by a latency budget
+## Voice: a Pipeline Ruled by a Latency Budget
 
 A voice agent is its own production category, and what makes it hard is not the language model — it's the clock. Conversation feels broken past a certain delay; the working target is **roughly 450–600ms end-to-end**, mouth to ear, through every stage. That budget is the spec everything else bends to, and it forces **partial audio as the default**: the agent processes speech in streaming fragments rather than waiting for a complete utterance, because waiting blows the budget before the model has even started.
 
@@ -26,7 +26,7 @@ Two frameworks anchor the space:
 
 The direct-vs-cascade choice is the one to hold onto. Direct audio cuts two hops and saves latency but hands control to one model; the cascade costs milliseconds but lets you swap a better STT or TTS independently and instrument each stage. That trade — fewer milliseconds against more control — is the recurring decision of voice engineering, and it's the heart of **Module 6 artifact 03**, where you build a voice assistant against this budget. Here you only need to read the pipeline and see where the time goes.
 
-## Benchmark literacy: read the number before you quote it
+## Benchmark Literacy: Read the Number Before You Quote It
 
 This chapter has thrown benchmark numbers at you — 38.1% on OSWorld, 59.8% on SWE-bench, 70% on Online-Mind2Web. A score is a compressed claim, and decompressing it before you repeat it is a core engineering skill. Three questions unpack any benchmark: what's in it (**composition**), did the model already see the answers (**contamination**), and what does it **not** measure.
 
@@ -40,7 +40,7 @@ Three more benchmarks, each measuring a different slice and each silent on the r
 
 The discipline is the same for all of them: a benchmark measures one slice of one capability under one set of conditions, and the headline number tells you nothing about the slices it left out. Saturation means the test got easy, not that the problem got solved. Quote a number, and you've made a claim about composition and contamination whether you meant to or not — so know them before the number leaves your mouth.
 
-## Core concepts
+## Core Concepts
 
 - A voice agent is governed by a ~450–600ms end-to-end latency budget that forces partial-audio streaming and shapes the whole architecture; the standard pipeline is VAD → STT → LLM → TTS → transport (over WebRTC).
 - The recurring voice design choice is direct audio (MultimodalAgent — fewer hops, less latency, one model) versus the STT→LLM→TTS cascade (VoicePipelineAgent — more latency, but swappable stages and per-stage instrumentation).

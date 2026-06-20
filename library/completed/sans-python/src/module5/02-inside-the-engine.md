@@ -1,12 +1,12 @@
-# Inside the engine: continuous batching & paged KV-cache
+# Inside the Engine: Continuous Batching & Paged KV-Cache
 
 A web server treats every request the same: take it, do the work, return the answer, move on. Run a language model that way and you will waste most of your GPU. An inference engine is not a REST server with a model bolted on — it is a different machine, built around two facts about how a transformer generates text, and this lesson is what lives below the API you've been calling.
 
-## Why a seam engineer opens the box
+## Why a Seam Engineer Opens the Box
 
 In Module 3 you learned to order a prompt "static content first, dynamic content last" so the **key-value cache** — the KV cache, the engine's memory of every token it has already processed — could be reused across turns. That lesson promised the serving layer would show you *how* it implements that cache below the API. This is where the promise comes due. The AI Engineer treats the engine as a black box that returns tokens; the platform engineer has to size its memory, read its throughput, and explain its tail latency to whoever pays the GPU bill. You cannot tune what you don't understand, and the two mechanisms below are where every serving-cost decision starts.
 
-## A language model request is two phases, not one
+## A Language Model Request Is Two Phases, Not One
 
 Generating a response is not one operation. It is two, and they stress the hardware in opposite directions.
 
@@ -16,7 +16,7 @@ Generating a response is not one operation. It is two, and they stress the hardw
 
 One request, two regimes. A naive server runs them back to back per request and lets the GPU idle through the slow decode phase of one request while others wait in line. That idle time is the whole problem.
 
-## Continuous batching: never let the GPU idle
+## Continuous Batching: Never Let the GPU Idle
 
 Static batching — the web-server reflex — collects N requests, runs them as a group, and returns when the *slowest* finishes. With language models that is ruinous: one request generating 800 tokens holds the entire batch hostage while seven requests that finished at 20 tokens sit done but un-returned, their GPU slots dead.
 
@@ -24,7 +24,7 @@ Static batching — the web-server reflex — collects N requests, runs them as 
 
 One sharp edge follows from the two phases: a long prompt's prefill can stall the decode steps of everyone else in the batch, spiking their TPOT. Engines answer with **chunked prefill** — slicing a long prompt into fixed-size chunks so decode tokens interleave and never starve — which is why a production engine's scheduler is the component you tune.
 
-## Paged attention: stop wasting the memory you bought
+## Paged Attention: Stop Wasting the Memory You Bought
 
 The KV cache is the engine's dominant memory consumer, and the naive way to store it wastes most of what you paid for. The reflex is to reserve a contiguous block per request sized to the *maximum* possible length. A request that could generate 4,000 tokens but stops at 200 holds 4,000 tokens' worth of GPU memory and uses 200. Across a batch, that internal fragmentation and over-reservation strands the majority of your KV memory — by vLLM's own accounting, classic-allocator waste runs 60–80%.
 
@@ -32,13 +32,13 @@ The KV cache is the engine's dominant memory consumer, and the naive way to stor
 
 The block table buys a second win for free. Two requests that share a prefix — the same long system prompt, the same retrieved document — can point their block tables at the *same physical blocks* for the shared span. The engine computes that prefix's KV once and shares it, instead of recomputing it per request. This is the serving-layer mechanism behind the "static content first" rule from Module 3: your prompt ordering decides whether the engine can share blocks or has to recompute. The cache you optimized for at the agent level is this block table, here, below the API.
 
-## The cache is the cost
+## The Cache Is the Cost
 
 Two consequences a platform engineer carries from this lesson. First, **the KV cache, not the model weights, often dominates serving memory at production batch sizes** — a 7-billion-parameter model quantized to 4 bits may be roughly 4 GB of weights and 10–30 GB of KV cache under load, which is why "the model fits" is the wrong question and "the model *plus its cache at my batch size* fits" is the right one. Second, the metrics that matter — TTFT, TPOT, throughput — are properties of the scheduler and the allocator, not of the model. Managed platforms hide this: an Azure OpenAI provisioned deployment exposes the result as a utilization metric in Azure Monitor and returns HTTP 429 once utilization passes 100% — the same KV-and-scheduler ceiling, surfaced as a quota signal instead of an out-of-memory error.
 
 A REST server scales by adding stateless replicas. An inference engine scales by packing more sequences into a batch and more blocks into memory without missing a latency target — a different machine, solving a different problem, and now not a black box.
 
-## Core concepts
+## Core Concepts
 
 - A language-model request is two phases with opposite bottlenecks: prefill is compute-bound and sets TTFT (time to first token); decode is memory-bound and sets TPOT (time per output token) — the engine is built to keep both busy.
 - Continuous batching schedules the batch between every decode token, so finished sequences leave and new ones join without waiting for the slowest request — a large throughput gain over static batching (several-fold in one reference benchmark) from the scheduling change alone.

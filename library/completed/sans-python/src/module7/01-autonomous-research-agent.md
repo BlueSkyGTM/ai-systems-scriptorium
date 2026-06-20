@@ -1,8 +1,8 @@
-# The autonomous research agent
+# The Autonomous Research Agent
 
 One agent grinding through a hard research question is slow, expensive, and — worse — answers to no one. This build replaces it with a team that splits the work, checks itself, and runs on a leash.
 
-## The business problem
+## The Business Problem
 
 A real research question does not fit in one context window. Ask "what makes a multi-agent system reliable in production?" and a single agent has to hold the failure literature, the verification techniques, and the cost-governance patterns at once, then reason over all of it in one degrading buffer. It is slow because it works in sequence, and it is expensive because every turn re-reads everything. But the cost is not the part that should worry you.
 
@@ -10,7 +10,7 @@ The part that should worry you is that a lone agent grades its own homework. Whe
 
 A research team fixes both problems at once. A supervisor splits the question into independent sub-questions and fans them out to sub-agents, each working a fresh, isolated context — parallel, and cheap because no agent carries the others' baggage. And every finding passes a verification gate before it can enter the answer, so a fabricated citation is rejected rather than synthesized. The payoff is not "more agents." It is **governed parallelism**: a traceable, cited answer you can stand behind, produced for a bounded cost.
 
-## The capability, and what it composes
+## The Capability, and What It Composes
 
 The capability is a sentence: **plan a question into sub-questions, research each in a sandbox, verify every finding, synthesize the verified ones — all under a shared budget and a kill switch.** That is a plan-execute-verify loop with sub-agents, the shape the Module 5 capstone calls an autonomous research agent.
 
@@ -24,7 +24,7 @@ Here is the discipline that makes this a Module 7 build and not a from-scratch o
 
 Name what you reuse and the build shrinks to the part that is genuinely new: the seams between these pieces.
 
-## The build sequence
+## The Build Sequence
 
 You assemble the team in the order the data flows.
 
@@ -36,7 +36,7 @@ You assemble the team in the order the data flows.
 
 The deterministic mock is what lets you prove all of this offline. One mock plays three roles — Planner, sub-agent, Solver — behind the same seams a real model would, the same trick Module 6 used to make its run reproducible. Swap the mock for the Anthropic adapter and the topology does not change. That is the point of building the seams yourself.
 
-## The operator surfaces
+## The Operator Surfaces
 
 Module 8 hands this running team to a student who is the operator — they set the budget, hold the kill switch, and judge the output. So the controls have to be real. This team exposes three, and the first two are raised a level from Module 6.
 
@@ -46,25 +46,25 @@ Module 8 hands this running team to a student who is the operator — they set t
 
 **The kill switch.** One boolean the whole team reads before every action and no agent can write. The read-only boundary is the entire point: if any agent could clear the switch, the team could disable its own stop. The operator holds the write path; the agents hold a view that only reads. Trip it once and the supervisor and every sub-agent halt at their next action boundary.
 
-## The BUILD→TEST gate
+## The BUILD→TEST Gate
 
 The scaffold passes locally and offline before it ships, and the bar is the same as Module 6, raised for composition. `python smoke.py` and `python -m pytest tests/` run on the **standard library plus pytest alone** — no Docker, no cloud, no network, no API key. The `anthropic` import sits behind a guard; the real model is opt-in through `.env`.
 
 The smoke run is the proof that a *team* coordinates, not one agent. It plans the fixed question into three sub-questions, dispatches three sub-agents that each search their own sandbox and return a cited finding, gates each finding, and synthesizes the verified ones — and the trace shows every step, with spend attributed across the agents. The test suite then pins each claim: the composition completes as a team; an unverified sub-result is rejected and never synthesized; a fleet budget breach stops the whole team before the next action; the kill switch halts it. The reject-unverified test is the one that earns the gate's trust — a sub-agent declaring an answer is not evidence, and the test proves the gate catches the fabricated citation the sub-agent was confident about.
 
-## The strong-project bar
+## The Strong-Project Bar
 
 These artifacts exist to be hireable, so "done" has a checklist and this build meets it: a real entry point you run from a terminal, not a notebook, and one that runs a *team* rather than a single agent; a README that frames the business problem before the code and names exactly what it reuses from M3, M4, and M6; an evaluation that is a genuine per-result acceptance gate, with the sub-agent's self-report shown to be the weaker signal the gate has to backstop; tests over the composition and every operator surface; a clean, versioned layout with no secrets committed; and a shipped `outputs/skill-autonomous-research-agent.md`. The done-when is not "it runs once" — it is "it runs green on the gate, offline, and a stranger reading the README can see which earlier agents this team is built from."
 
-## What M8 reuses
+## What M8 Reuses
 
 This team is a **node pattern**, and that is the thing to carry forward. The shape — *a supervisor plans, sub-agents work in isolated sandboxes, a gate verifies each result before it is used, and a shared budget plus a kill switch govern the whole* — is the reusable unit. The Module 7 finale wires several such governed nodes under one operator console, and Module 8 points that console at a production problem: it configures the budget, holds the kill switch, reads the verified-versus-rejected split, and judges the synthesized answer against a rubric. The verification gate is what makes that judgment possible at all — the report M8 grades is assembled from grounded findings, not from promises. Build the gate honest here, and every team you compose on top of it inherits a spine you can trust.
 
-## What you build
+## What You Build
 
 You build an autonomous research team that answers a question no single agent could hold. A supervisor decomposes the question, dispatches one sub-agent per sub-question into its own no-egress sandbox, verifies each returned finding against the evidence it actually retrieved, and synthesizes only the verified findings into one cited answer — the whole team bounded by a shared budget and a kill switch it cannot disable. A deterministic mock plays planner, sub-agent, and solver so the build gate runs offline and reproducible; a one-line swap puts a live Anthropic model behind the same seams. It reuses the Module 6 worker, the Module 4 supervisor-worker pattern and fleet governance, and the Module 3 ReWOO and CRITIC patterns — composed, not rebuilt — and it becomes a node the Module 8 system governs.
 
-## Core concepts
+## Core Concepts
 
 - A research team beats a lone research agent not by adding agents but by adding governance: isolated sub-agent contexts make the work parallel and cheap, and a per-finding verification gate makes the answer trustable — the MAST verification gap closed with code.
 - The build composes rather than authors: the sub-agent is the M6 worker loop, the supervisor is the M4 supervisor-worker pattern wired as direct tool calls, the planning is M3 ReWOO, and the gate is M3 CRITIC — naming what you reuse shrinks the build to the seams between them.

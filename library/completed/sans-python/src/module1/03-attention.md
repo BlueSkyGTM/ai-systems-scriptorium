@@ -14,7 +14,7 @@ The pre-attention half — seq2seq, RNNs, CNNs for text — is in the [Antilibra
 
 Knowing that attention is a learned, position-weighted sum over all input tokens explains why context windows exist, why prompt position affects recall, and why long-context limits are a real engineering constraint — not marketing numbers to ignore.
 
-## Core concepts
+## Core Concepts
 
 - Fixed-state seq2seq degrades sharply with sequence length; attention fixes this by computing a per-step weighted sum over all encoder states instead of compressing to one vector.
 - Bahdanau (additive) and Luong (multiplicative) attention differ in scoring function and which decoder state feeds the score — $s_{t-1}$ vs $s_t$ — a sequencing detail that causes silent bugs when implementations are mixed.

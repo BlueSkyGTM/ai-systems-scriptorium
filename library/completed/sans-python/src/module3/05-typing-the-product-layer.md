@@ -1,8 +1,8 @@
-# Typing the product layer
+# Typing the Product Layer
 
 A single typed tool is a contract. A fleet of typed tools — reusable across agents, composable into MCP servers, derivable from a single source of truth — is an architecture. The four patterns in this lesson turn the `ToolDefinition` from lesson 04 into a typed product layer the next chapter extends.
 
-## Generics: reusable tool wrappers
+## Generics: Reusable Tool Wrappers
 
 The `ToolDefinition` interface from lesson 04 uses `Record<string, unknown>` for both input and output — safe, but unspecific. Every caller casts. Generics fix that by letting you parameterize the types the compiler infers at each use site.
 
@@ -39,7 +39,7 @@ function registerTool<T extends { name: string }>(tool: T): void {
 
 In `@azure/ai-agents`, `ToolDefinitionUnion` is exactly this pattern — a discriminated union of `FunctionToolDefinition | CodeInterpreterToolDefinition | FileSearchToolDefinition | …` keyed on `type` (see learn.microsoft.com/javascript/api/@azure/ai-agents/tooldefinitionunion).
 
-## Interfaces: MCP server contracts and agent schemas
+## Interfaces: MCP Server Contracts and Agent Schemas
 
 Interfaces describe the shape of objects that cross process boundaries — MCP request/response pairs, agent schemas, server manifests. Two interface features matter here beyond what lesson 04 covered.
 
@@ -72,7 +72,7 @@ Interfaces are open (declaration merging works), type aliases are closed. For sh
 
 The `@azure/ai-agents` SDK extends this pattern: its `Agent` interface carries `tools: ToolDefinitionUnion[]`, and `CreateAgentOptionalParams` / `UpdateAgentOptionalParams` both accept `tools?: ToolDefinitionUnion[]` — the index-signature map you define locally maps directly to what the SDK expects.
 
-## Declaration files: typing JS-first LLM packages
+## Declaration Files: Typing JS-First LLM Packages
 
 Many LLM packages ship as CommonJS JavaScript with no type definitions — or with types that lag behind the JS surface. Declaration files (`.d.ts`) let you add a type layer without touching the original package.
 
@@ -98,7 +98,7 @@ Both cases enforce the same guarantee: the compiler checks every call site even 
 
 Visual Studio and VS Code both auto-acquire `.d.ts` files from DefinitelyTyped for npm packages — the same repository pattern the manual `declare module` block mimics when no `@types/` package exists.
 
-## Type modifiers: one source of truth
+## Type Modifiers: One Source of Truth
 
 Three modifiers let you derive new types from existing values or types rather than maintaining parallel definitions that drift apart.
 
@@ -139,7 +139,7 @@ Advanced type operations — mapped types, conditional types, template-literal t
 
 The `(typeof X)[keyof typeof X]` idiom is live in production Azure SDKs — `@azure/msal-common` uses `(typeof GrantType)[keyof typeof GrantType]` and `(typeof AADAuthorityConstants)[keyof typeof AADAuthorityConstants]` for exactly this purpose.
 
-## The typed product layer in module3-agent/
+## The Typed Product Layer in Module3-agent/
 
 After this lesson, `module3-agent/tools/` has:
 
@@ -155,7 +155,7 @@ This typed layer is what the Tools & MCP chapter (lesson 06 onward) wires to rea
 
 Without this layer, schema drift is silent — a renamed tool key in the registry and an outdated parameter name in the schema have nothing to catch them until the model calls the wrong function at runtime.
 
-## Core concepts
+## Core Concepts
 
 - Generic `Tool<TInput, TOutput>` separates the stable wrapper shape from the per-tool data shapes, so one registry contract covers every tool without losing per-tool type safety.
 - Interfaces with index signatures describe MCP server contracts and agent schemas where key sets are open; declaration merging lets you extend upstream SDK interfaces without forking them.

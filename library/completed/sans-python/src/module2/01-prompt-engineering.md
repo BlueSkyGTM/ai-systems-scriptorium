@@ -1,8 +1,8 @@
-# Prompt engineering
+# Prompt Engineering
 
 Every output a model gives you is a function of what you put in. The question isn't whether the prompt matters — it always does — it's whether you're engineering it or just hoping.
 
-## Anatomy of a prompt
+## Anatomy of a Prompt
 
 An LLM API call carries a tiered instruction hierarchy. The **system** message sets the model's role and constraints — it runs before the user sees anything and carries the highest trust. Below it sits the **user** message, the runtime input. The model's prior replies return in the **assistant** role — conversation history, the lowest-trust tier. Some providers add a **developer** tier between system and user for technical overrides that shouldn't be user-editable.
 
@@ -10,7 +10,7 @@ The order matters: instructions closer to the top outweigh instructions lower do
 
 **Role prompting** is the most direct use of the system tier. You aren't decorating the model — you're anchoring its capabilities. `You are a triage nurse classifying patient symptoms by urgency` shifts the vocabulary, the reasoning pattern, and the output structure. Use delimiters — XML tags, triple backticks, or clear labeled sections — to separate the parts of your prompt so the model doesn't hallucinate context boundaries.
 
-## Few-shot and in-context learning
+## Few-Shot and In-Context Learning
 
 A few-shot example shows the model what *done* looks like. Each example has three parts: a realistic input, optional reasoning, and a gold-standard output. The model reads the pattern and continues it.
 
@@ -32,7 +32,7 @@ Where CoT is linear, Tree-of-Thought (ToT) is branching. The architecture runs a
 
 The cost is steep: exploring a branch to depth can require fifteen to twenty model calls for a single query. That makes ToT the wrong choice for real-time requests and the right choice for high-stakes offline tasks — generating a gold evaluation dataset, refactoring a legacy codebase, solving a logic puzzle where one wrong step ruins the whole answer.
 
-## The versioning thread
+## The Versioning Thread
 
 Prompts drift. A prompt you shipped in March behaves differently in September because the model updated, the data shifted, or a well-meaning colleague added a clause. Treat prompts as versioned artifacts — the same way you version code. MLflow's prompt registry stores prompt text with version aliases (`champion`, `challenger`, `staging`) so you can run experiments and roll back without touching application code.
 
@@ -40,7 +40,7 @@ This is a development-time practice, not a production afterthought. Every prompt
 
 The prompt is the program — and an AI Platform Engineer treats it as versioned, testable infrastructure, not a string in a config file.
 
-## Core concepts
+## Core Concepts
 
 - The instruction hierarchy (system → developer → user → assistant) determines which instructions survive conflict — higher tiers outweigh lower ones.
 - Few-shot example count scales inversely with model size; dynamic example selection via semantic search replaces static lists in production.

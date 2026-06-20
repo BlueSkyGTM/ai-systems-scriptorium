@@ -1,14 +1,14 @@
-# Action budgets & cost governors
+# Action Budgets & Cost Governors
 
 A bug in a normal service throws an error and stops. A bug in an agent keeps reasoning, keeps calling tools, and keeps billing — because nothing in the loop was designed to make it stop. The failure has a name: Denial of Wallet, and the only defense is a stack of limits that fire before the invoice does.
 
-## Denial of Wallet is the agent-native outage
+## Denial of Wallet Is the Agent-Native Outage
 
 Classic denial of service exhausts your CPU or your bandwidth. An agent exhausts your *budget*. Give a loop a goal, a model, and a credit card behind the API key, and a single bad prompt — or a single adversarial input — can send it into a retry spiral that spends thousands of dollars before a human notices. There is no segfault, no 500, no page. Just a metered loop doing exactly what it was told, forever.
 
 This is the failure mode that makes long-horizon agents (lesson 05) financially dangerous. Durability is what keeps a long run alive; budgets are what keep an alive run from bankrupting you. The two are a pair — you do not ship one without the other. This is squarely the MLOps half of the seam: the AI Engineer makes the agent capable, and the platform engineer is the one who has to answer for the bill when capable goes sideways at 3 a.m.
 
-## One cap is not a budget
+## One Cap Is Not a Budget
 
 The instinct is to set a monthly spending cap and call it done. That cap is real, and it is also useless against the failure you actually fear. A monthly limit catches a runaway *after the wallet is already gone* — by the time you hit it, the damage is done. Different failure modes live at different time scales, and a budget worth the name puts a limit at each one.
 
@@ -66,13 +66,13 @@ class BudgetBreach(Exception):
 
 The governor is deliberately boring deterministic code — no model, no judgment. A budget you ask a model to enforce is a budget the model can talk its way out of.
 
-## Routing is a budget too
+## Routing Is a Budget Too
 
 Not every step needs your most expensive model. Tiered routing is cost governance applied to the model choice itself: send the cheap, high-volume work — classification, extraction, a rubric score — to a small fast model, and reserve the expensive reasoning model for the steps that need depth. A reviewer pass on a fixed rubric runs fine on a cheap model; the builder loop that has to reason through a hard task does not. Routing every step to the top model is the most common way teams quietly triple their bill for no accuracy gain.
 
 Prompt caching and context windowing belong in the same conversation: cache the stable prefix so you stop paying to re-send it every turn, and trim the message history so a long run's context doesn't grow without bound. Both are spend control by another name. Azure surfaces these governance levers as first-class platform controls rather than something you bolt on per agent: its Foundry control plane enforces per-project token-per-minute rate limits and total token quotas to cap aggregate spend, and a model router that sends each request to a cheaper or more capable model by the prompt.
 
-## When a limit breaks, cut
+## When a Limit Breaks, Cut
 
 A budget that logs a warning and keeps going is not a budget. Every limit in the stack ends the same way: on breach, the governor trips the kill switch and the run stops before the next action executes. The breach is the trigger; the kill switch is the mechanism — and that mechanism is the next lesson. Here the contract is simple: when any cap is crossed, the next action does not run.
 
@@ -80,7 +80,7 @@ This is also where budgets stop being a single-agent concern. When you graduate 
 
 Set the caps too high and they never fire, which is the same as not having them; set them where a healthy task clears them with room and a runaway hits a wall in seconds — that gap, between comfortable and catastrophic, is the budget's entire job.
 
-## Core concepts
+## Core Concepts
 
 - Denial of Wallet is the agent-native failure: a loop with no stop designed in keeps reasoning, calling, and billing — defended only by limits that fire before the invoice, not after.
 - A budget is a stack of caps at different time scales — `max_tokens`, iteration caps, per-task token/dollar budgets, per-tool caps, velocity limits, and calendar caps — because each catches a runaway the others let through; a single monthly cap catches it only after the wallet is gone.

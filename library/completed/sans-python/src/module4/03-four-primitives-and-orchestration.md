@@ -1,8 +1,8 @@
-# The four primitives & orchestration
+# The Four Primitives & Orchestration
 
 In Module 3 you learned to read any agent framework as a point in a four-dimensional space — Agent, Handoff, Shared state, Orchestrator. That frame was for the single-agent-to-framework view: how one library packages the loop. Now those four knobs do harder work. They are the design space for a *system of agents*, and the choices you make on each one decide whether your fleet is a clean supervisor, an emergent swarm, or an unauditable mess.
 
-## The same four knobs, turned up
+## The Same Four Knobs, Turned Up
 
 The four primitives don't change going multi-agent. Their stakes do. A quick recap, then the part that's new.
 
@@ -16,7 +16,7 @@ The four primitives don't change going multi-agent. Their stakes do. A quick rec
 
 Read a multi-agent framework the same way you read a single-agent one: name its default on each of the four knobs and you've read it in a paragraph. What's new is that the *topology* — how the agents are wired to each other — is itself a set of choices on these four knobs. Three topologies cover almost everything.
 
-## Three orchestration patterns
+## Three Orchestration Patterns
 
 **Supervisor-worker.** One lead agent plans and delegates; specialized workers execute in fresh parallel contexts and report back. The Orchestrator is explicit (the supervisor), Handoff is delegation down and results up, Shared state is usually minimal — the supervisor synthesizes, the workers never see each other. This is the workhorse, the pattern behind the research system from lesson 01, and the default you should reach for first. The lead never reads raw materials; it reads worker summaries. The workers never coordinate; they fan out and fan in.
 
@@ -26,7 +26,7 @@ Read a multi-agent framework the same way you read a single-agent one: name its 
 
 A fourth pattern, debate, gets its own lesson next — it's a coordination strategy more than a control topology.
 
-## Supervise with tool calls, not a supervisor library
+## Supervise with Tool Calls, Not a Supervisor Library
 
 Here is the 2026 guidance that runs against the marketing. When you build the supervisor-worker pattern, don't reach for a framework's `create_supervisor()` helper by default. Implement supervision as *direct tool calls*: the supervisor agent has a tool per worker — `call_researcher(task)`, `call_writer(task)` — and delegating is just calling the tool, reading the result, deciding the next move.
 
@@ -47,11 +47,11 @@ def supervisor(task: str) -> str:
 
 No supervisor framework, no hidden routing. The supervisor sees the plan and the results; each worker sees only its subtask. Every context boundary is a line you wrote.
 
-## The seam this sits on
+## The Seam This Sits On
 
 The four primitives are where the AI Engineer's design taste meets the MLOps engineer's need for a system that can be traced, costed, and stopped. Pick the topology by what the work needs — supervisor for delegated work, swarm for parallel independent work, hierarchical only when depth demands it — and wire supervision as tool calls so you keep the one knob, context flow, that decides both the answer's quality and the bill. Get the topology wrong and no amount of model quality saves you; the next lesson shows what that failure looks like and why better models don't fix it.
 
-## Core concepts
+## Core Concepts
 
 - The four primitives — Agent, Handoff, Shared state, Orchestrator — are the same knobs Module 3 used to read single-agent frameworks; multi-agent raises their stakes, and a system's topology is itself a set of choices across them.
 - Three orchestration patterns cover most systems: supervisor-worker (explicit orchestrator, the default), swarm/peer-to-peer (no orchestrator, scalable but non-deterministic), and hierarchical (org-chart deep, prone to managerial looping).

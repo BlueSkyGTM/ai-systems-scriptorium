@@ -1,8 +1,8 @@
-# Frameworks and the four primitives
+# Frameworks and the Four Primitives
 
 Every new agent framework arrives with its own vocabulary and its own marketing. The engineers who reach for each one before their architecture is clear spend months learning a tool that doesn't fit the problem — then unwinding it.
 
-## The four knobs
+## The Four Knobs
 
 Every agent framework is a point in a four-dimensional design space. Learn the four knobs once and you can read any new framework in a paragraph.
 
@@ -16,7 +16,7 @@ Every agent framework is a point in a four-dimensional design space. Learn the f
 
 These four dimensions determine how your system behaves, how it fails, and how you debug it. A framework is a set of decisions made for you about all four. The ones that fit your problem feel invisible. The ones that don't add weight every week.
 
-## The major frameworks as points in the space
+## The Major Frameworks as Points in the Space
 
 **LangGraph** models the agent as a state machine. State is typed and immutable — each node receives it and returns a new version. Edges are conditional; the graph decides the next node based on state contents. A checkpoint fires after every step: if a 40-step run fails at step 38, it resumes from step 38, not zero. Control flow is explicit and drawable because it literally is a graph. Use LangGraph when the architecture has branches, loops, and conditional routing you can diagram before you start.
 
@@ -100,7 +100,7 @@ const agent = new Agent({
 
 DSPy sits outside this space entirely — it optimizes prompts and few-shot examples against a metric, which is a different problem from runtime orchestration. It's worth knowing it exists for the moment your evaluation loop points to prompt quality as the bottleneck; it is not a framework for the agent runtime itself.
 
-## The decision rule
+## The Decision Rule
 
 Refuse a framework until the architecture draws cleanly as one of four shapes: a graph (LangGraph, Agent Framework), an org chart (CrewAI with a manager, Agent Framework Magentic), a chat (OpenAI Agents SDK handoffs, CrewAI peer process), or a single agent with tools (Claude Agent SDK, Agno, Mastra).
 
@@ -110,7 +110,7 @@ Azure AI Foundry Agent Service offers two deployment paths: prompt agents (fully
 
 The four knobs don't change when you add a hosting layer. What changes is where the orchestrator lives.
 
-## Core concepts
+## Core Concepts
 
 - Every agent framework is a point in the four-primitive design space: Agent, Handoff, Shared state, Orchestrator — learn these four knobs and any new framework becomes readable in a paragraph.
 - LangGraph uses typed shared state and a compiled graph as the orchestrator, buying durable checkpointing and conditional routing; Microsoft Agent Framework evolves this into a data-flow model with strong types, HITL pause-resume, and enterprise identity.

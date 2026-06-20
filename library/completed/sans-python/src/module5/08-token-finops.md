@@ -1,10 +1,10 @@
-# Token FinOps & cost optimization
+# Token FinOps & Cost Optimization
 
 The first time finance asks why the AI bill tripled last month, you will discover whether you can answer. If the only number you have is the provider's total invoice, you can't — you can't say which feature, which customer, or which bad prompt drove it, so you can't cut it without cutting blind. FinOps — financial operations, the practice of treating cloud spend as an engineering metric — starts the moment you decide the bill is a number you own, not a surprise you receive.
 
 Module 4 already gave you the governor: a per-task budget that caps one agent's spend, trips a kill switch on breach, and routes cheap steps to a cheap model. That defends one wallet. This lesson is the other altitude — the *platform* bill, summed across every agent, every user, every tenant, every team. Same instinct, different unit of accounting. The governor stops a runaway; FinOps tells you where all the money goes when nothing is running away, and gives you the levers to make the steady-state bill smaller without making the product worse.
 
-## The bill is a first-class metric
+## The Bill Is a First-Class Metric
 
 Traditional cloud FinOps breaks on LLM spend, and it breaks for a specific reason. Old-world cost is resource-uptime — a VM costs the same whether it's busy or idle, and a tag on the VM follows the bill. LLM cost is token-transactions: it scales with what each request *does*, and the provider invoice arrives as one undifferentiated number with no tags attached. Worse, the cost drivers are engineering decisions. Prompt length, context-window size, output length, how many tool calls a loop makes — every one of those is a line on the bill, set by code, invisible to a VM-shaped cost tool.
 
@@ -35,7 +35,7 @@ class Charge:
 
 On Azure this attribution exists at the platform layer too. Cost Management groups spend by tag through tag inheritance and cost-allocation rules, and Microsoft Foundry stamps every project with a `project` tag automatically, so you filter the cost-analysis view by project to split a shared deployment's bill across teams for showback or chargeback. The call-site stamping above is the same idea pushed down to per-request granularity — finer than the invoice can reach on its own.
 
-## The levers that cut the bill
+## The Levers That Cut the Bill
 
 Once you can see the spend, four levers move it — in rough order of effort-to-payoff.
 
@@ -47,13 +47,13 @@ Once you can see the spend, four levers move it — in rough order of effort-to-
 
 **Quotas and rate limits are the backstop that bounds the worst case.** This is where FinOps meets the multi-tenant boundary: a tenant whose traffic spikes — organically or maliciously — can't be allowed to consume the whole platform's capacity or budget. Azure OpenAI enforces this natively. Quota is allocated in **Tokens-Per-Minute (TPM)** per deployment, with a proportional Requests-Per-Minute limit; exceed it and the API returns a `429` with a `retry-after-ms` header telling the client how long to wait. Watch the `x-ratelimit-remaining-tokens` response header to throttle *before* you hit the wall instead of after. The platform pattern layers three caps: a per-tenant rate limit set a few multiples above peak, a daily spend cap above that, and a hard kill switch when spend jumps past a statistical threshold — the same fail-closed escalation the Module 4 governor applied to one task, now applied to a tenant.
 
-## Tie it back, then forward
+## Tie It Back, Then Forward
 
 The continuity with Module 4 is the point, not a coincidence. The budget governor is the per-agent floor: deterministic code that caps one task and trips a switch on breach. FinOps is the same discipline read at platform scale — attribution instead of one ledger, fleet-wide routing policy instead of one route decision, tenant quotas instead of one velocity limit. You don't rebuild the governor here; you sum it. Define the cap once at the task, attribute the spend everywhere, and the platform bill becomes a thing you steer instead of a thing that happens to you.
 
 The optimizations aren't free, and that is the discipline's last rule: every lever trades something. Caching trades freshness, routing trades a quality floor you have to monitor, batch trades latency, quotas trade headroom under a real spike. The instrumentation is what tells you whether the trade paid — which is why attribution comes first and the levers come second. Measure, then cut; an optimization you can't attribute is a guess you'll pay for twice. Answer "why did the bill triple?" in a single query and the decision about it is yours to make — answer it with a shrug and someone above you makes that call instead.
 
-## Core concepts
+## Core Concepts
 
 - LLM cost is token-transactions, not resource-uptime, and the provider invoice arrives untagged — so you instrument attribution at the call site on day one (`user_id`, `task_id`+route, `tenant_id`) and report cost per resolved query, because retroactive tagging always misses the spend that already happened.
 - Four levers cut the bill: caching (provider-prefix + semantic, ruined by dynamic prefixes and parallel cold misses), tiered routing (cheap model for easy work, gated on an online quality signal to catch drift), batch (~half price for anything non-interactive), and quotas/rate limits (per-tenant TPM caps with 429/retry-after as the multi-tenant backstop).

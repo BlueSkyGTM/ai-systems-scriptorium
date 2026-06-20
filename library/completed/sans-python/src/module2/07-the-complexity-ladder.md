@@ -1,8 +1,8 @@
-# The complexity ladder
+# The Complexity Ladder
 
 The fastest way to fail at AI system design is to add an agent before the problem requires one. The second fastest is to stay with a direct model call after the problem has outgrown it. The complexity ladder is the decision framework that keeps you on the right rung.
 
-## The three rungs
+## The Three Rungs
 
 **Direct model call.** A prompt goes in, a response comes out. No tools, no state, no loop. This is the default. It is fast, cheap, deterministic in structure, and easy to debug. If the problem fits a direct call, the direct call wins. Most problems fit a direct call.
 
@@ -16,7 +16,7 @@ Use it when: the task requires actions the model can't perform alone, the sequen
 
 Use it when: the task genuinely parallelizes (independent sub-problems), requires specialized sub-agents with different tool sets or personas, or exceeds the context budget of a single agent. Not when a single agent with more tools would do.
 
-## The governing rule
+## The Governing Rule
 
 Don't add an agent between the task and the model call unless the problem requires it.
 
@@ -32,13 +32,13 @@ CrewAI fits role-playing multi-agent patterns — agents with personas collabora
 
 The decision principle: refuse a framework until the architecture can be drawn as a graph, an org chart, a chat, or a single agent with tools. The shape of the problem determines the tool. An agent framework chosen before the shape is known is a liability.
 
-## The M2 → M3 hinge
+## The M2 → M3 Hinge
 
 This ladder is the editorial spine of Modules 3 and 4. Module 3 builds the single-agent rung in depth — the agent loop, tool execution, MCP, memory, and evaluation. Module 4 extends to multi-agent orchestration. The sequence is deliberate: you need to own the single-agent rung before multi-agent complexity is legible.
 
 An AI Platform Engineer adds complexity only when the problem demands it — that discipline, applied at scale, is what separates a system that holds under production load from one that collapses under its own architecture.
 
-## Core concepts
+## Core Concepts
 
 - The three rungs — direct model call, single agent with tools, multi-agent orchestration — each add cost, failure surface, and debugging complexity; move up only when the simpler rung can't solve the problem.
 - The governing rule is: don't add an agent between the task and the model call unless the problem requires it.

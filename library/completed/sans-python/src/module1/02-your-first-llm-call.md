@@ -1,14 +1,14 @@
-# Your first LLM call
+# Your First LLM Call
 
 Every lesson from Module 2 onward assumes you can reach a model. That assumption starts here.
 
 **You build** a working API call that sends a prompt to Claude and prints a real response — no SDK, no Python, no framework. Plain HTTP.
 
-## Get your API key
+## Get Your API Key
 
 Go to [console.anthropic.com](https://console.anthropic.com), create an account, and generate an API key. Copy it once — you will not see it again.
 
-## Store the key safely
+## Store the Key Safely
 
 The key is a secret. It never goes in code, never in a file you commit, and never in a log. Store it as an environment variable:
 
@@ -26,7 +26,7 @@ If you see the key, you are set. If you see nothing, the export did not persist 
 
 **The rule:** env vars for secrets, `.gitignore` for `.env` files, never source-control a key. A key in git history is compromised even after deletion.
 
-## Make the call
+## Make the Call
 
 HTTP first. The SDK wraps this, but seeing the raw request once shows you what the SDK hides:
 
@@ -44,7 +44,7 @@ curl https://api.anthropic.com/v1/messages \
   }'
 ```
 
-## Read the response
+## Read the Response
 
 The API returns JSON. The shape you will see repeatedly:
 
@@ -70,7 +70,7 @@ The API returns JSON. The shape you will see repeatedly:
 
 Four fields matter now: `content[0].text` is the reply, `model` confirms which model answered, `stop_reason` tells you why generation stopped, and `usage` shows the token count. Token count is billing. Every call costs tokens. Keep `max_tokens` bounded.
 
-## What just happened
+## What Just Happened
 
 You sent a structured HTTP request with your key in the header and a message array in the body. The model returned a structured JSON response. This is the whole API surface — every SDK, every framework, every agent library makes this same call underneath. Understanding the shape means you can debug anything built on top of it.
 
@@ -78,7 +78,7 @@ SDKs — `anthropic` in Python, `@anthropic-ai/sdk` in TypeScript — arrive at 
 
 Everything from Module 2 onward assumes you can call a model — this is the door the whole course walks through.
 
-## Core concepts
+## Core Concepts
 
 - An LLM API is an HTTP POST with your key in a header and a message array in the body; every SDK wraps this and nothing more.
 - Secrets live in environment variables, never in code or git history — a committed key is compromised even after deletion.

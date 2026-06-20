@@ -1,8 +1,8 @@
-# Kill switches, circuit breakers, canary tokens
+# Kill Switches, Circuit Breakers, Canary Tokens
 
 The budget governor decides *when* to stop a runaway. This lesson is the *how* — the control plane that actually halts an agent, and the detectors that decide a halt is warranted before any budget is breached. None of it is new computer science. All of it is old reliability engineering, reasserted against a thing that can now read its own off switch.
 
-## The first rule: the agent reads it, the agent cannot write it
+## The First Rule: the Agent Reads It, the Agent Cannot Write It
 
 A kill switch is a boolean the loop checks before every action: set, and the next action does not run. Module 3 put one in the agent loop on day one. The defining property is worth stating sharply, because it is the property that makes it a *safety* control and not just a flag the agent flips for itself: the agent can read the switch and must never be able to write it.
 
@@ -36,7 +36,7 @@ def step(agent, switch: KillSwitch):
 
 The read-only access-control rule (ACL) is the load-bearing line, not the Python. A kill switch the agent can `SET` is theater.
 
-## The circuit breaker: stop the failing call before it fails again
+## The Circuit Breaker: Stop the Failing Call Before It Fails Again
 
 A kill switch is a manual, global halt. A circuit breaker is an automatic, scoped one — Nygard's pattern from service reliability, pointed at agent behavior. It wraps a single failing operation and stops calling it once a pattern of failure appears, so a transient problem doesn't become a retry storm.
 
@@ -81,7 +81,7 @@ class CircuitBreaker:
 
 Statistical detectors — an EWMA or CUSUM on call rate or error rate — refine the trip condition, catching a slow drift a fixed count misses. They are an upgrade, not a replacement: a smoothed average is still a number that can be wrong, so a statistical breaker layers *on top of* the hard limits, never instead of them. The hard count is the floor that does not bend.
 
-## Canary tokens: detect the breach you didn't predict
+## Canary Tokens: Detect the Breach You Didn't Predict
 
 The kill switch and breaker stop misbehavior you can characterize — a global pull, a repeated call, a failure rate. A canary token detects the misbehavior you didn't anticipate: an agent reaching for something it has no legitimate reason to touch.
 
@@ -89,11 +89,11 @@ A canary token is a fake credential, a honeypot record, a decoy file — planted
 
 The strength is that it costs the agent nothing to avoid and the attacker everything to detect. A clean run never sees the canary. A run that has gone wrong — prompt-injected, jailbroken, exfiltrating — trips it, and you learn about the breach from the tripwire instead of from the incident report.
 
-## Quarantine: reroute, don't just kill
+## Quarantine: Reroute, Don't Just Kill
 
 Sometimes the right response is not to kill the agent but to *contain* it — keep it running, sever its reach, and watch. At the kernel layer, eBPF-based tooling like Cilium enforces and redirects a pod's network egress in the datapath, before a packet leaves the node: point a quarantined pod's egress at a node-local backend and the agent thinks it is talking to the production database while its packets land on a forensic honeypot instead. The agent keeps acting, you keep observing, and nothing it does reaches a real system. It is a kill switch with a one-way mirror — you stop the harm without stopping the evidence.
 
-## The control plane, defined once
+## The Control Plane, Defined Once
 
 Put the three together and you have a control plane that sits *beside* the agent, not inside it: a kill switch the operator owns and the agent cannot write, a circuit breaker that trips on failure and behavioral patterns, and canary tokens that catch what you didn't model. The budget governor from lesson 06 is the fourth member — its breach is one of the events that trips the switch.
 
@@ -101,7 +101,7 @@ This is the control plane M4's fleet lessons govern at scale. A fleet runs the s
 
 A control plane the agent can edit is not a control plane — it is a suggestion. Keep the off switch in your hand, not the agent's.
 
-## Core concepts
+## Core Concepts
 
 - A kill switch is a boolean the agent reads but cannot write — a feature flag, a Redis key under a read-only ACL, a signed config, or a container-level kill — placed outside the agent's blast radius so a misbehaving agent cannot disable its own stop.
 - A circuit breaker trips on failure *and* behavioral patterns (five identical tool calls in a row), moving closed → open → half-open; statistical detectors (EWMA/CUSUM) layer on top of hard counts, never replace them.

@@ -1,14 +1,14 @@
-# Context engineering
+# Context Engineering
 
 The context window is not a suggestion box — it's a fixed budget, and every token you put in displaces something else. Managing it poorly is the fastest path from a working prototype to a hallucinating production system.
 
-## The window budget
+## The Window Budget
 
 Every model call allocates a finite token budget across four categories: the system prompt, tool definitions, retrieved documents, and conversation history. The numbers are large enough that beginners ignore the constraint, and small enough that production agents hit it constantly.
 
 Token cost is not the only concern. **Lost-in-the-middle** is an attention failure: models read the beginning and end of a long context reliably, and degrade on material buried in the middle. If you retrieve ten documents and place the answer-bearing passage at position five, the model may miss it. The fix is deliberate ordering — highest-signal content at the start or end of the window, not the middle.
 
-## Context rot
+## Context Rot
 
 In multi-turn agent loops, the window accumulates. A conversation that fits in turn two doesn't fit in turn twenty. **Context rot** is the name for what happens: accuracy degrades as token counts grow, not because the model forgets, but because the signal-to-noise ratio collapses as low-value history crowds out high-value instructions.
 
@@ -20,7 +20,7 @@ Five techniques slow the rot:
 4. **Sub-agent isolation** — spawn a fresh agent for each sub-task. It starts with a clean window and hands back only its output, not its whole context.
 5. **System prompt calibration** — audit your system prompt after every major change. Dead instructions are expensive tokens.
 
-## Prompt caching
+## Prompt Caching
 
 Provider-side prefix caching reads a warm KV-cache for token-identical prefixes, cutting input cost by fifty to ninety percent and first-token latency by forty to eighty-five percent. Anthropic makes you opt in with a `cache_control` marker — on individual blocks, or one top-level marker that auto-caches the longest stable prefix; OpenAI caches automatically with no markers. The economics favor any prompt with a long, stable prefix — a large system prompt, a reference document, a tool schema list — that stays constant across requests while only the user message changes.
 
@@ -28,7 +28,7 @@ Cache-friendly layout: put the stable content first (system prompt, reference ma
 
 **Contextual compression (RAD-L)** takes this further: for massive prompts, prune reasoning-irrelevant tokens before they enter the window at all. The result is a shorter, denser prompt that fits the cache boundary and costs less to process.
 
-## Prompt-injection defense
+## Prompt-Injection Defense
 
 The context window is attackable. Prompt injection is the LLM-era SQL injection: OWASP LLM Top 10, risk number one. Direct injection comes from a malicious user query. Indirect injection comes from content the agent retrieves — a web page, a document, a database record — that contains instructions designed to hijack the model.
 
@@ -43,7 +43,7 @@ Treat every retrieved RAG chunk as untrusted. Run it through a separate analyzer
 
 Context is a scarce, attackable resource — budgeting and defending it is platform work, not prompt work.
 
-## Core concepts
+## Core Concepts
 
 - The context window is a fixed token budget; lost-in-the-middle attention failure means position inside the window determines whether content gets read.
 - Context rot — accuracy collapse in long agent loops — is slowed by compaction, just-in-time loading, structured note-taking, sub-agent isolation, and system-prompt audits.

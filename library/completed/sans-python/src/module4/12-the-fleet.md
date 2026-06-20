@@ -1,8 +1,8 @@
-# The fleet — graduation to governed many
+# The Fleet — Graduation to Governed Many
 
 One agent you can hold in your head. Twelve you cannot — and the day you discover you are running twelve is usually the day an audit finds the four you forgot about. A fleet is what a pile of loops becomes when you stop tracking it by memory and start governing it as infrastructure, and that shift is the job this lesson names.
 
-## Loops live inside fleets
+## Loops Live Inside Fleets
 
 The relationship is the whole idea, so state it plainly: **loops live inside fleets.** A loop is one agent system run as governed infrastructure — the `trigger → action → verification → budget/kill-switch` shape from lessons 10 and 11. A fleet is the layer above: the registry, identity, and oversight that govern *many* loops at once. You do not choose between them. You build loops, and once you have enough of them, the fleet is the thing that keeps them from becoming a liability.
 
@@ -15,7 +15,7 @@ The line between "a few loops I run" and "a fleet I govern" is not a feeling. It
 
 This is the complexity ladder again, one rung up. Lesson 01 gated entry into multi-agent at all: more agents, not a bigger agent, and only past the single-agent ceiling. The same discipline gates the fleet. You do not stand up a registry and an audit pipeline for two loops you can name from memory — that is governance theater, cost with no incident it prevents. You graduate when the count forces it, not before.
 
-## The accountability test is the whole standard
+## The Accountability Test Is the Whole Standard
 
 Before the seven concerns, there is one sentence that defines whether a fleet is governed at all. For any automated action, you must be able to answer:
 
@@ -25,7 +25,7 @@ Four clauses — **which / authority / task / evidence** — and a fleet that ca
 
 Hold this sentence. It is the spine of lesson 13's audit pattern, and it is the standard the M7 finale is graded against.
 
-## The seven concerns, in order
+## The Seven Concerns, in Order
 
 A fleet governs seven things. The order is not arbitrary — each concern assumes the one before it exists, so you build them in sequence:
 
@@ -45,7 +45,7 @@ A fleet governs seven things. The order is not arbitrary — each concern assume
 
 Three of those seven — inbox-HITL, economics, kill switch — you already built for a single agent in lessons 06, 07, and 08. At fleet scale you do not rebuild them. You point them at many agents instead of one. That is the entire trick, and it is why the single-agent safety chapter had to come first: the fleet is those controls, multiplied, plus a registry that knows who is being controlled.
 
-## The fleet is addressable as code
+## The Fleet Is Addressable as Code
 
 Here is the part that makes this platform engineering and not a spreadsheet of agents. The registry is not a wiki page someone updates by hand. It is a machine-readable file — JSON or YAML — and every governance check reads against it. Two schemas carry the load: an **AgentManifest** that declares one agent's identity, permissions, autonomy tier, budget, and required human gates; and an **AgentRegistry** that indexes every manifest with its owner and status. Both ship as JSON Schema, so a malformed registry fails validation in CI before it governs anything.
 
@@ -72,11 +72,11 @@ Because the registry is addressable as code, something else falls out for free: 
 
 Microsoft's agent platforms encode this same shape. Azure AI Foundry Agent Service gives each agent its own Entra-backed identity, scopes what it may touch with role-based access control, tracks per-agent cost and quota centrally, and gates tool calls behind human approval workflows — governance declared centrally rather than wired into each agent. You are building the open, file-backed version of the same control plane.
 
-## What graduation costs
+## What Graduation Costs
 
 Do not romanticize this. Standing up a fleet is unglamorous: a two-hour inventory that turns up four duplicate "weekly report" agents with different credentials, an audit that scores your team 32 out of 100 and names the shadows, an afternoon spent retiring agents nobody will miss. The first week of fleet engineering is catalog work — and that is the point. The boring enumeration is what makes the exciting automation safe to leave running. A fleet you govern is one you can sleep through the night with; a fleet you merely operate is one you find out about during the incident.
 
-## Core concepts
+## Core Concepts
 
 - Loops live inside fleets: a loop is one governed agent system (`trigger → action → verification → budget/kill-switch`); a fleet is the registry-and-oversight layer above many loops, and you graduate at the 3-loop / 5-agent threshold — not before, because below it the controls are theater.
 - The accountability test — *which agent, with what authority, against what task, evidenced by what?* — is the whole standard; a fleet that cannot answer all four clauses for every action is unattended, not governed.

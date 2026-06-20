@@ -1,12 +1,12 @@
-# The workbench surfaces II: verification, review, handoff — and the pack
+# The Workbench Surfaces II: Verification, Review, Handoff — and the Pack
 
 The previous four surfaces constrain the agent and capture facts. These three close the loop: the agent does not grade its own work, a second loop catches what verification misses, and a handoff packet makes the next session productive from its first minute. Then you package all seven into the artifact M6 imports.
 
-## What you build
+## What You Build
 
 You build the final three surfaces — `verify_agent.py`, a reviewer loop, and `generate_handoff.py` — then package all seven surfaces into a drop-in `agent-workbench-pack/` that installs into any repo with a single script. That pack is the foundation of the M6 terminal coding agent; M6 imports it, not rebuilds it.
 
-## Verification: the agent does not mark its own work done
+## Verification: the Agent Does Not Mark Its Own Work Done
 
 An agent that decides it is finished is not done — it is optimistic. Self-grading is structurally unreliable: the agent generated the code, predicted the tests would pass, and now evaluates whether its prediction was correct. That is not verification; it is a second guess.
 
@@ -71,7 +71,7 @@ Azure Pipelines makes this a native step: [deployment gates](https://learn.micro
 
 Azure AI Foundry's [agent evaluators](https://learn.microsoft.com/azure/foundry/concepts/evaluation-evaluators/agent-evaluators#system-evaluation) — Task Adherence, Task Completion, Intent Resolution — operate on the same principle at the platform layer: structured scores per run, integrated into the CI/CD pipeline via the [AI Agent Evaluation extension](https://learn.microsoft.com/azure/foundry/how-to/evaluation-azure-devops) for Azure DevOps.
 
-## Review: a second loop with a different prompt
+## Review: a Second Loop with a Different Prompt
 
 Verification is deterministic and fast. It cannot catch "solved the wrong half of the bug" — a task where every check passes but the solution misunderstands the problem. That is what the reviewer catches.
 
@@ -112,7 +112,7 @@ The reviewer cannot be the builder. Run them as separate processes with separate
 
 Azure AI Foundry's [rubric evaluators](https://learn.microsoft.com/azure/foundry/concepts/evaluation-evaluators/rubric-evaluators) work the same way at scale: define weighted dimensions, set a pass threshold (0.0–1.0), and let the LLM judge score every response. The five-dimension reviewer rubric here follows the same pattern — portable to Foundry once you graduate beyond the single agent.
 
-## Handoff: turn an hour into a productive next minute
+## Handoff: Turn an Hour into a Productive Next Minute
 
 A handoff packet exists because the next session starts cold. Without one, the new session probes the repo, reads the diff, guesses at what was tried, and wastes the first ten minutes reconstructing context the prior session held.
 
@@ -214,13 +214,13 @@ The pack is model-independent. The scripts never call a model; the reviewer loop
 
 Azure Pipelines' [approvals and checks](https://learn.microsoft.com/azure/devops/pipelines/process/approvals?view=azure-devops) let you enforce the same rule at the release level: a stage cannot start until the verification artifact passes the configured gate condition — human review optional, machine check mandatory.
 
-## Why a single verifiable agent ships where a capable model doesn't
+## Why a Single Verifiable Agent Ships Where a Capable Model Doesn't
 
 The complexity ladder holds here too. Before you compose agents into teams (Module 4) or point them at production codebases (Module 6), the single agent must be verifiable — meaning you can look at its output and know, from facts rather than confidence, whether the task is done. The workbench is what makes that possible. It is not a workaround for a weak model; it makes any model shippable.
 
 Ship the `agent-workbench-pack/` and you have an answer to the question every skeptic asks — not a promise, but a verdict file, a scope report, a feedback log, and a handoff packet. Artifacts, not assurances.
 
-## Core concepts
+## Core Concepts
 
 - A deterministic `verify_agent.py` reads scope, rules, feedback, and diff and emits one verdict that CI and the human reviewer both read — the agent never grades its own work.
 - A reviewer loop with a different system prompt and read-only access scores a five-dimension rubric; it catches "solved the wrong half of the bug," which verification cannot.

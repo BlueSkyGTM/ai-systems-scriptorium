@@ -1,4 +1,4 @@
-# Module 5 — deploy & performance engineering
+# Module 5 — Deploy & Performance Engineering
 
 The densest concentration of the seam: the infrastructure MLOps engineers and app devs *use* — serving
 engines, GPU scheduling, gateways, observability, FinOps, inference performance. **Built, not described.**

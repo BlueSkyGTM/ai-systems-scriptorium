@@ -1,12 +1,12 @@
-# The workbench surfaces I: instructions, state, scope, feedback
+# The Workbench Surfaces I: Instructions, State, Scope, Feedback
 
 Drop a frontier model into a real repo and it fails — not on the language, but on the work. It has no idea what "done" means, where it can write, or which tests are authoritative. The workbench fixes that. Swap the model and keep the surfaces; never the reverse.
 
-## What you build
+## What You Build
 
 You build the first four of seven workbench surfaces inside `module3-agent/workbench/`: an `AGENTS.md` router, a machine-checkable rules file, a durable state layer under JSON Schema, a per-task scope contract, a scope checker, and a feedback runner. Each surface is a Python script or a structured file the agent reads at every turn.
 
-## Instructions: the router and the rules
+## Instructions: the Router and the Rules
 
 The agent's first read is `AGENTS.md`. Keep it short — one screen. A long manual no one reads; a short router they actually follow. The router names the repo, the entry point, the test command, and a pointer to `docs/agent-rules.md`. That's it.
 
@@ -34,7 +34,7 @@ Prose wishes ("be careful," "test thoroughly") have no runtime teeth. Machine-ch
 
 Azure AI Foundry's [Task Adherence](https://learn.microsoft.com/azure/ai-services/content-safety/concepts/task-adherence) signal detects when a planned tool invocation deviates from the user's intent — the runtime counterpart to the rule ledger you maintain locally.
 
-## State: the repo is the system of record
+## State: the Repo Is the System of Record
 
 Chat is volatile. When the session ends, the agent loses everything — unless you wrote it down somewhere that survives. The repo is that place.
 
@@ -79,7 +79,7 @@ A task that spans three sessions costs nothing extra. The next session reads sta
 
 In CI, the same JSON files become pipeline artifacts. Azure Pipelines' [PublishPipelineArtifact](https://learn.microsoft.com/azure/devops/pipelines/artifacts/pipeline-artifacts?view=azure-devops) task lets a later stage download exactly the state a prior stage wrote — the same cross-session contract, scaled to a build system.
 
-## Scope: the contract that prevents creep
+## Scope: the Contract That Prevents Creep
 
 Scope creep is the most under-monitored single-agent failure mode. The agent sets out to add a validation function and ends up touching the ORM layer, the migration scripts, and three unrelated tests. Each change looked locally reasonable. Together they make review impossible.
 
@@ -128,7 +128,7 @@ The report goes to `.workbench/scope_report.json`. Downstream, the verification 
 
 Azure's [AI-4 security guidance](https://learn.microsoft.com/security/benchmark/azure/mcsb-v2-artificial-intelligence-security#ai-4-apply-least-privilege-for-agent-functions) frames the same principle at the platform layer: define a capability manifest that allows only the tools the agent needs, apply RBAC, and audit every invocation. The scope contract is the local expression of that posture.
 
-## Feedback: react to facts, not predictions
+## Feedback: React to Facts, Not Predictions
 
 The most common single-agent lie: "all tests pass." Said with no record. No log. No exit code. Just the model's confident prediction of what probably happened when it called `pytest`.
 
@@ -164,13 +164,13 @@ The loop refuses to mark a task complete if the feedback log is empty. "Tests pa
 
 Azure Pipelines surfaces the same discipline at scale: the [Publish Pipeline Artifacts](https://learn.microsoft.com/azure/devops/pipelines/artifacts/pipeline-artifacts?view=azure-devops) task and stage [gates](https://learn.microsoft.com/azure/devops/pipelines/release/approvals/gates?view=azure-devops) let downstream stages read the feedback log before they advance — the same "no record, no pass" rule enforced by the pipeline itself.
 
-## The thread so far
+## The Thread so Far
 
 Instructions constrain what the agent may do. State makes multi-session work cheap. Scope locks the blast radius. Feedback anchors every claim to a real execution record. Together the four surfaces turn a capable model into a predictable one — without changing the model at all.
 
 The next lesson adds the three surfaces that close the loop: verification (the agent doesn't grade its own work), review (a second loop catches what verification misses), and handoff (the capstone that packages all seven into the `agent-workbench-pack/` the M6 coding agent imports).
 
-## Core concepts
+## Core Concepts
 
 - A short `AGENTS.md` router plus machine-checkable `docs/agent-rules.md` rules outperform a long manual because the agent reads the router every turn and the workbench enforces the rules as a ledger, not prose.
 - Durable state lives in the repo as JSON Schema-validated files written atomically; chat history is volatile and survives nothing.

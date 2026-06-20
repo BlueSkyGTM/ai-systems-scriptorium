@@ -1,4 +1,4 @@
-# Module 6 — agent artifacts
+# Module 6 — Agent Artifacts
 
 Single-agent portfolio builds, each solving a real business problem and shipping a skill artifact. This is
 where Module 3 becomes proof — and where the build gate changes: from here on, an exercise isn't done because

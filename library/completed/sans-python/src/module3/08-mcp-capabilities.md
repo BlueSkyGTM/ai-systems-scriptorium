@@ -1,12 +1,12 @@
-# MCP capabilities
+# MCP Capabilities
 
 Tools are the entry point. They're also just one of four things an MCP server can offer — and knowing the other three tells you when tools are the wrong choice.
 
-## The full contract surface
+## The Full Contract Surface
 
 MCP defines six primitives the spec calls capabilities: tools, resources, prompts, sampling, roots, and elicitation. Lesson 07 covered tools and transports. This lesson covers the rest. The distinction matters because these primitives solve different problems — reaching for a tool when you need a resource, or a resource when you need a prompt, produces clumsy code and confused models.
 
-## Resources: read-only data the host pulls
+## Resources: Read-Only Data the Host Pulls
 
 A resource is data the MCP server exposes for context attachment — read-only, URI-addressed, pulled by the client when it wants to include the data in a model's context window. It is not a tool call. The model doesn't invoke it; the host application fetches it.
 
@@ -31,7 +31,7 @@ Resources support subscription: the server sends a `notifications/resources/upda
 
 Azure API Management can expose any REST API as an MCP server endpoint, converting each operation into a tool; the same gateway layer can surface read-only resource data — configuration snapshots, metadata — as context the agent pulls rather than computes. (learn.microsoft.com/azure/api-management/mcp-server-overview)
 
-## Prompts: server-offered templates
+## Prompts: Server-Offered Templates
 
 A prompt is a reusable, parameterized conversation template the server offers to the host. The user or host application invokes it by name; the server returns a sequence of messages ready to insert into a model conversation. Think of it as a slash command with server-defined behavior.
 
@@ -61,7 +61,7 @@ server.prompt(
 
 Prompts are the server's opinion on how to invoke its own domain knowledge. They are not tool calls — no side effects, no execution, just message construction. The host application presents them to the user and decides whether to send.
 
-## Sampling: the server asks the host's model
+## Sampling: the Server Asks the Host's Model
 
 Sampling inverts the usual direction. In a normal tool call, the host's model triggers a server action. In sampling (`sampling/createMessage`), the server sends a completion request to the host's model — without holding any API key or model credentials.
 
@@ -71,7 +71,7 @@ Sampling carries a safety requirement the spec makes explicit: the host **must**
 
 Azure AI Foundry Agent Service makes this approval requirement concrete: when a tool is marked `require_approval: always`, the agent pauses and returns an `mcp_approval_request` output item before executing — the host presents the request to a human, who approves or rejects it explicitly. The pattern applies equally to sampling: if a server is running model completions without user visibility, that is the failure mode the spec is designed to prevent. (learn.microsoft.com/azure/foundry/agents/how-to/tools/model-context-protocol)
 
-## Roots: scoped filesystem access
+## Roots: Scoped Filesystem Access
 
 Roots tell the server which parts of the filesystem — or which URIs — the client is willing to expose. The client declares a list of root URIs (`roots/list`); the server must restrict its file operations to within those roots and reject out-of-bounds access.
 
@@ -84,7 +84,7 @@ Roots are a client-side declaration, not a server-side permission system. They s
 
 The server enforces this by checking every file path against the declared roots before executing any read or write. A path outside the roots returns an error observation — the model can then report the restriction rather than silently fail.
 
-## Elicitation: the server requests user input mid-execution
+## Elicitation: the Server Requests User Input Mid-Execution
 
 Elicitation lets a server pause a tool call and ask the user a structured question via the host UI — a form, a confirmation dialog, or (experimentally) a browser URL. The tool call does not complete until the user responds.
 
@@ -94,11 +94,11 @@ Elicitation is the escape hatch for tools that need human judgment in the middle
 
 Keep elicitation rare. Every elicitation call blocks the tool and interrupts the user. Design tool arguments to request what the tool needs upfront; reach for elicitation only when discovery is genuinely impossible before execution starts.
 
-## Async tasks and apps (one-line)
+## async Tasks and Apps (One-Line)
 
 Two more extensions round out the surface: async tasks (SEP-1686) promote long-running tool calls to durable background jobs with a poll-for-result lifecycle; MCP apps (SEP-1724) return sandboxed interactive HTML from tool calls via the `ui://` resource scheme. Both are experimental extensions — note their existence; the exercise doesn't build them.
 
-## The decision rule
+## The Decision Rule
 
 Use a **tool** when the action has a result the model needs to reason with and may have side effects.
 Use a **resource** when the data is read-only and URI-addressable — the host pulls it when it wants to include it in context.
@@ -109,7 +109,7 @@ Use **elicitation** when a tool discovers mid-execution that only the user can s
 
 Six primitives, one decision rule each — get them wrong and the server technically works but does the wrong thing. Get them right and the protocol does the composition for you.
 
-## Core concepts
+## Core Concepts
 
 - MCP has six primitives: tools (computed actions with side effects), resources (read-only URI-addressed data), prompts (server-offered message templates), sampling (server-to-host model requests), roots (client-declared filesystem scope), and elicitation (mid-execution user input).
 - Resources belong to data the host pulls for context; tools belong to actions the model triggers — conflating them produces wrong server designs.

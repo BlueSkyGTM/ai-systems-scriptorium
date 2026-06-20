@@ -86,26 +86,24 @@ every lesson tells the reader a template wrote it, not a person.
 This section is the polish layer, not the foundation (§§1–4 come first). But it is the difference between prose
 that is correct and prose that is alive — and for a book that invokes Zinsser by name, it has to be alive.
 
-## 9. Headings — sentence case
+## 9. Headings — Title Case
 
-One convention, applied everywhere: **sentence case** for every heading (H1 page titles, H2/H3 sections)
-*and* every `SUMMARY.md` table-of-contents label. Capitalize only the first word; lowercase the rest.
+One convention, applied everywhere: **Title Case** for every heading (H1 page titles, H2/H3 sections)
+*and* every `SUMMARY.md` table-of-contents label. Capitalize every **major** word; lowercase the minor
+words — articles (a, an, the), coordinating conjunctions (and, but, or, nor, for, so, yet), and short
+prepositions (of, to, in, on, at, by, for, with, from, …) — except the first and last word.
 
-- [ ] **Preserve proper nouns, acronyms, and code identifiers exactly.** Rust, TypeScript, Docling, MCP, RAG,
-      LLMOps, FinOps, DevOps, K8s, A2A, HITL, KV-cache, A/B — these keep their own casing wherever they fall.
-- [ ] **After a colon or em-dash, stay lowercase** unless the next word is a proper noun. "Inside the engine:
-      continuous batching & paged KV-cache", not "...: Continuous Batching".
-- [ ] **The level-shift is the enemy.** A Title-Case title above sentence-case sections reads as inconsistent.
-      Sentence case everywhere removes it — and it matches Microsoft Learn, the source the pipeline grounds in.
+- [ ] **Preserve proper nouns, acronyms, and code identifiers exactly.** Rust, TypeScript, Docling, MCP,
+      RAG, LLMOps, FinOps, DevOps, K8s, A2A, HITL, KV-Cache, A/B — these keep their own casing.
+- [ ] **Hyphenated compounds:** capitalize the first and last element; lowercase a minor word in the middle.
+      "The Day-One Stack", "Issue-to-PR", "Chain-of-Thought", "SRE-for-AI", "In-Context".
+- [ ] **Consistency is the point.** Every heading and ToC label reads the same way — no sentence-case /
+      Title-Case mix. The handoff CTA (**Build It / Inspect It / Try It in Claude Code**) is title case like
+      everything else; the `Exercise · <path>` tag (injected by `theme/copy-to-claude.js`) keeps each
+      handoff block self-evidently distinct.
 
-The one-shot conversion that established this lives at `build-log/caps-sweep.py` (skips fenced code blocks,
-guards proper nouns); re-run it after a bulk authoring pass to catch drift.
-
-- [ ] **One deliberate exception:** the exercise handoff call-to-action — **Build It / Inspect It / Try It in
-      Claude Code** (verb chosen by exercise type) — is a UI action label, not a heading; keep it title case.
-      It is the only title-case string in body text. The block's redundant "open the repo…" tail is cut: the
-      copied payload already carries that instruction, and the visible `Exercise · <path>` tag (injected by
-      `theme/copy-to-claude.js`) makes each block self-evidently distinct.
+The conversion that establishes this lives at `build-log/caps-sweep-title.py` (fence-aware, proper-noun- and
+acronym-guarded, caps the first/last of hyphen compounds); re-run after a bulk authoring pass to catch drift.
 
 ## What this is not
 

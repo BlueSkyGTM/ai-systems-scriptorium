@@ -2,7 +2,7 @@
 
 Basic RAG breaks in a predictable pattern — not randomly, but on the exact queries that matter most: multi-document synthesis, entity-relationship chains, and questions that require the model to reason over retrieved evidence rather than recite it. Knowing where the system breaks tells you what to replace.
 
-## Where basic RAG breaks
+## Where Basic RAG Breaks
 
 Three failure modes account for most production escapes.
 
@@ -36,11 +36,11 @@ Budget 8–12 seconds per loop for a 3–4 iteration agentic retrieval cycle. Ro
 
 Agentic RAG is an agent pattern. The reasoning loop it adds is the same loop Module 3 builds as Agent Foundations. This is the seam — when retrieval needs to decide, plan, and verify, it has become an agent.
 
-## RAG evaluation
+## RAG Evaluation
 
 You can't improve what you don't measure. The RAG triad measures end-to-end correctness: context relevance (did retrieval return what the query needed?), groundedness (does the answer cite the retrieved context?), and answer relevance (does the answer address the question?). These are the three levers. Component metrics — Recall@K, NDCG, MRR — isolate which stage to fix. The evaluation chapter covers the full measurement stack; name the triad here, go deep there.
 
-## Core concepts
+## Core Concepts
 
 - Basic RAG fails on three predictable failure modes: semantic mismatch, missing context, and multi-hop questions — each requires a targeted fix, not a prompt change.
 - GraphRAG answers entity-relationship questions a flat vector index cannot, but it costs far more; the graph-as-reranker pattern captures most of the quality at a fraction of the cost.

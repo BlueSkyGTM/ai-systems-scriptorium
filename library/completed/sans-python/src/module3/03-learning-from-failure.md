@@ -1,8 +1,8 @@
-# Learning from failure
+# Learning from Failure
 
 An agent that fails the same way twice has a memory problem, not a model problem. The patterns in this lesson fix failures in language — the same language the agent already speaks — without touching a single weight.
 
-## Reflexion: verbal reinforcement
+## Reflexion: Verbal Reinforcement
 
 Reflexion (Shinn et al., 2023) adds one step after a failed trial: the agent writes a reflection on what went wrong, stores it in an episodic memory buffer, and conditions the next trial on that reflection. The structure is three roles: an **Actor** that attempts the task, an **Evaluator** that scores the outcome, and a **Self-Reflector** that generates the verbal lesson.
 
@@ -14,7 +14,7 @@ This is the same pattern behind `CLAUDE.md` learnings and the `/learn` command i
 
 Foundry's built-in agent evaluators follow the same logic: `IntentResolution` and `TaskAdherence` score agent runs against defined criteria, enabling the same evaluate-then-improve cycle in a managed runtime.
 
-## Self-Refine and CRITIC: generate → feedback → refine
+## Self-Refine and CRITIC: Generate → Feedback → Refine
 
 Self-Refine (Madaan et al., 2023) runs one model in three roles: generate a draft, critique it, refine based on the critique. It earns +20 absolute points across 7 tasks. The loop continues until the critique says the output is good enough or a round budget is exhausted.
 
@@ -24,7 +24,7 @@ Anthropic's evaluator-optimizer workflow is this pattern: a generator produces o
 
 The two-line rule: use Self-Refine when the quality signal is stylistic (fluency, coherence, tone). Use CRITIC when the quality signal is factual or execution-based (does this code run, is this claim true, does this SQL return the right rows).
 
-## Reasoning as search: ToT and LATS (cost-gated)
+## Reasoning as Search: ToT and LATS (Cost-Gated)
 
 Tree-of-Thoughts (Yao et al., 2023) turns reasoning into a search problem: instead of committing to one chain of thought, the model grows a tree of candidate thoughts, evaluates each node, and expands the most promising branches. On the Game of 24, standard chain-of-thought solves 4% of problems; ToT with BFS solves 74% — with GPT-4, which was the test model in the original paper.
 
@@ -37,13 +37,13 @@ Apply the complexity-ladder cost test before reaching for either:
 
 The multiplier is worth it for high-stakes, offline work where the correct answer is hard to find and easy to verify — mathematical proofs, code synthesis against a test suite, complex planning. It is not worth it for latency-sensitive production paths. Apply the cost test: if you can afford 10–15× the tokens and the task is offline, try ToT. If you cannot, stay with Reflexion.
 
-## What you build
+## What You Build
 
 You extend `module3-agent/` with a Reflexion layer: an episodic memory that stores post-failure reflections, a Self-Reflector that writes the lesson, and a feedback loop that conditions the next trial. The CRITIC pattern — routing verification to an external tool — wires into the stop condition: the loop continues until the external check passes or the round budget is exhausted.
 
 Get the evaluator wrong and every other improvement is noise.
 
-## Core concepts
+## Core Concepts
 
 - Reflexion fixes repeated failures in natural language: the agent writes a verbal lesson after each failure, stores it in episodic memory, and conditions the next trial on it — no weight update required.
 - LLMs self-verify poorly on hard facts; CRITIC hardens the feedback loop by routing verification through external tools (search, code execution, test runners) the model cannot hallucinate around.

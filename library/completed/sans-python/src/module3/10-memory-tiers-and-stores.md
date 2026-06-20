@@ -1,12 +1,12 @@
-# Memory tiers and stores
+# Memory Tiers and Stores
 
 Your agent's context window is not unlimited memory — it's a working surface that overflows. When it overflows, you need somewhere else to put things, and the architecture of that "somewhere else" determines whether your agent can run for minutes or months.
 
-## Don't add memory until the window breaks
+## Don't Add Memory Until the Window Breaks
 
 The complexity ladder governs here. A 128k-token window handles most tasks without any external memory. Add a memory layer only when you've hit a real overflow: a task that spans more turns than a single window can hold, a fact that must survive session boundaries, or a query pattern that a flat buffer can't answer. The right time to reach for the architecture below is when you have the problem, not when you anticipate it.
 
-## The three tiers
+## The Three Tiers
 
 Every durable agent memory architecture has three layers. They differ in speed, capacity, and what kind of recall they serve.
 
@@ -18,7 +18,7 @@ Every durable agent memory architecture has three layers. They differ in speed, 
 
 The Agent Memory Toolkit for Azure Cosmos DB (preview) handles exactly this pattern: it stores turns, summaries, facts, and user profiles as JSON documents, and supports vector search, full-text search, and hybrid search across all of them from a single service. ([Azure Cosmos DB agent memory toolkit](https://learn.microsoft.com/azure/cosmos-db/gen-ai/agent-memory-toolkit))
 
-## Virtual context: the MemGPT pattern
+## Virtual Context: the MemGPT Pattern
 
 A bigger context window does not solve the problem. MemGPT (Packer et al., 2023) proved this: a 4k-window agent with external memory outperforms a 128k baseline on long-horizon tasks, because the external memory is *searchable* while the raw window is not.
 
@@ -40,7 +40,7 @@ archival_memory_search(query="hybrid store architecture decision")
 
 Azure AI Foundry Agent Service provides a managed long-term memory solution (preview): it extracts meaningful information from conversations, consolidates it into durable knowledge, and makes it available across sessions via the Memory Store API. ([Memory in Azure AI Foundry Agent Service](https://learn.microsoft.com/azure/foundry/agents/concepts/what-is-memory))
 
-## Hybrid stores: why one store is always wrong
+## Hybrid Stores: Why One Store Is Always Wrong
 
 A production agent issues at least three distinct query classes in a single session: a semantic query ("what did we discuss about the deployment architecture?"), a point lookup ("what is this user's billing tier?"), and a relationship query ("which services depend on this component?"). A vector database answers the first well. It answers the second with unnecessary latency and the third not at all.
 
@@ -75,19 +75,19 @@ Azure Cosmos DB for NoSQL is the production substrate for this pattern: it suppo
 
 The Azure Cosmos DB integrations page covers exactly this pattern: LangGraph checkpointer (`CosmosDBSaver`), Agent Framework workflow checkpoint (`CosmosDBWorkflowCheckpointStorage`), vector store, KV store, and semantic cache — all backed by a single NoSQL service. ([Azure Cosmos DB integrations for AI](https://learn.microsoft.com/azure/cosmos-db/gen-ai/integrations))
 
-## Safety: memory is attackable
+## Safety: Memory Is Attackable
 
 Memory persists across sessions, which means a poisoned memory persists too. An attacker who plants a malicious instruction in your archival store via indirect prompt injection has a persistent foothold — unlike a compromised prompt, a compromised memory survives the session reset. Namespace your memory by `user_id` and enforce it at query time so retrieval cannot cross tenants. Apply Azure AI Content Safety Prompt Shields at write time, not just at inference time, to catch injection attempts before they enter your store. Log every memory write with full provenance so you can audit and roll back.
 
 Azure AI Foundry Agent Service's memory security guidance recommends Azure AI Content Safety prompt injection detection and regular adversarial testing to prevent malicious content from entering or corrupting memory. ([Memory security in Azure AI Foundry Agent Service](https://learn.microsoft.com/azure/foundry/agents/concepts/what-is-memory#security-risks))
 
-## What you build
+## What You Build
 
 You add a Python memory layer to `module3-agent/`. The harness gains three files: `memory/working.py` (the L1 context manager with KV-cache-aware static-first ordering), `memory/episodic.py` (an L2 stub — `insert` writes to a dict, `search` does keyword match, the interface is API-stable for a real vector store), and `memory/hybrid_store.py` (a Mem0-pattern stub that routes queries to the right tier and returns a fused ranked list). The existing ReAct loop wires episodic memory to the observation formatter: post-turn observations append to L2, and session start fetches the top-3 relevant memories into L1.
 
 Get the tier wrong and the agent either pays for every token twice or loses context when it matters most; get it right and state becomes a competitive advantage rather than a liability.
 
-## Core concepts
+## Core Concepts
 
 - Add a memory tier only when the context window actually overflows; the wrong time is before you have the problem.
 - The three tiers — L1 working (context window + KV cache), L2 episodic (vector store, semantic retrieval), L3 semantic (graph/KV, fact lookup) — differ in speed, capacity, and query class, not just size.

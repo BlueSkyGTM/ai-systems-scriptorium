@@ -1,8 +1,8 @@
-# HITL propose-then-commit + checkpoints/rollback
+# HITL Propose-Then-Commit + Checkpoints/Rollback
 
 Some actions you cannot take back. Wiring money, dropping a table, emailing a customer, merging to main — for these, "the agent decided to" is not an answer you want to give an auditor. Human-in-the-loop (HITL) is the protocol that puts a person between the agent's intent and the irreversible act, and getting it right is more than slapping an "Approve?" button on a tool call.
 
-## Propose-then-commit, in five moves
+## Propose-Then-Commit, in Five Moves
 
 The naive HITL is a prompt: the agent is about to act, a dialog pops up, the human clicks yes, the action runs. It fails in two directions — the approval is lost when the process dies before the human answers, and the human, asked yes-or-no fifty times an hour, stops reading. The 2026 consensus pattern fixes both by treating approval as a durable, structured transaction, not a popup.
 
@@ -48,7 +48,7 @@ def commit(key: str, ack: Acknowledgement, store: ProposalStore) -> Result:
 
 Three frameworks ship this shape, and naming them is worth your time because you'll meet at least one. LangGraph's `interrupt()` suspends a graph at an approval node — it needs a checkpointer — and resumes from that checkpoint when the human answers. Cloudflare Agents run on Durable Objects and pause for approval with a `waitForApproval()` gate that can wait hours, days, or weeks. On Azure, the Microsoft Agent Framework pauses an approval-required tool call and emits a `RequestInfoEvent` to hand control to a human, then routes the response back and continues. Same protocol, three surfaces.
 
-## The rubber-stamp is the failure that matters
+## The Rubber-Stamp Is the Failure That Matters
 
 Here is the uncomfortable truth about HITL: the protocol above can be perfectly implemented and still fail completely, because the weak point is not the code. It is the human who clicks "approve" without reading.
 
@@ -56,7 +56,7 @@ A reviewer asked the same yes/no question fifty times a day, who has clicked yes
 
 The mitigation is to make approval cost attention. **Challenge-and-response** replaces the yes/no with a short checklist the approver must actively answer — *what is the dollar amount? what is the target account? is this reversible?* — surfaced from the proposal, requiring the human to engage with the specifics rather than pattern-match a button. The goal is not friction for its own sake; it is to break the reflex, to make the fiftieth approval as deliberate as the first. Tune it: too much friction and people route around the gate, too little and it's a rubber stamp again. The right amount scales with blast radius — a one-dollar action gets a glance, a wire transfer gets the full checklist.
 
-## Checkpoints and rollback: why a retry can double-execute
+## Checkpoints and Rollback: Why a Retry Can Double-Execute
 
 Now connect HITL to durability, because the connection is where a subtle, expensive bug lives. You have a long-horizon run (lesson 05) that retries on failure. You have an approved action. What happens if the process dies *after* the action runs but *before* it records that it ran?
 
@@ -71,17 +71,17 @@ The combination that closes this needs all four pieces, and dropping any one reo
 
 Idempotency key prevents the double-execute. Precondition check prevents acting on stale approval. Post-action verify catches the silent failure. Rollback-on-fail keeps a broken commit from leaving wreckage. Three of the four is not "mostly safe" — it is a specific, nameable way to corrupt state.
 
-## For high-risk systems, oversight is now law
+## For High-Risk Systems, Oversight Is Now Law
 
 For high-risk systems, human oversight is no longer a matter of engineering taste. The EU AI Act's Article 14 requires high-risk AI systems to be built for effective human oversight: a person must be able to interpret the output, intervene in or interrupt the system with a stop control, and disregard, override, or reverse what it produced. The Article speaks in those capabilities, not in implementation terms — but read against this protocol, they are exactly what propose-then-commit gives you. An inspectable proposal is how a human interprets the output before it acts; the positive-acknowledgement gate and a tested rollback are how they intervene, stop, and reverse. A rollback plan you have never rehearsed cannot reliably reverse anything, so it does not meet the bar Article 14 sets — which makes that gap a compliance problem, not just an operational one.
 
-## Where this goes at fleet scale
+## Where This Goes at Fleet Scale
 
 Everything here is defined for a single agent and a single approver. The fleet lessons in M4's back half apply it across many agents through a **shared inbox** — proposals from a fleet land in one queue, approvers work the queue, and the same propose-then-commit protocol governs each. They reference this lesson; they do not re-teach the commit protocol. Define HITL once, here, and the fleet inbox is just this protocol with more proposers.
 
 Build the gate so the approve button means something — a persisted proposal, a real case to judge, a positive ack, a verify, and a rollback you've run — and you have human oversight. Build it as a popup over a tool call and you have a rubber stamp with extra steps.
 
-## Core concepts
+## Core Concepts
 
 - Propose-then-commit HITL persists the proposed action with an idempotency key, surfaces intent / data lineage / blast radius / rollback, commits only on positive acknowledgement, and verifies after — silence or timeout is never a yes.
 - The rubber-stamp is the canonical HITL failure: a human approving without reading; mitigate with challenge-and-response checklists that cost attention, scaled to blast radius.

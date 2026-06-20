@@ -1,14 +1,14 @@
-# Design patterns and anti-patterns
+# Design Patterns and Anti-Patterns
 
 Architecture reviews and technical interviews for AI platform roles test the same thing: whether you can name a shape and say why it fits or fails. This lesson gives you that vocabulary — and the failure modes that reveal whether someone actually ships agents or just designs them.
 
-## Why vocabulary matters here
+## Why Vocabulary Matters Here
 
 A pattern is a named, reusable solution to a recurring problem in a given context. In agent systems, the value of the name is precision: "Plan-and-Execute" communicates a specific decomposition strategy, failure profile, and set of tradeoffs in two words. Without the shared vocabulary, every design discussion starts from scratch and ends in ambiguity.
 
 Module 4 builds multi-agent orchestration on top of this vocabulary. Every topology it introduces — supervisor, swarm, hierarchical nested graphs — is a composition of the patterns named here. Learn the names now; Module 4 assumes them.
 
-## The pattern catalog (the reusable shapes)
+## The Pattern Catalog (the Reusable Shapes)
 
 These are the shapes that recur. Each solves one class of problem; each has a failure mode that shows up when you misapply it.
 
@@ -32,7 +32,7 @@ These are the shapes that recur. Each solves one class of problem; each has a fa
 
 Microsoft Agent Framework implements HITL through a request-response mechanism: any executor calls `ctx.request_info()` to pause the workflow and emit a `RequestInfoEvent`; the caller responds, and the workflow resumes. Checkpoints persist pending requests, so a paused workflow survives a process restart. ([Microsoft Agent Framework — Human-in-the-loop](https://learn.microsoft.com/agent-framework/workflows/human-in-the-loop))
 
-## The anti-patterns that matter most
+## The Anti-Patterns That Matter Most
 
 Anti-patterns are not just mistakes — they are recurring mistakes with recognizable shapes. Naming them is how you stop arguing about whether a design is "good" and start diagnosing what specifically it does wrong.
 
@@ -50,7 +50,7 @@ Anti-patterns are not just mistakes — they are recurring mistakes with recogni
 
 Microsoft Agent Framework's Magentic orchestration exposes explicit termination knobs — `max_round_count`, `max_stall_count`, `max_reset_count` — precisely because unbounded loops are a known production failure mode. ([AutoGen to Microsoft Agent Framework Migration Guide — Multi-Agent Feature Mapping](https://learn.microsoft.com/agent-framework/migration-guide/from-autogen/#multi-agent-feature-mapping))
 
-## A small artifact inspection
+## A Small Artifact Inspection
 
 Open the `module3-agent/` harness you built in lessons 01–03. Find one instance of each of the following in the code or its absence:
 
@@ -64,7 +64,7 @@ Azure AI Foundry Agent Service enforces hard service limits — 128 tools per ag
 
 Pattern vocabulary and anti-pattern recognition are the same skill: both require knowing what a shape is called before you can argue about whether it belongs here.
 
-## Core concepts
+## Core Concepts
 
 - A pattern is a named, reusable solution to a recurring problem; naming it precisely — ReAct, Plan-and-Execute, HITL, Circuit Breaker — prevents design discussions from starting from scratch every time.
 - The three anti-patterns that cause the most expensive rewrites are agent everything (adding agent overhead before the problem requires it), premature multi-agent (splitting before a single agent with more tools would do), and framework-as-architecture (choosing the framework before the shape is drawn).

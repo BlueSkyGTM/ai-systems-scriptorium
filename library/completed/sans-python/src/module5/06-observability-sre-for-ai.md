@@ -2,7 +2,7 @@
 
 When a user reports a bad answer, you get one shot to reconstruct what happened — which model, which prompt version, which retrieved chunks, how many tokens, how long each hop took. If that data was not captured at the moment of the request, it is gone, and you are debugging a non-deterministic system with print statements. Observability is the decision to capture it before you need it, in a shape the whole industry can read.
 
-## Three signals, one standard
+## Three Signals, One Standard
 
 Traditional observability rests on three pillars — logs (what happened), metrics (how much, aggregated), and traces (the path of one request through every component). AI observability keeps all three and adds the concerns a normal service never had: output *quality*, *token economics*, and *non-determinism* become first-class signals alongside latency and error rate.
 
@@ -10,11 +10,11 @@ The trace is the load-bearing one. A single AI request is rarely a single call �
 
 The thing that makes this durable instead of bespoke is **OpenTelemetry's GenAI semantic conventions** — an agreed set of span and attribute names for model calls, so a trace emitted by your code means the same thing to any backend that reads it. Token usage rides on `gen_ai.usage.input_tokens` and `gen_ai.usage.output_tokens`; the model is named on `gen_ai.request.model` and the operation on `gen_ai.operation.name`; message content is captured only when you opt in. The payoff is that you instrument once against the convention, not once per vendor. Azure Monitor's agent observability reads exactly these conventions — its Application Insights views are built directly on the OpenTelemetry GenAI semantics, so a correctly instrumented app lights up the portal with no Azure-specific tracing code. In Python the wiring is small: call `configure_azure_monitor` and instrument the model SDK, and spans flow to Application Insights. Message content is off by default and gated behind the `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT` switch, because prompts and completions are sensitive data you opt into recording, not something you spill by accident.
 
-## Metrics and dashboards: Prometheus and Grafana
+## Metrics and Dashboards: Prometheus and Grafana
 
 Traces explain one request; metrics tell you the shape of all of them. The open-source default is **Prometheus** to collect and store time-series metrics and **Grafana** to visualize them — the serving engine exposes a metrics endpoint Prometheus scrapes on an interval, and Grafana renders the TTFT, TPOT, throughput, and goodput percentiles from lesson 04 as panels you watch live. Grafana reads Azure Monitor as a data source too, through the Azure Monitor data source plug-in, so an Azure-hosted deployment can sit in the same dashboard as a self-hosted one. The dashboard is not decoration. It is the surface where a canary's metrics (lesson 05) are watched, where a soak test's slow memory leak finally shows, and where the on-call engineer looks first at 3 a.m.
 
-## Quality and drift: the half a CPU graph misses
+## Quality and Drift: the Half a CPU Graph Misses
 
 Here is the line that separates AI observability from ordinary SRE. A serving stack can be perfectly healthy — latency nominal, error rate zero, GPUs warm — while the answers quietly get worse. The corpus shifted, an upstream model updated, the traffic mix changed, and the model is now confidently wrong on a class of inputs it used to handle. No infrastructure metric moves. This is **quality drift**, and catching it needs the eval thread running continuously, not just at deploy.
 
@@ -26,7 +26,7 @@ The discipline that ties it together is borrowed from site reliability engineeri
 
 SRE-for-AI extends into incident response, where the 2026 pattern grounds an LLM in your own infrastructure data — logs, runbooks, service topology — over retrieval, so an agent can automate the first stretch of investigation: gather the evidence, propose a hypothesis, and hand a human the decision. Auto-remediation stays deliberately narrow — restart a pod, revert a specific deploy, scale within a policy — because a model that can take broad unsupervised action on your production stack is a Denial-of-Wallet incident waiting for a trigger. Anyone selling fully autonomous "set it and forget it" remediation is overselling; the human stays in the approval seat. A prediction without an actuator is a dashboard, and a remediation without a human is a liability.
 
-## Core concepts
+## Core Concepts
 
 - AI observability is the three pillars — logs, metrics, traces — plus three new first-class signals: output quality, token economics, and non-determinism; the distributed trace is load-bearing because one AI request fans out across retrieval, model calls, and tools.
 - OpenTelemetry's GenAI semantic conventions (the `gen_ai.*` span and attribute names) make instrumentation portable — you instrument once against the convention, and backends like Azure Monitor read it natively, with message content gated behind an explicit opt-in.

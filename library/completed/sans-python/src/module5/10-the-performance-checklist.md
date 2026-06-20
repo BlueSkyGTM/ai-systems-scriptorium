@@ -1,14 +1,14 @@
-# The production performance checklist
+# The Production Performance Checklist
 
 The previous lesson taught you to measure before you optimize. This one is what you reach for once the measurement points somewhere — a prioritized list of the checks that actually move production inference, and the hardware facts you need to reason about them. The source is a 200-plus-item reference checklist from the performance-engineering literature. Reproducing 200 items would be its own kind of clutter; most of them are training- and kernel-deep and live in the antilibrary. What follows is the load-bearing subset — the roughly two dozen an AI Platform Engineer runs against a serving stack before it ships, in the order the evidence says to run them.
 
-## Read it in priority order, not top to bottom
+## Read It in Priority Order, Not Top to Bottom
 
 A checklist is dangerous when you treat it as a to-do list and start at item one. The reference is explicit about the order: apply the 80/20 rule, find the top contributors to runtime and cost, and optimize those deeply rather than micro-tuning a kernel that owns one percent of the time. So this list is grouped by the bound it serves, and you enter it from the bound your profiling named. Memory-bound decode? Start with the memory section. GPU at 50% utilization? You have a feeding problem — start with I/O and hosting, not kernels. The checklist is an index keyed by your measurement, not a sequence you grind through.
 
 One discipline sits above all the items and never bends: **profile before and after every change, and keep the wins from eroding.** Lock versions, configs, and benchmarks in source control so a regression is traceable to the change that caused it. Bring a performance benchmark into CI so a driver bump or a code change that quietly drops Tensor Core usage gets caught by the pipeline, not by a customer. A speedup you do not guard regresses silently the first time someone touches the stack.
 
-## Hardware and topology: the ceiling no software tweak outruns
+## Hardware and Topology: the Ceiling No Software Tweak Outruns
 
 Before the software checks, the facts that set the ceiling. The reference is blunt: your hardware, interconnects, and data paths cap performance and cost-efficiency, and no software tweak can outrun a starved GPU. The platform engineer has to reason about three of them.
 
@@ -20,7 +20,7 @@ Before the software checks, the facts that set the ceiling. The reference is blu
 
 On Azure, this reasoning maps to SKU choice rather than rack design: the ND-series and NC-series GPU virtual machines differ in GPU generation, HBM, and whether they expose NVLink/NVSwitch across the GPUs in the VM, which is exactly what decides whether multi-GPU pooling helps you. (The Azure ND-series GB200/GB300 v6 and H100/H200 v5 sizes, for instance, expose NVLink across the GPUs inside the VM.) Pick the SKU from the bound you measured, not the headline FLOPs (floating-point operations per second).
 
-## The curated checklist
+## The Curated Checklist
 
 Grouped by bound. Enter from the one your profiling named.
 
@@ -56,13 +56,13 @@ Grouped by bound. Enter from the one your profiling named.
 **Telemetry — so the wins survive contact with production.**
 - Export per-GPU metrics (DCGM to Prometheus/Grafana) and watch for utilization drops, throttling, and ECC errors; alert on anomalies instead of finding them in the postmortem. On Azure, Azure Monitor and Application Insights are the equivalent sinks for this telemetry.
 
-## Run it honestly: partial beats fake-green
+## Run It Honestly: Partial Beats Fake-Green
 
 The reference's operator playbook ends on a discipline more important than any single item, and it is the one to carry: keep capability-limited outcomes *truthful*. When a check can't run on your hardware — no NVLink to pool across, no multi-GPU to disaggregate — mark it skipped or partial, never fake-green. When a check fails, root-cause it in the most local correct place, fix it there, re-run that one target, and only then move on — do not paper over a failure to keep the list moving. And do not disable the profiler to make a run pass; a green checklist that turned off its own measurement is worth nothing.
 
 That honesty is the whole value of the artifact. A checklist exists to produce a findings document a teammate can trust — what is green, what is partial because your hardware can't exercise it, what is an open finding ranked by impact. The platform engineer who hands over *that* is worth more than the one who hands over a wall of checkmarks, because the first one told you where the bodies are and the second one hid them.
 
-## Core concepts
+## Core Concepts
 
 - A 200-item checklist is an index keyed by measurement, not a top-to-bottom to-do list: enter it from the bound your profiling named and apply the 80/20 rule — optimize the top runtime contributors deeply, skip the one-percent items.
 - Hardware sets the ceiling no software outruns: HBM bandwidth bounds memory-bound decode, NVLink (up to 1.8 TB/s/GPU on NVLink 5) is what makes multi-GPU KV pooling a 6.11x win instead of a bottleneck, and topology-aware placement — read with `nvidia-smi topo -m` — keeps coupled shards on the fast fabric.

@@ -1,8 +1,8 @@
-# Fleet patterns & governance-as-code
+# Fleet Patterns & Governance-as-Code
 
 The last lesson named the seven concerns a fleet governs. This one hands you the patterns that implement them — six named shapes you reach for by name, the way you reach for a circuit breaker or a retry. Each one turns a concern into a file you can diff, and together they make a fleet not just describable but *runnable* as code. This is the lesson the M7 finale is built on top of, so it earns the closing slot of the chapter.
 
-## Six patterns, each a concern made concrete
+## Six Patterns, Each a Concern Made Concrete
 
 A fleet pattern is a concern from lesson 12 with a name, a schema, and a governance rule attached. Naming them matters: "we should track our agents" is a wish, but **team-registry** is a thing you can build, audit, and hand to a teammate. Here are the six.
 
@@ -20,7 +20,7 @@ A fleet pattern is a concern from lesson 12 with a name, a schema, and a governa
 
 You do not need all six on day one. Team-registry first, then the safety patterns the count forces — budget-guard when spend matters, shared-inbox when an agent can do something irreversible. Reach for each when the fleet's risk earns it.
 
-## Two patterns, built by reference not from scratch
+## Two Patterns, Built by Reference Not from Scratch
 
 Two of the six are the single-agent controls you already built, pointed at the fleet. Showing them at scale is the point of this lesson — and showing that you *do not rebuild them* is the discipline.
 
@@ -68,7 +68,7 @@ What the fleet adds is not a new commit protocol — it is the *queue discipline
 
 This is the de-dup rule made visible. Budgets, kill switches, and HITL are defined once in the single-agent chapter and *applied* — by import, by reference — at fleet scale. A fleet lesson that re-derives the propose-then-commit protocol has misunderstood the architecture: the protocol does not change when there are more proposers, only the plumbing around it does.
 
-## Governance-as-code: the registry is a contract
+## Governance-as-Code: the Registry Is a Contract
 
 Step back and look at what every pattern has in common. Each one is backed by a schema — a JSON Schema for the registry and the manifest, a JSON contract for the handoff packet, a structured record for the audit trail. Nothing that governs the fleet lives only in prose. That is the meaning of **governance-as-code**: the rules a fleet runs by are machine-readable artifacts you validate in CI, diff in review, and version in git, the same as the application code they govern.
 
@@ -83,7 +83,7 @@ schemas/*.json ──┘   (Claude Code now,
 
 The same discipline shows up on the platforms. Azure AI Foundry Agent Service is the managed instance of exactly this shape: the agent registry, an Entra-backed identity per agent, role-based access control (RBAC) scoping what each may touch, per-agent cost tracking, and human-approval gates on tool calls — all configuration the platform enforces, not logic baked into each agent. You are building the open, file-backed version of the same idea, which is the point: the pattern is the platform, whether the platform is a cloud product or a folder of YAML.
 
-## This seeds the M7 finale
+## This Seeds the M7 Finale
 
 Be explicit about where this goes, because the whole chapter has been pointing at it. **The capstone of this lesson is a small governed fleet, and M7 imports it.** The M7 finale is the governed multi-agent SWE team — a fleet of coding agents that build software under exactly this governance layer: a registry that knows every agent, a shared inbox where a human approves the merges, a fleet-budget-guard that caps the team's spend, cross-agent audit that survives an incident review. M7 does not invent that layer. It picks up the `module4-fleet/` package you assemble here — the registry, the schemas, the budget-guard, the shared inbox — and wraps the M6 coding agents in it.
 
@@ -91,7 +91,7 @@ That is what compounding means in this book, made concrete one more time. The si
 
 A fleet is not a bigger agent. It is a contract that lets many agents run while a human stays accountable for all of them — and a contract written as code is one you can hand to the next system without rewriting a word.
 
-## Core concepts
+## Core Concepts
 
 - A fleet pattern is a concern made concrete — team-registry, cross-agent-audit, fleet-budget-guard, hierarchical-delegation, shared-inbox-HITL, agent-clone-fork — each backed by a schema and a human gate, reached for by name like a circuit breaker.
 - Fleet-budget-guard and shared-inbox-HITL are built by reference, not from scratch: they import the lesson-06 governor and the lesson-08 propose-then-commit protocol unchanged, adding only per-agent attribution, a team ceiling, and queue discipline (one inbox, an `inbox_id`, no off-channel approvals).

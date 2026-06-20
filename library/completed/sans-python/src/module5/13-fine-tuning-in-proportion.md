@@ -1,10 +1,10 @@
-# Fine-tuning, in practice and in proportion
+# Fine-Tuning, in Practice and in Proportion
 
 An interviewer asks how you would make a model better at your company's domain, and "fine-tune it" is the answer that sounds expert and is usually wrong. Fine-tuning is the most expensive, slowest, and least reversible of the three ways to change model behavior, and a candidate who reaches for it first reveals they have not costed the alternatives. The skill this lesson builds is not how to run a training job — it is how to know when not to, and how to speak precisely about the case where you would.
 
 This is the one place the curriculum lets you touch Path A — the model-centric, training-heavy track it otherwise leaves alone. We touch it on purpose and we keep the touch proportionate: enough to make the right decision and speak to the rest, not a from-scratch training course.
 
-## Three levers, in order of cost
+## Three Levers, in Order of Cost
 
 You have three ways to make a model behave the way your application needs, and they are not peers. They form a ladder you climb only when the rung below it runs out.
 
@@ -16,7 +16,7 @@ You have three ways to make a model behave the way your application needs, and t
 
 The decision discipline mirrors the rest of the module: measure first. Establish an eval baseline with prompting, see how far retrieval moves it, and only then ask whether fine-tuning earns its cost against the number that remains. Microsoft's own guidance frames fine-tuning the same way — as the step you take after you understand when it is warranted, not a default.
 
-## What modern fine-tuning is: LoRA and QLoRA
+## What Modern Fine-Tuning Is: LoRA and QLoRA
 
 When fine-tuning *is* the answer, you almost never retrain the whole model, and knowing why is the literacy bar an interview probes. Full fine-tuning updates every weight in a multi-billion-parameter model — ruinous in memory and compute, and it produces a full-size copy per task. The field moved to **PEFT**, parameter-efficient fine-tuning: adapt a large pretrained model to a task by training only a small number of extra parameters while leaving the original frozen, getting performance comparable to full fine-tuning at a fraction of the cost.
 
@@ -44,11 +44,11 @@ The `r` (rank) is the dial that trades capacity against parameter count — lowe
 
 This is the vocabulary, and the vocabulary is the deliverable. Microsoft's platform documentation defines the same terms the same way — LoRA as a PEFT method that tracks weight changes in small matrices and produces swappable adapter layers, QLoRA as LoRA plus quantization for further memory savings — which is a useful check that this is settled industry literacy, not a framework's marketing. Azure ML's model catalog will run the actual fine-tune for you from a base model and a labeled dataset, which is how this looks when a managed platform owns the training loop.
 
-## Where the deep build lives
+## Where the Deep Build Lives
 
 Notice what this lesson did not do. It did not write a training loop, tune a learning-rate schedule, build a data-labeling pipeline, or reason about gradient accumulation and distributed sharding. That is deliberate and it is the scope line for the whole curriculum. The deep, from-scratch fine-tuning build — the training pipelines, the dataset engineering, the optimization internals — is Path-A, model-centric machine-learning engineering. It is real, it is valuable, and it is named and located in the [antilibrary](../antilibrary.md) as a candidate for a focused companion book that picks up what this book consciously leaves out. The honest position is the proportionate one: an AI Platform Engineer decides whether to fine-tune, specifies the LoRA or QLoRA approach, reads the config, and hands the training itself to a managed platform or an MLE — and can say exactly why, which is the bar that matters in the room.
 
-## Core concepts
+## Core Concepts
 
 - The three levers are a cost ladder, not peers: prompt for everything you can (instant, reversible), retrieve for knowledge (update an index, not a model), and fine-tune only for durable behavior and form that the cheaper rungs cannot hold — fine-tuning adds behavior, never reliable facts.
 - Modern fine-tuning is PEFT, not full retraining: LoRA freezes the base model and trains two small low-rank adapter matrices, so adapters are megabytes, swappable on a shared base, and mergeable — which is why fine-tuning no longer means a model copy per task.

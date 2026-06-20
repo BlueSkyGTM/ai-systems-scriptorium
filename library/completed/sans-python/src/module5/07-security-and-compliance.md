@@ -1,10 +1,10 @@
-# Security & compliance for AI ops
+# Security & Compliance for AI Ops
 
 Your serving stack holds an API key worth thousands of dollars a day and answers questions about other people's data. The application layer can be flawless and you still lose the company if that key sits in a config file or the wrong tenant reads the wrong context. Security here is not the model's behavior — it is the substrate the model runs on, and it is the platform engineer's name on the incident report.
 
 You have hardened the layers above this one. Module 3 scoped MCP tools, pinned descriptions, and put OAuth on remote servers. Module 4 wrapped the agent in guardrails and a kill switch. Those defend what the model *does*. This lesson defends where it *lives* — the secrets it reaches for, the identities that can touch it, the surface an attacker probes — and it folds the compliance frameworks in as engineering requirements, not legal reading. SOC 2 (a security-controls audit), HIPAA (US health-data law), and the EU AI Act don't ask you to feel responsible. They ask you to build specific things. Build them.
 
-## Secrets never live in the code
+## Secrets Never Live in the Code
 
 The provider key is the crown jewel, and the most common way to lose it is the most boring: someone commits it. Not in the app — in a config file, a `.env` checked in by accident, a notebook, a CI log. The 2026 supply-chain attacks didn't crack encryption; they read environment variables off compromised build pipelines. A static key in a file is a key already half-leaked.
 
@@ -24,7 +24,7 @@ def load_provider_key(vault_url: str) -> str:
     return client.get_secret("provider-api-key").value
 ```
 
-## Least privilege is the whole access model
+## Least Privilege Is the Whole Access Model
 
 A serving platform is multi-tenant by default — many users, many teams, sometimes many customers, all behind one set of model deployments. Least privilege means each identity reaches exactly what it needs and nothing more, and it applies at two layers that people conflate.
 
@@ -32,7 +32,7 @@ A serving platform is multi-tenant by default — many users, many teams, someti
 
 **Who can read whose data.** This is the tenant-isolation boundary, and it is the one that ends careers when it leaks. Cross-tenant context pollution — tenant A's documents surfacing in tenant B's RAG answer — is the AI-native version of a data breach, and it hides in three places: the vector store (filter retrieval by `tenant_id`, always), the cache (a cache key without the tenant is a cross-tenant leak waiting for a cache hit), and the prompt builder (never assemble one tenant's context into another's request). Enforce the tenant key at every layer, because the layer you skip is the one that leaks.
 
-## The deployment attack surface
+## The Deployment Attack Surface
 
 An attacker who can't break the model attacks everything around it. Map the surface and close it.
 
@@ -40,7 +40,7 @@ The egress path is the exfiltration path. If a compromised serving pod can reach
 
 The data path needs a redaction stage *before* the model sees a request, not after it answers. Personally identifiable and health information (PII and PHI) gets detected and masked at the inference boundary with an entity recognizer like Presidio; post-hoc cleanup is theater, because by then the model already processed the raw data and it already sits in your logs and your provider's. And every privileged action — a key rotation, a deployment, a config change — writes to an append-only audit log, because an attack you can't reconstruct is an attack you can't prove you contained.
 
-## Compliance is a build spec
+## Compliance Is a Build Spec
 
 The frameworks read like legal documents and land as engineering tickets. Translate them:
 
@@ -54,7 +54,7 @@ The platform move is to stop treating these as a year-end scramble and encode th
 
 The through-line across this chapter is the through-line of the whole guide's security thread: prototypes trust the environment, production verifies at every boundary. Module 3 verified at the tool boundary, Module 4 verified at the action boundary, and this lesson verifies at the infrastructure boundary — the secret, the identity, the tenant, the egress. Each control is thin on its own. Stacked, they make the platform something an auditor can sign and an attacker can't quietly walk through. The day a regulator or a customer's security team asks how you handle their data, the answer is a diagram, not a promise.
 
-## Core concepts
+## Core Concepts
 
 - Secrets never live in code, env files, or images — they live in a vault and the workload fetches them at runtime through a managed identity, so rotation propagates with no redeploy and a leaked static key can't exist to begin with.
 - Least privilege runs at two layers: RBAC/ABAC controls who can operate the platform (and the admin should not be able to read the secrets), and tenant isolation controls who reads whose data — enforced at the vector store, the cache, and the prompt builder, because the layer you skip is the one that leaks.

@@ -1,8 +1,8 @@
-# Computer-use & coding agents
+# Computer-Use & Coding Agents
 
 Some of the most visible agents in production right now don't call clean JSON tools — they drive a screen or edit a repo. This lesson is thin on purpose: you learn how each kind works and where it breaks, because the build is a Module 6 artifact, not this page. What you carry forward is the contract that governs both.
 
-## Computer-use: the model that sees a screen
+## Computer-Use: the Model That Sees a Screen
 
 A computer-use agent observes a screenshot and emits low-level actions — move the mouse, click, type — in a continuous screenshot-reason-act loop. It reads no accessibility tree, calls no structured API; it works pixels, the way a person at a desk does. That resilience to UI change is the appeal and the cost: slower and pricier per action than a Selenium script, but it doesn't shatter when a button moves ten pixels.
 
@@ -14,7 +14,7 @@ Three production models in 2026, all vision-based, differ mainly in how they're 
 
 The numbers are not the lesson — the differences in scope are. One model drives a whole desktop; another is confined to a browser tab and checks every step. Where the model can act, and what reviews each action, is the design decision you inherit when you pick one.
 
-## The contract that binds all three
+## The Contract That Binds All Three
 
 Here is the part to memorize, because it survives every model swap and reappears in coding and voice agents too:
 
@@ -24,7 +24,7 @@ A computer-use agent reads the screen as input — and the screen is attacker-co
 
 You met this rule already, narrower, in Module 3: tool arguments are untrusted, the execute step is the security boundary. Computer-use widens the blast radius. The "tool output" is now an entire screen an adversary may have authored, and the "execute step" can move money or delete files. The deterministic controls from this module's safety chapter — the kill switch the agent can't write, the budget that won't talk itself higher, the human gate on irreversible actions — are exactly what stand between a smuggled instruction and a committed action.
 
-## Two failure modes worth naming
+## Two Failure Modes Worth Naming
 
 When a computer-use agent fails, it fails in one of two distinct ways, and OSWorld's follow-up work pulled them apart so you can diagnose which:
 
@@ -33,7 +33,7 @@ When a computer-use agent fails, it fails in one of two distinct ways, and OSWor
 
 The OSWorld-G and OSWorld-Human splits decompose grounding from planning precisely because the fix differs — better visual grounding for the first, better task knowledge or demonstration for the second — and they expose a 1.4–2.7× trajectory-efficiency gap between agents and humans on the same tasks. When your agent flails, naming which failure you're watching is the first step to fixing it.
 
-## Coding agents: the scaffold matters as much as the model
+## Coding Agents: the Scaffold Matters as Much as the Model
 
 A coding agent reads an issue, edits files, runs tests, and iterates until the tests pass. The surprise of 2026 is that the *harness around the model* moves the score as much as the model does. The same Claude Sonnet 4.5 scored 43.2% on the SWE-agent v1 harness and 59.8% on the Cline autonomous harness — same weights, different scaffold, sixteen points. The lesson is blunt: when you evaluate a coding agent, you are evaluating a model *and* its scaffold, and you cannot attribute the result to either alone.
 
@@ -47,7 +47,7 @@ CodeAct is the idea to keep. It's the same untrusted-input contract turned inwar
 
 This is the seed for **Module 6 artifact 01**, where you build a coding agent for real — a CodeAct-style loop in a sandbox with a verification gate. Here you only need the shape and the contract; there you make it run.
 
-## Core concepts
+## Core Concepts
 
 - A computer-use agent observes screenshots and emits low-level mouse/keyboard actions in a screenshot-reason-act loop, with no accessibility API — resilient to UI change but slower and costlier per action than scripted automation.
 - The binding contract across computer-use, coding, and voice agents: screenshots, DOM text, and tool outputs are untrusted input, and only direct user instructions count as permission — which makes indirect prompt injection a path to real-world action, not a content problem.

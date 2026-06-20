@@ -1,8 +1,8 @@
-# Loop patterns in practice
+# Loop Patterns in Practice
 
 The four-stage shape is a template. The reason it earns a lesson of its own is that a handful of loops cover most of what an engineering team wants run unattended — and once you can name them, you stop designing loops from scratch and start composing them.
 
-## The patterns are a small, named set
+## The Patterns Are a Small, Named Set
 
 Loop engineering is not infinite. The recurring work a team wants off its plate falls into a few shapes, each a fill-in of trigger → action → verification → budget. Learn these five and you can read any loop someone hands you, and write most loops someone asks you for.
 
@@ -18,19 +18,19 @@ Loop engineering is not infinite. The recurring work a team wants off its plate 
 
 Read the pattern names and the gates jump out: every one of them keeps a human on the high-stakes decision and lets the loop have the boring volume. That division — boring volume to the loop, judgment to the human — is the whole design, not a footnote to it.
 
-## Worktrees: isolation is not optional
+## Worktrees: Isolation Is Not Optional
 
 The moment a loop edits code, it needs a worktree. A git worktree gives each fix attempt its own checkout of the repo, on its own branch, so the agent builds and tests in isolation and you discard the whole thing on a REJECT without touching anyone's work.
 
 Skip this and concurrent loops collide. Two action loops on different cadences — a CI-sweeper at fifteen minutes, a PR-babysitter at ten — once spawned conflicting fixes for the *same* failing test on the *same* PR at the same time; untangling the collision cost forty-five human minutes and five times the normal token spend. The fix is mechanical: one worktree per fix attempt, and a branch lock recorded in shared state so a second loop sees "PR #318 — worktree in progress" and stands down. Worktrees remove the mechanical collisions; you remain the ceiling on how many parallel loops a team can absorb.
 
-## Verifiers: the checker that defaults to no
+## Verifiers: the Checker That Defaults to No
 
 Every pattern above has a verification stage, and every one of them follows the same rule from lesson 10: the agent that made the change does not get to approve it. The verifier is a different sub-agent, a different prompt — *find reasons to reject* — with read-only access to the diff, the original issue, and the test commands. It runs the tests itself and returns one of three verdicts: APPROVE, REJECT, ESCALATE_HUMAN. Its default stance is REJECT; it approves only on evidence.
 
 The failure mode this guards against has a name and a body count. A dependency-sweeper's verifier once falsely APPROVED a patch because it ran `npm test` against a cached `node_modules` instead of a clean install — the test passed in the worktree and failed in CI, because the verifier did not replicate the CI path. The lesson is exact: the verifier must run *what CI runs* (`npm ci`, not just `npm test`), or its approval means nothing. A verifier that does not reproduce the real gate is theater with a green check.
 
-## Everything-as-code: the registry makes loops addressable
+## Everything-as-Code: the Registry Makes Loops Addressable
 
 Five patterns, each with a cadence, a risk level, a token budget, human gates, and a starting autonomy level — that is structured metadata, and structured metadata belongs in a machine-readable file, not in prose. The platform-engineering instinct applies directly: a loop fleet is addressable as code. You write the patterns into a registry, validate the registry against a schema, and let your tooling — cost estimation, auditing, documentation — read the same file.
 
@@ -78,19 +78,19 @@ patterns:
 
 The schema is the point. A registry no machine validates drifts the moment a second person edits it — a missing `human_gates` array, a `risk` of `"meduim"`, a cadence string nothing can parse. With a schema, a malformed pattern fails validation in CI instead of failing as a runaway loop in production. The control plane stays Python; the registry stays JSON and YAML; the contract between them is the schema. This is the same everything-as-code discipline the platform-engineering golden-path uses for services — applied now to a set of agents.
 
-## How to pick and compose
+## How to Pick and Compose
 
 Picking a pattern is reading the trigger column. Recurring time-boxed scan, no code changes? Daily-triage or issue-triage, at L1. React to a CI event with a fix? CI-sweeper or PR-babysitter, at L2, behind a verifier and a worktree. Keep dependencies current? Dependency-sweeper, with the kill-switch on majors. Match the work to the shape; do not invent a sixth pattern when one of the five fits.
 
 Composing them is harder, because loops that act will contend. Running three action loops means a coordination priority and shared state they all read: CI-sweeper before PR-babysitter before dependency-sweeper, each checking the others' state files and respecting a branch lock before it spawns a worktree. The registry is what makes this legible — every loop's cadence, gates, and state file in one validated place, so you can see the contention before it costs you forty-five minutes. Three coordinated loops is also the threshold where a set of loops stops being a set and becomes a fleet, which is exactly where the next half of this chapter picks up.
 
-## What you build
+## What You Build
 
 You implement one concrete pattern end-to-end against the `_harness/` — a CI-sweeper is the sharpest teacher, because it exercises every stage and every gate. Event trigger, worktree-isolated action, a verifier that runs the real CI command and defaults to REJECT, a three-attempt cap, and the lesson-07 kill-switch on the denylist. Then you write the pattern into a `registry.yaml` and validate it against the schema, so the loop is a row of data your tooling can read, not a paragraph only you can.
 
 Pick the pattern that fits the trigger, give it a worktree and a verifier that reproduces the real gate, and write it into a schema-validated registry — do that and a new loop is a reviewed diff to a data file, not a fresh act of engineering every time.
 
-## Core concepts
+## Core Concepts
 
 - The recurring loops worth running unattended form a small named set — daily-triage, PR-babysitter, dependency-sweeper, CI-sweeper, issue-triage — each a fill-in of the four-stage shape that hands boring volume to the loop and keeps judgment with the human.
 - A loop that edits code runs in an isolated git worktree with a branch lock in shared state; without isolation, concurrent action loops collide on the same PR and duplicate paid work.

@@ -1,10 +1,10 @@
-# Real-time voice assistant
+# Real-Time Voice Assistant
 
 A chatbot can think for two seconds and nobody minds. A voice agent that thinks for two seconds sounds broken — the caller talks over it, repeats the question, hangs up. Voice is the one interface where the model is the easy part and the clock is the problem, and this artifact is about building to the clock.
 
 You read the architecture in Module 4: the VAD → STT → LLM → TTS → transport cascade, ruled by a mouth-to-ear budget of roughly 450–600 ms. Now you build it — a streaming pipeline you can measure stage by stage, a budget you enforce instead of hope for, and barge-in handling that stops the agent the instant the user speaks.
 
-## The business problem
+## The Business Problem
 
 A voice agent answers the phone — books the appointment, takes the order, handles the support call — and the bar it has to clear is not intelligence. It is latency. Conversation has a rhythm, and past a certain delay that rhythm breaks: the human starts talking into the silence, the agent starts replying into the human, and you get two voices at once. The working target is roughly **450–600 ms end to end**, mouth to ear, through every stage — the budget Module 4 named, and the one the cascade is built to defend.
 
@@ -12,7 +12,7 @@ That budget is the spec everything bends to, and it forces two design choices be
 
 Strip the romance off and the job is narrow. You are not building a smarter model. You are building a clock you cannot miss, with a pipeline whose every hop is a withdrawal from a budget of half a second.
 
-## Capability and one stack
+## Capability and One Stack
 
 The capability is **streaming under a hard latency budget**: VAD → STT → LLM → TTS, wired through a transport, with barge-in. The reference stack, one concrete choice, is **Pipecat** — an open-source Python framework for real-time voice agents. It models the system as a `Pipeline` of `FrameProcessor` stages that pass `Frame`s between them, driven by a `PipelineTask` and a `PipelineRunner`. The scaffold reproduces that shape in the standard library so you can run it offline; real Pipecat swaps in behind the same seam.
 
@@ -26,7 +26,7 @@ That shape is the one you want to reason about: audio and text flow through the 
 
 One stack, named, so the choices are honest. But the stack is not the lesson. The seam is.
 
-## The portable seam
+## The Portable Seam
 
 One interface carries this whole system: the **pipeline stage**. Every stage is a `FrameProcessor` with a single method — `process(frame) -> frame` — and a declared per-stage latency. Bind to that, and every provider becomes a drop-in swap.
 
@@ -41,7 +41,7 @@ The STT stage doesn't know whether the next stage is a real model or a mock; the
 
 The same seam is where real Pipecat plugs in. Every provider import sits behind a guarded `try_real_*` helper that returns the real service or `None` if it isn't installed. The mock stage and the real stage satisfy the same `process` contract, so the swap is config — install the package, set the key, hand the pipeline the real stage. The pipeline never learns the difference.
 
-## The build sequence
+## The Build Sequence
 
 Build it in the order the dependencies force, each step runnable before the next:
 
@@ -54,7 +54,7 @@ Build it in the order the dependencies force, each step runnable before the next
 
 The simulated latency is doing real work, not papering over a gap. A real STT call blocks on a network round trip you can't make on the smoke path; a configurable per-stage millisecond budget is what makes the *interesting* part — the measurement, the gate, the interrupt — testable in CI without audio hardware or a cloud account. Latency is the thing you are engineering, so latency is the thing the scaffold models directly.
 
-## The operator surfaces
+## The Operator Surfaces
 
 Module 8 hands the student the operator's chair: set the budget, watch the clock, hold the kill-switch. So this artifact exposes the surfaces the student will drive, and they are real, not decorative.
 
@@ -64,25 +64,25 @@ Module 8 hands the student the operator's chair: set the budget, watch the clock
 
 **The turn is observable.** Every stage writes its latency into a ledger the finished turn carries, the same data a production tracer (OpenTelemetry GenAI spans, from Module 5) would emit. You can't fix a budget you can't see broken down by hop, so the breakdown is a first-class output, not a debug print.
 
-## The BUILD→TEST gate
+## The BUILD→TEST Gate
 
 The whole artifact runs on the Python standard library alone — no audio hardware, no cloud, no network, no GPU. `python smoke.py` wires the default cascade, drives one text-driven turn through it, prints the per-stage latency budget and the total, and asserts the turn is within budget. Then it re-runs with one stage's budget deliberately blown and confirms `enforce` raises. Then it fires a barge-in mid-turn and confirms the in-flight turn cancels. `python -m pytest tests/` asserts the three promises hold: a turn completes end to end with audio out, the latency report sums correctly and the gate flags a blown budget, and barge-in cancels the in-flight turn. A stdlib `unittest` fallback ships too, so the gate runs even where pytest isn't installed.
 
 Every third-party import — Pipecat and the Deepgram, Anthropic, and Cartesia provider SDKs — sits behind a guarded `try_real_*` helper that returns the real service or falls back to the stdlib mock on the smoke path. Real services are opt-in through `.env`. Latency is simulated, so the gate is deterministic regardless of how fast the machine is. The gate you can run on a plane is the gate that runs in CI.
 
-## Strong-project done-when
+## Strong-Project Done-When
 
 This clears the hireability bar: a real entry point you run from a shell, not a notebook; a README that frames the business problem — the brutal latency budget — before the code; evaluation in the form of a measured budget with a pass/fail gate, and the cascade-vs-direct trade named as the design comparison; tests covering the smoke path and both operator surfaces; a clean, versioned layout; and a shipped `outputs/skill-realtime-voice-assistant.md`. Done means the smoke gate is green and a stranger can read the README, run two commands, and watch a turn pass the budget, a blown turn get blocked, and a barge-in cancel mid-sentence.
 
-## What Module 7 reuses
+## What Module 7 Reuses
 
 This artifact is the **human-interface channel**. In Module 7 the voice pipeline stops being a standalone agent and becomes the way a person talks to a governed fleet in real time: it takes the caller's turn, hands the transcript to the team, and streams the team's answer back through TTS — under the same budget gate. The latency gate and the barge-in kill-switch carry forward unchanged, because they are exactly the operator surfaces the M8 student drives when the human interface is live. You are not rebuilding the pipeline in M7; you are wiring this channel onto a larger machine. That is the compounding the course promised: the single agent you ship here is how a human reaches the team you ship next.
 
-## What you build
+## What You Build
 
 A streaming voice pipeline against a hard latency budget: a Pipecat-shaped frame model, deterministic mock VAD/STT/LLM/TTS stages each carrying a simulated per-stage latency, a `VoicePipeline` that drives a turn through the cascade, a latency layer that measures per-stage and end-to-end against the budget and enforces it as a gate, and barge-in handling that cancels an in-flight turn — all passing an offline, stdlib-only BUILD→TEST smoke gate, with real Pipecat provider services opt-in behind guarded imports.
 
-## Core concepts
+## Core Concepts
 
 - A voice agent is engineered to a clock, not to intelligence: a ~450–600 ms mouth-to-ear budget forces streaming fragments and barge-in, and every pipeline hop is a withdrawal from that half-second.
 - The portable seam is the pipeline stage — a `FrameProcessor` with one `process(frame)` method and a declared latency — so every STT/TTS/LLM/transport provider is a drop-in swap and the rest of the cascade never moves.

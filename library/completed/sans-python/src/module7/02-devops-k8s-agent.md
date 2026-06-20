@@ -1,11 +1,11 @@
-# The DevOps K8s troubleshooting agent
+# The DevOps K8s Troubleshooting Agent
 
 A pod starts crash-looping at 2 a.m., and the on-call engineer wants two things at
 once: the diagnosis now, and the certainty that nothing touched production while
 they were asleep. An agent can give them the first. The whole job of this artifact
 is to give them the first without ever quietly taking the second.
 
-## The business problem: an agent that must not make things worse
+## The Business Problem: an Agent That Must Not Make Things Worse
 
 Incident response is where autonomy is most tempting and most dangerous. The toil
 is real — reading logs, correlating metrics, walking object state across a dozen
@@ -22,7 +22,7 @@ you can, because everything below exists to enforce it: an incident agent earns 
 keep by being fast at understanding and slow — deliberately, structurally slow — at
 acting.
 
-## Capability: a supervisor over read-only specialists, behind a human gate
+## Capability: a Supervisor over Read-Only Specialists, Behind a Human Gate
 
 The capability is a small org chart. A **supervisor** receives the incident, fans
 it out to **specialists** that each inspect one slice of the cluster, reads their
@@ -55,7 +55,7 @@ working set against the configured limit. A container that exceeds its memory li
 OOM-killed by the kernel, and a too-low limit is a named cause of `CrashLoopBackOff` on
 AKS — exactly the fixture incident this build diagnoses.
 
-## The build sequence
+## The Build Sequence
 
 Build it from the cluster outward, because each layer constrains the next.
 
@@ -94,7 +94,7 @@ Build it from the cluster outward, because each layer constrains the next.
    commits only on a positive acknowledgement — then verifies the pod recovered.
    The supervisor re-checks the kill-switch before it even proposes a change.
 
-## The operator surfaces
+## The Operator Surfaces
 
 Module 8 hands the student the operator's seat: they hold the kill-switch, work the
 approval queue, and read the audit trail to judge what the team did. That only works
@@ -123,7 +123,7 @@ and it is what lets an operator replay an incident end to end.
 reads it before dispatch and before any change; it exposes no method to clear it.
 Stopping the team is the operator's privilege, not the agent's.
 
-## The BUILD→TEST gate
+## The BUILD→TEST Gate
 
 The scaffold passes a local, offline gate before it ships. `python smoke.py` runs
 the whole incident on the mock cluster — the supervisor fans out to the three
@@ -144,7 +144,7 @@ the AKS Reader role's read-only-minus-Secrets scope, the `kubectl describe`/`log
 a `block_actions` payload back to your app. Swap a mock for its real counterpart and
 the team's shape does not change.
 
-## Strong-project done-when
+## Strong-Project Done-When
 
 This is a portfolio piece, so it clears the hireability bar, not only the smoke
 test. It has a real entry point (`smoke.py`), not a notebook. Its README frames the
@@ -155,7 +155,7 @@ assertion. It is versioned with a clean layout and an
 one claim that matters in an interview legible in the code: *this team diagnoses on
 its own authority and changes nothing without a human's yes.*
 
-## What Module 8 reuses
+## What Module 8 Reuses
 
 This artifact is the **governed supervisor-and-specialist pattern**: a lead that
 delegates to scoped workers, synthesizes their findings, and routes the irreversible
@@ -166,7 +166,7 @@ becomes a cross-agent one. You do not rebuild the supervisor in the finale; you
 instantiate it. Build the read-only seam and the gate clean here, and the fleet
 inherits a team it can already trust to stop in the right place.
 
-## What you build
+## What You Build
 
 You compose an M4 supervisor over three M6-style read-only specialists, behind an M4
 HITL gate, to triage a Kubernetes incident without the authority to make it worse. A
@@ -181,7 +181,7 @@ library, and four tests prove diagnosis stays read-only, the gate blocks an
 unapproved fix, an approved fix applies once and is audited, and the kill-switch
 halts the team.
 
-## Core concepts
+## Core Concepts
 
 - The DevOps K8s agent is a composition, not a new agent: an M4 supervisor (lesson
   03) over read-only specialists (M6 scoping, artifact 04), behind an M4 HITL gate

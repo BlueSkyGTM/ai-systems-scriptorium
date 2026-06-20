@@ -1,4 +1,4 @@
-# Module 4 — multi-agent systems
+# Module 4 — Multi-Agent Systems
 
 The seam's defining material — where this course most *is* AI Platform Engineering. The arc is one move,
 made four times: single agent → runs safely for hours → coordinates with many → **governed as a fleet in

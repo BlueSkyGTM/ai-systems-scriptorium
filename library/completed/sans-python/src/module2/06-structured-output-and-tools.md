@@ -1,10 +1,10 @@
-# Structured output and tools
+# Structured Output and Tools
 
 A model that returns free-form prose is useful. A model whose output you can parse, validate, and act on without writing defensive exception handlers is a system component. That shift — from useful to reliable — is what structured output and tools accomplish.
 
 You build the layer that makes a model's output trustworthy enough to drive application logic.
 
-## Structured outputs
+## Structured Outputs
 
 The model doesn't return JSON because you asked nicely. It returns JSON because you constrained the decoding. The spectrum runs from weakest to strongest enforcement:
 
@@ -16,7 +16,7 @@ In production, provider-level constrained decoding is the right default — no r
 
 Define your schema in Pydantic. Derive the JSON Schema from the Pydantic model programmatically — don't maintain two representations of the same structure.
 
-## Function calling and tool use
+## Function Calling and Tool Use
 
 Function calling is the five-step loop that converts a schema definition into an executable action:
 
@@ -32,7 +32,7 @@ Parallel tool calls let the model request multiple tools in a single turn. Execu
 
 Build a tool registry rather than scattered function definitions. The registry holds the schema definitions, the callable implementations, and the authorization rules. A tool call from the model hits the registry, which validates the caller's permissions before dispatching.
 
-## MCP — the on-ramp
+## MCP — the On-Ramp
 
 The Model Context Protocol (MCP) is a JSON-RPC 2.0 wire format that standardizes how a host (your application) connects to tool servers. Instead of baking tool implementations directly into your application, you run an MCP server — a small process that exposes tools over stdio or HTTP — and the host discovers and calls them through a standard protocol.
 
@@ -48,7 +48,7 @@ Reliable tool calls are the prerequisite for agents. An agent is a loop: model d
 
 Structured output plus tools is the boundary between a chatbot and a system that does things.
 
-## Core concepts
+## Core Concepts
 
 - Provider-level constrained decoding makes structurally valid output impossible to violate — prefer it over prompt-based JSON instructions and retry loops.
 - The function-calling loop has five steps; the model emits intent, you execute — the security boundary is your responsibility, not the model's.

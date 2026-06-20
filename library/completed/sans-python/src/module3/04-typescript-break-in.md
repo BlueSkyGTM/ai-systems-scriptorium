@@ -1,8 +1,8 @@
-# TypeScript break-in
+# TypeScript Break-In
 
 The agent loop you built in lesson 01 calls `tools.execute(name, args)` — a Python dict with no contract the model or the compiler can check. TypeScript enters here because typed tool definitions are the first thing the product layer needs that Python's runtime duck-typing cannot safely provide.
 
-## Why TypeScript now
+## Why TypeScript Now
 
 The Sans Python thesis is point-of-use, not upfront tax. You have been reading TypeScript in examples since Module 1 — the ecosystem is JS-first, LLM SDKs ship as npm packages, and MCP is a TypeScript-native protocol. The moment you write a tool the model calls by name, you need a contract: a shape the compiler enforces before the model ever sees it. That moment is now.
 
@@ -30,7 +30,7 @@ The compiler checks every call site. Pass a number where a string belongs and `t
 
 Azure SDK quickstarts use this same `tsconfig.json` shape — `"strict": true`, `"module": "NodeNext"`, `"target": "ES2022"` — across every TypeScript SDK sample on Microsoft Learn.
 
-## The type system in three minutes
+## The Type System in Three Minutes
 
 TypeScript's type system is structural: a value fits a type if its shape matches, regardless of how it was declared. Three building blocks cover most of the product layer:
 
@@ -62,7 +62,7 @@ interface ToolCall {
 }
 ```
 
-## Functions with typed signatures
+## Functions with Typed Signatures
 
 A function signature is a promise to every caller. Annotate parameters and return types; the compiler holds you to the promise.
 
@@ -80,7 +80,7 @@ async function callModel(messages: Message[]): Promise<string> {
 }
 ```
 
-## Defining a typed tool
+## Defining a Typed Tool
 
 The loop from lesson 01 executes tools by name from a registry. Here is the typed version of that contract:
 
@@ -115,7 +115,7 @@ const searchTool: ToolDefinition = {
 
 This is the TypeScript surface the loop calls. Production agent SDKs use this same shape — name, description, parameters as JSON Schema, a typed handler — which means the contract you define here wires directly into agent infrastructure without reshaping. (In `@azure/ai-agents`, `FunctionToolDefinition` nests these under a `function: FunctionDefinition` property; the concept is identical, the path is one level deeper.)
 
-## Configuration: tsconfig
+## Configuration: Tsconfig
 
 `tsc` reads `tsconfig.json` to know what to check and where to emit. The minimal config for this project:
 
@@ -137,7 +137,7 @@ This is the TypeScript surface the loop calls. Production agent SDKs use this sa
 
 The `"strict": true` flag and `"NodeNext"` module resolution appear in every Azure AI SDK TypeScript quickstart on Microsoft Learn (learn.microsoft.com/azure/ai-foundry/) — they are the baseline, not a preference.
 
-## IDE features
+## IDE Features
 
 TypeScript's language service runs inside VS Code continuously. The three moves you use constantly:
 
@@ -147,7 +147,7 @@ TypeScript's language service runs inside VS Code continuously. The three moves 
 
 These aren't conveniences — they are how you navigate a typed codebase without reading every file.
 
-## Running tsc
+## Running Tsc
 
 ```bash
 npx tsc --noEmit   # type-check only, no output files
@@ -156,13 +156,13 @@ npx tsc            # type-check and emit to dist/
 
 `--noEmit` is the fast check during development. Add it to your pre-commit hook. A clean `tsc` means every tool contract, every function signature, every interface is consistent — the compiler ran the review.
 
-## What you build
+## What You Build
 
 You add `module3-agent/tools/` — the TypeScript layer of the mixed-language artifact. One file: `search.ts`, exporting a `ToolDefinition` whose shape matches the loop's `tools.execute(name, args)` contract from lesson 01. The next chapter connects the two over MCP — TypeScript tools, Python harness, one protocol between them. You write `tsconfig.json`, run `tsc --noEmit` clean, and confirm the contract lines up.
 
 The compiler is now the first reviewer — every tool call the model generates has to pass `tsc` before it reaches your business logic.
 
-## Core concepts
+## Core Concepts
 
 - TypeScript is JavaScript with a structural type layer that compiles away — the ecosystem is JS, the safety is TS, and LLM tooling is JS-first by necessity.
 - A typed tool definition — name, description, JSON Schema parameters, typed execute handler — is the compiler-enforced contract between the model's tool calls and your implementation.

@@ -1,20 +1,20 @@
-# Serving engines & engine selection
+# Serving Engines & Engine Selection
 
 You spent four modules making the model *reason* well. This module is about making it *run* — fast, cheap, and under load — and the skill that decides whether you can is performance engineering, not machine learning.
 
 That is the thesis of Module 5, and it surprises people. The hard, hireable problem in production AI is rarely "train a better model." It is "serve this model to ten thousand concurrent users at a latency they'll tolerate and a cost the business will sign off on." That is a systems problem — queueing, memory, batching, scheduling — wearing a machine-learning costume. The model is a given; the engineering is yours.
 
-## Why this lands at the seam
+## Why This Lands at the Seam
 
 This is the part of the job an AI Engineer and an MLOps engineer both reach for and neither fully owns. The AI Engineer asks "which model, which prompt, which decoding settings?" The MLOps engineer asks "how many GPUs, what autoscaling, what service-level objective (SLO)?" The serving engine is where those two questions collide into one artifact, and the platform engineer is the person who picks it, wires it, and answers for its p99. Module 5 is the seam's home turf — the infrastructure both halves *use*. Get the engine choice wrong and no amount of prompt tuning saves the latency.
 
-## Inference infrastructure is not training infrastructure
+## Inference Infrastructure Is Not Training Infrastructure
 
 Start by unlearning a reflex. The stack that *trains* a model — data-parallel clusters, gradient all-reduce, checkpoints measured in terabytes, jobs that run for days — has almost nothing to do with the stack that *serves* it. Training is a throughput job you run a few times; serving is a latency job you run forever. They optimize different things, fail in different ways, and run on different software.
 
 The training rigs, the CUDA kernels, the optimizer math — that depth is real, and it lives in the antilibrary. It is not on the road to this job. What is on the road is the serving layer: the program that holds the model weights in GPU memory, accepts requests over HTTP, batches them, and streams tokens back. That program is an **inference serving engine**, and choosing one is the first real decision of the module.
 
-## The engines you choose between
+## The Engines You Choose Between
 
 Three engines dominate self-hosted large-language-model serving, and they split by who built them and what they optimize.
 
@@ -26,7 +26,7 @@ Three engines dominate self-hosted large-language-model serving, and they split 
 
 These are *engines*. In production you rarely run an engine bare — you wrap it in a server that gives you HTTP, health checks, and batching policy. **FastAPI with Uvicorn** is the thin custom wrapper when you want full control of the request surface. **Triton Inference Server** (NVIDIA) is the heavier multi-model, multi-framework host — it serves models from TensorRT, PyTorch, ONNX, and more behind one endpoint. **BentoML** packages the model, dependencies, and serving logic into one deployable unit and leans toward developer experience. The engine does the inference; the wrapper does the operations.
 
-## Pick by workload, not by hype
+## Pick by Workload, Not by Hype
 
 There is no "best" engine. There is the engine that fits *this* workload, and the workload has a shape: hardware, scale, latency target, and traffic pattern.
 
@@ -38,7 +38,7 @@ On Azure, you may not run the engine at all. **Azure Machine Learning managed on
 
 The decision, then, is one question asked four times — what hardware, what scale, what latency, what traffic — and the engine falls out of the answers. That discipline is the module in miniature: measure the workload, then choose; never the reverse.
 
-## Core concepts
+## Core Concepts
 
 - The production AI problem is performance engineering, not machine learning — serving a fixed model fast, cheap, and under load is a systems problem (queueing, memory, batching), and that is the hireable skill Module 5 teaches.
 - Inference infrastructure is not training infrastructure: serving is a latency job that runs forever, training is a throughput job that runs a few times; they use different software and fail in different ways.

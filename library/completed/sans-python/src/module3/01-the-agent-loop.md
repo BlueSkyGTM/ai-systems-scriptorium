@@ -1,8 +1,8 @@
-# The agent loop
+# The Agent Loop
 
 A chatbot answers once and forgets. An agent acts, observes the result, and decides what to do next — and that difference in control flow is what makes production automation possible.
 
-## When to reach for an agent
+## When to Reach for an Agent
 
 The complexity ladder from the previous lesson is the governor here. You already know when a direct model call wins (output comes from training or an assembled context, failure means a bad answer, not a broken workflow). The single-agent rung earns its place only when the task has a property a direct call cannot handle: the next step genuinely depends on the result of the prior one, the sequence isn't knowable upfront, or the answer requires acting on real-world state.
 
@@ -10,13 +10,13 @@ If you can enumerate the steps before you start, a workflow is cheaper. If you c
 
 Don't reach for the loop until the problem demands it.
 
-## The ReAct pattern
+## The ReAct Pattern
 
 ReAct (Yao et al., 2023) names the loop that every modern agent harness runs: **Observe → Think → Act**. The agent sees the current state, reasons about what to do next, executes a tool call, and brings the result back into the loop as an observation. One cycle. Repeat.
 
 Every harness you'll encounter — Claude Agent SDK, OpenAI Agents SDK, LangGraph, AutoGen v0.4 — runs this loop underneath. The 2026 shift is that models with native reasoning (extended thinking, encrypted reasoning passthrough) generate the `Think` step internally; you don't need to prompt for `Thought:` tokens the way the original ReAct paper did. The shape of the loop is the same. Microsoft Foundry Agent Service exposes this as the Run/Run Steps model: each Run is one activation of the agent against a Thread, and Run Steps are the individual tool calls and messages the agent produces within it.
 
-## The five ingredients
+## The Five Ingredients
 
 A chatbot has a model and a message history. An agent adds five things:
 
@@ -32,7 +32,7 @@ A chatbot has a model and a message history. An agent adds five things:
 
 These five ingredients separate an agent from a chatbot. A chatbot lacks all five. A workflow has some but not a dynamic stop condition. An agent has all five.
 
-## The shape of the loop
+## The Shape of the Loop
 
 The loop in pseudocode — no TypeScript yet, just the shape:
 
@@ -60,7 +60,7 @@ agent_loop(goal, tools, max_turns):
 
 The loop itself is eight lines of logic. The interesting work is in what you put in `tools`, how you write `format_observation`, and what your stop condition recognizes. Those are the surfaces a platform engineer controls.
 
-## Safety: the kill switch
+## Safety: the Kill Switch
 
 A running agent can call tools with real side effects — it can write files, call APIs, spend money. Two controls belong in every loop from day one:
 
@@ -70,13 +70,13 @@ A **kill switch** is a boolean the agent reads but cannot write — a feature fl
 
 These aren't advanced features. They're table stakes before you run an agent against anything that matters.
 
-## What you build
+## What You Build
 
 You build the skeleton of `module3-agent/` — the artifact that every M3 exercise extends. Lesson by lesson you'll add a planner, a reflexion layer, typed tools, MCP transport, and memory tiers. This lesson scaffolds the loop itself: one stub tool, one stop condition, one turn budget, one green check.
 
 Miss the turn budget and the kill switch, and you don't have a production agent — you have an expensive infinite loop waiting for the right prompt.
 
-## Core concepts
+## Core Concepts
 
 - An agent earns its place only when the next step genuinely depends on the prior result; use the complexity ladder to decide before you build.
 - The ReAct loop — Observe → Think → Act — runs inside every modern agent harness; in 2026 the Think step is native model reasoning, not prompted `Thought:` tokens.
