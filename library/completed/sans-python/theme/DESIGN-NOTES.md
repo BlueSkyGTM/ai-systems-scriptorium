@@ -14,9 +14,11 @@ Keep this current whenever a front-end choice changes.
 - **Code-block edge + scrollbar fix (2026-06-20).** `pre > code` now uses `box-sizing: border-box`, which
   removes a spurious horizontal scrollbar that showed on every block: as `content-box` the left/right padding
   pushed the border-box wider than the parent, tripping `overflow-x: auto` even with nothing to scroll. The
-  faint universal inset ring became a real thin border, tinted per theme so a block separates from the
-  near-same-color page: orange (`rgba(255,143,64,0.30)`) in Ayu, faint rust (`rgba(165,49,15,0.16)`) in
-  light/Rust.
+  faint universal inset ring became a real thin border, kept **neutral and quiet** so a code block reads as a
+  recessed container and the accent stays reserved for syntax tokens, inline code, and the handoff CTA: a faint
+  warm-gray edge per theme (light `rgba(190,188,182,0.16)` on Ayu's dark canvas, taupe `rgba(120,113,100,0.18)`
+  on the light paper). A first pass used an accent-orange edge (`rgba(255,143,64,0.30)`); it made every block
+  wear the accent and flattened the page hierarchy, so it was dialled back.
 
 ## The Claude Code handoff block (`theme/copy-to-claude.{css,js}`)
 

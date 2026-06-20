@@ -31,8 +31,8 @@ pre > code {
   background-color: #0b0e14;            /* deeper than the page (#0f1419) so blocks pop */
   color: #bfbdb6;                       /* Ayu foreground */
 }
-/* thin orange edge so the block lifts off the near-same-color Ayu page */
-.ayu pre > code { border-color: rgba(255, 143, 64, 0.30); }
+/* quiet neutral edge: lifts the block off the near-same-color Ayu page without wearing the accent */
+.ayu pre > code { border-color: rgba(190, 188, 182, 0.16); }
 .ayu :not(pre) > code {
   background-color: #11151c;
   color: #ffb454;                       /* inline code in Ayu gold */
@@ -78,8 +78,8 @@ pre > code {
   background-color: #fbf7f0;            /* warm paper, a hair off the page */
   color: #3b3228;
 }
-/* faint rust edge to match the Ayu treatment */
-.rust pre > code, .light pre > code { border-color: rgba(165, 49, 15, 0.16); }
+/* quiet warm-neutral edge to match the Ayu treatment (accent reserved for syntax + the handoff CTA) */
+.rust pre > code, .light pre > code { border-color: rgba(120, 113, 100, 0.18); }
 .rust :not(pre) > code, .light :not(pre) > code {
   background-color: #f3ece1;
   color: #a5310f;                       /* rust-red inline code */
