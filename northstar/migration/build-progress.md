@@ -16,7 +16,7 @@ editor reviews against `STYLE.md`, update `src/SUMMARY.md`, remove superseded in
 | M5 Deploy & Perf | ✅ SHIPPED (15 lessons, 6 chapters; MLOps-inventory pass folded in; `mdbook build` PASS 2026-06-19) | 01-03 serving · 04-06 observability/rollout · 07-08 ops/finops · 09-10 perf-depth · 11-13 data/experiments/lifecycle-lite (Docling/MLflow/LoRA) · 14-15 Rust — live in src/module5/; module5-serving/ throughline |
 | M6 Agent Artifacts | ✅ SHIPPED (4 artifacts; AUTHOR→VERIFY→BUILD→TEST→SHIP; 4/4 smoke + 24/24 tests offline; `mdbook build` PASS 2026-06-19) | 01 terminal-coding-agent · 02 production-rag-chatbot · 03 realtime-voice-assistant · 04 issue-to-pr-agent — guides in src/module6/, runnable scaffolds + skill-*.md in exercises/module6/, _prereqs/CLOUD-SETUP.md; ledgers in build-stages/m6/output/ |
 | M7 Multi-Agent Artifacts | ✅ SHIPPED (3 artifacts; AUTHOR→VERIFY→BUILD→TEST→SHIP; 3/3 smoke + 24/24 tests offline; `mdbook build` PASS 2026-06-19) | 01 autonomous-research-agent · 02 devops-k8s-agent · 03 governed-multi-agent-fleet (FINALE) — guides in src/module7/, composed scaffolds + skill-*.md in exercises/module7/; ledgers in build-stages/m7/output/. Finale = the operator console M8 drives |
-| M8 Final Exam | ⬜ PENDING | M7 fleet builds the exam system; asdg Ch16 case studies as reference |
+| M8 Final Exam | ✅ SHIPPED (3 guides + exam harness; reuses the real M7 fleet; smoke 7/7 + 9 tests offline; final full `mdbook build` PASS 2026-06-19) | 01 the-exam · 02 reference-architectures (20 asdg Ch16 case studies) · 03 operating-and-grading (runbook + 7-criterion rubric) — guides in src/module8/, exam harness in exercises/module8/; ledgers in build-stages/m8/output/ |
 
 ## Gotchas learned (save the next drafter time)
 
@@ -150,14 +150,17 @@ Codex) at the M3→M4 line. Decisions with Ray:
 - **M5: one Rust bridge lesson** (rustup + hello + cargo) before the serving-layer Rust lessons.
 - **M8: define the student's active role before M6** ("M7 fleet builds the exam" is an agentic run, not prose
   authoring — design what the learner specifies/reviews/gates, or it's a demo not an exam).
-- **Sequence now:** M3–M7 ✅ ALL SHIPPED (7 of 8 modules; BUILD→TEST gate green for M6+M7: 7 artifacts, 48
-  tests offline). **Next: M8 (Final Systems Engineering Exam)** — the LAST module. The M7 governed fleet
-  (artifact 03) builds *a version of* a production architecture (eval-gated pipeline / multi-tenant RAG /
-  agentic MLOps), using the 20 `asdg` Ch16 case studies as reference architectures. **No new agent code** — M8 =
-  a guide + an exam exercise: a reference-architecture catalog, an operator runbook for the M7 fleet, and an
-  **acceptance rubric**. Student = operator + judge + architect-of-record (defined in `build-stages/m6/PLAN.md`).
-  Write `build-stages/m8/PLAN.md` first. After M8: course complete — final full `mdbook build`, then a
-  closing pass (carried flags: 73% RAG stat reconciliation, M3 typing exercise banned-frame).
+- **🎉 COURSE COMPLETE (2026-06-19): all 8 modules SHIPPED.** M1 Foundations · M2 LLM Engineering · M3 Agent
+  Foundations (15) · M4 Multi-Agent Systems (15) · M5 Deploy & Performance (15) · M6 Agent Artifacts (4, code-
+  gated) · M7 Multi-Agent Artifacts (3, code-gated) · M8 Final Exam. Every M3–M8 module ran AUTHOR→VERIFY→
+  (BUILD→TEST)→SHIP; **final full `mdbook build` PASS** (all 8 modules render); **all artifact scaffolds pass an
+  offline BUILD→TEST gate** (M6+M7+M8: 8 scaffolds, 57 tests). The compounding arc closes: single agent (M3) →
+  governed team (M4/M7) → production system the student operates+judges (M8). All work pushed to
+  BlueSkyGTM/sans-python main.
+- **Closing-pass backlog (non-blocking polish, deferred):** (1) the ~73% RAG stat reconciliation across M2
+  `03-rag-system.md` + M5 L11; (2) the M3 `05-typing-the-product-layer` exercise's banned "An AI Platform
+  Engineer who…" frame; (3) re-read M1/M2 module Overview READMEs against the final structure; (4) M1
+  reconciliation + deeper ICM-phase formalization (long-standing deferrals).
 
 ## Scope reframe + roadmap coverage (2026-06-19) — `build-stages/roadmap-coverage.md`
 

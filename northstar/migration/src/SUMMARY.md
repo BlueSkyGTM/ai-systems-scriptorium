@@ -100,6 +100,9 @@
 # Module 8 — Final Systems Engineering Exam
 
 - [Overview](module8/README.md)
+- [The Exam](module8/01-the-exam.md)
+- [Reference Architectures](module8/02-reference-architectures.md)
+- [Operating and Grading](module8/03-operating-and-grading.md)
 
 ---
 
