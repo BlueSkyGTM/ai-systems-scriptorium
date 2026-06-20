@@ -1,8 +1,8 @@
 /* Sans Python — per-lesson Claude Code handoff block + button. */
 
 .claude-handoff {
-  margin: 2rem 0 1rem;
-  padding: 1rem 1.25rem;
+  margin: 3rem 0 1.5rem;
+  padding: 1.25rem 1.25rem;
   border: 1px solid var(--quote-border, #cccccc);
   border-left: 4px solid var(--links, #2b79a2);
   border-radius: 6px;

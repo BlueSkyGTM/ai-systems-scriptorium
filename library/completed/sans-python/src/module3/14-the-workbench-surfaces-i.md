@@ -179,6 +179,6 @@ The next lesson adds the three surfaces that close the loop: verification (the a
 
 <div class="claude-handoff" data-exercise="exercises/module3/14-the-workbench-surfaces-i/">
 
-**Build it in Claude Code** — add the first four workbench surfaces to `module3-agent/workbench/`: write `AGENTS.md` and `docs/agent-rules.md` with all five rule sections; implement `StateManager` with atomic writes and JSON Schema validation for `agent_state.json` and `task_board.json`; implement `scope_checker.py` that diffs against a `scope_contract.json` and emits `scope_report.json`; implement `run_with_feedback.py` that wraps a subprocess and appends to `feedback_record.jsonl`. A smoke-test script must run all four surfaces against a sample task and print a summary. Open the repo and run the exercise for this lesson.
+**Build It in Claude Code** — add the first four workbench surfaces to `module3-agent/workbench/`: write `AGENTS.md` and `docs/agent-rules.md` with all five rule sections; implement `StateManager` with atomic writes and JSON Schema validation for `agent_state.json` and `task_board.json`; implement `scope_checker.py` that diffs against a `scope_contract.json` and emits `scope_report.json`; implement `run_with_feedback.py` that wraps a subprocess and appends to `feedback_record.jsonl`. A smoke-test script must run all four surfaces against a sample task and print a summary. Open the repo and run the exercise for this lesson.
 
 </div>

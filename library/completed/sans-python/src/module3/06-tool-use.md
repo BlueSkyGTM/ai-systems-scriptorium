@@ -127,6 +127,6 @@ The execute step is the only place in the system where the model's intentions be
 
 <div class="claude-handoff" data-exercise="exercises/module3/06-tool-use/">
 
-**Build it in Claude Code** — wire the typed tools from `module3-agent/tools/` into the loop registry from lesson 01: add a JSON Schema validator, an argument coercion step, a timeout wrapper, and a least-privilege approval hook (auto-approve in dev). The registry must reject unknown tools, return structured error observations on bad args, and log every tool call with name + duration. Open the repo and run the exercise for this lesson.
+**Build It in Claude Code** — wire the typed tools from `module3-agent/tools/` into the loop registry from lesson 01: add a JSON Schema validator, an argument coercion step, a timeout wrapper, and a least-privilege approval hook (auto-approve in dev). The registry must reject unknown tools, return structured error observations on bad args, and log every tool call with name + duration. Open the repo and run the exercise for this lesson.
 
 </div>

@@ -199,7 +199,7 @@ halts the team.
 
 <div class="claude-handoff" data-exercise="exercises/module7/02-devops-k8s-agent/">
 
-**Build it in Claude Code** — compose a governed K8s incident-response team. Build a
+**Build It in Claude Code** — compose a governed K8s incident-response team. Build a
 deterministic **mock cluster** (pod/log/metric reads + one guarded write verb; the
 fixture is an OOMKilled `CrashLoopBackOff`). Build three **read-only specialists**
 (`log_reader`, `metrics_reader`, `state_inspector`), each handed a view that refuses

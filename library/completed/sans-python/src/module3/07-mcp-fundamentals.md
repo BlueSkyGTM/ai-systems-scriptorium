@@ -160,6 +160,6 @@ Write the tool once. The protocol handles the rest — that is the whole point.
 
 <div class="claude-handoff" data-exercise="exercises/module3/07-mcp-fundamentals/">
 
-**Build it in Claude Code** — expose `module3-agent/tools/` as a runnable MCP server (`module3-agent/mcp-server/index.ts`) over stdio using the TypeScript MCP SDK, then connect the Python harness as an MCP client (`module3-agent/harness/mcp_client.py`). The end-to-end test: the Python loop calls `search` via `session.call_tool()`, receives a result, and prints the JSON-RPC round trip. Open the repo and run the exercise for this lesson.
+**Build It in Claude Code** — expose `module3-agent/tools/` as a runnable MCP server (`module3-agent/mcp-server/index.ts`) over stdio using the TypeScript MCP SDK, then connect the Python harness as an MCP client (`module3-agent/harness/mcp_client.py`). The end-to-end test: the Python loop calls `search` via `session.call_tool()`, receives a result, and prints the JSON-RPC round trip. Open the repo and run the exercise for this lesson.
 
 </div>

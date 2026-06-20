@@ -57,6 +57,6 @@ Structured output plus tools is the boundary between a chatbot and a system that
 
 <div class="claude-handoff" data-exercise="exercises/module2/06-structured-output-and-tools/">
 
-**Build it in Claude Code** — build a tool registry with three tools (a calculator, a search stub, and a file reader), wire it to a model call using function calling, validate tool arguments before execution, and handle parallel tool calls in a single turn. Open the repo and run the exercise for this lesson.
+**Build It in Claude Code** — build a tool registry with three tools (a calculator, a search stub, and a file reader), wire it to a model call using function calling, validate tool arguments before execution, and handle parallel tool calls in a single turn. Open the repo and run the exercise for this lesson.
 
 </div>

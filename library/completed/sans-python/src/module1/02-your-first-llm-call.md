@@ -87,6 +87,6 @@ Everything from Module 2 onward assumes you can call a model — this is the doo
 
 <div class="claude-handoff" data-exercise="exercises/module1/02-your-first-llm-call/">
 
-**Build it in Claude Code** — get a key, store it safely, fire the curl call, and parse the response. Open the repo and run the exercise for this lesson.
+**Build It in Claude Code** — get a key, store it safely, fire the curl call, and parse the response. Open the repo and run the exercise for this lesson.
 
 </div>

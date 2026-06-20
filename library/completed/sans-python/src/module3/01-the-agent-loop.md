@@ -85,6 +85,6 @@ Miss the turn budget and the kill switch, and you don't have a production agent 
 
 <div class="claude-handoff" data-exercise="exercises/module3/01-the-agent-loop/">
 
-**Build it in Claude Code** — scaffold `module3-agent/` with a working ReAct loop: one stub tool, a stop condition, a turn budget of 5, and a kill switch. The loop should run against a toy task and print each Observe/Think/Act step. Open the repo and run the exercise for this lesson.
+**Build It in Claude Code** — scaffold `module3-agent/` with a working ReAct loop: one stub tool, a stop condition, a turn budget of 5, and a kill switch. The loop should run against a toy task and print each Observe/Think/Act step. Open the repo and run the exercise for this lesson.
 
 </div>

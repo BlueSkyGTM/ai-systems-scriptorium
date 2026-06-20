@@ -101,6 +101,9 @@ One convention, applied everywhere: **sentence case** for every heading (H1 page
 The one-shot conversion that established this lives at `build-log/caps-sweep.py` (skips fenced code blocks,
 guards proper nouns); re-run it after a bulk authoring pass to catch drift.
 
+- [ ] **One deliberate exception:** the exercise handoff call-to-action **`**Build It in Claude Code**`** is a
+      UI action label, not a heading — keep it title case. It is the only title-case string in body text.
+
 ## What this is not
 
 Not a layout. Not a word count. It is a discipline. A 90-word lesson and a 900-word lesson both pass if both
