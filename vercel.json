@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "echo no-deps",
+  "buildCommand": "mkdir -p bin && curl -sSL https://github.com/rust-lang/mdBook/releases/download/v0.5.3/mdbook-v0.5.3-x86_64-unknown-linux-gnu.tar.gz | tar -xz -C bin && ./bin/mdbook build northstar/migration",
+  "outputDirectory": "northstar/migration/book",
+  "framework": null,
+  "cleanUrls": true,
+  "trailingSlash": false
+}
