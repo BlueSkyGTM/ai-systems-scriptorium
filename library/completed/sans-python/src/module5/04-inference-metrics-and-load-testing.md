@@ -1,4 +1,4 @@
-# Inference Metrics & Load Testing
+# Inference metrics & load testing
 
 A REST endpoint has one latency number, and it tells you everything. An LLM endpoint has at least four, and the average of any of them lies to you. Before you put a serving stack in front of users, you have to know which numbers decide whether it works — and you have to learn them by pushing the endpoint until it breaks, not by reading the model card.
 

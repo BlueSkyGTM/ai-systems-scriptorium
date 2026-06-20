@@ -1,4 +1,4 @@
-# Async Rust for Serving
+# Async Rust for serving
 
 A proxy in front of your serving engine spends almost all of its time waiting — for the upstream model to start streaming, for a slow client to read, for the next connection. Spend one operating-system thread per request and you cap out at a few thousand before the machine drowns in context switches. Async Rust is how a handful of threads hold tens of thousands of in-flight requests at once, which is the only shape that makes a Rust proxy worth putting on the hot path.
 

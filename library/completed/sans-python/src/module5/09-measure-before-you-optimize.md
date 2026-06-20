@@ -1,4 +1,4 @@
-# Measure Before You Optimize: Profiling & Roofline
+# Measure before you optimize: profiling & roofline
 
 Chapter 1 handed you the levers — continuous batching, quantization, paged attention, disaggregated prefill and decode. This lesson is the discipline that decides which lever to pull. An optimization applied to the wrong bottleneck is not a small win; it is negative work — added complexity, no speedup, and a slower path to the fix that would have mattered. The serving lessons taught you the moves. This one teaches you to earn the right to make one.
 

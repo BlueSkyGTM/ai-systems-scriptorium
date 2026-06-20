@@ -1,4 +1,4 @@
-# Rust Break-In
+# Rust break-in
 
 The serving stack you built across this module — engine, metrics, rollout, FinOps, ingestion — sits in front of a model on the request hot path, and every millisecond there is a millisecond the user waits. Rust enters at exactly this seam: it is the language you reach for when a garbage-collector pause or an unbounded allocation is the difference between a clean p99 and a paged on-call engineer.
 

@@ -1,4 +1,4 @@
-# The Day-One Stack
+# The day-one stack
 
 Every hour you spend fighting import errors, version conflicts, and missing CUDA drivers is an hour you are not building. Set the environment once, properly — and the rest of the course runs without friction.
 

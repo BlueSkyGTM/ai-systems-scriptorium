@@ -1,4 +1,4 @@
-# Computer-Use & Coding Agents
+# Computer-use & coding agents
 
 Some of the most visible agents in production right now don't call clean JSON tools — they drive a screen or edit a repo. This lesson is thin on purpose: you learn how each kind works and where it breaks, because the build is a Module 6 artifact, not this page. What you carry forward is the contract that governs both.
 

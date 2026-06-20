@@ -1,4 +1,4 @@
-# Debate & Multi-Agent Failure Modes (MAST)
+# Debate & multi-agent failure modes (MAST)
 
 Multi-agent systems fail at rates that should stop you cold — the Berkeley study behind this lesson found correctness on some popular systems falling as low as 25%, and analyses of the field routinely report failure rates well above 40%. The reflex is to blame the model and wait for a better one. That reflex is wrong, and proving it is this lesson's job: most multi-agent failures are flaws in how you wired the system, not ceilings in the model running inside it. First, though, the pattern that shows what coordination can earn when it works.
 

@@ -1,4 +1,4 @@
-# Loop Patterns in Practice
+# Loop patterns in practice
 
 The four-stage shape is a template. The reason it earns a lesson of its own is that a handful of loops cover most of what an engineering team wants run unattended — and once you can name them, you stop designing loops from scratch and start composing them.
 

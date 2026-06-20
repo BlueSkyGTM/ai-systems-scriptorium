@@ -1,4 +1,4 @@
-# The Issue-to-PR Autonomous Agent
+# The issue-to-PR autonomous agent
 
 A backlog fills faster than a team can clear it, and most of what fills it is small: a failing test, a one-line bug, a check gone flaky. Each is cheap to fix and expensive to context-switch into — which is exactly the work you want a loop to take off the team's plate and hand back as a pull request someone can merge in a glance.
 

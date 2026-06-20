@@ -1,4 +1,4 @@
-# Token FinOps & Cost Optimization
+# Token FinOps & cost optimization
 
 The first time finance asks why the AI bill tripled last month, you will discover whether you can answer. If the only number you have is the provider's total invoice, you can't — you can't say which feature, which customer, or which bad prompt drove it, so you can't cut it without cutting blind. FinOps — financial operations, the practice of treating cloud spend as an engineering metric — starts the moment you decide the bill is a number you own, not a surprise you receive.
 

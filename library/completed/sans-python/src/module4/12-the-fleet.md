@@ -1,4 +1,4 @@
-# The Fleet — Graduation to Governed Many
+# The fleet — graduation to governed many
 
 One agent you can hold in your head. Twelve you cannot — and the day you discover you are running twelve is usually the day an audit finds the four you forgot about. A fleet is what a pile of loops becomes when you stop tracking it by memory and start governing it as infrastructure, and that shift is the job this lesson names.
 

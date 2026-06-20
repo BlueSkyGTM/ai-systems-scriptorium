@@ -5,7 +5,7 @@
 (function () {
   "use strict";
 
-  const COURSE = "Sans Python — AI Platform Engineering";
+  const COURSE = "Sans Python — Production AI Engineering";
 
   function buildPayload(node) {
     const h1 = document.querySelector("main h1");

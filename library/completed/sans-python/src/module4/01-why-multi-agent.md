@@ -1,4 +1,4 @@
-# Why Multi-Agent — the Single-Agent Ceiling
+# Why multi-agent — the single-agent ceiling
 
 You built one agent that runs a loop, holds memory, and stays inside a budget. The temptation now is to make it bigger — more tools, a longer system prompt, a wider window. That instinct is wrong, and knowing why is the first thing this module teaches: past a certain point you don't scale an agent, you split it, and that split is where governance starts to cost real money.
 

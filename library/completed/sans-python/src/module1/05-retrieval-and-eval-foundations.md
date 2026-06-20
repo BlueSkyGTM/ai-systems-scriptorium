@@ -1,4 +1,4 @@
-# Foundations of Retrieval and Evaluation
+# Foundations of retrieval and evaluation
 
 A RAG system that fails is not a mystery — it is a combination of components, and at least one of them is misbehaving. Knowing the components lets you debug the system instead of blaming the model.
 

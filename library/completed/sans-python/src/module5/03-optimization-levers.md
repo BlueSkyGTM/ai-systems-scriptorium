@@ -1,4 +1,4 @@
-# The Optimization Levers: Quantization, Speculative Decoding, Disaggregation
+# The optimization levers: quantization, speculative decoding, disaggregation
 
 The engine is running and the batch is full. Latency is still too high or the GPU bill is still too large, and now you reach past the defaults for the levers that trade one resource for another. There are three big ones, each buys a different thing, and each can quietly cost you something you weren't watching.
 

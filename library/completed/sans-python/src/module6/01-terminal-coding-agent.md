@@ -1,4 +1,4 @@
-# The Terminal Coding Agent
+# The terminal coding agent
 
 A chatbot writes code you paste. A coding agent reads the repository, makes the edit, runs the tests, and keeps going until they pass — and the gap between those two things is the entire job of this build.
 

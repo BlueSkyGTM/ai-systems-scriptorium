@@ -1,4 +1,4 @@
-# Reference Architectures
+# Reference architectures
 
 You do not invent the system you build for the exam. You replicate one. This chapter is the catalog — twenty production architectures, distilled from Chapter 16 of the systems-design case studies — and your job is to pick one, name the seam you must keep, and scope a version you can ship.
 

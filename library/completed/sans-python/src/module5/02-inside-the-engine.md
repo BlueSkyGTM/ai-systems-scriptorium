@@ -1,4 +1,4 @@
-# Inside the Engine: Continuous Batching & Paged KV-Cache
+# Inside the engine: continuous batching & paged KV-cache
 
 A web server treats every request the same: take it, do the work, return the answer, move on. Run a language model that way and you will waste most of your GPU. An inference engine is not a REST server with a model bolted on — it is a different machine, built around two facts about how a transformer generates text, and this lesson is what lives below the API you've been calling.
 

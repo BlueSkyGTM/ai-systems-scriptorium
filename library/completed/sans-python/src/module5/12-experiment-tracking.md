@@ -1,4 +1,4 @@
-# Experiment Tracking & the LLMOps Outer Loop
+# Experiment tracking & the LLMOps outer loop
 
 You changed the prompt, the eval score went up four points, you shipped it. Three weeks and forty changes later the score is down and nobody can say which change cost you the points, because the runs that produced those numbers live in scrollback and a teammate's notebook. Eval-driven development gave you a way to measure quality; without a place to record every measurement, that discipline evaporates the moment the session closes. Experiment tracking is the ledger that makes it durable.
 

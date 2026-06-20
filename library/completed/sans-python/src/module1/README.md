@@ -1,4 +1,4 @@
-# Module 1 — Foundations
+# Module 1 — foundations
 
 The environment, your first call against a live model, and the transformer-forward NLP that everything
 LLM-related assumes. Two chapters:

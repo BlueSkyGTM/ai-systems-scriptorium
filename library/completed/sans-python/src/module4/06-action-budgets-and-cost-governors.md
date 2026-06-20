@@ -1,4 +1,4 @@
-# Action Budgets & Cost Governors
+# Action budgets & cost governors
 
 A bug in a normal service throws an error and stops. A bug in an agent keeps reasoning, keeps calling tools, and keeps billing — because nothing in the loop was designed to make it stop. The failure has a name: Denial of Wallet, and the only defense is a stack of limits that fire before the invoice does.
 

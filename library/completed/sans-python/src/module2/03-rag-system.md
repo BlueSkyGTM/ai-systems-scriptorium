@@ -1,4 +1,4 @@
-# The RAG System
+# The RAG system
 
 Module 1 taught you the retrieval components — embeddings, chunking, vector search. This lesson assembles them into a working system. The leap from component to system is where most engineers fail: they bolt parts together and wonder why production explodes at scale.
 

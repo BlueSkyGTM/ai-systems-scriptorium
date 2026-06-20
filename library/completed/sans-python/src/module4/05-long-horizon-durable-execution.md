@@ -1,4 +1,4 @@
-# Long-Horizon Agents & Durable Execution
+# Long-horizon agents & durable execution
 
 A loop that runs for thirty seconds and a loop that runs for three hours are not the same program with a bigger number. The long one will be interrupted — a deploy, a crashed pod, a model timeout, a human stepping away for the weekend — and every assumption you made about a single in-memory turn breaks the moment the process dies mid-run.
 

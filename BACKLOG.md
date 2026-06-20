@@ -2,6 +2,13 @@
 
 Collected 2026-06-19. Mirrors the live task tracker (ids there don't persist; this file does).
 
+## RESOLVED (2026-06-19, design-polish pass) — caps + positioning
+- **Caps consistency:** DONE — sentence case everywhere (H1 + H2/H3 + ToC), codified as STYLE §9; swept 70
+  titles + 60 ToC labels (`build-log/caps-sweep.py`). `mdbook build` + `route-lint` PASS.
+- **Positioning:** DONE — retitled **"Sans Python — Production AI Engineering"** (lead with the searchable AI
+  Engineer role); the AI-Platform-Engineer thesis prose kept verbatim inside preface/conclusion/lessons.
+- **Bookmark:** DECLINED (Ray) — no native mdBook bookmark; search is the nav; artifact-scan is the progress.
+
 ## RESOLVED (2026-06-19) — 10 of 12 done; 2 are Ray's external actions
 - **#1, #2 (design):** DONE — button centered; `theme/syntax-polish.css` (Ayu-magic palette + Rust-light bump + code-card). Pending Ray's visual review.
 - **#3 (learner CLAUDE.md):** DONE — `library/completed/sans-python/exercises/CLAUDE.md`.

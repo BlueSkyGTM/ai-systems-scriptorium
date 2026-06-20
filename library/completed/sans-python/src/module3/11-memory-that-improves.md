@@ -1,4 +1,4 @@
-# Memory That Improves
+# Memory that improves
 
 The memory system from lesson 10 stores and retrieves — but it doesn't get better. This lesson covers three patterns that make memory smarter over time without touching a model weight: typed blocks that consolidate off the critical path, skill libraries that turn execution history into reusable code, and checkpoints that let a failed run resume instead of restart.
 

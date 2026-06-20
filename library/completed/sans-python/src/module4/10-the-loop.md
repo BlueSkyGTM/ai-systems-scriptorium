@@ -1,4 +1,4 @@
-# The Loop — A Single Agent-System as Governed Infrastructure
+# The loop — a single agent-system as governed infrastructure
 
 You stop typing the next prompt. Something else discovers the work, hands it to an agent, checks the result, and stops when the money runs out — and the day you build that something, you have crossed from running an agent to operating one.
 

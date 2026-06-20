@@ -1,4 +1,4 @@
-# Design Patterns and Anti-Patterns
+# Design patterns and anti-patterns
 
 Architecture reviews and technical interviews for AI platform roles test the same thing: whether you can name a shape and say why it fits or fails. This lesson gives you that vocabulary — and the failure modes that reveal whether someone actually ships agents or just designs them.
 

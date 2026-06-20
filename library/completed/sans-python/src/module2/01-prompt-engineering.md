@@ -1,4 +1,4 @@
-# Prompt Engineering
+# Prompt engineering
 
 Every output a model gives you is a function of what you put in. The question isn't whether the prompt matters — it always does — it's whether you're engineering it or just hoping.
 

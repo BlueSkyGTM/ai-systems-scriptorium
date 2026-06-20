@@ -1,4 +1,4 @@
-# Kill Switches, Circuit Breakers, Canary Tokens
+# Kill switches, circuit breakers, canary tokens
 
 The budget governor decides *when* to stop a runaway. This lesson is the *how* — the control plane that actually halts an agent, and the detectors that decide a halt is warranted before any budget is breached. None of it is new computer science. All of it is old reliability engineering, reasserted against a thing that can now read its own off switch.
 

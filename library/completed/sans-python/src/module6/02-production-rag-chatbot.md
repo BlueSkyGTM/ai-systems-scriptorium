@@ -1,4 +1,4 @@
-# Production RAG Chatbot (Regulated Vertical)
+# Production RAG chatbot (regulated vertical)
 
 A bank's compliance team answers the same policy questions all day, by hand, with no record of who said what. You can replace that with a chatbot — but the moment the domain is regulated, an answer without a source is not a feature, it is a liability someone signs their name under. This is the most-shipped production AI shape of 2026, and it is the one where the hard parts are the parts a demo skips: the citation, the guardrail, the gate that says ship or don't.
 

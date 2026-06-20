@@ -1,4 +1,4 @@
-# Real-Time Voice Assistant
+# Real-time voice assistant
 
 A chatbot can think for two seconds and nobody minds. A voice agent that thinks for two seconds sounds broken — the caller talks over it, repeats the question, hangs up. Voice is the one interface where the model is the easy part and the clock is the problem, and this artifact is about building to the clock.
 

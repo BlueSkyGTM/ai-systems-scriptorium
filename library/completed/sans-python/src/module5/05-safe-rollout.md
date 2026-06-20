@@ -1,4 +1,4 @@
-# Safe Rollout: Shadow, Canary, A/B + AI Gateways
+# Safe rollout: shadow, canary, A/B + AI gateways
 
 Swapping a model in production is the most dangerous deploy you will ever do, because the thing you changed has no unit test that fails when it gets worse. A new model version compiles, serves, and returns plausible text — and quietly degrades on the cases that matter, with the complaint arriving weeks later. Progressive delivery is how you let a fraction of traffic find the regression before all of it does.
 

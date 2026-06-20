@@ -1,4 +1,4 @@
-# Voice Agents & Benchmark Literacy
+# Voice agents & benchmark literacy
 
 Two skills round out this chapter, and neither is a build. The first is reading a voice agent's architecture against a latency budget so brutal it shapes every design choice. The second is reading a benchmark number well enough not to be fooled by it — including the ones you've been quoting all chapter. Both are thin here; the voice agent itself is a Module 6 artifact.
 

@@ -1,4 +1,4 @@
-# Structured Output and Tools
+# Structured output and tools
 
 A model that returns free-form prose is useful. A model whose output you can parse, validate, and act on without writing defensive exception handlers is a system component. That shift — from useful to reliable — is what structured output and tools accomplish.
 

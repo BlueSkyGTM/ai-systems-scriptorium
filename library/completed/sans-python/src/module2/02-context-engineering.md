@@ -1,4 +1,4 @@
-# Context Engineering
+# Context engineering
 
 The context window is not a suggestion box — it's a fixed budget, and every token you put in displaces something else. Managing it poorly is the fastest path from a working prototype to a hallucinating production system.
 

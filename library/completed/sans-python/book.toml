@@ -2,7 +2,7 @@
 # Build: `mdbook serve` (live) / `mdbook build` (static). Install: `cargo install mdbook`.
 
 [book]
-title = "Sans Python — AI Platform Engineering"
+title = "Sans Python — Production AI Engineering"
 authors = ["Raymond Fenton"]
 language = "en"
 src = "src"

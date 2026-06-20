@@ -1,4 +1,4 @@
-# The Agent Loop
+# The agent loop
 
 A chatbot answers once and forgets. An agent acts, observes the result, and decides what to do next — and that difference in control flow is what makes production automation possible.
 

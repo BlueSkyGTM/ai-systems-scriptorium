@@ -1,4 +1,4 @@
-# Operating and Grading
+# Operating and grading
 
 The fleet ships the system. You run the fleet. This chapter is the operator's runbook for the four real controls on the Module 7 console, the acceptance rubric you grade the result against, and the distributed-systems vocabulary the exam assumes you already speak.
 

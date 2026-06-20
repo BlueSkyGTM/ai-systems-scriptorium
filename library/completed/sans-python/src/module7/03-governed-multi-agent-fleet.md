@@ -1,4 +1,4 @@
-# The Governed Multi-Agent Fleet
+# The governed multi-agent fleet
 
 A single coding agent fixes one bug in one repo. A feature is bigger than that — it needs a plan, parallel hands, a review, and a test pass — so the answer is a team of agents. The instant that team can edit code and merge it, the question stops being *can they build?* and becomes *can a human stay accountable for what they built?* This chapter is the system that answers yes, and it is the course's last and largest build.
 

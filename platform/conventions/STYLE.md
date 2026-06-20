@@ -86,6 +86,21 @@ every lesson tells the reader a template wrote it, not a person.
 This section is the polish layer, not the foundation (§§1–4 come first). But it is the difference between prose
 that is correct and prose that is alive — and for a book that invokes Zinsser by name, it has to be alive.
 
+## 9. Headings — sentence case
+
+One convention, applied everywhere: **sentence case** for every heading (H1 page titles, H2/H3 sections)
+*and* every `SUMMARY.md` table-of-contents label. Capitalize only the first word; lowercase the rest.
+
+- [ ] **Preserve proper nouns, acronyms, and code identifiers exactly.** Rust, TypeScript, Docling, MCP, RAG,
+      LLMOps, FinOps, DevOps, K8s, A2A, HITL, KV-cache, A/B — these keep their own casing wherever they fall.
+- [ ] **After a colon or em-dash, stay lowercase** unless the next word is a proper noun. "Inside the engine:
+      continuous batching & paged KV-cache", not "...: Continuous Batching".
+- [ ] **The level-shift is the enemy.** A Title-Case title above sentence-case sections reads as inconsistent.
+      Sentence case everywhere removes it — and it matches Microsoft Learn, the source the pipeline grounds in.
+
+The one-shot conversion that established this lives at `build-log/caps-sweep.py` (skips fenced code blocks,
+guards proper nouns); re-run it after a bulk authoring pass to catch drift.
+
 ## What this is not
 
 Not a layout. Not a word count. It is a discipline. A 90-word lesson and a 900-word lesson both pass if both

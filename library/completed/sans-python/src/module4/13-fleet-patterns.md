@@ -1,4 +1,4 @@
-# Fleet Patterns & Governance-as-Code
+# Fleet patterns & governance-as-code
 
 The last lesson named the seven concerns a fleet governs. This one hands you the patterns that implement them — six named shapes you reach for by name, the way you reach for a circuit breaker or a retry. Each one turns a concern into a file you can diff, and together they make a fleet not just describable but *runnable* as code. This is the lesson the M7 finale is built on top of, so it earns the closing slot of the chapter.
 

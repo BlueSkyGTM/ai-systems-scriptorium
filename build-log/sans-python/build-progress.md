@@ -162,6 +162,22 @@ Codex) at the M3→M4 line. Decisions with Ray:
   Engineer who…" frame; (3) re-read M1/M2 module Overview READMEs against the final structure; (4) M1
   reconciliation + deeper ICM-phase formalization (long-standing deferrals).
 
+## Design polish pass (2026-06-19) — caps + positioning
+
+- **Capitalization (Ray's review):** the book had an undocumented two-tier scheme (Title-Case H1/ToC,
+  sentence-case H2/H3); the level-shift read as inconsistent. **Decision: sentence case everywhere**
+  (H1 + H2/H3 + ToC), matching Microsoft Learn, the source the pipeline grounds in. Codified as STYLE §9.
+  Swept 70 H1 titles + 60 ToC labels via `build-log/caps-sweep.py` (fence-aware, proper-noun-guarded;
+  H2/H3 were already sentence case and left untouched). Verified: `mdbook build` PASS, `route-lint` PASS,
+  ToC link paths byte-identical (only labels changed).
+- **Positioning (Ray's call): lead with "AI Engineering," keep the platform thesis inside.** Book retitled
+  **"Sans Python — Production AI Engineering"** (the searchable, hireable role; aligns with the AI-Engineer
+  hireability north star) in the 5 identity spots (book.toml, CATALOG, README, library CONTEXT, the handoff
+  `COURSE` const). The **"AI Platform Engineer" thesis prose stays verbatim** in the preface, conclusion, and
+  lesson bodies — the differentiator ("not a commodity hire"). Title leads; thesis lives one line below it.
+- **Bookmark:** declined. mdBook has no native bookmark by design; full-text search is the nav (Ray praised
+  it). The artifact-scan progression remains the real "where am I in the course."
+
 ## Scope reframe + roadmap coverage (2026-06-19) — `build-stages/roadmap-coverage.md`
 
 - **Reframe (Ray):** "AI Platform Engineer" is a *pinpointing reference*, not a hard scope wall. The real

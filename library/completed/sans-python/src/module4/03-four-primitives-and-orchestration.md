@@ -1,4 +1,4 @@
-# The Four Primitives & Orchestration
+# The four primitives & orchestration
 
 In Module 3 you learned to read any agent framework as a point in a four-dimensional space — Agent, Handoff, Shared state, Orchestrator. That frame was for the single-agent-to-framework view: how one library packages the loop. Now those four knobs do harder work. They are the design space for a *system of agents*, and the choices you make on each one decide whether your fleet is a clean supervisor, an emergent swarm, or an unauditable mess.
 

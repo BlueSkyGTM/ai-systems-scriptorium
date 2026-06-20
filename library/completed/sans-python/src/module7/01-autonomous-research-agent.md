@@ -1,4 +1,4 @@
-# The Autonomous Research Agent
+# The autonomous research agent
 
 One agent grinding through a hard research question is slow, expensive, and — worse — answers to no one. This build replaces it with a team that splits the work, checks itself, and runs on a leash.
 

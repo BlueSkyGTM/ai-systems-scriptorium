@@ -1,4 +1,4 @@
-# Communication Protocols (MCP / A2A / ACP / ANP)
+# Communication protocols (MCP / A2A / ACP / ANP)
 
 Two agents that talk by passing raw strings will, eventually, lie to each other. One emits "done — see results above," the other parses "results" from the wrong field, and the bug surfaces three steps later as a confident wrong answer. The fix is a wire contract: a typed, discoverable, addressable format that makes a handoff checkable instead of hopeful — and in 2026 that contract is a four-layer protocol stack you should be able to read top to bottom.
 

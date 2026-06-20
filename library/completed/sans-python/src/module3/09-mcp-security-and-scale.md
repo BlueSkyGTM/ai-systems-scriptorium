@@ -1,4 +1,4 @@
-# MCP Security and Scale
+# MCP security and scale
 
 The MCP server you built in lessons 07–08 trusts every tool description it serves. That trust is a vulnerability — and at production scale, it compounds.
 

@@ -1,4 +1,4 @@
-# Tool Use
+# Tool use
 
 The model cannot execute anything — you can. That separation is the security boundary, and keeping it sharp is the first job of tool use.
 

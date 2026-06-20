@@ -1,4 +1,4 @@
-# The Complexity Ladder
+# The complexity ladder
 
 The fastest way to fail at AI system design is to add an agent before the problem requires one. The second fastest is to stay with a direct model call after the problem has outgrown it. The complexity ladder is the decision framework that keeps you on the right rung.
 

@@ -1,4 +1,4 @@
-# Fine-Tuning, in Practice and in Proportion
+# Fine-tuning, in practice and in proportion
 
 An interviewer asks how you would make a model better at your company's domain, and "fine-tune it" is the answer that sounds expert and is usually wrong. Fine-tuning is the most expensive, slowest, and least reversible of the three ways to change model behavior, and a candidate who reaches for it first reveals they have not costed the alternatives. The skill this lesson builds is not how to run a training job — it is how to know when not to, and how to speak precisely about the case where you would.
 

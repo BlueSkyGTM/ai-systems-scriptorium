@@ -1,4 +1,4 @@
-# Data Ingestion at Production Scale (Docling)
+# Data ingestion at production scale (Docling)
 
 The retriever you built in Module 2 is only as good as what you feed it, and most of what enterprises want to feed it arrives as PDFs, slide decks, and Word files — formats designed for human eyes, not for a vector index. The chunk is the unit your RAG system retrieves; if the chunk is born from a mangled PDF whose two columns got interleaved and whose tables collapsed into word salad, no reranker downstream can save it. Ingestion is the front door, and garbage in is garbage retrieved.
 

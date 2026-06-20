@@ -1,4 +1,4 @@
-# Security & Compliance for AI Ops
+# Security & compliance for AI ops
 
 Your serving stack holds an API key worth thousands of dollars a day and answers questions about other people's data. The application layer can be flawless and you still lose the company if that key sits in a config file or the wrong tenant reads the wrong context. Security here is not the model's behavior — it is the substrate the model runs on, and it is the platform engineer's name on the incident report.
 

@@ -1,4 +1,4 @@
-# Serving Engines & Engine Selection
+# Serving engines & engine selection
 
 You spent four modules making the model *reason* well. This module is about making it *run* — fast, cheap, and under load — and the skill that decides whether you can is performance engineering, not machine learning.
 

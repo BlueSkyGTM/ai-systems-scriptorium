@@ -1,4 +1,4 @@
-# Transformer-Era NLP
+# Transformer-era NLP
 
 You won't implement these models. You will call them, configure them, and debug them — and the decisions that cost you production headaches live at the tokenizer and the output format, not inside the architecture.
 

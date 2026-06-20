@@ -1,4 +1,4 @@
-# The Workbench Surfaces II: Verification, Review, Handoff — and the Pack
+# The workbench surfaces II: verification, review, handoff — and the pack
 
 The previous four surfaces constrain the agent and capture facts. These three close the loop: the agent does not grade its own work, a second loop catches what verification misses, and a handoff packet makes the next session productive from its first minute. Then you package all seven into the artifact M6 imports.
 

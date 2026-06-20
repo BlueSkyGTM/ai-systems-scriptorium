@@ -1,4 +1,4 @@
-# Learning from Failure
+# Learning from failure
 
 An agent that fails the same way twice has a memory problem, not a model problem. The patterns in this lesson fix failures in language — the same language the agent already speaks — without touching a single weight.
 

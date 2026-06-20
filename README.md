@@ -10,7 +10,7 @@ Three things, in one repo:
 
 1. **The books** (`library/`) — technical books on AI systems engineering, each self-contained
    (`src/` + `exercises/` + `theme/` + `book.toml`, built with mdBook). The first, *Sans Python —
-   AI Platform Engineering*, is **done**: 8 modules, every lesson in one voice, with runnable
+   Production AI Engineering*, is **done**: 8 modules, every lesson in one voice, with runnable
    portfolio artifacts.
 2. **The engine** (`platform/`) — the AI-eng-specialized build system: the AUTHOR→VERIFY→BUILD/TEST→SHIP
    pipeline, the Zinsser-grade `STYLE.md` writing contract, the templates, and the human-gate registry.

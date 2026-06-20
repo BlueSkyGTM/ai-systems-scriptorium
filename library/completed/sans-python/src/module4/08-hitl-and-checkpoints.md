@@ -1,4 +1,4 @@
-# HITL Propose-Then-Commit + Checkpoints/Rollback
+# HITL propose-then-commit + checkpoints/rollback
 
 Some actions you cannot take back. Wiring money, dropping a table, emailing a customer, merging to main — for these, "the agent decided to" is not an answer you want to give an auditor. Human-in-the-loop (HITL) is the protocol that puts a person between the agent's intent and the irreversible act, and getting it right is more than slapping an "Approve?" button on a tool call.
 

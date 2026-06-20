@@ -1,4 +1,4 @@
-# Module 7 — Multi-Agent Artifacts
+# Module 7 — multi-agent artifacts
 
 Single agents from Module 6 composed into **governed teams** — the structural last boss of the teaching arc,
 where Module 4 becomes proof. The principle here is **elevate, don't author**: you reuse the M6 artifacts as

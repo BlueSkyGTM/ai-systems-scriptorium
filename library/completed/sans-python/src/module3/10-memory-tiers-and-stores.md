@@ -1,4 +1,4 @@
-# Memory Tiers and Stores
+# Memory tiers and stores
 
 Your agent's context window is not unlimited memory — it's a working surface that overflows. When it overflows, you need somewhere else to put things, and the architecture of that "somewhere else" determines whether your agent can run for minutes or months.
 

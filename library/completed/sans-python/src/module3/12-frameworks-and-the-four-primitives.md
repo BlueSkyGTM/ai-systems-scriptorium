@@ -1,4 +1,4 @@
-# Frameworks and the Four Primitives
+# Frameworks and the four primitives
 
 Every new agent framework arrives with its own vocabulary and its own marketing. The engineers who reach for each one before their architecture is clear spend months learning a tool that doesn't fit the problem — then unwinding it.
 

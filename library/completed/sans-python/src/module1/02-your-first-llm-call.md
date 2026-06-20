@@ -1,4 +1,4 @@
-# Your First LLM Call
+# Your first LLM call
 
 Every lesson from Module 2 onward assumes you can reach a model. That assumption starts here.
 

@@ -1,4 +1,4 @@
-# Module 8 — Final Systems Engineering Exam
+# Module 8 — final systems engineering exam
 
 The compounding arc's terminal node: **the Module 7 governed fleet builds the exam system end to end.** Not a
 new artifact set — the team you built in M7 (artifact 10★) is pointed at a production-grade systems problem

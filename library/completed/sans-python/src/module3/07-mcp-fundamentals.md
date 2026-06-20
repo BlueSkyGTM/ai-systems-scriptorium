@@ -1,4 +1,4 @@
-# MCP Fundamentals
+# MCP fundamentals
 
 The typed tools from lessons 04–06 live inside your process. MCP moves them outside it — and that's where the language bridge becomes real.
 

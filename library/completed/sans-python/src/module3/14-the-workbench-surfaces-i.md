@@ -1,4 +1,4 @@
-# The Workbench Surfaces I: Instructions, State, Scope, Feedback
+# The workbench surfaces I: instructions, state, scope, feedback
 
 Drop a frontier model into a real repo and it fails — not on the language, but on the work. It has no idea what "done" means, where it can write, or which tests are authoritative. The workbench fixes that. Swap the model and keep the surfaces; never the reverse.
 

@@ -1,4 +1,4 @@
-# The Exam
+# The exam
 
 Every module before this one handed you a part. This one hands you the job. You do not build a new artifact for the final; you take the governed fleet you already shipped, point it at a production-grade problem, and prove you can run it like the infrastructure it is.
 

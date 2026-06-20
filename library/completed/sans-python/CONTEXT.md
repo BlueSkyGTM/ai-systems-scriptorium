@@ -1,4 +1,4 @@
-# CONTEXT — Sans Python — AI Platform Engineering (COMPLETED)
+# CONTEXT — Sans Python — Production AI Engineering (COMPLETED)
 
 The first book, shipped: 8 modules, every lesson in the `STYLE.md` voice, with runnable M6/M7/M8
 portfolio artifacts. `mdbook build library/completed/sans-python` passes.

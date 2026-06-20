@@ -1,4 +1,4 @@
-# MCP Capabilities
+# MCP capabilities
 
 Tools are the entry point. They're also just one of four things an MCP server can offer — and knowing the other three tells you when tools are the wrong choice.
 

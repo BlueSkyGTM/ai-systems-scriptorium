@@ -1,4 +1,4 @@
-# Typing the Product Layer
+# Typing the product layer
 
 A single typed tool is a contract. A fleet of typed tools — reusable across agents, composable into MCP servers, derivable from a single source of truth — is an architecture. The four patterns in this lesson turn the `ToolDefinition` from lesson 04 into a typed product layer the next chapter extends.
 

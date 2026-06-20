@@ -1,4 +1,4 @@
-# TypeScript Break-In
+# TypeScript break-in
 
 The agent loop you built in lesson 01 calls `tools.execute(name, args)` — a Python dict with no contract the model or the compiler can check. TypeScript enters here because typed tool definitions are the first thing the product layer needs that Python's runtime duck-typing cannot safely provide.
 

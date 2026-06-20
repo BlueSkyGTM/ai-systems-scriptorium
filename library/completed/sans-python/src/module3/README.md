@@ -1,4 +1,4 @@
-# Module 3 — Agent Foundations
+# Module 3 — agent foundations
 
 The single-agent spine: `Agent = Reasoning Model + Tool Use + Persistent Memory + Environment Feedback`. You
 build one agent that works, runs reliably, and ships — a mixed-language artifact, `module3-agent/`, that grows

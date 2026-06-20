@@ -1,4 +1,4 @@
-# The DevOps K8s Troubleshooting Agent
+# The DevOps K8s troubleshooting agent
 
 A pod starts crash-looping at 2 a.m., and the on-call engineer wants two things at
 once: the diagnosis now, and the certainty that nothing touched production while
