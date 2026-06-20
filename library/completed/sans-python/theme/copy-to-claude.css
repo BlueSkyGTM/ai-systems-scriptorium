@@ -1,12 +1,13 @@
-/* Sans Python — per-lesson Claude Code handoff block + button. */
+/* Sans Python — per-lesson Claude Code handoff block + button.
+   Rust-accented to match the book's Rust/Ayu theme. */
 
 .claude-handoff {
   margin: 3rem 0 1.5rem;
   padding: 1.25rem 1.25rem;
-  border: 1px solid var(--quote-border, #cccccc);
-  border-left: 4px solid var(--links, #2b79a2);
+  border: 1px solid var(--quote-border, #e3d9c6);
+  border-left: 4px solid #b7410e;            /* rust accent */
   border-radius: 6px;
-  background: var(--quote-bg, rgba(43, 121, 162, 0.06));
+  background: rgba(183, 65, 14, 0.05);       /* warm rust tint */
 }
 
 .claude-handoff p {
@@ -19,7 +20,7 @@
   font-family: var(--mono-font, "Source Code Pro", monospace);
   font-size: 0.8rem;
   font-weight: 600;
-  color: var(--links, #2b79a2);
+  color: #a5310f;                            /* rust */
   margin-bottom: 0.6rem;
 }
 .claude-handoff-ex::before {
@@ -31,25 +32,65 @@
 .claude-handoff-btn {
   display: flex;
   width: fit-content;
-  margin: 1rem auto 0;
+  margin: 1.1rem auto 0;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.45rem 0.9rem;
+  gap: 0.45rem;
+  padding: 0.5rem 1.15rem;
   font: inherit;
   font-weight: 600;
   font-size: 0.9rem;
   color: #ffffff;
-  background: var(--links, #2b79a2);
+  background: #b7410e;                        /* rust */
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: background 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  transition: background 0.15s ease, transform 0.05s ease;
 }
 
 .claude-handoff-btn:hover {
-  filter: brightness(1.08);
+  background: #a5310f;                        /* deeper rust */
+}
+
+.claude-handoff-btn:active {
+  transform: translateY(1px);
 }
 
 .claude-handoff-btn.copied {
-  background: #2e7d32;
+  background: #4b7a17;                        /* green confirm */
+}
+
+/* =====================================================================
+   AYU (dark) — the theme's signature rust-orange, dark text. Catches the
+   Ayu look the way the code blocks do.
+   ===================================================================== */
+.ayu .claude-handoff,
+.navy .claude-handoff,
+.coal .claude-handoff {
+  border: 1px solid rgba(255, 143, 64, 0.25);
+  border-left: 4px solid #ff8f40;
+  background: rgba(255, 143, 64, 0.07);
+}
+.ayu .claude-handoff-ex,
+.navy .claude-handoff-ex,
+.coal .claude-handoff-ex {
+  color: #ff8f40;
+}
+.ayu .claude-handoff-btn,
+.navy .claude-handoff-btn,
+.coal .claude-handoff-btn {
+  background: #ff8f40;
+  color: #0b0e14;
+  box-shadow: none;
+}
+.ayu .claude-handoff-btn:hover,
+.navy .claude-handoff-btn:hover,
+.coal .claude-handoff-btn:hover {
+  background: #ffa35c;
+}
+.ayu .claude-handoff-btn.copied,
+.navy .claude-handoff-btn.copied,
+.coal .claude-handoff-btn.copied {
+  background: #aad94c;
+  color: #0b0e14;
 }
