@@ -32,5 +32,20 @@ Mirrors the live task tracker (task ids there don't persist across sessions; thi
 8. **Fix the banned "An AI Platform Engineer who…" frame** in `exercises/module3/05-typing-the-product-layer/README.md`.
 9. **Re-read M1/M2 module Overview READMEs** against the final shipped structure.
 
+## Content gaps (from the live review)
+10. **Write the book's conclusion / send-off** — the course ends at M8 then the Antilibrary, with no closing
+    chapter. Land the journey (thesis full circle, what you've built, the send-off).
+11. **Strengthen the antilibrary's closing** — it ends flatly on the Avec Python candidates list; tie it back
+    to the thesis (discernment is zero-risk; there's always more to learn).
+
+## Architecture / publishing (decision — "not the final resting place")
+12. **Separate the course (public) from the build platform; define the learner-progress convention.** This repo
+    tangles three things: the publishable **course** (`src/` + `exercises/` + `theme/` + `book.toml`), the
+    reusable **build platform** (`build-stages/` pipeline + `synthesis/` ingredients + `_dossier/` +
+    STYLE/AUTHORING — capable of producing/maintaining other books), and **learner progress** (future). Decide:
+    a public course repo (Vercel-hosted, learner-forkable) extracted from a private build repo; and where a
+    learner's exercise-work is saved so it stays off the public main (fork model / gitignored `work/` /
+    separate progress repo). Strategic decision, not a code task yet.
+
 > Also still noted in `build-progress.md` (long-standing, not re-raised here): M1 reconciliation + deeper
 > ICM-phase formalization. Pull into this backlog if/when they become active.
