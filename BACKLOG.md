@@ -35,12 +35,12 @@ The original collected items (kept as the record):
 3. **Learner-facing `CLAUDE.md` in `exercises/`** — so Claude Code opens each exercise in "guide the student,
    don't dump the answer" mode (read the lesson + exercise README; the artifact extends the module throughline;
    coach, don't complete). Distinct from the authoring `CLAUDE.md`.
-4. **Set `book.toml` `git-repository-url`** → `https://github.com/BlueSkyGTM/sans-python` (adds a repo link in
+4. **Set `book.toml` `git-repository-url`** → `https://github.com/BlueSkyGTM/ai-systems-scriptorium` (adds a repo link in
    the book header) — **only if the repo is public** (else it 404s for visitors). Confirm visibility first.
 
 ## Deploy / QA
 5. **Deploy the book to the Vercel subdomain** — `vercel.json` is pushed (Vercel-builds strategy, validated
-   locally). Remaining (Ray's Vercel dashboard): import `BlueSkyGTM/sans-python`, build, move the subdomain
+   locally). Remaining (Ray's Vercel dashboard): import `BlueSkyGTM/ai-systems-scriptorium`, build, move the subdomain
    onto it, retire the old "lost its meaning" project, verify. *(Ray set this aside for now.)*
 6. **Live in-browser button smoke test** — local serve is up; assets + handoff div load (HTTP 200, hashed
    assets serve). Remaining: click the button in a browser and confirm it copies the payload (needs a secure
