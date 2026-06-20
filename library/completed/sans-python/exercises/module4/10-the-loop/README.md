@@ -6,7 +6,7 @@ Wrap a `_harness/` stub agent as a governed loop with all four stages — `trigg
 
 ## Why
 
-An AI Platform Engineer's unit of unattended infrastructure is the loop: one agent system you can run on a trigger and still trust, because the verifier sits in the wire and the off switch sits outside the agent. Climbing the L1/L2/L3 autonomy ladder in order — report-only first — is how you measure a loop before you let it act.
+An Production AI Engineer's unit of unattended infrastructure is the loop: one agent system you can run on a trigger and still trust, because the verifier sits in the wire and the off switch sits outside the agent. Climbing the L1/L2/L3 autonomy ladder in order — report-only first — is how you measure a loop before you let it act.
 
 ## Setup
 

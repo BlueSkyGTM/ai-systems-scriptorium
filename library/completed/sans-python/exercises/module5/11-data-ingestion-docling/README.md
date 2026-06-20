@@ -6,7 +6,7 @@ Add an ingestion front door to `module5-serving/`: run Docling locally on a samp
 
 ## Why
 
-Ingestion is the RAG front door, and garbage in is garbage retrieved — the AI Platform Engineer owns the parse-to-chunk seam that decides retrieval quality before retrieval ever runs.
+Ingestion is the RAG front door, and garbage in is garbage retrieved — the Production AI Engineer owns the parse-to-chunk seam that decides retrieval quality before retrieval ever runs.
 
 ## Steps
 

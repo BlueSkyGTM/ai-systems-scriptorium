@@ -6,7 +6,7 @@ Replace the naive one-request-at-a-time handler in `module5-serving/` with a con
 
 ## Why
 
-An inference engine is not a REST server: it keeps the GPU saturated by scheduling a living batch and stores its KV cache in pages, not contiguous slabs. Building both in simulation makes the two numbers a platform engineer answers for — throughput and KV memory — observable instead of mysterious, and it is the mechanism below the "static content first" rule from Module 3.
+An inference engine is not a REST server: it keeps the GPU saturated by scheduling a living batch and stores its KV cache in pages, not contiguous slabs. Building both in simulation makes the two numbers a Production AI Engineer answers for — throughput and KV memory — observable instead of mysterious, and it is the mechanism below the "static content first" rule from Module 3.
 
 ## Steps
 

@@ -2,7 +2,7 @@
 
 **Goal:** Install the four-layer development stack and produce a `verify.py` that confirms every layer is working.
 
-**Why:** An AI Platform Engineer owns the environment that serves models. A reproducible, verified setup is the substrate every later lesson runs on.
+**Why:** An Production AI Engineer owns the environment that serves models. A reproducible, verified setup is the substrate every later lesson runs on.
 
 ## Steps
 

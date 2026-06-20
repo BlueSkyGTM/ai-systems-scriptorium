@@ -6,7 +6,7 @@ Extend `module3-agent/` with a Planner/Worker/Solver stack: a Planner that produ
 
 ## Why
 
-Decoupling planning from execution cuts token cost for tasks with independent sub-problems and localizes failures to specific DAG nodes — two properties an AI Platform Engineer needs before running multi-source research agents in production.
+Decoupling planning from execution cuts token cost for tasks with independent sub-problems and localizes failures to specific DAG nodes — two properties an Production AI Engineer needs before running multi-source research agents in production.
 
 ## Steps
 

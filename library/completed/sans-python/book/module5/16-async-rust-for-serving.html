@@ -37,10 +37,10 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-a740a402.js";
+            window.path_to_searchindex_js = "../searchindex-79574284.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-519ea03c.js"></script>
+        <script src="../toc-5badbb0b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -192,7 +192,7 @@
 }
 <span class="boring">}</span></code></pre>
 <p>This reads like the Python you know. The difference is what <code>.await</code> does: it is a <em>yield point</em>. While <code>fetch_upstream</code> waits on the network, the thread it was running on is handed to another ready task. No thread sits idle holding a socket. That is the entire efficiency story, and it is why one tokio worker thread can carry thousands of concurrent requests.</p>
-<p>The <code>?</code> operator from lesson 14 works inside async functions exactly as it does in sync ones; a failed <code>.await</code> short-circuits and returns the error. Async did not change how Rust handles failure; it only changed when the work runs.</p>
+<p>The <code>?</code> operator from lesson 15 works inside async functions exactly as it does in sync ones; a failed <code>.await</code> short-circuits and returns the error. Async did not change how Rust handles failure; it only changed when the work runs.</p>
 <h2 id="tokio-the-runtime-you-bring"><a class="header" href="#tokio-the-runtime-you-bring">tokio: the Runtime You Bring</a></h2>
 <p>You declare the runtime with one macro on <code>main</code>. <code>#[tokio::main]</code> rewrites your <code>async fn main</code> into a synchronous one that starts the runtime and blocks on your top-level future:</p>
 <pre class="playground"><code class="language-rust">#[tokio::main]
@@ -209,7 +209,7 @@ async fn main() {
 let result = handle.await;     // wait for the spawned task to finish
 <span class="boring">}</span></code></pre>
 <p>A tokio task is not an OS thread. It is an asynchronous green thread; under the hood, a single allocation of about 64 bytes. Spawning a hundred thousand of them is cheap in a way that spawning a hundred thousand OS threads never is. That ratio, many tasks, few threads, is what makes Rust competitive with, and often ahead of, a thread-per-request design on the serving edge.</p>
-<p>Two rules come straight from the ownership lessons. A spawned task must be <code>'static</code> (its type’s lifetime must be <code>'static</code>, so it can outlive the function that spawned it) and <code>Send</code> (tasks spawned by <code>tokio::spawn</code> must implement <code>Send</code>, so they can move between worker threads). This is why you see <code>async move</code>; the task takes ownership of what it captures, so nothing it touches can be freed out from under it. The borrow checker you met in lesson 14 is the same checker proving your concurrency is sound; async didn’t loosen it.</p>
+<p>Two rules come straight from the ownership lessons. A spawned task must be <code>'static</code> (its type’s lifetime must be <code>'static</code>, so it can outlive the function that spawned it) and <code>Send</code> (tasks spawned by <code>tokio::spawn</code> must implement <code>Send</code>, so they can move between worker threads). This is why you see <code>async move</code>; the task takes ownership of what it captures, so nothing it touches can be freed out from under it. The borrow checker you met in lesson 15 is the same checker proving your concurrency is sound; async didn’t loosen it.</p>
 <h2 id="the-hot-path-a-tokio-inference-proxy"><a class="header" href="#the-hot-path-a-tokio-inference-proxy">The Hot Path: a tokio Inference Proxy</a></h2>
 <p>Here is where Rust earns its place in the AI platform. You put a thin async proxy in front of <code>module5-serving/</code>; the mock inference endpoint the rest of this module built against. The proxy is the hot path; Python remains the control plane behind and beside it.</p>
 <pre><code class="language-text">   client ──▶  Rust tokio proxy  ──▶  module5-serving/  (mock engine)
@@ -258,7 +258,7 @@ drop(permit);                                  // release the slot
 <li>A tokio task is a ~64-byte green thread, not an OS thread, and the <code>'static</code> + <code>Send</code> bounds on a spawned task are the borrow checker proving your concurrency is sound; async did not loosen ownership.</li>
 <li>A serving proxy earns Rust by adding compiler-enforced operational concerns on the hot path: <code>tokio::time::timeout</code> makes a deadline unskippable, and a <code>Semaphore</code> shared via <code>Arc</code> caps in-flight concurrency for backpressure; with Python still the control plane behind it.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module5/15-async-rust-for-serving/">
+<div class="claude-handoff" data-exercise="exercises/module5/16-async-rust-for-serving/">
 <p><strong>Build It in Claude Code</strong>: Add a <code>proxy/</code> to <code>module5-serving/</code>: a tokio async proxy that forwards a request to the module’s mock inference endpoint and adds one operational concern (a <code>timeout</code>, or a <code>Semaphore</code> concurrency cap). It must build with <code>cargo build</code> and run locally; no GPU, no cloud.</p>
 </div>
 
@@ -267,7 +267,7 @@ drop(permit);                                  // release the slot
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module5/14-rust-break-in.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module5/15-rust-break-in.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
@@ -281,7 +281,7 @@ drop(permit);                                  // release the slot
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module5/14-rust-break-in.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module5/15-rust-break-in.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 

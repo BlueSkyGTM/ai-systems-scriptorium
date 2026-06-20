@@ -6,7 +6,7 @@ Add `module3-agent/tools/` — a TypeScript typed-tool layer — with a `ToolDef
 
 ## Why
 
-An AI Platform Engineer owns the contract between the model's untyped tool calls and the typed implementation the compiler can check — and this seam is where silent runtime failures become build-time errors.
+An Production AI Engineer owns the contract between the model's untyped tool calls and the typed implementation the compiler can check — and this seam is where silent runtime failures become build-time errors.
 
 ## Steps
 

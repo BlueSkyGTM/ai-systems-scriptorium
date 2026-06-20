@@ -2,7 +2,7 @@
 
 **Goal** — Run a debate between the `module4-fleet/` agents in both full-mesh and star topology, confirm the star matches accuracy at far lower token cost, then add a failure-mode tagger that labels traces with the five recurring MAST modes.
 
-**Why** — Debate is the AI Engineer's accuracy lever and MAST is the MLOps engineer's reliability map; an AI Platform Engineer wires debate sparse and treats every failure as a design input, not a model complaint.
+**Why** — Debate is the AI Engineer's accuracy lever and MAST is the MLOps engineer's reliability map; an Production AI Engineer wires debate sparse and treats every failure as a design input, not a model complaint.
 
 **Steps**
 

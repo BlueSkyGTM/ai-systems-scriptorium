@@ -9,7 +9,7 @@ keeps a human accountable for every action: a registry that enumerates the team,
 a budget that caps it per-agent and as a whole, a shared HITL inbox that gates
 the merge, a cross-agent audit that answers the accountability test, and a kill
 switch the operator holds. It demonstrates the thesis of the course full circle —
-a fleet of agents run as governed infrastructure is AI Platform Engineering — and
+a fleet of agents run as governed infrastructure is Production AI Engineering — and
 it is built by composition, not invention: the Module 6 coding agent is the coder
 node, the Module 4 fleet is the governance.
 

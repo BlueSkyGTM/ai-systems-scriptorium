@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Transformer-Era NLP - Sans Python — Production AI Engineering</title>
+        <title>Rust Break-In - Sans Python — Production AI Engineering</title>
 
 
         <!-- Custom HTML head -->
@@ -176,31 +176,123 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="transformer-era-nlp"><a class="header" href="#transformer-era-nlp">Transformer-Era NLP</a></h1>
-<p>You won’t implement these models. You will call them, configure them, and debug them; and the decisions that cost you production headaches live at the tokenizer and the output format, not inside the architecture.</p>
-<h2 id="pretrained-encoder-decoders"><a class="header" href="#pretrained-encoder-decoders">Pretrained Encoder-Decoders</a></h2>
-<p>Machine translation and summarization are the clearest examples of what a pretrained encoder-decoder does: encode the source sequence into a rich representation, decode it into the target sequence. You don’t train these from scratch. You pick a pretrained checkpoint (NLLB-200 for translation, BART or T5 for summarization), configure the decoding (beam width, length penalty), and evaluate the output (BLEU/chrF for translation, ROUGE for summarization).</p>
-<p>Abstractive summarization is fluent but hallucination-prone; extractive summarization is always grammatical but misses distributed content. The failure modes are different; knowing which model family you’re using tells you which failures to expect.</p>
-<h2 id="subword-tokenization"><a class="header" href="#subword-tokenization">Subword Tokenization</a></h2>
-<p>Every frontier LLM ships on subword tokenization, BPE, WordPiece, or Unigram, for one reason: it eliminates the out-of-vocabulary problem. Word-level vocabularies fail on rare words, new terms, and code; character-level vocabularies produce extremely long sequences. Subwords split rare words into reusable pieces. Byte-level BPE goes further: it operates on raw bytes, so the vocabulary covers every possible input and the <code>[UNK]</code> token disappears entirely.</p>
-<p>The practical split: BPE is used by GPT, Llama, Gemma, Mistral, and Qwen. Unigram is used by T5 and mBART. SentencePiece trains vocabularies on raw Unicode; tiktoken and HuggingFace Tokenizers encode text with a pre-built vocabulary. They are not interchangeable; the tokenizer is part of the model contract.</p>
-<p>Why this matters for production AI engineering: the tokenizer determines prompt cost, context budget, and the way code, numbers, and non-English text consume tokens. A 1,000-word English prompt is not the same token count as a 1,000-word Japanese prompt.</p>
-<h2 id="structured-outputs-and-constrained-decoding"><a class="header" href="#structured-outputs-and-constrained-decoding">Structured Outputs and Constrained Decoding</a></h2>
-<p>Getting structured JSON from an LLM has three reliability tiers. Prompting works roughly 80% of the time; it fails on complex schemas and adversarial inputs. Native structured-output APIs (OpenAI’s <code>response_format</code>, Anthropic tool use, Gemini JSON mode) move you past that, but still rely on the model following instructions. Constrained decoding is the ceiling: a logit processor sets invalid-token logits to −∞ before sampling, so it’s structurally impossible to produce invalid output. Implementations include Outlines, XGrammar, vLLM’s <code>guided_json</code>, and Instructor.</p>
-<p>One counterintuitive result: constrained decoding is often faster than unconstrained, because the model wastes no probability mass on invalid tokens.</p>
-<p>The field-order pitfall is worth naming directly: if your schema puts <code>answer</code> before <code>reasoning</code>, the model commits to an answer before it has reasoned. Reverse the field order, <code>reasoning</code> first, <code>answer</code> last, to let the model think before it commits.</p>
-<p>This feeds Module 3’s reliable tool calls directly. A tool call is a structured output with a function signature as the schema; the same three-tier reliability stack applies.</p>
-<p>Tokenization and structured outputs are where prompt cost, context budget, and tool-call reliability are decided; before a single agent runs.</p>
+                        <h1 id="rust-break-in"><a class="header" href="#rust-break-in">Rust Break-In</a></h1>
+<p>The serving stack you built across this module, engine, metrics, rollout, FinOps, ingestion, sits in front of a model on the request hot path, and every millisecond there is a millisecond the user waits. Rust enters at exactly this seam: it is the language you reach for when a garbage-collector pause or an unbounded allocation is the difference between a clean p99 and a paged on-call engineer.</p>
+<h2 id="why-rust-now"><a class="header" href="#why-rust-now">Why Rust Now</a></h2>
+<p>The Sans Python thesis is point-of-use, not upfront tax; the same rule that let TypeScript wait until you wrote a tool the model called by name. Rust waits until you have a hot path. You have one now. The serving layer is where latency is a contract, not a chart, and where a pause from a background collector cycle is not noise; it is a violated SLO under load.</p>
+<p>Python stays. It is the control plane: the glue that loads config, wires the FinOps quotas, orchestrates the rollout, talks to the experiment tracker. Nothing you wrote in Python becomes wrong. Rust is not a rewrite; it is a second language for the one tier where Python’s runtime costs are paid on every request: the proxy, the gateway, the router that touches each token’s worth of traffic before it reaches the engine.</p>
+<p>Three properties earn Rust its place here, and only here:</p>
+<ul>
+<li><strong>Predictable latency.</strong> No garbage collector means no stop-the-world pause to spike your tail latency. Memory is freed at a deterministic point you can read off the code, and none of that ownership bookkeeping slows the program while it runs.</li>
+<li><strong>Memory safety without that collector.</strong> The compiler proves your references are valid before the binary exists. Use-after-free and data races are compile errors, not 3am incidents.</li>
+<li><strong>Throughput under concurrency.</strong> A small Rust proxy holds thousands of in-flight connections on a handful of threads without the per-request overhead a Python process pays.</li>
+</ul>
+<p>You do not learn all of Rust. You learn the one genuinely new idea, ownership, and the slice of the type system the serving layer touches. The rest threads in later, at its own point of use.</p>
+<h2 id="the-one-new-idea-ownership"><a class="header" href="#the-one-new-idea-ownership">The One New Idea: Ownership</a></h2>
+<p>If you know Python and TypeScript, almost everything in Rust has a familiar shape. Functions, structs, conditionals, loops; you can read them on sight. One idea has no analog in either language, and you have to hold it whole before any Rust makes sense: <strong>ownership</strong>.</p>
+<p>In Python, a value lives until the garbage collector decides nobody is looking. In Rust, every value has exactly one owner, and when that owner goes out of scope, the value is freed; at a point you can see in the source.</p>
+<p>Three rules, and they are the whole system:</p>
+<ul>
+<li>Each value has an <em>owner</em>.</li>
+<li>There can be only one owner at a time.</li>
+<li>When the owner goes out of scope, the value is dropped.</li>
+</ul>
+<p>That last rule is why there is no garbage collector and no manual <code>free()</code>. The compiler inserts the cleanup for you, deterministically, at the closing brace.</p>
+<pre class="playground"><code class="language-rust">fn main() {
+    let request = String::from("classify this");  // request owns the String
+    handle(request);                               // ownership MOVES into handle
+    // request is no longer valid here — using it is a compile error
+}
+
+fn handle(body: String) {
+    println!("{body}");
+}   // body goes out of scope; the String is dropped here</code></pre>
+<p>Passing <code>request</code> into <code>handle</code> <em>moves</em> it. The original binding is now invalid; the compiler tracks this and refuses to compile a use-after-move. This feels strict the first time it stops your build. It is the same strictness that means a freed buffer can never be read again, because the compiler already proved it can’t be.</p>
+<h2 id="borrowing-access-without-taking"><a class="header" href="#borrowing-access-without-taking">Borrowing: Access Without Taking</a></h2>
+<p>Moving a value every time you want to read it would be unworkable; a serving function that logs a request body shouldn’t consume it. So Rust lets you <em>borrow</em> a value with a reference (<code>&amp;</code>) instead of taking ownership:</p>
+<pre class="playground"><code class="language-rust">fn log_request(body: &amp;String) {     // borrows; does not take ownership
+    println!("received: {body}");
+}                                    // borrow ends; nothing is dropped
+
+fn main() {
+    let request = String::from("classify this");
+    log_request(&amp;request);          // lend a reference
+    log_request(&amp;request);          // still valid — we only borrowed
+}</code></pre>
+<p>The borrow checker enforces one rule that prevents data races at compile time: <strong>either many readers or one writer, never both.</strong> You can hand out any number of shared references (<code>&amp;T</code>), or exactly one mutable reference (<code>&amp;mut T</code>), but not both at once.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let mut counter = 0u64;
+let r1 = &amp;counter;          // shared borrow — fine
+let r2 = &amp;counter;          // another shared borrow — fine
+println!("{r1} {r2}");
+let w = &amp;mut counter;       // exclusive borrow — fine now that r1/r2 are done
+*w += 1;
+<span class="boring">}</span></code></pre>
+<p>That rule is the whole reason Rust calls its concurrency “fearless.” On the serving hot path, where many requests touch shared state at once, the compiler refuses to compile two threads writing the same buffer. The bug class that produces heisenbugs in a threaded Python or C service is a build error here.</p>
+<h2 id="lifetimes-how-long-a-borrow-is-valid"><a class="header" href="#lifetimes-how-long-a-borrow-is-valid">Lifetimes: How Long a Borrow Is Valid</a></h2>
+<p>A reference can’t outlive the value it points to; otherwise it would be a dangling pointer, the exact bug Rust exists to kill. <em>Lifetimes</em> are how the compiler tracks this. Most of the time it infers them and you write nothing:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn first_word(s: &amp;str) -&gt; &amp;str {     // compiler infers the borrow lifetimes
+    s.split(' ').next().unwrap_or("")
+}
+<span class="boring">}</span></code></pre>
+<p>You only annotate lifetimes when the compiler can’t tell which input a returned reference came from; a struct holding a reference, or a function returning a borrow tied to one of several arguments. That is later-thread material. For the entry, the takeaway is the model, not the syntax: <strong>a borrow is valid only as long as the thing it borrows lives, and the compiler proves it.</strong></p>
+<h2 id="the-type-system-briefly"><a class="header" href="#the-type-system-briefly">The Type System, Briefly</a></h2>
+<p>Rust is statically typed, like TypeScript; every value’s type is known at compile time, and the compiler infers most of them. Two constructs carry the serving layer.</p>
+<p><strong>Structs</strong> model your data shapes; the typed request and response that cross your proxy. This is the same parse-don’t-validate instinct you built with TypeScript’s typed tool contract, now enforced by a compiler with no escape hatch:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>struct InferenceRequest {
+    model: String,
+    prompt: String,
+    max_tokens: u32,
+}
+<span class="boring">}</span></code></pre>
+<p><strong>Enums</strong> model a value that is one of several shapes; and <code>Result&lt;T, E&gt;</code>, Rust’s built-in error type, is exactly this. There are no exceptions in Rust. A function that can fail returns its outcome <em>in the type</em>:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>enum ProxyError {
+    Upstream(String),
+    Timeout,
+}
+
+fn forward(req: &amp;InferenceRequest) -&gt; Result&lt;String, ProxyError&gt; {
+    if req.max_tokens == 0 {
+        return Err(ProxyError::Upstream("max_tokens must be &gt; 0".into()));
+    }
+    Ok(format!("response for {}", req.model))
+}
+<span class="boring">}</span></code></pre>
+<p>The caller cannot ignore the failure; the compiler forces a <code>match</code> or the <code>?</code> operator to unwrap a <code>Result</code>. The discriminated-union instinct from the TypeScript tool result (<code>status: "success" | "error"</code>) is the same instinct here; Rust makes it the only way errors travel. That is the entire point of moving the hot path to Rust: the failures that surface as runtime surprises in a Python proxy are surfaced at compile time instead.</p>
+<h2 id="cargo-the-one-tool-you-need"><a class="header" href="#cargo-the-one-tool-you-need">cargo: the One Tool You Need</a></h2>
+<p><code>cargo</code> is Rust’s build tool, package manager, and test runner in one. You met <code>rustup</code> and <code>cargo</code> when you installed Rust in Module 1; here you use them.</p>
+<pre><code class="language-bash">cargo new serving-proxy        # scaffold a project with Cargo.toml + src/main.rs
+cargo build                    # compile (debug)
+cargo build --release          # compile optimized — the build you serve from
+cargo run                      # build and run
+cargo check                    # type-check fast, no binary — the inner-loop command
+cargo test                     # run tests
+</code></pre>
+<p><code>cargo check</code> is the Rust equivalent of <code>tsc --noEmit</code>; the fast feedback loop where the compiler reviews your ownership and types without producing a binary. Dependencies go in <code>Cargo.toml</code>, the way <code>package.json</code> holds npm packages or <code>pyproject.toml</code> holds your Python deps:</p>
+<pre><code class="language-toml">[package]
+name = "serving-proxy"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+</code></pre>
+<p>One <code>Cargo.toml</code>, one <code>cargo check</code>, and the compiler tells you, before anything runs, whether your ownership is sound, your borrows are valid, and your error paths are handled. On the serving layer, that review is the safety budget you can’t afford to spend at runtime.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>Subword tokenization (BPE/WordPiece/Unigram) eliminates <code>[UNK]</code> by splitting rare words into reusable pieces; byte-level BPE guarantees zero unknown tokens by operating on raw bytes.</li>
-<li>The tokenizer is part of the model contract; BPE and Unigram models are not interchangeable, and token counts vary significantly across languages and content types.</li>
-<li>Structured-output reliability follows three tiers: prompting (~80%) → native APIs → constrained decoding (100% valid); the tier you choose determines how much downstream code must handle parse failures.</li>
-<li>Placing <code>answer</code> before <code>reasoning</code> in a schema commits the model before it thinks; field order is a reliability decision, not a style choice.</li>
+<li>Rust earns its place at the serving hot path because it delivers predictable latency with no garbage-collector pauses and memory safety the compiler proves before the binary exists; the control plane stays Python, the hot path becomes Rust.</li>
+<li>Ownership is the one genuinely new idea: every value has exactly one owner, only one at a time, and the value is dropped deterministically when its owner goes out of scope; which is why there is no garbage collector.</li>
+<li>Borrowing lends access without taking ownership, and the borrow checker enforces many-readers-XOR-one-writer at compile time, turning the data-race bug class into build errors.</li>
+<li>Rust models failure in the type system with <code>Result&lt;T, E&gt;</code>, the same discriminated-union instinct as a TypeScript typed tool result, and the compiler forces the caller to handle it rather than letting it surface at runtime.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module1/04-transformer-era-nlp/">
-<p><strong>Try It in Claude Code</strong>: Inspect a tokenizer to measure how token counts differ across content types: tokenize identical information expressed as English prose, JSON, Python code, and a non-Latin script, then compute the ratio.</p>
-<p>Open the repo and pick up from this lesson.</p>
+<div class="claude-handoff" data-exercise="exercises/module5/15-rust-break-in/">
+<p><strong>Build It in Claude Code</strong>: <code>cargo new</code> a small Rust program that models a typed inference request and response with structs and a <code>Result</code>-returning handler, then make it compile clean with <code>cargo check</code>. Deliberately trigger one ownership error (use a value after moving it) and read what the compiler tells you before you fix it.</p>
 </div>
 
 
@@ -208,11 +300,11 @@
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module1/03-attention.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module5/14-the-data-seam.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module1/05-retrieval-and-eval-foundations.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module5/16-async-rust-for-serving.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -222,11 +314,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module1/03-attention.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module5/14-the-data-seam.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module1/05-retrieval-and-eval-foundations.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module5/16-async-rust-for-serving.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

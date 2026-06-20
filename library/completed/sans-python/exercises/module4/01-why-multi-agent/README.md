@@ -2,7 +2,7 @@
 
 **Goal** — Stand up `module4-fleet/` on top of the `_harness/` starter, then prove a single agent hits one of the three single-agent walls and document where multi-agent earns its place.
 
-**Why** — Multi-agent is the next rung of the complexity ladder; an AI Platform Engineer reaches for it only when a single agent hits a nameable wall, never as a default.
+**Why** — Multi-agent is the next rung of the complexity ladder; an Production AI Engineer reaches for it only when a single agent hits a nameable wall, never as a default.
 
 **Steps**
 

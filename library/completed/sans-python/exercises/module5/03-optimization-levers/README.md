@@ -6,7 +6,7 @@ Add an optimization layer to `module5-serving/` that simulates all three levers 
 
 ## Why
 
-Every serving optimization is a trade, and each fails the same way: a win on the watched metric paid for by a regression on the unwatched one. Simulating the levers — including the regimes where they backfire — is how a platform engineer learns to pull them in order of blast radius and stop the moment the SLO and the quality score both clear.
+Every serving optimization is a trade, and each fails the same way: a win on the watched metric paid for by a regression on the unwatched one. Simulating the levers — including the regimes where they backfire — is how a Production AI Engineer learns to pull them in order of blast radius and stop the moment the SLO and the quality score both clear.
 
 ## Steps
 

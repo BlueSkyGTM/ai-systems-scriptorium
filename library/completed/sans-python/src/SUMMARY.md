@@ -79,8 +79,9 @@
 - [Data Ingestion (Docling)](module5/11-data-ingestion-docling.md)
 - [Experiment Tracking](module5/12-experiment-tracking.md)
 - [Fine-Tuning in Proportion](module5/13-fine-tuning-in-proportion.md)
-- [Rust Break-In](module5/14-rust-break-in.md)
-- [async Rust for Serving](module5/15-async-rust-for-serving.md)
+- [The Data Seam](module5/14-the-data-seam.md)
+- [Rust Break-In](module5/15-rust-break-in.md)
+- [async Rust for Serving](module5/16-async-rust-for-serving.md)
 
 # Module 6: Agent Artifacts
 

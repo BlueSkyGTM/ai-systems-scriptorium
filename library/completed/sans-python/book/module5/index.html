@@ -37,10 +37,10 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-a740a402.js";
+            window.path_to_searchindex_js = "../searchindex-79574284.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-519ea03c.js"></script>
+        <script src="../toc-5badbb0b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -182,7 +182,7 @@ engines, GPU scheduling, gateways, observability, FinOps, inference performance.
 Core thesis: <strong>performance engineering &gt; machine learning.</strong> This is the hiring separator; the step that
 turns “can call an API” into “can run it in production.” The throughline artifact is <code>module5-serving/</code>: a
 production serving + observability + ops stack each lesson extends, and the Module 6 artifacts later deploy onto.</p>
-<p>The fifteen lessons, six chapters:</p>
+<p>The sixteen lessons, six chapters:</p>
 <p><strong>Serving &amp; inference optimization (01–03)</strong>; serving engines and engine selection (vLLM/TGI/TensorRT-LLM,
 wrapped by FastAPI/Triton/BentoML); inside the engine (continuous batching, paged KV-cache); the optimization
 levers (quantization, speculative decoding, disaggregation).</p>
@@ -192,14 +192,15 @@ SRE-for-AI (OpenTelemetry GenAI, Prometheus/Grafana, drift).</p>
 <p><strong>Operations (07–08)</strong>; security &amp; compliance for AI ops (secrets, access, SOC 2 / HIPAA / EU AI Act as
 operational requirements); token FinOps &amp; cost optimization (the platform-scale read of Module 4’s budget
 governor).</p>
-<p><strong>Performance engineering depth (09–10)</strong>; measure before you optimize (profiling, roofline, attribution —
+<p><strong>Performance engineering depth (09–10)</strong>; measure before you optimize (profiling, roofline, attribution;
 the thesis core); the production performance checklist (topology awareness, the reference distilled).</p>
-<p><strong>Data, experiments &amp; the model lifecycle [lite] (11–13)</strong>; the MLOps-native skills the hiring bar rewards,
+<p><strong>Data, experiments &amp; the model lifecycle [lite] (11–14)</strong>; the MLOps-native skills the hiring bar rewards,
 brought back at <em>literacy depth</em>: data ingestion at production scale (<strong>Docling</strong>, the RAG front door);
 experiment tracking &amp; the LLMOps outer loop (MLflow); fine-tuning in proportion (LoRA/QLoRA literacy; when to
-fine-tune vs RAG vs prompt). The deep model-training build is out of scope (deferred to a
-focused companion).</p>
-<p><strong>Rust (entry) (14–15)</strong>; the second compiled language enters at point-of-use: Rust break-in (ownership,
+fine-tune vs RAG vs prompt); and the data seam (SQL over your telemetry, batch vs stream ingestion, and
+end-to-end lineage), where the AI system meets the data platform. The deep model-training build is out of
+scope (deferred to a focused companion).</p>
+<p><strong>Rust (entry) (15–16)</strong>; the second compiled language enters at point-of-use: Rust break-in (ownership,
 borrowing) and async Rust for serving (tokio, an inference proxy on the hot path), with Python still the
 control plane.</p>
 <p>roadmap.sh MLOps front-loads data engineering + model training; this course is <strong>inference-centric</strong> and keeps

@@ -6,7 +6,7 @@ Build a working RAG pipeline that ingests a small document corpus, chunks it wit
 
 ## Why
 
-RAG is the default way an AI Platform Engineer grounds a model in private data — this exercise proves you can assemble the components into a system that actually works, not just a demo that passes one query.
+RAG is the default way an Production AI Engineer grounds a model in private data — this exercise proves you can assemble the components into a system that actually works, not just a demo that passes one query.
 
 ## Steps
 

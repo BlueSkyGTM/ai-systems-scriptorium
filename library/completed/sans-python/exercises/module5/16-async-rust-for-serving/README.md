@@ -6,7 +6,7 @@ Add a `proxy/` to `module5-serving/` — a tokio async proxy that forwards a req
 
 ## Why
 
-This is where Rust earns its place in the AI platform. An AI Platform Engineer puts a thin async tier on the hot path to hold many in-flight requests on a few threads and to enforce — at compile time — the deadlines and backpressure that keep a traffic spike from becoming an outage, while Python stays the control plane behind it. You build that tier here.
+This is where Rust earns its place in the AI platform. An Production AI Engineer puts a thin async tier on the hot path to hold many in-flight requests on a few threads and to enforce — at compile time — the deadlines and backpressure that keep a traffic spike from becoming an outage, while Python stays the control plane behind it. You build that tier here.
 
 ## Setup
 

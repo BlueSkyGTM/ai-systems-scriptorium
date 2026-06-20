@@ -38,10 +38,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-a740a402.js";
+            window.path_to_searchindex_js = "searchindex-79574284.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-519ea03c.js"></script>
+        <script src="toc-5badbb0b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -3076,7 +3076,7 @@ engines, GPU scheduling, gateways, observability, FinOps, inference performance.
 Core thesis: <strong>performance engineering &gt; machine learning.</strong> This is the hiring separator; the step that
 turns “can call an API” into “can run it in production.” The throughline artifact is <code>module5-serving/</code>: a
 production serving + observability + ops stack each lesson extends, and the Module 6 artifacts later deploy onto.</p>
-<p>The fifteen lessons, six chapters:</p>
+<p>The sixteen lessons, six chapters:</p>
 <p><strong>Serving &amp; inference optimization (01–03)</strong>; serving engines and engine selection (vLLM/TGI/TensorRT-LLM,
 wrapped by FastAPI/Triton/BentoML); inside the engine (continuous batching, paged KV-cache); the optimization
 levers (quantization, speculative decoding, disaggregation).</p>
@@ -3086,14 +3086,15 @@ SRE-for-AI (OpenTelemetry GenAI, Prometheus/Grafana, drift).</p>
 <p><strong>Operations (07–08)</strong>; security &amp; compliance for AI ops (secrets, access, SOC 2 / HIPAA / EU AI Act as
 operational requirements); token FinOps &amp; cost optimization (the platform-scale read of Module 4’s budget
 governor).</p>
-<p><strong>Performance engineering depth (09–10)</strong>; measure before you optimize (profiling, roofline, attribution —
+<p><strong>Performance engineering depth (09–10)</strong>; measure before you optimize (profiling, roofline, attribution;
 the thesis core); the production performance checklist (topology awareness, the reference distilled).</p>
-<p><strong>Data, experiments &amp; the model lifecycle [lite] (11–13)</strong>; the MLOps-native skills the hiring bar rewards,
+<p><strong>Data, experiments &amp; the model lifecycle [lite] (11–14)</strong>; the MLOps-native skills the hiring bar rewards,
 brought back at <em>literacy depth</em>: data ingestion at production scale (<strong>Docling</strong>, the RAG front door);
 experiment tracking &amp; the LLMOps outer loop (MLflow); fine-tuning in proportion (LoRA/QLoRA literacy; when to
-fine-tune vs RAG vs prompt). The deep model-training build is out of scope (deferred to a
-focused companion).</p>
-<p><strong>Rust (entry) (14–15)</strong>; the second compiled language enters at point-of-use: Rust break-in (ownership,
+fine-tune vs RAG vs prompt); and the data seam (SQL over your telemetry, batch vs stream ingestion, and
+end-to-end lineage), where the AI system meets the data platform. The deep model-training build is out of
+scope (deferred to a focused companion).</p>
+<p><strong>Rust (entry) (15–16)</strong>; the second compiled language enters at point-of-use: Rust break-in (ownership,
 borrowing) and async Rust for serving (tokio, an inference proxy on the hot path), with Python still the
 control plane.</p>
 <p>roadmap.sh MLOps front-loads data engineering + model training; this course is <strong>inference-centric</strong> and keeps
@@ -3610,6 +3611,34 @@ model = get_peft_model(base_model, config)   # wraps the frozen base in a traina
 </div>
 
 <div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-data-seam-sql-streams-and-lineage"><a class="header" href="#the-data-seam-sql-streams-and-lineage">The Data Seam: SQL, Streams, and Lineage</a></h1>
+<p>Every signal this module taught you to watch lands somewhere. The spans your observability layer emits, the scores your eval gate returns, the per-call dollars your FinOps stamp records; none of it is a dashboard first. It is rows first. And the morning someone asks why p95 latency for tenant 7 doubled last Tuesday, and whether answer quality moved with it, you do not squint at a graph and guess. You answer it the way every data team answers every question: you query. This lesson is the seam where your AI system meets the data platform, and the slice of that seam a Production AI Engineer owns.</p>
+<h2 id="you-own-the-seam-not-the-platform"><a class="header" href="#you-own-the-seam-not-the-platform">You Own the Seam, Not the Platform</a></h2>
+<p>Data engineering is the other half of the MLOps cusp this course sits on, and it is a deep discipline: pipelines that move billions of rows, warehouses modeled for query, streaming systems that never sleep. You are not going to build those, and pretending otherwise is how the fork breaks. What you own is narrower and more useful: the place where the AI system reads from the data platform and writes back to it. Where the retrieval corpus comes from and how fresh it stays. Where the traces, evals, and costs land so they can be queried. Which events the agent emits and who consumes them. The data engineer builds the warehouse; you decide what your system puts in it and what you ask of it. Own that boundary cleanly and you are the person who connects AI to the data platform, which is exactly the hire; blur it and you are rebuilding Kafka badly on a deadline.</p>
+<h2 id="your-telemetry-is-a-dataset"><a class="header" href="#your-telemetry-is-a-dataset">Your Telemetry Is a Dataset</a></h2>
+<p>Here is the move most application engineers never make: treat your own telemetry as a dataset you query, not a feed you watch. The traces from Lesson 06, the eval verdicts from Module 2, the cost stamps from Lesson 08 are all tables, whether they live in a trace tool, a warehouse, or a single SQLite file on the box. The Production AI Engineer is the one who can sit down and write the query: p95 latency grouped by route, total cost grouped by tenant, eval pass-rate over a rolling seven-day window. The test is binary. Either you can answer “where did the latency, the money, or the quality go” with a <code>GROUP BY</code>, or you are guessing from a chart someone else built.</p>
+<p>SQL is the lingua franca for a reason: it is what the warehouse speaks, what the trace tool exposes, and what every data engineer you will work with reads fluently. You do not need window functions and recursive CTEs on day one. You need to be unafraid of a <code>SELECT</code> over your own production data, because the answer to “is this regression real” lives in that query and the confidence interval around it, not in an eyeballed line that went up.</p>
+<h2 id="two-shapes-of-ingestion-one-freshness-sla"><a class="header" href="#two-shapes-of-ingestion-one-freshness-sla">Two Shapes of Ingestion, One Freshness SLA</a></h2>
+<p>Lesson 11 ingested documents in a batch: point Docling at a corpus, parse, chunk, index, done. Production data arrives in two shapes, and the difference is operational. Batch is the nightly corpus reload, the warehouse table refreshed on a schedule, the re-index after a quarterly policy update. Streaming is the change-data-capture event, the support ticket that just landed, the document-changed webhook that should reach the index in seconds. Most systems use both, and which one a given source needs is a decision, not a default.</p>
+<p>The decision crystallizes into one number the Production AI Engineer owns: the freshness service-level objective. How stale may retrieval be before the answer is wrong? A compliance corpus that changes quarterly tolerates a nightly batch; a bot answering from live inventory or open tickets needs streaming or near-real-time re-indexing, or it will cite a world that no longer exists. Freshness is an SLO like latency or error rate: you set the target, you measure the lag between source-change and index-update, and you alert when it breaches. Naming it is the job; an index with no stated freshness target is one quietly serving yesterday’s truth as today’s.</p>
+<h2 id="lineage-from-document-version-to-eval-verdict"><a class="header" href="#lineage-from-document-version-to-eval-verdict">Lineage: From Document Version to Eval Verdict</a></h2>
+<p>Lesson 11 left you with the reproducible triple: pin the corpus snapshot, the chunking config, and the embedding-model id, and any index is reproducible. Production lineage extends that triple into a chain that runs the whole length of the system: which document version produced which chunk, which embedding, which retrieved context, which cited answer, and which eval verdict graded it. The chain is what turns “the answer got worse” from a mystery into a lookup. An answer changed; walk its lineage back and you find the corpus reload that swapped the source paragraph, or the embedding upgrade that moved the neighborhood, instead of bisecting the whole pipeline by hand.</p>
+<p>You have already seen one end of this. The Module 6 regulated RAG chatbot made the citation visible to the <em>reader</em>: every claim carries the source it came from. Lineage is the same chain made visible to the <em>operator</em>: every answer carries the data that produced it. It is the retrieval-side twin of the agent audit log from Modules 4 and 7, where every action carried its correlation id; here every answer carries its provenance. Same instinct, applied to data instead of actions: nothing the system produces should be unexplainable after the fact.</p>
+<h2 id="the-vocabulary-and-the-boundary"><a class="header" href="#the-vocabulary-and-the-boundary">The Vocabulary and the Boundary</a></h2>
+<p>To collaborate with a data team you have to speak the nouns, so name them and place yourself. Storage splits into the <strong>warehouse</strong> (Snowflake, BigQuery: structured, query-optimized) and the <strong>lakehouse</strong> (Iceberg or Delta tables over object storage: cheaper, open formats, one store for raw and modeled data). Movement splits into <strong>batch orchestration</strong> (Airflow or Prefect scheduling jobs, dbt transforming tables in the warehouse) and <strong>streaming</strong> (Kafka carrying events, change-data-capture turning database writes into a feed). You read from these and write to these. You do not build or operate them.</p>
+<p>That last sentence is the boundary, and holding it is the skill. The pipelines, the warehouse modeling, the streaming topology, the data-quality framework: that is the data engineer’s build, and it is the spine of a focused Data Engineering companion, not this book. Your deliverable is the seam: the query that answers the production question, the freshness SLO on the index, the lineage chain that explains an answer, and a clean contract with the platform on both sides. Knowing precisely where your job ends is not a gap in your skills; it is the discernment that keeps the system honest and keeps you valuable as the engineer who wires AI into the data platform rather than the one who reinvents it.</p>
+<h2 id="core-concepts-55"><a class="header" href="#core-concepts-55">Core Concepts</a></h2>
+<ul>
+<li>Your telemetry (traces, eval verdicts, cost stamps) is a queryable dataset; a Production AI Engineer answers “where did the latency, cost, or quality go” with a SQL <code>GROUP BY</code>, not a guess at a chart.</li>
+<li>Ingestion comes in two shapes, batch and streaming, and the index carries a freshness SLO: a stated number for how stale retrieval may be, measured as source-to-index lag and alerted on like any other objective.</li>
+<li>Lineage extends Lesson 11’s reproducible triple end to end (document version, chunk, embedding, retrieved context, cited answer, eval verdict), so a changed answer is a lookup, not a bisection; it is the operator-facing twin of the reader-facing citation and the agent audit log.</li>
+<li>You own the seam into the data platform (the reads, the writes, the queries, and the freshness and lineage contracts), not the platform itself; the pipelines, warehouse modeling, and streaming infrastructure are the data engineer’s build and a focused companion book.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module5/14-the-data-seam/">
+<p><strong>Build It in Claude Code</strong>: Add a data seam to <code>module5-serving/</code>. Persist the telemetry the stack already emits (spans with latency and route, cost stamps with tenant, eval verdicts) into a local SQLite store, then write three queries an operator actually runs: p95 latency by route, cost by tenant, and eval pass-rate over a rolling window. Put a freshness SLO on the Docling index from Lesson 11 (record an index-built timestamp and a max age, flag a breach), and record a lineage row linking each answer to its corpus version, chunk id, and eval verdict, with one query that walks an answer back to the document version that produced it. Prove it: <code>python smoke.py</code> loads sample telemetry, runs the three queries against known values, flags a deliberately stale index, and resolves one lineage chain end to end; <code>python -m pytest tests/</code> asserts the p95 query is correct, the freshness breach fires only when stale, and the lineage walk returns the right source version.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
 <h1 id="rust-break-in"><a class="header" href="#rust-break-in">Rust Break-In</a></h1>
 <p>The serving stack you built across this module, engine, metrics, rollout, FinOps, ingestion, sits in front of a model on the request hot path, and every millisecond there is a millisecond the user waits. Rust enters at exactly this seam: it is the language you reach for when a garbage-collector pause or an unbounded allocation is the difference between a clean p99 and a paged on-call engineer.</p>
 <h2 id="why-rust-now"><a class="header" href="#why-rust-now">Why Rust Now</a></h2>
@@ -3718,14 +3747,14 @@ edition = "2021"
 [dependencies]
 </code></pre>
 <p>One <code>Cargo.toml</code>, one <code>cargo check</code>, and the compiler tells you, before anything runs, whether your ownership is sound, your borrows are valid, and your error paths are handled. On the serving layer, that review is the safety budget you can’t afford to spend at runtime.</p>
-<h2 id="core-concepts-55"><a class="header" href="#core-concepts-55">Core Concepts</a></h2>
+<h2 id="core-concepts-56"><a class="header" href="#core-concepts-56">Core Concepts</a></h2>
 <ul>
 <li>Rust earns its place at the serving hot path because it delivers predictable latency with no garbage-collector pauses and memory safety the compiler proves before the binary exists; the control plane stays Python, the hot path becomes Rust.</li>
 <li>Ownership is the one genuinely new idea: every value has exactly one owner, only one at a time, and the value is dropped deterministically when its owner goes out of scope; which is why there is no garbage collector.</li>
 <li>Borrowing lends access without taking ownership, and the borrow checker enforces many-readers-XOR-one-writer at compile time, turning the data-race bug class into build errors.</li>
 <li>Rust models failure in the type system with <code>Result&lt;T, E&gt;</code>, the same discriminated-union instinct as a TypeScript typed tool result, and the compiler forces the caller to handle it rather than letting it surface at runtime.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module5/14-rust-break-in/">
+<div class="claude-handoff" data-exercise="exercises/module5/15-rust-break-in/">
 <p><strong>Build It in Claude Code</strong>: <code>cargo new</code> a small Rust program that models a typed inference request and response with structs and a <code>Result</code>-returning handler, then make it compile clean with <code>cargo check</code>. Deliberately trigger one ownership error (use a value after moving it) and read what the compiler tells you before you fix it.</p>
 </div>
 
@@ -3746,7 +3775,7 @@ edition = "2021"
 }
 <span class="boring">}</span></code></pre>
 <p>This reads like the Python you know. The difference is what <code>.await</code> does: it is a <em>yield point</em>. While <code>fetch_upstream</code> waits on the network, the thread it was running on is handed to another ready task. No thread sits idle holding a socket. That is the entire efficiency story, and it is why one tokio worker thread can carry thousands of concurrent requests.</p>
-<p>The <code>?</code> operator from lesson 14 works inside async functions exactly as it does in sync ones; a failed <code>.await</code> short-circuits and returns the error. Async did not change how Rust handles failure; it only changed when the work runs.</p>
+<p>The <code>?</code> operator from lesson 15 works inside async functions exactly as it does in sync ones; a failed <code>.await</code> short-circuits and returns the error. Async did not change how Rust handles failure; it only changed when the work runs.</p>
 <h2 id="tokio-the-runtime-you-bring"><a class="header" href="#tokio-the-runtime-you-bring">tokio: the Runtime You Bring</a></h2>
 <p>You declare the runtime with one macro on <code>main</code>. <code>#[tokio::main]</code> rewrites your <code>async fn main</code> into a synchronous one that starts the runtime and blocks on your top-level future:</p>
 <pre class="playground"><code class="language-rust">#[tokio::main]
@@ -3763,7 +3792,7 @@ async fn main() {
 let result = handle.await;     // wait for the spawned task to finish
 <span class="boring">}</span></code></pre>
 <p>A tokio task is not an OS thread. It is an asynchronous green thread; under the hood, a single allocation of about 64 bytes. Spawning a hundred thousand of them is cheap in a way that spawning a hundred thousand OS threads never is. That ratio, many tasks, few threads, is what makes Rust competitive with, and often ahead of, a thread-per-request design on the serving edge.</p>
-<p>Two rules come straight from the ownership lessons. A spawned task must be <code>'static</code> (its type’s lifetime must be <code>'static</code>, so it can outlive the function that spawned it) and <code>Send</code> (tasks spawned by <code>tokio::spawn</code> must implement <code>Send</code>, so they can move between worker threads). This is why you see <code>async move</code>; the task takes ownership of what it captures, so nothing it touches can be freed out from under it. The borrow checker you met in lesson 14 is the same checker proving your concurrency is sound; async didn’t loosen it.</p>
+<p>Two rules come straight from the ownership lessons. A spawned task must be <code>'static</code> (its type’s lifetime must be <code>'static</code>, so it can outlive the function that spawned it) and <code>Send</code> (tasks spawned by <code>tokio::spawn</code> must implement <code>Send</code>, so they can move between worker threads). This is why you see <code>async move</code>; the task takes ownership of what it captures, so nothing it touches can be freed out from under it. The borrow checker you met in lesson 15 is the same checker proving your concurrency is sound; async didn’t loosen it.</p>
 <h2 id="the-hot-path-a-tokio-inference-proxy"><a class="header" href="#the-hot-path-a-tokio-inference-proxy">The Hot Path: a tokio Inference Proxy</a></h2>
 <p>Here is where Rust earns its place in the AI platform. You put a thin async proxy in front of <code>module5-serving/</code>; the mock inference endpoint the rest of this module built against. The proxy is the hot path; Python remains the control plane behind and beside it.</p>
 <pre><code class="language-text">   client ──▶  Rust tokio proxy  ──▶  module5-serving/  (mock engine)
@@ -3805,14 +3834,14 @@ drop(permit);                                  // release the slot
 <h2 id="where-the-seam-lands"><a class="header" href="#where-the-seam-lands">Where the Seam Lands</a></h2>
 <p>The proxy is a few hundred lines, and it does what no Python tier on the hot path does for free: hold tens of thousands of connections on a few threads, enforce a deadline the compiler won’t let you skip, and cap concurrency with a primitive that can’t deadlock the way a hand-rolled lock can. Behind it, Python still owns everything that isn’t latency-critical; the config, the quotas, the rollout decisions, the dashboards you wired in this module.</p>
 <p>That division is the whole mixed-language thesis made concrete: Python where iteration speed wins, Rust on the one tier where a millisecond is a contract. You didn’t replace your platform. You put the right language on the hottest inch of it.</p>
-<h2 id="core-concepts-56"><a class="header" href="#core-concepts-56">Core Concepts</a></h2>
+<h2 id="core-concepts-57"><a class="header" href="#core-concepts-57">Core Concepts</a></h2>
 <ul>
 <li>Async serving is I/O-bound waiting, and <code>.await</code> is a yield point that hands the thread to another ready task; so a few tokio worker threads carry tens of thousands of concurrent requests instead of one thread per request.</li>
 <li>Rust has no built-in async runtime; you bring tokio, declare it with <code>#[tokio::main]</code>, and <code>tokio::spawn</code> a future onto its multi-threaded work-stealing scheduler, getting back a <code>JoinHandle</code>.</li>
 <li>A tokio task is a ~64-byte green thread, not an OS thread, and the <code>'static</code> + <code>Send</code> bounds on a spawned task are the borrow checker proving your concurrency is sound; async did not loosen ownership.</li>
 <li>A serving proxy earns Rust by adding compiler-enforced operational concerns on the hot path: <code>tokio::time::timeout</code> makes a deadline unskippable, and a <code>Semaphore</code> shared via <code>Arc</code> caps in-flight concurrency for backpressure; with Python still the control plane behind it.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module5/15-async-rust-for-serving/">
+<div class="claude-handoff" data-exercise="exercises/module5/16-async-rust-for-serving/">
 <p><strong>Build It in Claude Code</strong>: Add a <code>proxy/</code> to <code>module5-serving/</code>: a tokio async proxy that forwards a request to the module’s mock inference endpoint and adds one operational concern (a <code>timeout</code>, or a <code>Semaphore</code> concurrency cap). It must build with <code>cargo build</code> and run locally; no GPU, no cloud.</p>
 </div>
 
@@ -3886,7 +3915,7 @@ entry point (not a notebook), a README that frames the business problem, evaluat
 <p>You build a terminal coding agent that fixes a bug in a small Python project and proves it. The loop reads the failing file, writes a corrected version, runs the suite in a subprocess sandbox, and stops only when a deterministic gate accepts the result; the whole time bounded by a dollar-and-turn budget and a kill switch it cannot touch. A deterministic mock model drives the offline smoke run so the build gate is reproducible; a one-line swap puts a live Anthropic model behind the same seam. It is small enough to read in a sitting and real enough to become the coder node of a software team.</p>
 <h2 id="what-m7-reuses"><a class="header" href="#what-m7-reuses">What M7 Reuses</a></h2>
 <p>Nothing here is a throwaway. In Module 7 this exact agent becomes the <strong>coder node</strong> of the multi-agent software team: an architect plans, the coder edits and self-verifies in its sandbox, a reviewer gates, a tester confirms. M7 imports this loop, the tool surface, the sandbox, the budget, the kill switch, the verify gate, and composes it. It does not rebuild it. And the reason the reviewer can trust the coder at all is the verification interface you built here: the coder hands over a verdict file, not a promise. That is what compounding means; the single agent you make verifiable today is the team member you can govern tomorrow.</p>
-<h2 id="core-concepts-57"><a class="header" href="#core-concepts-57">Core Concepts</a></h2>
+<h2 id="core-concepts-58"><a class="header" href="#core-concepts-58">Core Concepts</a></h2>
 <ul>
 <li>The hard part of a coding agent is the harness, tool surface, sandbox, budget, verification gate, not the model call; a capable model is the easy half.</li>
 <li>The model seam (<code>respond(messages)</code>) and the verification interface (<code>verify(project_dir)</code>) are the portable core: they make the agent model-agnostic and make “done” a fact from running tests rather than a claim from the model.</li>
@@ -3951,7 +3980,7 @@ entry point (not a notebook), a README that frames the business problem, evaluat
 <p>This artifact is the <strong>knowledge/retrieval service</strong>. In Module 7 the <code>Retriever</code> stops being something a person queries and becomes a tool a governed agent fleet calls. The citation contract travels with it, an agent that retrieves through this service inherits cited answers for free, and so does the eval gate, which becomes one of the acceptance checks the fleet’s operator runs. You are not rebuilding retrieval in M7; you are wiring this seam into a larger machine. That is the compounding the course promised: the single agent you ship here is a node in the team you ship next.</p>
 <h2 id="what-you-build-10"><a class="header" href="#what-you-build-10">What You Build</a></h2>
 <p>A citation-enforced, guardrailed RAG chatbot for a regulated corpus: Docling-or-stdlib ingestion into a <code>Chunk</code> contract, a swappable <code>VectorIndex</code> (pure-Python default, Azure AI Search opt-in), a retriever with a relevance floor, a cited-answer path over a mock or real LLM, a Module 4 guardrail, a drift monitor, and an eval acceptance gate; all passing an offline, stdlib-only BUILD→TEST smoke gate.</p>
-<h2 id="core-concepts-58"><a class="header" href="#core-concepts-58">Core Concepts</a></h2>
+<h2 id="core-concepts-59"><a class="header" href="#core-concepts-59">Core Concepts</a></h2>
 <ul>
 <li>In a regulated vertical, citations and refusal are the acceptance bar, not features: an uncited claim is a liability, so the system is a citation-and-refusal machine that uses retrieval, not a chatbot that happens to cite.</li>
 <li>The portable seam is two interfaces, the <code>Chunk</code> citation contract and the <code>VectorIndex</code> retriever, so swapping Azure AI Search for a local index is one constructor call and the chatbot, guardrail, eval, and drift code never change.</li>
@@ -4015,7 +4044,7 @@ entry point (not a notebook), a README that frames the business problem, evaluat
 <p>This artifact is the <strong>human-interface channel</strong>. In Module 7 the voice pipeline stops being a standalone agent and becomes the way a person talks to a governed fleet in real time: it takes the caller’s turn, hands the transcript to the team, and streams the team’s answer back through TTS; under the same budget gate. The latency gate and the barge-in kill-switch carry forward unchanged, because they are exactly the operator surfaces the M8 student drives when the human interface is live. You are not rebuilding the pipeline in M7; you are wiring this channel onto a larger machine. That is the compounding the course promised: the single agent you ship here is how a human reaches the team you ship next.</p>
 <h2 id="what-you-build-11"><a class="header" href="#what-you-build-11">What You Build</a></h2>
 <p>A streaming voice pipeline against a hard latency budget: a Pipecat-shaped frame model, deterministic mock VAD/STT/LLM/TTS stages each carrying a simulated per-stage latency, a <code>VoicePipeline</code> that drives a turn through the cascade, a latency layer that measures per-stage and end-to-end against the budget and enforces it as a gate, and barge-in handling that cancels an in-flight turn; all passing an offline, stdlib-only BUILD→TEST smoke gate, with real Pipecat provider services opt-in behind guarded imports.</p>
-<h2 id="core-concepts-59"><a class="header" href="#core-concepts-59">Core Concepts</a></h2>
+<h2 id="core-concepts-60"><a class="header" href="#core-concepts-60">Core Concepts</a></h2>
 <ul>
 <li>A voice agent is engineered to a clock, not to intelligence: a ~450–600 ms mouth-to-ear budget forces streaming fragments and barge-in, and every pipeline hop is a withdrawal from that half-second.</li>
 <li>The portable seam is the pipeline stage, a <code>FrameProcessor</code> with one <code>process(frame)</code> method and a declared latency, so every STT/TTS/LLM/transport provider is a drop-in swap and the rest of the cascade never moves.</li>
@@ -4073,7 +4102,7 @@ entry point (not a notebook), a README that frames the business problem, evaluat
 <p>This artifact is the <strong>autonomous-execution pattern</strong>: a governed loop that discovers work, acts inside a budget, verifies against a gate it cannot fake, and hands the irreversible step to a human. Module 7 composes single agents into a governed fleet, and this is the node that does the unattended work; the same loop, now one worker among many, with the merge gate promoted to a shared human-in-the-loop (HITL) inbox. You do not rebuild the pattern in M7; you instantiate it. Build the seam clean here and the fleet inherits a worker it can already trust to stop in the right place.</p>
 <h2 id="what-you-build-12"><a class="header" href="#what-you-build-12">What You Build</a></h2>
 <p>You wrap the Module 4 loop around a coding step to turn a fixture issue into a reviewed PR. A scoped credential broker that refuses trunk and refuses a second repo. A trigger with a no-op exit. The coding action (a deterministic mock standing in for artifact 01). A CI verifier that runs the repo’s real tests and defaults REJECT. A budget and an operator-owned kill-switch as the stop. On a green gate it opens a PR, a branch plus a body artifact, and stops; on a red gate it escalates to a human. It never merges. The whole thing runs offline on the standard library, and four tests prove the operator surfaces hold.</p>
-<h2 id="core-concepts-60"><a class="header" href="#core-concepts-60">Core Concepts</a></h2>
+<h2 id="core-concepts-61"><a class="header" href="#core-concepts-61">Core Concepts</a></h2>
 <ul>
 <li>An issue-to-PR agent is the Module 4 loop (<code>trigger → action → verification → budget/kill-switch</code>) wrapped around the artifact-01 coding step; the work is the wiring and the gates, not a new idea.</li>
 <li>The portable seam is <code>issue → branch → fix → PR</code> behind a CI gate that defaults REJECT; the git host is swappable, so the vendor lives in two functions (<code>open_pr</code>, <code>run_ci</code>) and the loop stays host-agnostic.</li>
@@ -4152,7 +4181,7 @@ point the governed fleet at a production problem.</p>
 <p>This team is a <strong>node pattern</strong>, and that is the thing to carry forward. The shape, <em>a supervisor plans, sub-agents work in isolated sandboxes, a gate verifies each result before it is used, and a shared budget plus a kill switch govern the whole</em>, is the reusable unit. The Module 7 finale wires several such governed nodes under one operator console, and Module 8 points that console at a production problem: it configures the budget, holds the kill switch, reads the verified-versus-rejected split, and judges the synthesized answer against a rubric. The verification gate is what makes that judgment possible at all; the report M8 grades is assembled from grounded findings, not from promises. Build the gate honest here, and every team you compose on top of it inherits a spine you can trust.</p>
 <h2 id="what-you-build-13"><a class="header" href="#what-you-build-13">What You Build</a></h2>
 <p>You build an autonomous research team that answers a question no single agent could hold. A supervisor decomposes the question, dispatches one sub-agent per sub-question into its own no-egress sandbox, verifies each returned finding against the evidence it actually retrieved, and synthesizes only the verified findings into one cited answer; the whole team bounded by a shared budget and a kill switch it cannot disable. A deterministic mock plays planner, sub-agent, and solver so the build gate runs offline and reproducible; a one-line swap puts a live Anthropic model behind the same seams. It reuses the Module 6 worker, the Module 4 supervisor-worker pattern and fleet governance, and the Module 3 ReWOO and CRITIC patterns, composed, not rebuilt, and it becomes a node the Module 8 system governs.</p>
-<h2 id="core-concepts-61"><a class="header" href="#core-concepts-61">Core Concepts</a></h2>
+<h2 id="core-concepts-62"><a class="header" href="#core-concepts-62">Core Concepts</a></h2>
 <ul>
 <li>A research team beats a lone research agent not by adding agents but by adding governance: isolated sub-agent contexts make the work parallel and cheap, and a per-finding verification gate makes the answer trustable; the MAST verification gap closed with code.</li>
 <li>The build composes rather than authors: the sub-agent is the M6 worker loop, the supervisor is the M4 supervisor-worker pattern wired as direct tool calls, the planning is M3 ReWOO, and the gate is M3 CRITIC; naming what you reuse shrinks the build to the seams between them.</li>
@@ -4328,7 +4357,7 @@ correlation id. The smoke runs a crash-looping pod end to end offline on the sta
 library, and four tests prove diagnosis stays read-only, the gate blocks an
 unapproved fix, an approved fix applies once and is audited, and the kill-switch
 halts the team.</p>
-<h2 id="core-concepts-62"><a class="header" href="#core-concepts-62">Core Concepts</a></h2>
+<h2 id="core-concepts-63"><a class="header" href="#core-concepts-63">Core Concepts</a></h2>
 <ul>
 <li>The DevOps K8s agent is a composition, not a new agent: an M4 supervisor (lesson
 03) over read-only specialists (M6 scoping, artifact 04), behind an M4 HITL gate
@@ -4419,7 +4448,7 @@ offline.</p>
 <p>And that is the thesis, full circle. The book started by naming one job; the person who builds, serves, and governs the systems that run models. You built single agents. You composed them into a team. The team builds the final system, and you govern it. A fleet of agents run as governed infrastructure, with a human accountable for every action it takes, is not a feature of Production AI Engineering. It is the whole of it; and you just built one that runs.</p>
 <h2 id="what-you-build-15"><a class="header" href="#what-you-build-15">What You Build</a></h2>
 <p>You build a governed five-agent software-engineering team that ships a feature on its own and proves a human stayed accountable for every step. An architect plans the feature into slices; two coder nodes, each the Module 6 coding agent, reused whole, implement and self-verify in their sandboxes; a tester runs the acceptance suite for a deterministic verdict; a reviewer gates; and the merge waits in a shared HITL inbox until a human approves it by ID. The whole run executes under a fleet budget that caps each agent and the team, threads every action through a cross-agent audit by correlation ID, and answers to a kill switch the operator holds. Deterministic mocks drive the offline smoke run so the BUILD→TEST gate is reproducible on the standard library alone; a one-line swap puts a live model behind any node. It is the largest system in the course, built by composition; and it is the fleet Module 8 operates.</p>
-<h2 id="core-concepts-63"><a class="header" href="#core-concepts-63">Core Concepts</a></h2>
+<h2 id="core-concepts-64"><a class="header" href="#core-concepts-64">Core Concepts</a></h2>
 <ul>
 <li>A governed multi-agent fleet is built by composition, not invention: the coder nodes are the Module 6 coding agent reused whole, and the governance is the Module 4 fleet; a fleet artifact that rewrites the loop or re-derives propose-then-commit has misread the architecture.</li>
 <li>The hard half of a team of coding agents is not getting them to build; it is keeping a human accountable; the merge is the one irreversible action, so it is the one human gate, and no agent on the team has authority to merge.</li>
@@ -4474,7 +4503,7 @@ portfolio capstone: not an academic demo, a proof you can do the work.</p>
 <p>Single agent → team → governed fleet → production system, operated and judged. Nothing in that chain was busywork; each link is load-bearing for the next. The coding agent you made verifiable in Module 6 is the reason the reviewer can trust a coder node in Module 7, which is the reason you can govern the fleet in Module 8 at all. The exam is not a new mountain. It is the summit of the one you have been climbing; and the proof you can stand on it.</p>
 <h2 id="what-you-build-16"><a class="header" href="#what-you-build-16">What You Build</a></h2>
 <p>You build a task spec and operate a fleet against it. You choose a track and a reference architecture from the twenty case studies, scope <em>a version of</em> it that keeps the seam, and write the spec: the track, the architecture, the feature the fleet ships, the business problem, and the acceptance criteria. Then you point the shipped Module 7 governed fleet at that spec, operate it under the console, set the budgets, work the HITL inbox, read the audit, hold the kill switch, and grade the produced system against a seven-criterion acceptance rubric. The fleet builds the system; you run it as infrastructure and judge it. The exam harness ships with a worked example: the fleet ships a version of an autonomous coding agent against a sample spec, offline, and the rubric grades the run pass/fail by criterion.</p>
-<h2 id="core-concepts-64"><a class="header" href="#core-concepts-64">Core Concepts</a></h2>
+<h2 id="core-concepts-65"><a class="header" href="#core-concepts-65">Core Concepts</a></h2>
 <ul>
 <li>The final exam is not a new build but an operation: you point the shipped Module 7 governed fleet at a production problem, and the grade is whether you can run it as infrastructure and judge what it ships.</li>
 <li>“Build a version of” means replicate a real reference architecture scoped down to its load-bearing seam; not clone a hyperscaler, and not invent from a blank page, which is where weak portfolios fail.</li>
@@ -4533,7 +4562,7 @@ portfolio capstone: not an academic demo, a proof you can do the work.</p>
 <p><strong>Two: scope down, keep the spine.</strong> A version of #18 is not a full CI/CD platform. It is a single eval gate over a golden set of a dozen cases, wired so a change that regresses the eval does not promote. A version of #07 is not a full autonomous engineer. It is the sample spec: a planner that slices one feature, coders that implement it, a tester that gates, a human who merges. Cut the scale to what the offline fleet can ship in one run. Keep the seam, or you have built a different, weaker thing.</p>
 <p><strong>Three: write it down.</strong> The scope lives in the task spec, not in your head. The spec names the track, the reference architecture, the feature the fleet ships, the business problem, and the acceptance criteria. The business-problem line is where you name the seam you keep and the scope you cut; one sentence that tells a reader you understood the architecture, not just copied its name. The spec is the contract the fleet runs and the rubric grades; a vague spec is a vague grade.</p>
 <p>The catalog is twenty answers to “how was this solved already.” Choosing one and scoping it honestly is the difference between a portfolio that says <em>I can design a system</em> and one that says <em>I read a real design and shipped a version that holds the line that matters.</em></p>
-<h2 id="core-concepts-65"><a class="header" href="#core-concepts-65">Core Concepts</a></h2>
+<h2 id="core-concepts-66"><a class="header" href="#core-concepts-66">Core Concepts</a></h2>
 <ul>
 <li>The exam replicates a known architecture, never invents one from a blank page; each case study carries a seam, the one design decision a real version cannot drop, and that seam is what the rubric grades.</li>
 <li>The three tracks each anchor to specific case studies: eval-gated CI/CD (#18/#19/#17, seam = the eval gate), multi-tenant RAG (#08/#01/#12/#15, seam = isolation), agentic system (#07/#09/#16/#20, seam = the governed loop).</li>
@@ -4580,7 +4609,7 @@ portfolio capstone: not an academic demo, a proof you can do the work.</p>
 <p>The exam asks you to operate a fleet at the scale of a system, and at that scale a vocabulary shows up that this course applies but does not teach as its own module. Naming it is deliberate (deviation D6: the curriculum is scoped one jump from the Production AI Engineer role, and the System-Design roadmap is the structural benchmark for what sits just outside it).</p>
 <p>You are assumed to already speak it: <strong>load balancing</strong> (spreading requests across replicas so no one node is the bottleneck), <strong>caching</strong> (serving a repeated result without recomputing it, the explanation cache in #11, the eval cache in a CI gate), <strong>sharding and federation</strong> (partitioning data or routing across partitions so one store does not have to hold or answer everything, the spine of multi-tenant isolation), <strong>async and queues</strong> (decoupling a slow producer from a fast consumer so a spike does not topple the system, the HITL inbox is a queue with a human consumer), and <strong>CAP for distributed agent state</strong> (when the fleet’s state is spread across nodes you choose, under partition, between consistency and availability, and an agent that reads stale budget or a stale kill switch is a CAP decision you made by accident if you did not make it on purpose).</p>
 <p>You will not find a lesson teaching these from scratch here. The exam expects you to apply them when the architecture you replicate demands one; to know that a multi-tenant RAG version leans on sharding, that an eval-gated CI/CD version leans on caching the golden-set results, that the inbox is an async queue with a human on the far end. Knowing the word is the floor; knowing which seam needs it is the job.</p>
-<h2 id="core-concepts-66"><a class="header" href="#core-concepts-66">Core Concepts</a></h2>
+<h2 id="core-concepts-67"><a class="header" href="#core-concepts-67">Core Concepts</a></h2>
 <ul>
 <li>The operator console is four real controls, not a dashboard: configure the registry and dual budgets, work the HITL inbox to approve the merge by id, read the audit’s four clauses by correlation id, and hold the read-only kill switch; each works the same surface the Module 7 fleet ships.</li>
 <li>The acceptance rubric is seven criteria graded by code, runs, eval-gated, audited, budget-bounded, HITL-governed, problem-framed, tested+versioned, and a deficient run fails the criterion it offends, so the grade is a reproducible gate, not an opinion.</li>

@@ -6,7 +6,7 @@ Scaffold `module3-agent/` with a working ReAct loop: one stub tool, a stop condi
 
 ## Why
 
-An AI Platform Engineer controls the five surfaces that separate an agent from a chatbot — message buffer, tool registry, stop condition, turn budget, and observation formatter — before reaching for any framework.
+An Production AI Engineer controls the five surfaces that separate an agent from a chatbot — message buffer, tool registry, stop condition, turn budget, and observation formatter — before reaching for any framework.
 
 ## Steps
 

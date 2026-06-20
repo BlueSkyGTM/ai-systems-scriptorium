@@ -6,7 +6,7 @@ Instrument `module5-serving/` with phase timers, run a profiling pass against a 
 
 ## Why
 
-An optimization applied to the wrong bound is negative work: added complexity, no speedup. The platform engineer earns the right to change code by profiling first — naming the limiter from evidence, not the reflex. This exercise makes that discipline runnable: the bottleneck is planted, and you must find it from the profile before you touch it.
+An optimization applied to the wrong bound is negative work: added complexity, no speedup. The Production AI Engineer earns the right to change code by profiling first — naming the limiter from evidence, not the reflex. This exercise makes that discipline runnable: the bottleneck is planted, and you must find it from the profile before you touch it.
 
 ## Steps
 

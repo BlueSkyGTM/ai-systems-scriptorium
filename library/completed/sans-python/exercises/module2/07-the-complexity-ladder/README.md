@@ -6,7 +6,7 @@ Implement one task three ways — direct model call, single agent with tools, tw
 
 ## Why
 
-An AI Platform Engineer adds complexity only when the problem demands it; measuring the cost of each rung is how you know where the line is.
+An Production AI Engineer adds complexity only when the problem demands it; measuring the cost of each rung is how you know where the line is.
 
 ## Steps
 

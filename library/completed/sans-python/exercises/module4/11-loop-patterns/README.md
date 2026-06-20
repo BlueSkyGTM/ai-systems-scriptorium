@@ -6,7 +6,7 @@ Implement one concrete loop pattern end-to-end against the `_harness/` — a **C
 
 ## Why
 
-An AI Platform Engineer composes loops from a small named set instead of designing each from scratch, isolates every code-editing loop in a worktree so concurrent loops cannot collide, and treats the pattern set as everything-as-code: a schema-validated registry means a malformed loop fails validation in CI, not as a runaway in production.
+An Production AI Engineer composes loops from a small named set instead of designing each from scratch, isolates every code-editing loop in a worktree so concurrent loops cannot collide, and treats the pattern set as everything-as-code: a schema-validated registry means a malformed loop fails validation in CI, not as a runaway in production.
 
 ## Setup
 

@@ -1,7 +1,7 @@
 """The terminal coding agent — plan/act/observe, under three operator surfaces.
 
 This is the M3 agent loop (Observe -> Think -> Act) pointed at a code-fixing
-task and wrapped in the controls a platform engineer answers for:
+task and wrapped in the controls a Production AI Engineer answers for:
 
 - a **budget** that charges every model call and stops the run on breach,
 - a **kill switch** the agent reads before each action but cannot write,

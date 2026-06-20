@@ -6,7 +6,7 @@
 
 ## Why
 
-An AI Platform Engineer puts Rust on the serving hot path because the compiler proves memory safety and forces failure to travel in the type — and the price of admission is holding ownership whole. This exercise is the on-ramp: a typed request/response model, a `Result`-returning handler, and one deliberate borrow-checker error so you learn to read the compiler instead of fighting it.
+An Production AI Engineer puts Rust on the serving hot path because the compiler proves memory safety and forces failure to travel in the type — and the price of admission is holding ownership whole. This exercise is the on-ramp: a typed request/response model, a `Result`-returning handler, and one deliberate borrow-checker error so you learn to read the compiler instead of fighting it.
 
 ## Steps
 

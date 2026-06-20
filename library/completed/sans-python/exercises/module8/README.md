@@ -5,7 +5,7 @@ governed fleet** — the five-agent SWE team you shipped in artifact 03 — at a
 production-grade systems problem, operate it under the console, and judge what it
 ships against an acceptance rubric. The fleet builds; you operate and grade.
 
-This is the AI Platform Engineering job description, demonstrated: a fleet of
+This is the Production AI Engineering job description, demonstrated: a fleet of
 agents run as governed infrastructure, building a production system, judged
 against real reference architectures.
 
