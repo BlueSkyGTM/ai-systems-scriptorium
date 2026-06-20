@@ -19,6 +19,10 @@ Keep this current whenever a front-end choice changes.
   payload (course, lesson, lesson file, exercise path, task) for pasting into Claude Code.
 - **Button:** centered, fit-content, rust in light/Rust theme (`#b7410e`), Ayu-orange with dark text in
   dark themes (`#ff8f40`), green "Copied ✓" confirm. Sized for comfortable padding (not cramped).
+- **Button text size = `font-size: inherit` (2026-06-20).** It now matches the exercise description (the
+  body reading size). It was pinned at `0.98rem`, which under mdBook's 62.5% root is ~9.8px against the
+  16px description; that size contrast was jarring next to the description it sits under. Weight stays 600
+  (it is still a CTA); only the size was unshrunk.
 - **No "Exercise · path" tag (removed 2026-06-20).** It was Claude-facing info shown to the reader, too
   small, and redundant once every description became unique. The `data-exercise` attribute and the
   payload's `Exercise:` line stay — that's the part Claude needs; the reader doesn't.
