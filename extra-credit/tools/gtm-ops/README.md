@@ -9,19 +9,26 @@ two source repos.
 
 ## What it does
 
-Same signal + pipeline capacity as [career-ops](https://github.com/santifer/career-ops), aimed at GTM
-engineering instead of job search: take inbound signals (accounts, intent, enrichment), **score** them,
-move them through a **governed pipeline**, and **webhook** the results into the GTM stack
-(**Clay** for enrichment/orchestration, **HubSpot** for the CRM system of record).
+[career-ops](https://github.com/santifer/career-ops) is itself a **Clay mimic for job search**: it
+ingests signals and **generates a tailored resume per target** from them. GTM Ops keeps that engine —
+signal-driven *tailored generation* — and repoints the output from resumes to **GTM artifacts**
+(tailored outbound, sequences, account briefs). The symmetry is exact: a tailored resume for a job is a
+tailored pitch for an account.
+
+The flow: ingest signals (accounts, intent, enrichment) → **score** → **generate** the tailored
+artifact → move it through a **governed pipeline** → **webhook** into the real stack (**Clay** for
+enrichment/orchestration, **HubSpot** for the CRM system of record). Note the loop closes on itself —
+career-ops *mimics* Clay; GTM Ops plugs that same engine back into the *actual* Clay + HubSpot.
 
 This is a **lab tool**, not a change to the book pipeline — an *application* of the AI-engineering
 patterns to GTM, and a deployed-system portfolio piece (the "strong project" bar from `hireability`).
 
 ## Source material (study before coding — `/browse` both)
 
-- **Engine** — [santifer/career-ops](https://github.com/santifer/career-ops): the "neural net" /
-  signal-scoring + pipeline engine to port. *What exactly is the engine — a model, a scoring heuristic,
-  a staged pipeline? Resolve via `/browse` before designing.*
+- **Engine** — [santifer/career-ops](https://github.com/santifer/career-ops): a **Clay mimic** whose
+  pipeline turns signals into **tailored resumes**. So the engine is signal-driven *generation +
+  scoring*, not scoring alone — that generation step is the heart of what we port. *Exact shape (model
+  vs. heuristic vs. staged LLM pipeline) — resolve via `/browse`.*
 - **Intelligence layer** — [KarlRaf/gtm-starter-kit](https://github.com/KarlRaf/gtm-starter-kit): the
   GTM domain logic that powers it (ICP, signals, enrichment, sequences). *Map its surface via `/browse`.*
 
@@ -47,6 +54,7 @@ the curriculum, applied:
 - **lesson** — [M4 · Action budgets & cost governors](../../../library/completed/sans-python/src/module4/06-action-budgets-and-cost-governors.md) — cap Clay/enrichment **credit spend** before a run becomes a bill.
 - **lesson** — [M5 · Data ingestion (Docling)](../../../library/completed/sans-python/src/module5/11-data-ingestion-docling.md) — ingest company docs/decks/filings into the signal layer.
 - **lesson** — [M2 · Evaluation](../../../library/completed/sans-python/src/module2/05-evaluation.md) — LLM-as-judge scoring is the same machinery as lead/account scoring.
+- **lesson** — [M2 · Context engineering](../../../library/completed/sans-python/src/module2/02-context-engineering.md) — the **tailored generation** step is signal-context assembled into the prompt; tailoring quality is context quality.
 
 ## Open decisions (flag before build)
 
