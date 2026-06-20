@@ -1,0 +1,179 @@
+---
+layout: null
+title: Fleet Engineering — Showcase
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fleet Engineering — Govern populations of agents with accountability</title>
+  <meta name="description" content="The practical reference for fleet engineering. Patterns, checklists, and tooling for operating agent populations at team and org scale.">
+  <meta property="og:title" content="Fleet Engineering">
+  <meta property="og:description" content="Which agent did it, with what authority, against what task, evidenced by what?">
+  <meta property="og:image" content="https://raw.githubusercontent.com/cobusgreyling/fleet-engineering/main/assets/visuals/fleet-engineering-header.jpg">
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/showcase.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛵</text></svg>">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap nav-inner">
+    <a href="#" class="logo">Fleet <span>Engineering</span></a>
+    <ul class="nav-links">
+      <li><a href="#stack">Stack</a></li>
+      <li><a href="#patterns">Patterns</a></li>
+      <li><a href="#primitives">Primitives</a></li>
+      <li><a href="#start">Get Started</a></li>
+      <li><a href="#docs">Docs</a></li>
+      <li><a href="https://github.com/cobusgreyling/fleet-engineering">GitHub</a></li>
+    </ul>
+    <a href="https://github.com/cobusgreyling/fleet-engineering" class="btn btn-primary">View Repo</a>
+  </div>
+</nav>
+
+<header class="hero wrap">
+  <div class="badge">Open source · npx CLIs · F2 dogfood · 6 patterns · 5 stories</div>
+  <h1>Govern populations<br>of agents with accountability</h1>
+  <p class="lead">
+    Fleet engineering is the layer above loop engineering: registry, identity, permissions,
+    inbox, audit, economics, and sovereign control — so many loops run safely across a team.
+  </p>
+  <div class="hero-cta">
+    <a href="https://github.com/cobusgreyling/fleet-engineering/tree/main/starters/minimal-fleet" class="btn btn-primary">Clone a Starter →</a>
+    <a href="https://github.com/cobusgreyling/fleet-engineering/blob/main/docs/accountability-test.md" class="btn btn-ghost">Accountability Test</a>
+    <a href="https://github.com/cobusgreyling/loop-engineering" class="btn btn-ghost">Loop Engineering ↓</a>
+  </div>
+  <img
+    class="hero-img"
+    src="https://raw.githubusercontent.com/cobusgreyling/fleet-engineering/main/assets/visuals/fleet-engineering-header.jpg"
+    alt="Fleet Engineering"
+    loading="lazy"
+  />
+</header>
+
+<div class="wrap quotes">
+  <div class="quote-card" style="grid-column: 1 / -1;">
+    <blockquote>Which agent did it, with what authority, against what task, evidenced by what?</blockquote>
+    <cite>— The Fleet Engineering accountability test</cite>
+  </div>
+</div>
+
+<section id="stack" class="wrap">
+  <p class="section-label">The stack</p>
+  <h2 class="section-title">Context → Harness → Loop → Fleet</h2>
+  <p class="section-desc">Each layer owns a different question. Fleet engineering begins when populations need governance.</p>
+  <div class="card-grid">
+    <a class="card" href="https://cobusgreyling.medium.com/context-engineering-a34fd80ccc26">
+      <h3>Context</h3>
+      <p>What does the model see?</p>
+    </a>
+    <a class="card" href="https://cobusgreyling.substack.com/p/the-rise-of-ai-harness-engineering">
+      <h3>Harness</h3>
+      <p>How does one run execute?</p>
+    </a>
+    <a class="card" href="https://github.com/cobusgreyling/loop-engineering">
+      <h3>Loop</h3>
+      <p>What keeps working over time?</p>
+    </a>
+    <a class="card" href="https://github.com/cobusgreyling/fleet-engineering">
+      <h3>Fleet</h3>
+      <p>How do many systems govern together?</p>
+    </a>
+  </div>
+</section>
+
+<section id="patterns" class="wrap">
+  <p class="section-label">Patterns</p>
+  <h2 class="section-title">Six fleet patterns</h2>
+  <div class="card-grid">
+    <a class="card" href="https://github.com/cobusgreyling/fleet-engineering/blob/main/patterns/team-agent-registry.md">
+      <h3>Team Agent Registry</h3>
+      <p>Catalog agents with owners and lifecycle.</p>
+      <span class="tag">Start here</span>
+    </a>
+    <a class="card" href="https://github.com/cobusgreyling/fleet-engineering/blob/main/patterns/shared-inbox-hitl.md">
+      <h3>Shared Inbox HITL</h3>
+      <p>Central approval for risky actions.</p>
+    </a>
+    <a class="card" href="https://github.com/cobusgreyling/fleet-engineering/blob/main/patterns/hierarchical-delegation.md">
+      <h3>Hierarchical Delegation</h3>
+      <p>Manager → workers with typed handoffs.</p>
+    </a>
+    <a class="card" href="https://github.com/cobusgreyling/fleet-engineering/blob/main/patterns/agent-clone-fork.md">
+      <h3>Agent Clone & Fork</h3>
+      <p>Share agents across teams safely.</p>
+    </a>
+    <a class="card" href="https://github.com/cobusgreyling/fleet-engineering/blob/main/patterns/fleet-budget-guard.md">
+      <h3>Fleet Budget Guard</h3>
+      <p>Per-agent and per-team caps.</p>
+    </a>
+    <a class="card" href="https://github.com/cobusgreyling/fleet-engineering/blob/main/patterns/cross-agent-audit.md">
+      <h3>Cross-Agent Audit</h3>
+      <p>Incident review across boundaries.</p>
+    </a>
+  </div>
+</section>
+
+<section id="primitives" class="wrap">
+  <p class="section-label">Primitives</p>
+  <h2 class="section-title">Seven fleet primitives</h2>
+  <div class="flow">
+    <span class="flow-step">Registry</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">Identity</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">Permissions</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">Inbox</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">Audit</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">Economics</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">Sovereign control</span>
+  </div>
+</section>
+
+<section id="start" class="wrap">
+  <p class="section-label">Get started</p>
+  <h2 class="section-title">Five minutes to F1</h2>
+  <pre class="code-block"><code>npx @cobusgreyling/fleet-init ~/my-fleet --pattern team-agent-registry
+npx @cobusgreyling/fleet-audit ~/my-fleet --suggest
+npx @cobusgreyling/fleet-budget ~/my-fleet</code></pre>
+  <p class="section-desc" style="margin-top:1rem;">
+    <a href="https://github.com/cobusgreyling/fleet-engineering/blob/main/docs/pattern-picker.md">Pattern picker</a> ·
+    <a href="https://github.com/cobusgreyling/fleet-engineering/tree/main/starters/minimal-fleet">Use minimal-fleet template</a> ·
+    <a href="https://github.com/cobusgreyling/fleet-engineering/tree/main/examples/diy">DIY walkthrough</a>
+  </p>
+</section>
+
+<section id="docs" class="wrap">
+  <p class="section-label">Documentation</p>
+  <h2 class="section-title">Read next</h2>
+  <div class="card-grid">
+    <a class="card" href="https://github.com/cobusgreyling/fleet-engineering/blob/main/docs/concepts.md">
+      <h3>Concepts</h3>
+      <p>Fleet vs loop vs harness</p>
+    </a>
+    <a class="card" href="https://github.com/cobusgreyling/fleet-engineering/blob/main/docs/maturity-model.md">
+      <h3>Maturity F0–F3</h3>
+      <p>Phased rollout rubric</p>
+    </a>
+    <a class="card" href="https://github.com/cobusgreyling/fleet-engineering/blob/main/docs/failure-modes.md">
+      <h3>Failure modes</h3>
+      <p>What breaks at scale</p>
+    </a>
+    <a class="card" href="https://github.com/cobusgreyling/fleet-engineering/tree/main/stories">
+      <h3>Stories</h3>
+      <p>Wins and honest failures</p>
+    </a>
+  </div>
+</section>
+
+<footer class="footer wrap">
+  <p>By <a href="https://cobusgreyling.me/">Cobus Greyling</a> · MIT · <a href="https://github.com/cobusgreyling/fleet-engineering">GitHub</a></p>
+</footer>
+
+</body>
+</html>

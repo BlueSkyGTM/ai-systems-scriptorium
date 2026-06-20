@@ -1,0 +1,61 @@
+"""Python harness wrapper for optimized_async_prefetch.cu."""
+
+from __future__ import annotations
+from typing import Optional
+
+from pathlib import Path
+
+import torch
+
+from core.harness.benchmark_harness import BaseBenchmark
+from core.benchmark.cuda_binary_benchmark import CudaBinaryBenchmark
+
+
+class OptimizedAsyncPrefetchBenchmark(CudaBinaryBenchmark):
+    """Wraps the optimized async prefetch kernel."""
+
+    def __init__(self) -> None:
+        chapter_dir = Path(__file__).parent
+        n_elems = 64 * 1024 * 1024
+        tile_size = 4096
+        bytes_touched = n_elems * 2 * 4  # read + write
+        super().__init__(
+            chapter_dir=chapter_dir,
+            binary_name="optimized_async_prefetch",
+            friendly_name="Optimized Async Prefetch",
+            iterations=3,
+            warmup=5,
+            timeout_seconds=120,
+            workload_params={
+                "N": n_elems,
+                "tile_size": tile_size,
+                "dtype": "float32",
+            },
+        )
+        self._bytes_requested = bytes_touched
+        from core.harness.benchmark_harness import WorkloadMetadata
+        self.register_workload_metadata(
+            bytes_per_iteration=float(bytes_touched),
+        )
+
+
+    def get_custom_metrics(self) -> Optional[dict]:
+        """Return memory access metrics for async_prefetch."""
+        from core.benchmark.metrics import compute_memory_access_metrics
+        return compute_memory_access_metrics(
+            bytes_requested=self._bytes_requested,
+            bytes_actually_transferred=self._bytes_requested,  # Ideal case
+            num_transactions=max(1, self._bytes_requested // 128),
+            optimal_transactions=max(1, self._bytes_requested // 128),
+        )
+    
+    # Note: get_verify_output() inherited from CudaBinaryBenchmark
+    # which returns checksum from verify binary run
+
+
+
+def get_benchmark() -> OptimizedAsyncPrefetchBenchmark:
+    """Factory for discover_benchmarks()."""
+    return OptimizedAsyncPrefetchBenchmark()
+
+

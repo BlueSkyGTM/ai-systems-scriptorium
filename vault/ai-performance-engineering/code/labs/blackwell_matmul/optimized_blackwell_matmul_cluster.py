@@ -1,0 +1,34 @@
+"""Part 4: cluster DSMEM broadcast and Grace Hopper cluster launch."""
+
+from __future__ import annotations
+
+from labs.blackwell_matmul import (
+    baseline_blackwell_matmul,
+    optimized_blackwell_matmul_cluster,
+)
+from labs.blackwell_matmul.blackwell_benchmarks import (
+    FeatureDescriptor,
+    GraceBlackwellMatmulBenchmark,
+)
+
+
+class ClusterGraceBlackwellBenchmark(GraceBlackwellMatmulBenchmark):
+    def __init__(self, size: int = 2048) -> None:
+        descriptor = FeatureDescriptor(
+            tag="cluster",
+            notes="Part 4: DSMEM broadcast + CTA clusters (Grace-Blackwell)",
+        )
+        super().__init__(
+            runner=optimized_blackwell_matmul_cluster,
+            label="grace_blackwell_matmul_cluster",
+            size=size,
+            iterations=5,
+            warmup=5,
+            descriptor=descriptor,
+            reference_runner=baseline_blackwell_matmul,
+        )
+
+def get_benchmark() -> GraceBlackwellMatmulBenchmark:
+    return ClusterGraceBlackwellBenchmark()
+
+

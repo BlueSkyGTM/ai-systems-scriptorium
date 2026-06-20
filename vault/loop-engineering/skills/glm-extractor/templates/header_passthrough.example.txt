@@ -1,0 +1,4 @@
+# Module 3 · Loop Engineering — Anti-Patterns & Concepts
+
+> Source: `docs/`. High-value teaching material — anti-patterns and failure modes are the safety core. Full content preserved verbatim.
+> `[THREAD: safety]` applies to anti-patterns.md and failure-modes.md.

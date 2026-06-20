@@ -1,0 +1,126 @@
+// optimized_fused_l2norm.cu -- Fused L2 norm single kernel (optimized).
+
+#include <cuda_runtime.h>
+#include <iostream>
+#include <chrono>
+
+#include "../core/common/headers/cuda_verify.cuh"
+#include "../core/common/nvtx_utils.cuh"
+
+// Fused implementation: single kernel (higher arithmetic intensity)
+__global__ void fusedL2NormScalar(const float *a, const float *b, float *out, int N) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    
+    if (i < N) {
+        float ai = a[i];
+        float bi = b[i];
+        
+        // Perform multiple arithmetic ops on ai and bi before storing:
+        // 2 multiplications + 1 addition + 1 square root = 4 FLOPs
+        // Memory: 2 reads (8 bytes) + 1 write (4 bytes) = 12 bytes
+        // Arithmetic intensity: 4 FLOPs / 12 bytes = 0.33 FLOPs/byte
+        float sumsq = ai * ai + bi * bi;
+        out[i] = sqrtf(sumsq);
+    }
+}
+
+__global__ void fusedL2NormVec4(const float4* a, const float4* b, float4* out, int count) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= count) {
+        return;
+    }
+
+    const float4 av = a[i];
+    const float4 bv = b[i];
+
+    float4 outv;
+    outv.x = sqrtf(av.x * av.x + bv.x * bv.x);
+    outv.y = sqrtf(av.y * av.y + bv.y * bv.y);
+    outv.z = sqrtf(av.z * av.z + bv.z * bv.z);
+    outv.w = sqrtf(av.w * av.w + bv.w * bv.w);
+    out[i] = outv;
+}
+
+void fusedL2NormWrapper(const float* a, const float* b, float* out, int N) {
+    dim3 blockSize(256);
+    if (N % 4 == 0) {
+        const int vec_count = N / 4;
+        dim3 gridSize((vec_count + blockSize.x - 1) / blockSize.x);
+        fusedL2NormVec4<<<gridSize, blockSize>>>(
+            reinterpret_cast<const float4*>(a),
+            reinterpret_cast<const float4*>(b),
+            reinterpret_cast<float4*>(out),
+            vec_count);
+    } else {
+        dim3 gridSize((N + blockSize.x - 1) / blockSize.x);
+        fusedL2NormScalar<<<gridSize, blockSize>>>(a, b, out, N);
+    }
+    cudaDeviceSynchronize();
+}
+
+int main() {
+    NVTX_RANGE("main");
+    const int N = 1 << 20;  // 1M elements
+    const size_t bytes = N * sizeof(float);
+    
+    float* h_a = (float*)malloc(bytes);
+    float* h_b = (float*)malloc(bytes);
+    float* h_out = (float*)malloc(bytes);
+    
+    for (int i = 0; i < N; ++i) {
+        NVTX_RANGE("setup");
+        h_a[i] = static_cast<float>(i % 100) / 100.0f;
+        h_b[i] = static_cast<float>((i + 50) % 100) / 100.0f;
+    }
+    
+    float* d_a = nullptr;
+    float* d_b = nullptr;
+    float* d_out = nullptr;
+    
+    cudaMalloc(&d_a, bytes);
+    cudaMalloc(&d_b, bytes);
+    cudaMalloc(&d_out, bytes);
+    
+    cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_b, h_b, bytes, cudaMemcpyHostToDevice);
+    
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    
+    const int iterations = 100;
+    cudaEventRecord(start);
+    for (int i = 0; i < iterations; i++) {
+        NVTX_RANGE("iteration");
+        fusedL2NormWrapper(d_a, d_b, d_out, N);
+    }
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    
+    float time_total;
+    cudaEventElapsedTime(&time_total, start, stop);
+    float time_avg = time_total / iterations;
+    
+    printf("Fused L2 norm (single kernel, optimized): %.3f ms\n", time_avg);
+
+#ifdef VERIFY
+    cudaMemcpy(h_out, d_out, bytes, cudaMemcpyDeviceToHost);
+    double checksum = 0.0;
+    for (int i = 0; i < N; ++i) {
+        NVTX_RANGE("verify");
+        checksum += static_cast<double>(h_out[i]);
+    }
+    VERIFY_PRINT_CHECKSUM(static_cast<float>(checksum));
+#endif
+    
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+    free(h_a);
+    free(h_b);
+    free(h_out);
+    cudaFree(d_a);
+    cudaFree(d_b);
+    cudaFree(d_out);
+    
+    return 0;
+}

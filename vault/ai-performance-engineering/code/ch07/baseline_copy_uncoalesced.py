@@ -1,0 +1,45 @@
+"""Python harness wrapper for ch07's baseline_copy_uncoalesced.cu."""
+
+from __future__ import annotations
+from typing import Optional
+
+from pathlib import Path
+
+from core.harness.benchmark_harness import BaseBenchmark
+from core.benchmark.cuda_binary_benchmark import CudaBinaryBenchmark
+
+
+class BaselineCopyUncoalescedBenchmark(CudaBinaryBenchmark):
+    """Wraps the strided copy baseline kernel."""
+
+    def __init__(self) -> None:
+        chapter_dir = Path(__file__).parent
+        n_elems = 1 << 23
+        repeat = 40
+        super().__init__(
+            chapter_dir=chapter_dir,
+            binary_name="baseline_copy_uncoalesced",
+            friendly_name="Baseline Copy Uncoalesced",
+            iterations=3,
+            warmup=5,
+            timeout_seconds=90,
+            time_regex=r"TIME_MS:\s*([0-9.]+)",
+            workload_params={
+                "N": n_elems,
+                "repeat": repeat,
+                "dtype": "float32",
+            },
+        )
+        self.register_workload_metadata(
+            bytes_per_iteration=float(n_elems * 8),
+        )
+
+    def get_custom_metrics(self) -> Optional[dict]:
+        """Return memory access metrics."""
+        return None
+
+def get_benchmark() -> BaselineCopyUncoalescedBenchmark:
+    """Factory for discover_benchmarks()."""
+    return BaselineCopyUncoalescedBenchmark()
+
+

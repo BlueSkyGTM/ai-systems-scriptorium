@@ -1,0 +1,40 @@
+"""Python harness wrapper for baseline_add_cuda.cu."""
+
+from __future__ import annotations
+from pathlib import Path
+from typing import Optional
+
+from core.benchmark.cuda_binary_benchmark import CudaBinaryBenchmark
+from core.harness.benchmark_harness import BaseBenchmark
+
+
+class BaselineAddCudaBenchmark(CudaBinaryBenchmark):
+    """Wraps the baseline CUDA add binary."""
+
+    def __init__(self) -> None:
+        chapter_dir = Path(__file__).parent
+        n = 1_000_000
+        bytes_per_iter = n * 3 * 4  # A, B, C (float32)
+        super().__init__(
+            chapter_dir=chapter_dir,
+            binary_name="baseline_add_cuda",
+            friendly_name="Baseline Add CUDA",
+            iterations=10,
+            warmup=5,
+            timeout_seconds=60,
+            time_regex=r"TIME_MS:\s*([0-9.]+)",
+            workload_params={
+                "N": n,
+                "dtype": "float32",
+            },
+        )
+        self.register_workload_metadata(bytes_per_iteration=float(bytes_per_iter))
+
+    def get_custom_metrics(self) -> Optional[dict]:
+        return None
+
+
+def get_benchmark() -> BaseBenchmark:
+    return BaselineAddCudaBenchmark()
+
+

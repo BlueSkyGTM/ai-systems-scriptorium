@@ -1,0 +1,31 @@
+"""Baseline Grace-Blackwell matmul benchmark (Part 1)."""
+
+from __future__ import annotations
+
+from labs.blackwell_matmul import baseline_blackwell_matmul
+from labs.blackwell_matmul.blackwell_benchmarks import (
+    FeatureDescriptor,
+    GraceBlackwellMatmulBenchmark,
+)
+
+
+class BaselineGraceBlackwellBenchmark(GraceBlackwellMatmulBenchmark):
+    def __init__(self, size: int = 2048) -> None:
+        descriptor = FeatureDescriptor(
+            tag="baseline",
+            notes="Part 1 roofline walkthrough with a naïve CUDA kernel",
+        )
+        super().__init__(
+            runner=baseline_blackwell_matmul,
+            label="grace_blackwell_matmul_baseline",
+            size=size,
+            iterations=3,
+            warmup=5,
+            descriptor=descriptor,
+            reference_runner=None,
+        )
+
+def get_benchmark() -> GraceBlackwellMatmulBenchmark:
+    return BaselineGraceBlackwellBenchmark()
+
+

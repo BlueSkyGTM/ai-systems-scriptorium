@@ -1,0 +1,5 @@
+# Module 1 · Rust — Exercises by Topic
+
+> Source: `100-exercises-to-learn-rust` (book narrative + exercises), 8 topics / 98 exercises. Rust is taught as the serving layer, CLI tooling, and concurrency/async substrate. `08_futures` (async) maps directly to concurrent agent tasks and async tool calls.
+
+## Topics

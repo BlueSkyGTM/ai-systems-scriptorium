@@ -1,0 +1,38 @@
+"""Baseline paged KV-cache benchmark without fusion checks or async copies.
+
+- Stores cold KV pages in a memmap-backed cache (simulated NVMe).
+- Tries FP8 KV even when no fused attention path is present (may fall back).
+- Uses blocking H2D copies and no prefetch, so TTFT-style latency is higher.
+"""
+
+from __future__ import annotations
+
+import torch
+
+from core.benchmark.wrapper_utils import attach_benchmark_metadata
+from labs.persistent_decode.paged_kv_offload_common import PagedKVConfig, PagedKVOffloadBenchmark
+
+
+def get_benchmark() -> PagedKVOffloadBenchmark:
+    cfg = PagedKVConfig(
+        batch_size=4,
+        num_heads=16,
+        head_dim=128,
+        max_seq_len=32768,
+        page_tokens=2048,
+        decode_tokens=64,
+        repeat_pages=32,
+        use_pinned_stage=False,
+        use_async_stream=False,
+        use_memmap=True,
+        prefer_fp8=False,  # baseline keeps FP16 KV to show FP8 gains in optimized
+        require_fused_fp8=False,
+        fallback_dtype=torch.float16,
+        prefetch_next_page=False,
+        use_direct_h2d=False,
+    )
+    return attach_benchmark_metadata(
+        PagedKVOffloadBenchmark(cfg, label="paged_kv_offload_baseline"),
+        __file__,
+    )
+

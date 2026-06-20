@@ -1,0 +1,38 @@
+"""Python harness wrapper for baseline_kv_prefetch_overlap.cu."""
+
+from __future__ import annotations
+from typing import Optional
+
+from pathlib import Path
+
+from core.harness.benchmark_harness import BaseBenchmark
+from core.benchmark.cuda_binary_benchmark import CudaBinaryBenchmark
+
+
+class BaselineKvPrefetchOverlapBenchmark(CudaBinaryBenchmark):
+    """Wraps the baseline CUDA binary."""
+
+    def __init__(self) -> None:
+        chapter_dir = Path(__file__).parent
+        super().__init__(
+            chapter_dir=chapter_dir,
+            binary_name="baseline_kv_prefetch_overlap",
+            friendly_name="Baseline Kv Prefetch Overlap",
+            iterations=5,
+            warmup=5,
+            timeout_seconds=180,
+            workload_params={
+                "KV_BYTES": 2,
+                "dtype": 'float32',
+                "batch_size": 1,
+            },
+        )
+
+    def get_custom_metrics(self) -> Optional[dict]:
+        return None
+
+
+def get_benchmark() -> BaseBenchmark:
+    return BaselineKvPrefetchOverlapBenchmark()
+
+

@@ -1,0 +1,84 @@
+"""Benchmark/utility that records GPU↔NUMA topology to artifacts/topology/."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from numbers import Number
+from typing import Dict, Optional
+
+import torch
+
+from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig
+from core.benchmark.verification_mixin import VerificationPayloadMixin
+from labs.dynamic_router.topology import detect_topology, write_topology
+
+
+class TopologyProbeBenchmark(VerificationPayloadMixin, BaseBenchmark):
+    """Capture a snapshot of GPU↔NUMA mapping for downstream routing demos."""
+
+    # This benchmark's explicit purpose is to probe and materialize topology files.
+    allowed_benchmark_fn_antipatterns = ("io",)
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.snapshot = None
+        self.output_path: Optional[Path] = None
+        self.output: Optional[torch.Tensor] = None
+
+    def setup(self) -> None:
+        # Nothing to initialize besides ensuring artifacts dir exists (handled by write_topology).
+        torch.manual_seed(42)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(42)
+
+    def benchmark_fn(self) -> None:
+        topo = detect_topology()
+        self.output_path = write_topology(topo)
+        self.snapshot = topo
+        metrics_dict = self.get_custom_metrics() or {}
+        metric_values = [float(v) for v in metrics_dict.values() if isinstance(v, Number)]
+        if not metric_values:
+            metric_values = [0.0]
+        self.output = torch.tensor(metric_values, dtype=torch.float32).unsqueeze(0)
+
+    def capture_verification_payload(self) -> None:
+        self._set_verification_payload(
+            inputs={
+                "num_gpus": torch.tensor([len(self.snapshot.gpu_numa) if self.snapshot else 0], dtype=torch.int64),
+            },
+            output=self.output,
+            batch_size=1,
+            parameter_count=0,
+            precision_flags={"fp16": False, "bf16": False, "tf32": False},
+            output_tolerance=(0.1, 1.0),
+        )
+
+    def get_config(self) -> Optional[BenchmarkConfig]:
+        # Single-shot capture
+        return BenchmarkConfig(iterations=1, warmup=5)
+
+    def get_custom_metrics(self) -> Optional[Dict[str, float]]:
+        if self.snapshot is None:
+            return None
+        gpu_numa = {f"gpu{idx}_numa": float(node) if node is not None else -1.0 for idx, node in self.snapshot.gpu_numa.items()}
+        gpus_with_known_numa = sum(1 for node in self.snapshot.gpu_numa.values() if node is not None)
+        gpu_numa["num_gpus_detected"] = float(len(self.snapshot.gpu_numa))
+        gpu_numa["gpus_with_known_numa"] = float(gpus_with_known_numa)
+        gpu_numa["host_numa_nodes_detected"] = float(len(self.snapshot.distance))
+        for status in ("unknown", "partial", "complete"):
+            gpu_numa[f"gpu_numa_status_{status}"] = 1.0 if self.snapshot.gpu_numa_status == status else 0.0
+        return gpu_numa
+
+    def teardown(self) -> None:
+        self.output = None
+        self.snapshot = None
+        self.output_path = None
+        super().teardown()
+
+
+
+def get_benchmark() -> BaseBenchmark:
+    return TopologyProbeBenchmark()
+
+

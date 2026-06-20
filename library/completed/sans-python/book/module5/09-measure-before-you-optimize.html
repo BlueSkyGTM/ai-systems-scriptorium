@@ -1,0 +1,289 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Measure Before You Optimize - Sans Python — Production AI Engineering</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/copy-to-claude-dcee30da.css">
+        <link rel="stylesheet" href="../theme/syntax-polish-5e51e1c1.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "rust";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "../searchindex-49915c1e.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-519ea03c.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Sans Python — Production AI Engineering</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="measure-before-you-optimize-profiling--roofline"><a class="header" href="#measure-before-you-optimize-profiling--roofline">Measure Before You Optimize: Profiling &amp; Roofline</a></h1>
+<p>Chapter 1 handed you the levers; continuous batching, quantization, paged attention, disaggregated prefill and decode. This lesson is the discipline that decides which lever to pull. An optimization applied to the wrong bottleneck is not a small win; it is negative work; added complexity, no speedup, and a slower path to the fix that would have mattered. The serving lessons taught you the moves. This one teaches you to earn the right to make one.</p>
+<h2 id="optimization-without-measurement-is-guessing-with-a-budget"><a class="header" href="#optimization-without-measurement-is-guessing-with-a-budget">Optimization Without Measurement Is Guessing with a Budget</a></h2>
+<p>Here is the thesis of the whole module, stated as a working rule: you do not get to optimize a system you have not profiled. The reflex, “decode feels slow, let me quantize”, is the expensive reflex. Quantization helps a workload bound by memory bandwidth or weight size. If your decode is actually stalling on a scheduler that drains the queue one request at a time, you can quantize to four bits and watch the latency sit exactly where it was, because you spent your effort on a part of the system that was never the limiter.</p>
+<p>The reference checklist behind this chapter states it flatly: <em>profile before and after.</em> Tweaks made on theory might not help, or even hurt, in practice. It gives the case that should haunt you: enable activation checkpointing on a workload that is not memory-limited, and you trade compute you needed for memory you had to spare, and the job gets <em>slower</em>. The optimization was real. The application was a guess. That is the difference this lesson exists to remove.</p>
+<p>This is also the seam’s sharpest edge. The machine-learning instinct is to reach for a better model, a bigger model, a fine-tune. The platform-engineering instinct is to ask where the time actually goes; and the answer, more often than the ML instinct expects, is a queue, a copy, or a CPU thread starving the GPU. Knowing whether you need a kernel change or a trip to the store for more memory bandwidth is a deployable, demonstrable skill. It is the one that separates the engineer who ships a 4x speedup from the one who ships a clever change nobody can measure.</p>
+<h2 id="the-four-bounds-name-the-limiter-before-you-touch-it"><a class="header" href="#the-four-bounds-name-the-limiter-before-you-touch-it">The Four Bounds: Name the Limiter Before You Touch It</a></h2>
+<p>Every inference workload is limited by one of four things at any moment, and your only job in the first profiling pass is to find out which:</p>
+<ul>
+<li><strong>Compute-bound</strong>; the arithmetic units are busy; you are doing real floating-point work (FLOPs, floating-point operations) near the hardware’s ceiling. Prefill on a large batch lives here.</li>
+<li><strong>Memory-bound</strong>; the arithmetic units are <em>idle, waiting on data</em> moving to and from high-bandwidth memory (HBM, the GPU’s on-package DRAM). Single-stream autoregressive decode lives here: one token at a time, reloading the model’s weights and the key-value cache for each step.</li>
+<li><strong>I/O-bound</strong>; the GPU waits on disk or the host: model load, data staging, a slow tokenizer on the CPU.</li>
+<li><strong>Communication-bound</strong>; in a multi-GPU deployment, the GPUs wait on each other across the interconnect.</li>
+</ul>
+<p>The reference puts it in one line worth memorizing: you can’t optimize what you don’t measure; profiling reveals whether you’re compute-bound, memory-bound, I/O-bound, or network-bound, so you target the right fix. The four bounds map to four different toolboxes. Quantization and better attention kernels attack a compute or memory-traffic bound. A bigger data-loader pool or pinned host memory attacks I/O. Topology-aware placement attacks communication. Pick the toolbox before the tool, and pick it from evidence.</p>
+<h2 id="the-roofline-a-picture-of-the-ceiling-you-are-under"><a class="header" href="#the-roofline-a-picture-of-the-ceiling-you-are-under">The Roofline: a Picture of the Ceiling You Are Under</a></h2>
+<p>The roofline model is the one diagram worth keeping in your head for this work. It answers the single question; <em>am I bandwidth-limited or compute-limited?</em>; by plotting two numbers against the hardware’s actual ceilings.</p>
+<p>The horizontal axis is <strong>arithmetic intensity</strong>: floating-point operations performed per byte moved from memory (FLOPs per byte). A kernel that reads a lot of data and does little math with it sits on the left. A kernel that loads its operands once and grinds on them sits on the right.</p>
+<p>The vertical axis is <strong>achieved performance</strong> in FLOPs per second. The “roof” has two slopes. On the left, a diagonal: performance rises with intensity because you are <em>memory-bound</em>; the memory bus, not the math units, sets your speed, and every extra FLOP-per-byte buys you more. On the right, a flat ceiling: you have saturated the compute units and become <em>compute-bound</em>; more intensity buys nothing because the arithmetic, not the bus, is now the wall.</p>
+<pre><code> performance
+ (FLOPs/s)
+     │            ┌──────────────  compute roof (peak FLOPs/s)
+     │           ╱   compute-bound region →
+     │          ╱
+     │         ╱  ← memory-bound region
+     │        ╱
+     │       ╱  slope = memory bandwidth (bytes/s)
+     │      ╱
+     └─────┴────────────────────────────  arithmetic intensity
+                                            (FLOPs / byte)
+</code></pre>
+<p>Plot your kernel as a point. Under the diagonal, your fix is to <em>move less data</em>; quantize the weights or the KV cache to shrink bytes, fuse kernels so intermediate results never round-trip through HBM, reuse a cache instead of recomputing it. Under the flat roof, data movement will not save you; you need a faster algorithm or to do less arithmetic; a sparser attention pattern, an early exit, a smaller effective computation. The same point also tells you the <em>ceiling itself</em>: if you are at the roof, you are done, and more engineering is wasted. Nsight Compute ships a roofline pane that plots this for every captured kernel and flags the limiter for you. You do not derive the model by hand at the console; you read it, and let it tell you which region you are standing in.</p>
+<p>Why this matters for an LLM specifically: decode is structurally memory-bound. Each generated token reloads the weights and the growing KV cache to produce one token’s worth of math, so arithmetic intensity is low and you sit on the diagonal; which is exactly why the chapter-1 levers that <em>cut bytes</em> (paged and pooled KV cache, quantized cache, lower precision) buy so much there, and why a faster matmul kernel often buys nothing. Prefill is the opposite: a full prompt’s worth of arithmetic per byte loaded, far to the right, compute-bound. One model, two regimes, two toolboxes. The roofline is how you stop confusing them.</p>
+<h2 id="systems-first-then-kernels-the-two-step-attribution-loop"><a class="header" href="#systems-first-then-kernels-the-two-step-attribution-loop">Systems First, Then Kernels: the Two-Step Attribution Loop</a></h2>
+<p>Knowing the bound is half the discipline. The other half is <em>attribution</em>; pinning the lost time to a specific cause before you change code. The reference prescribes a two-step flow, and it is the right order.</p>
+<p><strong>Step one; the timeline.</strong> Capture the whole system with a timeline profiler (NVIDIA Nsight Systems is the reference’s tool) and tag your phases, input staging, prefill, decode, the inter-token gaps, with named markers so the timeline reads like a story instead of a wall of kernels. The timeline answers the cheap, decisive questions first: <em>Is the GPU even busy?</em> A GPU sitting at 50% utilization is not a kernel problem; it is a feeding problem; the data, the CPU, or the queue is starving it, and no kernel rewrite will close a gap the GPU never spent computing. The reference’s example is exact: utilization dips every five minutes that turn out to coincide with checkpoint saves. You would never find that by staring at a kernel. You find it by looking at when the GPU goes idle and what else happened at that instant.</p>
+<p><strong>Step two; the kernel.</strong> <em>Only</em> once the timeline names the dominant phase do you drop into a kernel profiler (Nsight Compute) on that one kernel, and read occupancy, memory throughput, and the roofline point. This is where the 80/20 rule earns its keep: if ninety percent of your time is in two kernels or one communication phase, you optimize those deeply and ignore the one-percent kernel entirely, however ugly it looks. The two-step loop exists so you never burn a kernel-profiling session on a kernel that was never the limiter.</p>
+<p>The measured deltas from the serving chapters only mean anything inside this loop. In the reference’s own benchmark runs, a tensor-core decode kernel showed a 15.65x speedup on one target; cache-aware reuse of the rotary-position and query path showed 23.53x; a smarter routing policy showed 7.07x with the underlying workload unchanged. Those are not numbers to quote at a stranger’s stack. They are numbers that were <em>attributed</em>; profiled deep-dive to confirm the win came from the cache movement, the scheduling, or the decode behavior the engineer claimed it did, not from a lucky batch. Re-measure on your own hardware before you treat any published delta as a threshold. A speedup you cannot reproduce on your machine is a rumor, not a result.</p>
+<h2 id="measure-honestly-or-dont-bother"><a class="header" href="#measure-honestly-or-dont-bother">Measure Honestly or Don’t Bother</a></h2>
+<p>The fastest way to lie to yourself is a sloppy measurement, so the reference fences the method as hard as the optimization. Align the runs before timing, clamp the random seed, the preprocessing, the batch shapes, so the delta comes from your change and not from a different workload sneaking in. Measure the <em>steady state</em>, warm up first, run the compile and the cache-fill before you start the clock, so first-iteration noise never lands in the reported number. Track throughput and latency <em>together</em>; tokens per second next to milliseconds, because an optimization that improves one while quietly wrecking the other is a regression wearing a win’s clothes. And log the environment every run, GPU, driver, toolkit, the exact command, so a number is replayable and a regression is traceable to the thing that changed.</p>
+<p>For the AI Platform Engineer, this is the habit the title is built on: you are the person who can say <em>where the time goes</em> and prove it, before anyone spends a sprint optimizing a part of the system that was already at its roof. Measure first. The lever comes second, and only the measurement tells you which one.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>Optimization without measurement is negative work: a fix applied to a part of the system that was not the bottleneck adds complexity and buys nothing, so you do not optimize a workload you have not profiled.</li>
+<li>Every inference workload is compute-bound, memory-bound, I/O-bound, or communication-bound at any moment; naming the bound first picks the toolbox; quantization and kernel work for compute/memory, data-loader and pinned-memory work for I/O, topology-aware placement for communication.</li>
+<li>The roofline plots arithmetic intensity (FLOPs per byte) against achieved performance: under the diagonal you are memory-bound and the fix is to move fewer bytes; under the flat roof you are compute-bound and the fix is less or faster arithmetic. LLM decode sits memory-bound, prefill compute-bound.</li>
+<li>Attribute before you change code with the two-step loop: a timeline profiler first to find the dominant phase and check the GPU is even busy, then a kernel profiler on that one phase; and measure the steady state with aligned runs so the delta is the optimization, not a lucky batch.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module5/09-measure-before-you-optimize/">
+<p><strong>Build It in Claude Code</strong>: Instrument the <code>module5-serving/</code> mock serving layer with phase timers (input staging, prefill, decode, queue wait), run a profiling pass against a synthetic load, and read off which phase dominates. The layer hides a deliberate bottleneck; a serialized queue drain that starves the “GPU” while the model sits idle. Attribute it from the timeline before you touch it, apply the one fix that targets the actual limiter, and report the measured before/after delta in both throughput and latency. Then prove a <em>wrong</em> fix (quantizing the already-idle compute path) buys nothing.</p>
+</div>
+
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../module5/08-token-finops.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../module5/10-the-performance-checklist.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../module5/08-token-finops.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../module5/10-the-performance-checklist.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/copy-to-claude-66056049.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

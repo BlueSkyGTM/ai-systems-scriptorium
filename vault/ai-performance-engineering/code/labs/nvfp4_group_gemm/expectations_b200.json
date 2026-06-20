@@ -1,0 +1,223 @@
+{
+  "examples": {
+    "nvfp4_group_gemm": {
+      "custom_metrics": {
+        "case_groups": 2.0,
+        "requests_per_iteration": 15.0
+      },
+      "example": "nvfp4_group_gemm",
+      "metadata": {
+        "best_memory_savings_pct": -1.276695242063457,
+        "best_memory_savings_ratio": 0.9873939914467732,
+        "best_optimization": "optimized_nvfp4_group_gemm",
+        "best_optimization_file": "optimized_nvfp4_group_gemm.py",
+        "best_optimization_memory_mb": 446.25439453125,
+        "best_optimization_speedup": 1.0316972307270724,
+        "best_optimization_technique": "optimized_nvfp4_group_gemm",
+        "best_optimization_time_ms": 0.5950520979921993,
+        "minimum_required_speedup": 1.005,
+        "optimization_goal": "speed"
+      },
+      "metrics": {
+        "baseline_memory_mb": 440.62890625,
+        "baseline_p75_ms": 0.6141120195388794,
+        "baseline_time_ms": 0.6139136016368866,
+        "best_memory_savings_pct": -1.276695242063457,
+        "best_memory_savings_ratio": 0.9873939914467732,
+        "best_optimized_memory_mb": 446.25439453125,
+        "best_optimized_p75_ms": 0.5947840213775635,
+        "best_optimized_speedup": 1.0316972307270724,
+        "best_optimized_time_ms": 0.5950520979921993,
+        "best_speedup": 1.0316972307270724,
+        "is_regression": false
+      },
+      "provenance": {
+        "dmi_product_name": "Standard PC (Q35 + ICH9, 2009)",
+        "execution_environment": "virtualized",
+        "git_commit": "df47a0efb3aa90e9e634ce00d514190f957897fd",
+        "hardware_key": "b200",
+        "iterations": 0,
+        "profile_name": "minimal",
+        "timestamp": "2026-03-30T02:17:13+00:00",
+        "validity_profile": "portable",
+        "warmup_iterations": 0
+      },
+      "type": "python"
+    },
+    "nvfp4_group_gemm_g8_n4096_k7168": {
+      "custom_metrics": {
+        "case_groups": 8.0,
+        "requests_per_iteration": 15.0
+      },
+      "example": "nvfp4_group_gemm_g8_n4096_k7168",
+      "metadata": {
+        "best_memory_savings_pct": -0.8728179053009452,
+        "best_memory_savings_ratio": 0.9913473428875523,
+        "best_optimization": "optimized_nvfp4_group_gemm_g8_n4096_k7168",
+        "best_optimization_file": "optimized_nvfp4_group_gemm_g8_n4096_k7168.py",
+        "best_optimization_memory_mb": 2465.88134765625,
+        "best_optimization_speedup": 1.0124220995917377,
+        "best_optimization_technique": "optimized_nvfp4_group_gemm_g8_n4096_k7168",
+        "best_optimization_time_ms": 2.378557721773783,
+        "optimization_goal": "comparison"
+      },
+      "metrics": {
+        "baseline_memory_mb": 2444.544921875,
+        "baseline_p75_ms": 2.407263994216919,
+        "baseline_time_ms": 2.4081044026783536,
+        "best_memory_savings_pct": -0.8728179053009452,
+        "best_memory_savings_ratio": 0.9913473428875523,
+        "best_optimized_memory_mb": 2465.88134765625,
+        "best_optimized_p75_ms": 2.381472110748291,
+        "best_optimized_speedup": 1.0124220995917377,
+        "best_optimized_time_ms": 2.378557721773783,
+        "best_speedup": 1.0124220995917377,
+        "is_regression": false
+      },
+      "provenance": {
+        "dmi_product_name": "Standard PC (Q35 + ICH9, 2009)",
+        "execution_environment": "virtualized",
+        "git_commit": "df47a0efb3aa90e9e634ce00d514190f957897fd",
+        "hardware_key": "b200",
+        "iterations": 0,
+        "profile_name": "minimal",
+        "timestamp": "2026-03-30T02:06:23+00:00",
+        "validity_profile": "portable",
+        "warmup_iterations": 0
+      },
+      "type": "python"
+    },
+    "nvfp4_group_gemm_g8_n7168_k2048": {
+      "custom_metrics": {
+        "case_groups": 8.0,
+        "requests_per_iteration": 15.0
+      },
+      "example": "nvfp4_group_gemm_g8_n7168_k2048",
+      "metadata": {
+        "best_memory_savings_pct": -1.9965364395279794,
+        "best_memory_savings_ratio": 0.9804254486551934,
+        "best_optimization": "optimized_nvfp4_group_gemm_g8_n7168_k2048",
+        "best_optimization_file": "optimized_nvfp4_group_gemm_g8_n7168_k2048.py",
+        "best_optimization_memory_mb": 1432.44921875,
+        "best_optimization_speedup": 1.0301330897704966,
+        "best_optimization_technique": "optimized_nvfp4_group_gemm_g8_n7168_k2048",
+        "best_optimization_time_ms": 2.0194367933273316,
+        "optimization_goal": "comparison"
+      },
+      "metrics": {
+        "baseline_memory_mb": 1404.40966796875,
+        "baseline_p75_ms": 2.0796799659729004,
+        "baseline_time_ms": 2.080288663506508,
+        "best_memory_savings_pct": -1.9965364395279794,
+        "best_memory_savings_ratio": 0.9804254486551934,
+        "best_optimized_memory_mb": 1432.44921875,
+        "best_optimized_p75_ms": 2.020128011703491,
+        "best_optimized_speedup": 1.0301330897704966,
+        "best_optimized_time_ms": 2.0194367933273316,
+        "best_speedup": 1.0301330897704966,
+        "is_regression": false
+      },
+      "provenance": {
+        "dmi_product_name": "Standard PC (Q35 + ICH9, 2009)",
+        "execution_environment": "virtualized",
+        "git_commit": "df47a0efb3aa90e9e634ce00d514190f957897fd",
+        "hardware_key": "b200",
+        "iterations": 0,
+        "profile_name": "minimal",
+        "timestamp": "2026-03-30T02:09:13+00:00",
+        "validity_profile": "portable",
+        "warmup_iterations": 0
+      },
+      "type": "python"
+    },
+    "nvfp4_group_gemm_g2_n3072_k4096": {
+      "custom_metrics": {
+        "case_groups": 2.0,
+        "requests_per_iteration": 15.0
+      },
+      "example": "nvfp4_group_gemm_g2_n3072_k4096",
+      "metadata": {
+        "best_memory_savings_pct": -1.276695242063457,
+        "best_memory_savings_ratio": 0.9873939914467732,
+        "best_optimization": "optimized_nvfp4_group_gemm_g2_n3072_k4096",
+        "best_optimization_file": "optimized_nvfp4_group_gemm_g2_n3072_k4096.py",
+        "best_optimization_memory_mb": 446.25439453125,
+        "best_optimization_speedup": 1.0363876807762877,
+        "best_optimization_technique": "optimized_nvfp4_group_gemm_g2_n3072_k4096",
+        "best_optimization_time_ms": 0.5938457218083468,
+        "minimum_required_speedup": 1.005,
+        "optimization_goal": "speed"
+      },
+      "metrics": {
+        "baseline_memory_mb": 440.62890625,
+        "baseline_p75_ms": 0.6154559850692749,
+        "baseline_time_ms": 0.6154543903638732,
+        "best_memory_savings_pct": -1.276695242063457,
+        "best_memory_savings_ratio": 0.9873939914467732,
+        "best_optimized_memory_mb": 446.25439453125,
+        "best_optimized_p75_ms": 0.5942720174789429,
+        "best_optimized_speedup": 1.0363876807762877,
+        "best_optimized_time_ms": 0.5938457218083468,
+        "best_speedup": 1.0363876807762877,
+        "is_regression": false
+      },
+      "provenance": {
+        "dmi_product_name": "Standard PC (Q35 + ICH9, 2009)",
+        "execution_environment": "virtualized",
+        "git_commit": "df47a0efb3aa90e9e634ce00d514190f957897fd",
+        "hardware_key": "b200",
+        "iterations": 0,
+        "profile_name": "minimal",
+        "timestamp": "2026-03-30T02:11:12+00:00",
+        "validity_profile": "portable",
+        "warmup_iterations": 0
+      },
+      "type": "python"
+    },
+    "nvfp4_group_gemm_g2_n4096_k1536": {
+      "custom_metrics": {
+        "case_groups": 2.0,
+        "requests_per_iteration": 15.0
+      },
+      "example": "nvfp4_group_gemm_g2_n4096_k1536",
+      "metadata": {
+        "best_memory_savings_pct": -2.7879399331792545,
+        "best_memory_savings_ratio": 0.9728767797565391,
+        "best_optimization": "optimized_nvfp4_group_gemm_g2_n4096_k1536",
+        "best_optimization_file": "optimized_nvfp4_group_gemm_g2_n4096_k1536.py",
+        "best_optimization_memory_mb": 335.29345703125,
+        "best_optimization_speedup": 1.0025323955404213,
+        "best_optimization_technique": "optimized_nvfp4_group_gemm_g2_n4096_k1536",
+        "best_optimization_time_ms": 0.3515312524287255,
+        "optimization_goal": "comparison"
+      },
+      "metrics": {
+        "baseline_memory_mb": 326.19921875,
+        "baseline_p75_ms": 0.35308799147605896,
+        "baseline_time_ms": 0.3524214686046947,
+        "best_memory_savings_pct": -2.7879399331792545,
+        "best_memory_savings_ratio": 0.9728767797565391,
+        "best_optimized_memory_mb": 335.29345703125,
+        "best_optimized_p75_ms": 0.3518719971179962,
+        "best_optimized_speedup": 1.0025323955404213,
+        "best_optimized_time_ms": 0.3515312524287255,
+        "best_speedup": 1.0025323955404213,
+        "is_regression": false
+      },
+      "provenance": {
+        "dmi_product_name": "Standard PC (Q35 + ICH9, 2009)",
+        "execution_environment": "virtualized",
+        "git_commit": "df47a0efb3aa90e9e634ce00d514190f957897fd",
+        "hardware_key": "b200",
+        "iterations": 0,
+        "profile_name": "minimal",
+        "timestamp": "2026-03-30T02:12:35+00:00",
+        "validity_profile": "portable",
+        "warmup_iterations": 0
+      },
+      "type": "python"
+    }
+  },
+  "hardware_key": "b200",
+  "schema_version": 2
+}

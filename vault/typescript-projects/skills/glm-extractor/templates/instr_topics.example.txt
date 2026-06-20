@@ -1,0 +1,9 @@
+TASK: Produce exactly ONE markdown section summarizing this TypeScript topic.
+OUTPUT FORMAT — output ONLY the section, no preamble:
+## <Topic Name>
+A 2-3 sentence summary of what the topic covers.
+**TypeScript concepts:** comma-separated list of the concrete TS features/concepts.
+**Sans-Python use case:** 1-2 sentences on why this matters for building LLM-backed products and agents — type-safe agent schemas, reusable tool wrappers, async LLM calls, MCP server contracts, or working with JS-first LLM tooling.
+RULES:
+- Topic Name = a readable title from the TOPIC FOLDER name / README H1.
+- Extract faithfully from the README. No opinions.

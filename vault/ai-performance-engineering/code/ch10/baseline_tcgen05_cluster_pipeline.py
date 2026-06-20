@@ -1,0 +1,52 @@
+"""Baseline tcgen05 matmul using a 2-stage TMA pipeline (no clusters)."""
+
+from __future__ import annotations
+
+from typing import Callable, Optional
+
+import torch
+
+from core.benchmark.tcgen05_matmul_base import Tcgen05MatmulBenchmarkBase
+from core.benchmark.tcgen05_requirements import ensure_tcgen05_supported
+from core.common.tcgen05 import load_tcgen05_pipelined_module
+from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig
+
+
+class BaselineTcgen05ClusterPipelineBenchmark(Tcgen05MatmulBenchmarkBase):
+    """Chapter 10 baseline: pipelined tcgen05 without cluster launch."""
+
+    matrix_rows = 6144
+    matrix_cols = 6144
+    shared_dim = 2048
+    nvtx_label = "baseline_tcgen05_cluster_pipeline"
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.extension: Optional[object] = None
+        self._matmul: Optional[Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = None
+
+    def setup(self) -> None:
+        ensure_tcgen05_supported(
+            loader=load_tcgen05_pipelined_module,
+            module_name="ch10 tcgen05 cluster pipeline",
+        )
+        super().setup()
+        if self.extension is None:
+            self.extension = load_tcgen05_pipelined_module()
+        self._matmul = self.extension.matmul_tcgen05_pipelined
+
+    def benchmark_fn(self) -> None:
+        if self._matmul is None or self.matrix_a is None or self.matrix_b is None:
+            raise RuntimeError("Inputs or extension not initialized")
+        with self._nvtx_range(self.nvtx_label):
+            with torch.inference_mode():
+                self.output = self._matmul(self.matrix_a, self.matrix_b)
+
+    def get_config(self) -> BenchmarkConfig:
+        return BenchmarkConfig(iterations=10, warmup=5)
+
+
+def get_benchmark() -> BaseBenchmark:
+    return BaselineTcgen05ClusterPipelineBenchmark()
+
+

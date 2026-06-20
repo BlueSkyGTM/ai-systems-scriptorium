@@ -1,0 +1,4 @@
+# Module 4 · Performance Engineering — Inference Serving Chapters (ch15–20)
+
+> Source: `code/ch15`–`code/ch20` README files (the inference-serving seam of the book). The training/CUDA/kernel chapters (ch01–14) are antilibrary (see `output/antilibrary.md`).
+> Each section: GLM-extracted **key concepts** + **hands-on tasks**, followed by the full chapter README verbatim (collapsible). Code files are not extracted — students use the real chapter code.

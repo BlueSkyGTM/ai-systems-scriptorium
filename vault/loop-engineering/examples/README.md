@@ -1,0 +1,34 @@
+# Examples
+
+Same patterns, different tools. Skills and state schemas are shared; only scheduling and invocation differ.
+
+| Tool | Directory |
+|------|-----------|
+| Grok Build TUI | [grok/](./grok/) |
+| Claude Code | [claude-code/](./claude-code/) |
+| Codex App | [codex/](./codex/) |
+| GitHub Actions | [github-actions/](./github-actions/) |
+| MCP connectors | [mcp/](./mcp/) |
+
+Start with [primitives-matrix.md](../docs/primitives-matrix.md) to map capabilities.
+
+## Pattern coverage
+
+| Pattern | Grok | Claude | Codex | GH Actions |
+|---------|------|--------|-------|------------|
+| Daily Triage | [grok/daily-triage.md](./grok/daily-triage.md) | [claude-code/daily-triage.md](./claude-code/daily-triage.md) | [codex/daily-triage.md](./codex/daily-triage.md) | [github-actions/daily-triage.yml](./github-actions/daily-triage.yml) |
+| PR Babysitter | [grok/pr-babysitter.md](./grok/pr-babysitter.md) | [claude-code/pr-babysitter.md](./claude-code/pr-babysitter.md) | [codex/pr-babysitter.md](./codex/pr-babysitter.md) | [github-actions/pr-babysitter.yml](./github-actions/pr-babysitter.yml) |
+| CI Sweeper | [grok/ci-sweeper.md](./grok/ci-sweeper.md) | [claude-code/ci-sweeper.md](./claude-code/ci-sweeper.md) | [codex/ci-sweeper.md](./codex/ci-sweeper.md) | [github-actions/ci-sweeper.yml](./github-actions/ci-sweeper.yml) |
+| Post-Merge Cleanup | [grok/post-merge-cleanup.md](./grok/post-merge-cleanup.md) | [claude-code/post-merge-cleanup.md](./claude-code/post-merge-cleanup.md) | [codex/post-merge-cleanup.md](./codex/post-merge-cleanup.md) | [github-actions/post-merge-cleanup.yml](./github-actions/post-merge-cleanup.yml) |
+| Dependency Sweeper | [grok/dependency-sweeper.md](./grok/dependency-sweeper.md) | [claude-code/dependency-sweeper.md](./claude-code/dependency-sweeper.md) | [codex/dependency-sweeper.md](./codex/dependency-sweeper.md) | [github-actions/dependency-sweeper.yml](./github-actions/dependency-sweeper.yml) |
+| Changelog Drafter | [grok/changelog-drafter.md](./grok/changelog-drafter.md) | [claude-code/changelog-drafter.md](./claude-code/changelog-drafter.md) | [codex/changelog-drafter.md](./codex/changelog-drafter.md) | [github-actions/changelog-drafter.yml](./github-actions/changelog-drafter.yml) |
+
+L2 patterns ship multi-tool skills inside one starter folder — see `starters/<pattern>/`.
+
+**Copy-paste starters** (L1 daily triage):
+
+| Tool | Starter |
+|------|---------|
+| Grok | [starters/minimal-loop](../starters/minimal-loop/) |
+| Claude Code | [starters/minimal-loop-claude](../starters/minimal-loop-claude/) |
+| Codex | [starters/minimal-loop-codex](../starters/minimal-loop-codex/) |

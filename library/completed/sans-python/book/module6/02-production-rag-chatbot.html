@@ -1,0 +1,301 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Production RAG Chatbot - Sans Python — Production AI Engineering</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/copy-to-claude-dcee30da.css">
+        <link rel="stylesheet" href="../theme/syntax-polish-5e51e1c1.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "rust";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "../searchindex-49915c1e.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-519ea03c.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Sans Python — Production AI Engineering</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="production-rag-chatbot-regulated-vertical"><a class="header" href="#production-rag-chatbot-regulated-vertical">Production RAG Chatbot (Regulated Vertical)</a></h1>
+<p>A bank’s compliance team answers the same policy questions all day, by hand, with no record of who said what. You can replace that with a chatbot; but the moment the domain is regulated, an answer without a source is not a feature, it is a liability someone signs their name under. This is the most-shipped production AI shape of 2026, and it is the one where the hard parts are the parts a demo skips: the citation, the guardrail, the gate that says ship or don’t.</p>
+<p>You have built the pieces already. Module 2 gave you the RAG spine and the evaluation triad; Module 5 gave you the Docling front door and quality-drift observability; Module 4 gave you guardrails. This artifact assembles them into one system a regulator could audit, and it makes the seams real enough to reuse.</p>
+<h2 id="the-business-problem"><a class="header" href="#the-business-problem">The Business Problem</a></h2>
+<p>Strip the romance off and the job is narrow. A compliance team owns a corpus of policy documents, retention schedules, access-control rules, incident-response timelines, and a stream of questions that already have answers buried in those documents. Today a person finds the answer, or guesses it, and nobody can reconstruct later why the answer was what it was.</p>
+<p>A regulated vertical changes the acceptance bar in two specific ways, and both are non-negotiable. First, <strong>every claim must cite its source.</strong> “Records are kept seven years” is worthless; “Records are kept seven years [Data Retention Policy, Section 2]” is an auditable statement. Second, <strong>the system must refuse before it misbehaves</strong>, refuse to answer from a document it didn’t retrieve, refuse a prompt-injection attempt, refuse to leak PII, because in this domain a confident wrong answer costs more than no answer at all. Citations and guardrails are the reason the system is allowed to exist, not polish on top of one that already works.</p>
+<p>That reframes the build. You are not building a chatbot that happens to cite; you are building a citation-and-refusal machine that happens to use retrieval to do it.</p>
+<h2 id="capability-and-one-stack"><a class="header" href="#capability-and-one-stack">Capability and One Stack</a></h2>
+<p>The capability is RAG with three things bolted on that a toy RAG omits: <strong>citations</strong>, <strong>guardrails</strong>, and <strong>drift observability</strong>. The reference stack, one concrete choice end to end:</p>
+<ul>
+<li><strong>Ingestion</strong>; Docling parses PDF/DOCX/PPTX into a <code>DoclingDocument</code> and chunks it structure-aware (Module 5’s front door).</li>
+<li><strong>Index</strong>; Azure AI Search holds the vectors and runs hybrid retrieval: it executes a BM25 keyword query and a vector query in parallel, then merges the two ranked lists with Reciprocal Rank Fusion.</li>
+<li><strong>Generation</strong>; Azure OpenAI or Anthropic, prompted through the Messages API with a system prompt that says answer only from the retrieved context and cite each claim or refuse.</li>
+<li><strong>Guardrail</strong>; an input/output content screen (Module 4’s pattern), anchored to hardcoded prohibitions.</li>
+<li><strong>Observability</strong>; OpenTelemetry GenAI spans and a sampled quality check (Module 5’s outer loop).</li>
+</ul>
+<p>One stack, named, so the choices are honest. But the stack is not the lesson. The seam is.</p>
+<h2 id="the-portable-seam"><a class="header" href="#the-portable-seam">The Portable Seam</a></h2>
+<p>Two interfaces carry this whole system, and getting them right is what lets you swap a cloud service for a laptop without touching the rest.</p>
+<p>The first is the <strong><code>Chunk</code> contract</strong>, inherited from Module 5’s <code>DoclingDocument</code>. A chunk is text plus its citation handle; the document it came from and the section within it. Everything downstream binds to <code>Chunk</code>, never to “a PDF” or “a DOCX.” Swap a scanned contract for a native PDF and the chunk your index sees is the same shape; the parser changed, the contract didn’t.</p>
+<p>The second is the <strong>retriever interface</strong>; a <code>VectorIndex</code> with two methods, <code>add</code> and <code>search</code>:</p>
+<pre><code class="language-python">class VectorIndex(Protocol):
+    def add(self, chunks: List[Chunk]) -&gt; None: ...
+    def search(self, query: str, k: int = 4) -&gt; List[Tuple[Chunk, float]]: ...
+</code></pre>
+<p>The default backend is a pure-Python in-memory index: hashed bag-of-words embeddings scored by cosine, no numpy, no FAISS, no service. Azure AI Search is a second class that satisfies the same interface and reads its endpoint from the environment. The chatbot above the interface cannot tell which one it is talking to. That is the swap: <strong>Azure AI Search ↔ local index</strong> is a change of one constructor call, because the chatbot, the guardrail, the eval gate, and the drift monitor all bind to <code>VectorIndex</code> and <code>Chunk</code>, not to a backend.</p>
+<p>This is the same swappable-engine stance the serving stack took and the same one Docling’s seam took. You are not learning a new idea here; you are watching it pay off a third time.</p>
+<h2 id="the-build-sequence"><a class="header" href="#the-build-sequence">The Build Sequence</a></h2>
+<p>Build it in the order the dependencies force, each step runnable before the next:</p>
+<ol>
+<li><strong>Ingest</strong>; corpus to <code>Chunk</code>s. Docling for real documents; a stdlib markdown splitter for the offline path. Section headers ride along as metadata; the source-anchoring context that lifts recall.</li>
+<li><strong>Index</strong>; load the chunks into the pure-Python <code>VectorIndex</code>. This is the seam; prove it works locally before any cloud call exists.</li>
+<li><strong>Retrieve</strong>; wrap the index in the retriever interface, with a relevance floor. Below the floor, return nothing; the CRAG-style move that stops the model fabricating from junk.</li>
+<li><strong>Answer with citations</strong>; retrieve, then generate. On the smoke path the generator is a deterministic mock LLM that grounds the answer in the top chunk and appends its citation, so the output is reproducible and the citation is real. A real model plugs in at the same <code>generate</code> signature.</li>
+<li><strong>Guardrail</strong>; screen input and output. Block the unsafe query before retrieval; block the unsafe answer before it returns.</li>
+<li><strong>Drift</strong>; record a rolling quality reading against a service-level-objective (SLO) floor.</li>
+<li><strong>Eval</strong>; score retrieval precision and answer faithfulness against a labeled set. This is the gate.</li>
+</ol>
+<p>The mock LLM is doing real work, not papering over a gap. A deterministic policy at the generation seam is what makes the whole pipeline testable in CI; the interesting parts, retrieval, citation, refusal, the gate, are exactly the parts that don’t need a live model to prove out.</p>
+<h2 id="the-operator-surfaces"><a class="header" href="#the-operator-surfaces">The Operator Surfaces</a></h2>
+<p>Module 8 hands the student the operator’s chair: set the thresholds, watch the signals, hold the go/no-go. So this artifact exposes three surfaces the student will drive, and they are real, not decorative.</p>
+<p><strong>The guardrail gate.</strong> The input/output screen carries two classes of rule, straight from Module 4. <strong>Hardcoded prohibitions</strong>, prompt-injection patterns, “dump all customer PII,” “disable the audit log”, are the floor; operator config cannot lower them. <strong>Operator-adjustable defaults</strong>, topical scope, response style, are the knobs, bounded by that floor. The honest caveat from Module 4 still holds: a classifier is a layer, not a wall. It catches the careless; it does not stop a motivated adversary. That is why the hard prohibitions sit underneath it and don’t bend.</p>
+<p><strong>The drift metric.</strong> A serving stack can be green, latency nominal, errors zero, while the answers quietly rot. The corpus shifted, the model updated, and no infrastructure metric moves. The drift monitor samples a quality score over a rolling window and flags a breach when the mean falls below the SLO floor. It is Module 5’s outer loop, shrunk to one operator surface.</p>
+<p><strong>The acceptance gate.</strong> Eval scores two metrics from the RAG triad against a labeled evalset: <strong>retrieval precision</strong> (did the top chunk come from the document that holds the answer?) and <strong>answer faithfulness</strong> (does the answer contain the expected facts, drawn from a cited source?). The gate is a threshold on each. A build below it does not ship. Both checks are deterministic, no LLM judge needed offline, so the gate runs in CI and means the same thing every time.</p>
+<h2 id="the-buildtest-gate"><a class="header" href="#the-buildtest-gate">The BUILD→TEST Gate</a></h2>
+<p>The whole artifact runs on the Python standard library alone, no cloud, no network, no GPU. <code>python smoke.py</code> ingests the corpus, builds the index, answers a real question with a correct citation, blocks an unsafe query at the guardrail, records a drift reading, and runs the eval gate; exiting zero only if every surface behaves. <code>python -m pytest tests/</code> asserts the surfaces hold: an answer cites a real source chunk, the guardrail blocks the unsafe query, eval returns scores, and a deliberately degraded low-faithfulness answer <strong>fails</strong> the gate; proving the gate has teeth.</p>
+<p>Every third-party import, Docling, FAISS, Azure, Anthropic, is guarded behind <code>try/except ImportError</code> with a stdlib fallback on the smoke path. Real services are opt-in through <code>.env</code>. The gate you can run on a plane is the gate that runs in CI.</p>
+<h2 id="strong-project-done-when"><a class="header" href="#strong-project-done-when">Strong-Project Done-When</a></h2>
+<p>This clears the hireability bar: a real entry point you run from a shell, not a notebook; a README that frames the business problem before the code; evaluation with metrics and a pass/fail gate; tests covering the smoke path and every operator surface; a clean, versioned layout; and a shipped <code>outputs/skill-production-rag-chatbot.md</code>. Done means the smoke gate is green and a stranger can read the README, run two commands, and see a cited answer and a blocked attack.</p>
+<h2 id="what-module-7-reuses"><a class="header" href="#what-module-7-reuses">What Module 7 Reuses</a></h2>
+<p>This artifact is the <strong>knowledge/retrieval service</strong>. In Module 7 the <code>Retriever</code> stops being something a person queries and becomes a tool a governed agent fleet calls. The citation contract travels with it, an agent that retrieves through this service inherits cited answers for free, and so does the eval gate, which becomes one of the acceptance checks the fleet’s operator runs. You are not rebuilding retrieval in M7; you are wiring this seam into a larger machine. That is the compounding the course promised: the single agent you ship here is a node in the team you ship next.</p>
+<h2 id="what-you-build"><a class="header" href="#what-you-build">What You Build</a></h2>
+<p>A citation-enforced, guardrailed RAG chatbot for a regulated corpus: Docling-or-stdlib ingestion into a <code>Chunk</code> contract, a swappable <code>VectorIndex</code> (pure-Python default, Azure AI Search opt-in), a retriever with a relevance floor, a cited-answer path over a mock or real LLM, a Module 4 guardrail, a drift monitor, and an eval acceptance gate; all passing an offline, stdlib-only BUILD→TEST smoke gate.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>In a regulated vertical, citations and refusal are the acceptance bar, not features: an uncited claim is a liability, so the system is a citation-and-refusal machine that uses retrieval, not a chatbot that happens to cite.</li>
+<li>The portable seam is two interfaces, the <code>Chunk</code> citation contract and the <code>VectorIndex</code> retriever, so swapping Azure AI Search for a local index is one constructor call and the chatbot, guardrail, eval, and drift code never change.</li>
+<li>A deterministic mock LLM at the generation seam makes the pipeline testable in CI, because the load-bearing parts, retrieval, citation, refusal, the gate, are exactly the parts that don’t need a live model to prove out.</li>
+<li>The three operator surfaces are real go/no-go controls: a guardrail gate with un-lowerable hardcoded prohibitions, a rolling drift metric against an SLO floor, and an eval acceptance gate that a low-faithfulness build fails.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module6/02-production-rag-chatbot/">
+<p><strong>Build It in Claude Code</strong>: Assemble the production RAG chatbot: ingest a small regulated corpus into the <code>Chunk</code> contract, build the pure-Python <code>VectorIndex</code>, retrieve with a relevance floor, answer with citations through the mock LLM, screen input and output with the guardrail, log a drift reading, and run the eval acceptance gate. Prove it: <code>python smoke.py</code> exits zero with a cited answer and a blocked attack, and <code>python -m pytest tests/</code> shows a low-faithfulness build failing the gate. Then swap the local index for Azure AI Search behind the same interface.</p>
+</div>
+
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../module6/01-terminal-coding-agent.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../module6/03-realtime-voice-assistant.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../module6/01-terminal-coding-agent.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../module6/03-realtime-voice-assistant.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/copy-to-claude-66056049.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

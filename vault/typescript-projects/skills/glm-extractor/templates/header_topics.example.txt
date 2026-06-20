@@ -1,0 +1,5 @@
+# Module 1 · TypeScript — Topics
+
+> Source: `typescript-projects/projects/` (15 topics, from *Learning TypeScript*). TypeScript is the product-layer language: APIs, agent orchestration, tooling. Seam highlights: `from-javascript-to-typescript` (LLM tooling is JS-first), `generics` (type-safe tool defs / MCP contracts), `declaration-files` (untyped npm packages).
+
+## Topics

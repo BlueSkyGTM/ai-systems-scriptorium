@@ -1,0 +1,307 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Governed Multi-Agent Fleet (Finale) - Sans Python — Production AI Engineering</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/copy-to-claude-dcee30da.css">
+        <link rel="stylesheet" href="../theme/syntax-polish-5e51e1c1.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "rust";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "../searchindex-49915c1e.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-519ea03c.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Sans Python — Production AI Engineering</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="the-governed-multi-agent-fleet"><a class="header" href="#the-governed-multi-agent-fleet">The Governed Multi-Agent Fleet</a></h1>
+<p>A single coding agent fixes one bug in one repo. A feature is bigger than that, it needs a plan, parallel hands, a review, and a test pass, so the answer is a team of agents. The instant that team can edit code and merge it, the question stops being <em>can they build?</em> and becomes <em>can a human stay accountable for what they built?</em> This chapter is the system that answers yes, and it is the course’s last and largest build.</p>
+<h2 id="the-business-problem"><a class="header" href="#the-business-problem">The Business Problem</a></h2>
+<p>You shipped a coding agent in Module 6. It reads a failing file, writes a fix, runs the tests, and stops when a gate accepts the result. It is real, and it is bounded. It also tops out fast: one context window cannot hold an architecture plan, two parallel code slices, reviewer commentary, and a test log at once. A real feature outgrows a single agent the way a real product outgrows a single engineer.</p>
+<p>The settled 2026 answer is a team. An architect plans, coders work in parallel, a reviewer gates, a tester verifies; the software factory, staffed by agents. Stand that up and you get throughput. You also get a new and worse failure mode: five agents that can write code and merge it, running while you sleep, and no single place that can tell you what they did. That is not a productivity win. That is an incident waiting for a correlation ID nobody wrote.</p>
+<p>So the problem this artifact solves is not “build a team that ships software.” A team that ships software is a weekend hack. The problem is <strong>building a team that ships software while a human stays accountable for every action it takes</strong>; and that second clause is the entire job of an AI Platform Engineer. The team is the easy half, the way the model was the easy half of the coding agent. The governance is the work.</p>
+<h2 id="elevate-dont-author"><a class="header" href="#elevate-dont-author">Elevate, Don’t Author</a></h2>
+<p>Here is the discipline that makes this the finale and not just another build: you do not write a coding agent, and you do not write a fleet. You already have both. The coder node <em>is</em> the Module 6 agent; the same loop, the same tool surface, the same sandbox, the same verify gate. The governance <em>is</em> the Module 4 fleet; the same registry contract, the same budget governor, the same propose-then-commit inbox. M7 is the composition of two things you built, not the invention of a third.</p>
+<p>That is what the whole book has been pointing at. You built single agents and made them verifiable. You governed them with budgets, kill switches, and HITL. You assembled those controls into a fleet. Now the fleet wraps the agents, and the result builds software. If you find yourself rewriting the plan/act/observe loop or re-deriving propose-then-commit, stop; you have misread the architecture. The reuse is the lesson.</p>
+<h2 id="the-architecture"><a class="header" href="#the-architecture">The Architecture</a></h2>
+<p>Five agents, four roles, coordinating over typed handoffs under one governance layer:</p>
+<pre><code>                         ┌──────────────────── fleet governance ────────────────────┐
+                         │  registry · fleet budget · HITL inbox · audit · kill switch │
+                         └───────────────────────────────────────────────────────────┘
+                                                  │ governs every action
+  feature request ─▶ architect ─A2A▶ coder-1 ┐
+                       (plan)         coder-2 ┘─A2A▶ tester ─A2A▶ reviewer ─▶ merge PROPOSED
+                                     (M6 loop)      (verify)      (gate)         │
+                                                                                 ▼
+                                                                    HITL inbox ── human approves ─▶ merge
+</code></pre>
+<p>The <strong>architect</strong> decomposes the feature into ordered slices, one per coder, and emits them as a typed plan, not a paragraph. Each <strong>coder</strong> runs the Module 6 loop on its slice: read, fix, run the suite in the sandbox, self-verify, hand back a verdict. The <strong>tester</strong> runs the acceptance suite and returns one deterministic ACCEPT or REJECT. The <strong>reviewer</strong> reads the diffs and the tester’s verdict and decides whether to <em>propose</em> the merge. And the merge, the one irreversible action on the whole team, goes nowhere until a human approves it in the inbox.</p>
+<p>Every arrow is a typed A2A message. Every box charges the budget, checks the kill switch, and writes an audit record before it acts. The governance is not a wrapper you bolt on at the end; it is the medium the agents move through.</p>
+<h2 id="how-it-composes-the-parts-you-built"><a class="header" href="#how-it-composes-the-parts-you-built">How It Composes the Parts You Built</a></h2>
+<p>Three imports carry the whole system. Name them, because the reuse is the architecture.</p>
+<p><strong>The coder node is the M6 agent.</strong> <code>agents/coder.py</code> drives the same plan/act/observe loop over the same <code>tools.py</code>, <code>sandbox.py</code>, and <code>verify_gate.py</code> you shipped in Module 6. What M7 adds is governance threaded through the loop; every model call charges the fleet budget, the kill switch is read before every action, every tool call is checked against the agent’s registry permissions and written to the audit. The loop did not change. The accountability around it did.</p>
+<p><strong>The governance is the M4 fleet.</strong> The registry-and-manifest contract is lesson 12’s. The <code>FleetBudgetGuard</code>, per-agent <code>TaskBudget</code> under one team ceiling, is lesson 13’s, which is itself the lesson-06 governor with attribution added. The shared HITL inbox is lesson 13’s propose-then-commit-with-a-queue, which is lesson 08’s protocol with more proposers. The audit and the kill switch are the single-agent controls pointed at five agents instead of one.</p>
+<p><strong>The wire is M4 A2A.</strong> <code>a2a.py</code> is the typed task / lifecycle / artifact shape from lesson 02; a skill, a state (<code>submitted → working → completed | failed</code>), typed artifacts, and a correlation ID on every hop. A coder that receives a handoff for a skill it cannot perform fails at the boundary, not three steps downstream as a confident wrong answer.</p>
+<p>The reason the reviewer can trust a coder at all is the verification interface from Module 6. The coder does not say “I fixed it.” It runs the tests and hands over a verdict. A claim is not evidence; a passing suite is. That one design choice, made for a single agent two modules ago, is what makes a team governable today.</p>
+<h2 id="the-build-sequence"><a class="header" href="#the-build-sequence">The Build Sequence</a></h2>
+<p>You assemble the system bottom-up, contract first, because every layer reads the one below it.</p>
+<ol>
+<li><strong>The registry and its schema.</strong> Write <code>registry.yaml</code>; five agents, each with an <code>id</code>, a named <code>owner</code>, an <code>autonomy_tier</code>, least-privilege <code>permissions</code>, and a per-agent <code>budget_daily_usd</code>, plus a team ceiling and the merge gate. Write the JSON Schema and validate against it, so a malformed registry fails before it governs anything. This is the floor; everything else reads it.</li>
+<li><strong>The policy layer.</strong> <code>policy.py</code> turns the registry into authorization: an off-registry agent is refused (no identity, no owner; it fails the accountability test on arrival), and a tool outside an agent’s grant is refused. No agent has <code>can_merge: true</code>.</li>
+<li><strong>The governance package.</strong> The <code>FleetBudgetGuard</code> (per-agent caps under a team ceiling), the shared HITL <code>inbox</code> (the merge gate), the <code>audit</code> log (the four-clause record threaded by correlation ID), and the <code>killswitch</code> (read-only to agents).</li>
+<li><strong>The A2A wire.</strong> <code>a2a.py</code>; the typed handoff message and result, validated on receipt.</li>
+<li><strong>The nodes.</strong> The architect, the two coders (the M6 loop, imported), the tester, and the reviewer; each a function that takes a typed task, acts under the governance context, and hands back a typed result.</li>
+<li><strong>The orchestrator.</strong> <code>fleet.py</code> loads the registry, builds the console from it, and drives the team through the handoffs; suspending at the inbox until a human decides the merge.</li>
+</ol>
+<p>The deterministic mock drives every node on the smoke path, so the run is reproducible and proves the <em>governance</em> was the interesting part. A real model plugs into the same <code>respond</code> seam on any node with no contract change.</p>
+<h2 id="the-operator-console"><a class="header" href="#the-operator-console">The Operator Console</a></h2>
+<p>Module 8 hands this running fleet to a student who is its operator; and an operator needs a console, not a black box. This artifact exposes the full one, and every surface is a real control.</p>
+<p><strong>The registry</strong> is the source of truth for who is in the fleet; five agents, each with an owner, a tier, a permission grant, and a budget, in a file you can <code>git diff</code> and review in a pull request. It is not documentation of the fleet; it is the fleet. Point it at a new problem by editing it.</p>
+<p><strong>The fleet budget</strong> caps spend two ways at once: a per-agent ceiling and a team total. The reason both exist has a price tag. A real fleet capped only its manager loop and watched that manager spawn twelve retries on a flaky API, absorbing eight times the normal spend by morning, because nothing attributed the burn to the runaway workers underneath. So a runaway coder trips its own wall, and a swarm of small agents each under its own cap still trips the team’s. Either breach stops the run before the next action.</p>
+<p><strong>The HITL inbox</strong> gates the one action you cannot take back. The merge proposal lands in one queue, the run suspends, and a human approves it by <code>inbox_id</code>; or it never happens. There is no off-channel approval and no auto-merge. A team that let an engineer approve a deploy by DM “just this once” could not answer “evidenced by what?” at the incident review, and compliance flagged it as a bypass. The inbox is how the merge stays evidenced.</p>
+<p><strong>The cross-agent audit</strong> is the surface that defines whether the fleet is governed at all. For any action, you must be able to answer one sentence: <em>which agent did it, with what authority, against what task, evidenced by what?</em> Four clauses, which, authority, task, evidence, threaded by a single correlation ID from the feature request through the architect, the coders, the tester, the reviewer, and the human merge. When a task crosses five agents, “evidenced by what?” only has an answer because one ID runs through all of it. A fleet that cannot answer all four for every action is not governed; it is unattended.</p>
+<p><strong>The kill switch</strong> is one file the operator owns, every loop reads before every action, and no agent can write. The only thing that changes from the single-agent version is the number of readers. If the off switch lived in an agent’s reachable state, the agent could disable its own stop; so it does not.</p>
+<h2 id="the-buildtest-gate"><a class="header" href="#the-buildtest-gate">The BUILD→TEST Gate</a></h2>
+<p>The finale raises the same gate Module 6 introduced, now for a composition. <code>python smoke.py</code> and <code>python -m pytest tests/</code> run on the standard library plus pytest alone; no Docker, no cloud, no network, no API key. The registry parses through a stdlib fallback when PyYAML is absent and validates through a pure-Python JSON Schema checker when <code>jsonschema</code> is absent, so the offline path needs nothing installed. The real model is opt-in through <code>.env</code>.</p>
+<p>The smoke run proves the composition runs, not just a single agent: the five-agent team ships a feature end to end, suspends at the inbox, commits the merge only on a human approval, and prints an audit that answers all four clauses under the fleet budget. The test suite then pins each operator surface; the team ships end to end; the budget stops a runaway on the per-agent cap <em>and</em> on the team cap; the inbox blocks an unapproved and an off-channel merge; an off-registry agent is refused; the audit answers all four clauses; the kill switch halts the fleet before the next action. The test that the team can ship is table stakes. The tests that it <em>cannot</em> merge without a human, <em>cannot</em> overspend, and <em>cannot</em> act off the registry are the ones that make it infrastructure.</p>
+<h2 id="the-strong-project-bar"><a class="header" href="#the-strong-project-bar">The Strong-Project Bar</a></h2>
+<p>Hireability is the point, and the done-when is a checklist this build meets: a real entry point you run from a terminal, not a notebook; a README that frames the business problem, a team that ships software, governed so a human stays accountable, before any code; an acceptance gate that ships the feature only on a tester ACCEPT and a human-approved merge; tests covering the end-to-end ship and every operator surface; a clean, versioned layout with no secrets committed; and a shipped <code>outputs/skill-governed-multi-agent-fleet.md</code>. The done-when is not “the team merged once.” It is “the gate is green offline, and a stranger can read the README and understand both what the fleet builds and why a human is still in the loop.”</p>
+<h2 id="the-module-8-hand-off"><a class="header" href="#the-module-8-hand-off">The Module 8 Hand-Off</a></h2>
+<p>This is the system the exam operates. Module 8 does not have you build something new on top of the fleet; it points the fleet at a production problem and asks you to run it. You are the operator, the judge, and the architect-of-record. You configure the budgets in the registry. You hold the kill switch. You work the HITL inbox; approve the merge, or reject it and say why. You read the cross-agent audit after the run and confirm it answers the four clauses. You judge the team’s output against an acceptance rubric. The fleet is the substrate; the task is the input; your judgment is the grade.</p>
+<p>Build it so that hand-off costs nothing. The registry is the contract M8 edits to retarget the team; a new agent, a tighter budget, a stricter gate, all reviewed changes to one file. The orchestrator reads the contract and runs whatever it points at, with no rewrite. That is the meaning of governance-as-code: a control plane reading a registry to know what it governs, Claude Code today and a local model tomorrow, the contract unchanged.</p>
+<p>And that is the thesis, full circle. The book started by naming one job; the person who builds, serves, and governs the systems that run models. You built single agents. You composed them into a team. The team builds the final system, and you govern it. A fleet of agents run as governed infrastructure, with a human accountable for every action it takes, is not a feature of AI Platform Engineering. It is the whole of it; and you just built one that runs.</p>
+<h2 id="what-you-build"><a class="header" href="#what-you-build">What You Build</a></h2>
+<p>You build a governed five-agent software-engineering team that ships a feature on its own and proves a human stayed accountable for every step. An architect plans the feature into slices; two coder nodes, each the Module 6 coding agent, reused whole, implement and self-verify in their sandboxes; a tester runs the acceptance suite for a deterministic verdict; a reviewer gates; and the merge waits in a shared HITL inbox until a human approves it by ID. The whole run executes under a fleet budget that caps each agent and the team, threads every action through a cross-agent audit by correlation ID, and answers to a kill switch the operator holds. Deterministic mocks drive the offline smoke run so the BUILD→TEST gate is reproducible on the standard library alone; a one-line swap puts a live model behind any node. It is the largest system in the course, built by composition; and it is the fleet Module 8 operates.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>A governed multi-agent fleet is built by composition, not invention: the coder nodes are the Module 6 coding agent reused whole, and the governance is the Module 4 fleet; a fleet artifact that rewrites the loop or re-derives propose-then-commit has misread the architecture.</li>
+<li>The hard half of a team of coding agents is not getting them to build; it is keeping a human accountable; the merge is the one irreversible action, so it is the one human gate, and no agent on the team has authority to merge.</li>
+<li>The accountability test; <em>which agent, with what authority, against what task, evidenced by what?</em>; is answerable only because one correlation ID threads every action across all five agents and the human merge; a fleet that cannot answer all four clauses for every action is unattended, not governed.</li>
+<li>The fleet budget caps per-agent and team-total at once because attribution is what catches the runaway delegation a manager-only cap misses; either wall stops the run before the next action.</li>
+<li>The operator console, registry, fleet budget, HITL inbox, cross-agent audit, kill switch, is the Module 8 substrate: the task is an input and the registry is the contract, so the fleet retargets to a production problem with no rewrite.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module7/03-governed-multi-agent-fleet/">
+<p><strong>Build It in Claude Code</strong>: Assemble the governed SWE team. Write <code>registry.yaml</code> (architect, coder-1, coder-2, reviewer, tester, each with <code>id</code>/<code>owner</code>/<code>autonomy_tier</code>/least-privilege <code>permissions</code>/<code>budget_daily_usd</code>, a team ceiling, and a merge that is a human gate) and a JSON Schema you validate against with no <code>jsonschema</code> dependency. Import the Module 6 coding agent as <code>agents/coder.py</code>, do not rebuild the loop, and wrap it in the governance context: every model call charges the <code>FleetBudgetGuard</code> (per-agent under a team total), the kill switch is read before every action, and every action writes a four-clause audit record under one correlation ID. Build the architect, tester, and reviewer nodes; wire them with typed A2A handoffs (<code>a2a.py</code>); and have the orchestrator suspend at a shared HITL inbox so the merge needs a human approval by <code>inbox_id</code>; never auto-merge. Drive it all with deterministic mocks so <code>python smoke.py</code> ships a feature offline and prints the audit’s four clauses, and write <code>tests/</code> that prove the team ships end to end, the budget stops a runaway on the per-agent <em>and</em> the team cap, the inbox blocks an unapproved merge, an off-registry agent is refused, the audit answers all four clauses, and the kill switch halts the fleet. Keep the smoke path standard-library-only; make the real model opt-in per node via <code>.env</code>.</p>
+</div>
+
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../module7/02-devops-k8s-agent.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../module8/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../module7/02-devops-k8s-agent.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../module8/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/copy-to-claude-66056049.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

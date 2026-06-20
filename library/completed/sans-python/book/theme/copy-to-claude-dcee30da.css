@@ -1,0 +1,77 @@
+/* Sans Python — per-lesson Claude Code handoff block + button.
+   Rust-accented to match the book's Rust/Ayu theme. */
+
+.claude-handoff {
+  margin: 3rem 0 1.5rem;
+  padding: 1.25rem 1.25rem;
+  border: 1px solid var(--quote-border, #e3d9c6);
+  border-left: 4px solid #b7410e;            /* rust accent */
+  border-radius: 6px;
+  background: rgba(183, 65, 14, 0.05);       /* warm rust tint */
+}
+
+.claude-handoff p {
+  margin: 0 0 0.75rem;
+}
+
+.claude-handoff-btn {
+  display: flex;
+  width: fit-content;
+  margin: 1.1rem auto 0;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.72rem 1.9rem;
+  font: inherit;
+  font-weight: 600;
+  font-size: inherit;                        /* match the exercise description (body size), not shrunk */
+  letter-spacing: 0.01em;
+  color: #ffffff;
+  background: #b7410e;                        /* rust */
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  transition: background 0.15s ease, transform 0.05s ease;
+}
+
+.claude-handoff-btn:hover {
+  background: #a5310f;                        /* deeper rust */
+}
+
+.claude-handoff-btn:active {
+  transform: translateY(1px);
+}
+
+.claude-handoff-btn.copied {
+  background: #4b7a17;                        /* green confirm */
+}
+
+/* =====================================================================
+   AYU (dark) — the theme's signature rust-orange, dark text. Catches the
+   Ayu look the way the code blocks do.
+   ===================================================================== */
+.ayu .claude-handoff,
+.navy .claude-handoff,
+.coal .claude-handoff {
+  border: 1px solid rgba(255, 143, 64, 0.25);
+  border-left: 4px solid #ff8f40;
+  background: rgba(255, 143, 64, 0.07);
+}
+.ayu .claude-handoff-btn,
+.navy .claude-handoff-btn,
+.coal .claude-handoff-btn {
+  background: #ff8f40;
+  color: #0b0e14;
+  box-shadow: none;
+}
+.ayu .claude-handoff-btn:hover,
+.navy .claude-handoff-btn:hover,
+.coal .claude-handoff-btn:hover {
+  background: #ffa35c;
+}
+.ayu .claude-handoff-btn.copied,
+.navy .claude-handoff-btn.copied,
+.coal .claude-handoff-btn.copied {
+  background: #aad94c;
+  color: #0b0e14;
+}

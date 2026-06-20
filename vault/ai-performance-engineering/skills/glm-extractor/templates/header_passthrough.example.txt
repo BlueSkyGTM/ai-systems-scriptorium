@@ -1,0 +1,3 @@
+# Module 4 · Inference Reference Docs
+
+> Source: `docs/` — reference material for the inference-serving track. Full content preserved verbatim.

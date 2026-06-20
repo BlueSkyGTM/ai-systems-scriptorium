@@ -1,0 +1,10 @@
+{
+	"dictionaries": ["custom-words", "css", "html", "node", "npm", "typescript"],
+	"dictionaryDefinitions": [
+		{
+			"name": "custom-words",
+			"path": "./dictionary.txt"
+		}
+	],
+	"ignorePaths": ["node_modules", "projects/*/node_modules", "projects/**/*.js"]
+}

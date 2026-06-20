@@ -1,0 +1,23 @@
+"""baseline_continuous_batching.py - Baseline static batching (single GPU)."""
+
+from __future__ import annotations
+
+from core.utils.continuous_batching import ContinuousBatchingBase
+from core.benchmark.verification_mixin import VerificationPayloadMixin
+
+
+class BaselineContinuousBatchingBenchmark(VerificationPayloadMixin, ContinuousBatchingBase):
+    """Baseline: padded static batching with fixed batch membership."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            dynamic=False,
+            multi_gpu=False,
+            label="baseline_continuous_batching",
+        )
+
+
+def get_benchmark() -> BaselineContinuousBatchingBenchmark:
+    return BaselineContinuousBatchingBenchmark()
+
+

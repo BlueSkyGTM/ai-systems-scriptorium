@@ -1,0 +1,309 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Fleet Patterns &amp; Governance-as-Code - Sans Python — Production AI Engineering</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/copy-to-claude-dcee30da.css">
+        <link rel="stylesheet" href="../theme/syntax-polish-5e51e1c1.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "rust";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "../searchindex-49915c1e.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-519ea03c.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Sans Python — Production AI Engineering</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="fleet-patterns--governance-as-code"><a class="header" href="#fleet-patterns--governance-as-code">Fleet Patterns &amp; Governance-as-Code</a></h1>
+<p>The last lesson named the seven concerns a fleet governs. This one hands you the patterns that implement them; six named shapes you reach for by name, the way you reach for a circuit breaker or a retry. Each one turns a concern into a file you can diff, and together they make a fleet not just describable but <em>runnable</em> as code. This is the lesson the M7 finale is built on top of, so it earns the closing slot of the chapter.</p>
+<h2 id="six-patterns-each-a-concern-made-concrete"><a class="header" href="#six-patterns-each-a-concern-made-concrete">Six Patterns, Each a Concern Made Concrete</a></h2>
+<p>A fleet pattern is a concern from lesson 12 with a name, a schema, and a governance rule attached. Naming them matters: “we should track our agents” is a wish, but <strong>team-registry</strong> is a thing you can build, audit, and hand to a teammate. Here are the six.</p>
+<p><strong>Team-registry</strong> is the foundational pattern; a machine-readable registry index plus a per-agent manifest for each entry. The manifest carries the four accountability clauses (which agent, whose authority, what task, what evidence), and a human gate guards the changes that matter: granting an agent new production-data access or swapping its credential model is a reviewed pull request, not a quiet edit. Build this first. Every other pattern reads against it.</p>
+<p><strong>Cross-agent-audit</strong> answers the fourth accountability clause across boundaries. When a task crosses three agents, “evidenced by what?” only has an answer if a single correlation ID threads the whole chain; user request to manager to worker to outcome. The pattern is a read-only audit playbook that queries by time range, agent ID, principal, and tool class, reconstructing what happened from records nobody had to remember to write.</p>
+<p><strong>Fleet-budget-guard</strong> is the lesson 06 governor at fleet scale. The single-agent stack capped one task; the fleet version adds a <em>team</em> total and per-agent attribution, with admission control that pauses one agent’s scheduler when its cap trips; and requires an inbox approval to raise it. The reason per-agent attribution is not optional has a price tag: a fleet that capped only its manager loop watched that manager spawn twelve retries on a flaky API and absorb eight times the normal spend by morning, because nothing attributed the burn to the runaway workers underneath. Cap the manager and the workers.</p>
+<p><strong>Hierarchical-delegation</strong> routes a task from a manager agent to specialized workers through typed, auditable handoff packets; JSON with authority, constraints, and evidence, never a raw string. Workers start <em>report-only</em>: their output is a proposal, not an action, and promotion to write-capable autonomy is a human gate. This is the supervisor-worker pattern from lesson 03, governed; the handoff is now a contract you can validate, and the conflict between two workers’ outputs is resolved at a gate, not by whichever wrote last.</p>
+<p><strong>Shared-inbox-HITL</strong> is the lesson 08 propose-then-commit protocol with more proposers. Every agent’s proposed action routes to <em>one</em> central, trackable inbox; principals approve or reject; nothing destructive auto-executes. The governance rule is strict and learned the hard way: approve only through the inbox, with an <code>inbox_id</code> on every approval. A team that let an engineer approve a deploy by DM “just this once” could not answer “evidenced by what?” at the incident review, and compliance flagged it as a bypass. An inbox nobody uses is worse than no inbox: it manufactures false confidence.</p>
+<p><strong>Agent-clone-fork</strong> spreads a proven agent across teams without configuration drift. Cloning is gated by a tiered permission model, <code>can run</code>, <code>can clone</code>, <code>can edit</code>, and every fork registers its lineage (<code>forked_from</code>, <code>owner</code>) so the registry never loses track of where an agent came from. Promotion of a fork from experimental to production is a human gate. Without this, your registry slowly fills with near-identical agents nobody can tell apart, which is how the duplicate-agent audit horror stories start.</p>
+<p>You do not need all six on day one. Team-registry first, then the safety patterns the count forces; budget-guard when spend matters, shared-inbox when an agent can do something irreversible. Reach for each when the fleet’s risk earns it.</p>
+<h2 id="two-patterns-built-by-reference-not-from-scratch"><a class="header" href="#two-patterns-built-by-reference-not-from-scratch">Two Patterns, Built by Reference Not from Scratch</a></h2>
+<p>Two of the six are the single-agent controls you already built, pointed at the fleet. Showing them at scale is the point of this lesson; and showing that you <em>do not rebuild them</em> is the discipline.</p>
+<p><strong>Fleet-budget-guard</strong> reuses the <code>TaskBudget</code> governor from lesson 06 unchanged. What the fleet adds is attribution and a team ceiling; the governor itself, the deterministic stack of caps, is the same code:</p>
+<pre><code class="language-python"># module4-fleet/governor/fleet_budget.py — the lesson-06 governor, at fleet scale
+from governor.budget import TaskBudget, BudgetBreach   # reused, not redefined
+
+class FleetBudgetGuard:
+    """Per-agent TaskBudgets under one team ceiling. The cap logic lives in
+    TaskBudget (lesson 06); the fleet only adds attribution and admission control."""
+    def __init__(self, team_daily_usd: float, per_agent: dict[str, TaskBudget]):
+        self.team_daily_usd = team_daily_usd
+        self.per_agent = per_agent          # agent_id -&gt; its own TaskBudget
+        self.team_spent = 0.0
+
+    def charge(self, agent_id: str, usd: float) -&gt; None:
+        self.per_agent[agent_id].charge(usd)     # raises BudgetBreach per-agent (lesson 06)
+        self.team_spent += usd
+        if self.team_spent &gt; self.team_daily_usd:
+            raise BudgetBreach(f"team cap: ${self.team_spent:.2f} &gt; ${self.team_daily_usd:.2f}")
+        # admission control: a tripped cap pauses *this* agent's scheduler;
+        # raising it requires an inbox approval (shared-inbox-HITL), not a code edit.
+</code></pre>
+<p>The import line is the whole argument. The cap logic is not retyped; the runaway-delegation story is defended by attributing every charge to an agent <em>and</em> summing to a team ceiling, so neither a single greedy agent nor a swarm of small ones slips through. Define the governor once in lesson 06; the fleet inherits it.</p>
+<p><strong>Shared-inbox-HITL</strong> reuses the propose-then-commit protocol from lesson 08. The single-agent version persisted one proposal with an idempotency key, surfaced the case, committed only on positive acknowledgement, and verified after. The fleet version is the same protocol with a queue in front:</p>
+<pre><code class="language-python"># module4-fleet/hitl/shared_inbox.py — many proposers, one queue, lesson-08 protocol
+from hitl.propose import propose, commit          # the protocol, reused not re-taught
+
+def submit(agent_id: str, action, inbox) -&gt; str:
+    """Any agent proposes into one shared inbox. The commit gate is lesson 08's,
+    unchanged — persist, surface case, positive-ack, verify. The fleet adds the
+    queue, the inbox_id, and the no-DM-approval rule."""
+    key = propose(action, inbox.store)            # lesson 08: durable, idempotency-keyed
+    inbox.enqueue({"agent_id": agent_id, "key": key, "inbox_id": inbox.new_id()})
+    return key                                    # the agent's run suspends here
+</code></pre>
+<p>What the fleet adds is not a new commit protocol; it is the <em>queue discipline</em>: one inbox, an <code>inbox_id</code> on every decision, and the hard rule that no approval happens off-channel. The protocol is lesson 08’s; the governance is the fleet’s.</p>
+<p>This is the de-dup rule made visible. Budgets, kill switches, and HITL are defined once in the single-agent chapter and <em>applied</em>, by import, by reference, at fleet scale. A fleet lesson that re-derives the propose-then-commit protocol has misunderstood the architecture: the protocol does not change when there are more proposers, only the plumbing around it does.</p>
+<h2 id="governance-as-code-the-registry-is-a-contract"><a class="header" href="#governance-as-code-the-registry-is-a-contract">Governance-as-Code: the Registry Is a Contract</a></h2>
+<p>Step back and look at what every pattern has in common. Each one is backed by a schema; a JSON Schema for the registry and the manifest, a JSON contract for the handoff packet, a structured record for the audit trail. Nothing that governs the fleet lives only in prose. That is the meaning of <strong>governance-as-code</strong>: the rules a fleet runs by are machine-readable artifacts you validate in CI, diff in review, and version in git, the same as the application code they govern.</p>
+<p>The payoff is that a fleet becomes <em>addressable</em>. A control plane can read the registry and know, without asking a human, what agents exist, what each may do, what it costs, and what needs a gate. Today that reader is Claude Code, pointed at your <code>registry.yaml</code>. The registry does not encode the reader, only the contract; which is exactly why a local model can take over the same job tomorrow with no change to the fleet. You are not building a control plane wedded to one vendor; you are building a contract any control plane can speak.</p>
+<pre><code>registry.yaml ──┐
+manifests/*.yaml ├──▶ control plane ──▶ governs ──▶ agent loops
+schemas/*.json ──┘   (Claude Code now,
+                      a local model later)
+</code></pre>
+<p>The same discipline shows up on the platforms. Azure AI Foundry Agent Service is the managed instance of exactly this shape: the agent registry, an Entra-backed identity per agent, role-based access control (RBAC) scoping what each may touch, per-agent cost tracking, and human-approval gates on tool calls; all configuration the platform enforces, not logic baked into each agent. You are building the open, file-backed version of the same idea, which is the point: the pattern is the platform, whether the platform is a cloud product or a folder of YAML.</p>
+<h2 id="this-seeds-the-m7-finale"><a class="header" href="#this-seeds-the-m7-finale">This Seeds the M7 Finale</a></h2>
+<p>Be explicit about where this goes, because the whole chapter has been pointing at it. <strong>The capstone of this lesson is a small governed fleet, and M7 imports it.</strong> The M7 finale is the governed multi-agent SWE team; a fleet of coding agents that build software under exactly this governance layer: a registry that knows every agent, a shared inbox where a human approves the merges, a fleet-budget-guard that caps the team’s spend, cross-agent audit that survives an incident review. M7 does not invent that layer. It picks up the <code>module4-fleet/</code> package you assemble here, the registry, the schemas, the budget-guard, the shared inbox, and wraps the M6 coding agents in it.</p>
+<p>That is what compounding means in this book, made concrete one more time. The single agents you governed in lessons 06–08 became the controls a fleet reuses. The fleet you assemble now becomes the governance M7’s team runs under. Nothing here is a throwaway exercise; the small governed fleet is the literal foundation of the course’s largest system. Build it so the reuse is real, typed schemas, importable governors, a registry M7 can read on day one, and the finale starts from a running fleet instead of a blank folder.</p>
+<p>A fleet is not a bigger agent. It is a contract that lets many agents run while a human stays accountable for all of them; and a contract written as code is one you can hand to the next system without rewriting a word.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>A fleet pattern is a concern made concrete, team-registry, cross-agent-audit, fleet-budget-guard, hierarchical-delegation, shared-inbox-HITL, agent-clone-fork, each backed by a schema and a human gate, reached for by name like a circuit breaker.</li>
+<li>Fleet-budget-guard and shared-inbox-HITL are built by reference, not from scratch: they import the lesson-06 governor and the lesson-08 propose-then-commit protocol unchanged, adding only per-agent attribution, a team ceiling, and queue discipline (one inbox, an <code>inbox_id</code>, no off-channel approvals).</li>
+<li>Governance-as-code means every rule a fleet runs by is a machine-readable artifact, JSON/YAML registries and schemas validated in CI, which makes the fleet addressable: a control plane (Claude Code now, a local model later) reads the contract, not the vendor.</li>
+<li>The capstone is a small governed fleet, registry, schemas, fleet-budget-guard, shared inbox, that the M7 governed-multi-agent SWE-team finale imports and wraps the M6 coding agents in; the fleet you assemble here is the literal foundation of the course’s largest system.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module4/13-fleet-patterns/">
+<p><strong>Build It in Claude Code</strong>: Implement two fleet patterns over the <code>_harness/</code> registry and package the result for M7. First, <strong>fleet-budget-guard</strong>: build <code>FleetBudgetGuard</code> that holds a per-agent <code>TaskBudget</code> (imported from lesson 06, not rewritten) under one team ceiling, charges every action to its agent, and trips on per-agent <em>or</em> team cap; prove the runaway-delegation case where many small workers under one manager would slip past a manager-only cap. Second, <strong>shared-inbox-HITL</strong>: build a single inbox where every agent submits proposals through lesson 08’s propose-then-commit (imported, not re-taught), each decision carries an <code>inbox_id</code>, and an off-channel approval is rejected. Then assemble the governed <code>module4-fleet/</code> package, registry, schemas, the budget-guard, the shared inbox, as the drop-in artifact M7 imports to wrap its coding agents.</p>
+</div>
+
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../module4/12-the-fleet.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../module4/14-computer-use-and-coding-agents.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../module4/12-the-fleet.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../module4/14-computer-use-and-coding-agents.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/copy-to-claude-66056049.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

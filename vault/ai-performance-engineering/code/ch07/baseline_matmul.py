@@ -1,0 +1,44 @@
+"""Python harness wrapper for the CUDA baseline_matmul binary."""
+
+from __future__ import annotations
+from typing import Optional
+
+from pathlib import Path
+
+from core.benchmark.cuda_binary_benchmark import CudaBinaryBenchmark
+
+
+class BaselineMatmulCudaBenchmark(CudaBinaryBenchmark):
+    """Wraps the naive matmul CUDA binary."""
+
+    def __init__(self) -> None:
+        chapter_dir = Path(__file__).parent
+        n = 1024
+        bytes_a = n * n * 4
+        bytes_b = n * n * 4
+        bytes_c = n * n * 4
+        super().__init__(
+            chapter_dir=chapter_dir,
+            binary_name="baseline_matmul",
+            friendly_name="Baseline Matmul",
+            iterations=3,
+            warmup=5,
+            timeout_seconds=180,
+            time_regex=r"TIME_MS:\s*([0-9.]+)",
+            workload_params={
+                "N": n,
+                "dtype": "float32",
+            },
+        )
+        self.register_workload_metadata(
+            bytes_per_iteration=float(bytes_a + bytes_b + bytes_c),
+        )
+
+    def get_custom_metrics(self) -> Optional[dict]:
+        """Return memory access metrics."""
+        return None
+
+def get_benchmark() -> BaselineMatmulCudaBenchmark:
+    return BaselineMatmulCudaBenchmark()
+
+

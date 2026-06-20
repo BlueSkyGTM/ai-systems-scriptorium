@@ -1,0 +1,138 @@
+"""labs.moe_cuda/optimized_kv_transfer_graphs.py - Deeper pipeline + CUDA graphs.
+
+This step layers three incremental changes on top of the baseline overlap demo:
+1) Increase pipeline depth and chunk count to feed more concurrent work to GB10's 48 SMs.
+2) Keep GEMMs in bfloat16 and try torch.compile to shrink per-matmul launch overhead.
+3) Capture the steady-state pipeline into a CUDA graph so iterations replay with minimal
+   CPU scheduling cost while preserving the dual-stream overlap pattern.
+"""
+
+from __future__ import annotations
+
+from typing import Optional
+
+import torch
+
+from core.benchmark.verification_mixin import VerificationPayloadMixin
+from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig, WorkloadMetadata
+from core.profiling.nvtx_helper import get_nvtx_enabled, nvtx_range
+
+
+class GraphedKVTransferBenchmark(VerificationPayloadMixin, BaseBenchmark):
+    """Prefill compute + KV transfer with deeper pipelining and CUDA graphs."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.hidden_size = 1024  # Must match baseline for valid comparison
+        self.chunk_size = 256
+        self.num_chunks = 32
+        self.dtype = torch.float16
+        self.input_chunks: Optional[torch.Tensor] = None
+        self.weight: Optional[torch.Tensor] = None
+        self.workspace: Optional[torch.Tensor] = None
+        self.kv_dest: Optional[torch.Tensor] = None
+        self.graph: Optional[torch.cuda.CUDAGraph] = None
+        self._payload_meta: Optional[torch.Tensor] = None
+        self.output: Optional[torch.Tensor] = None
+        tokens = self.num_chunks * self.chunk_size
+        self._workload = WorkloadMetadata(
+            requests_per_iteration=float(self.num_chunks),
+            tokens_per_iteration=float(tokens),
+        )
+
+    def setup(self) -> None:
+        if not torch.cuda.is_available():
+            raise RuntimeError("labs.moe_cuda KV transfer requires CUDA")
+
+        torch.manual_seed(42)
+        torch.cuda.manual_seed_all(42)
+        self.input_chunks = torch.randn(
+            self.num_chunks,
+            self.chunk_size,
+            self.hidden_size,
+            dtype=self.dtype,
+            device=self.device,
+        )
+        self.weight = torch.randn(
+            self.hidden_size,
+            self.hidden_size,
+            dtype=self.dtype,
+            device=self.device,
+        )
+        self.workspace = torch.empty_like(self.input_chunks)
+        self.kv_dest = torch.empty_like(self.input_chunks)
+
+        # Warmup to ensure cuBLAS/allocator state is initialized before graph capture.
+        torch.matmul(self.input_chunks[0], self.weight, out=self.workspace[0])
+        self.kv_dest[0].copy_(self.workspace[0])
+        torch.cuda.synchronize(self.device)
+        
+        self._maybe_capture_graph()
+
+    def _maybe_capture_graph(self) -> None:
+        if any(t is None for t in (self.input_chunks, self.weight, self.workspace, self.kv_dest)):
+            raise RuntimeError("Buffers not initialized")
+        # Capture the steady-state pipeline so replay avoids Python/launch overhead.
+        self.graph = torch.cuda.CUDAGraph()
+        torch.cuda.synchronize(self.device)
+        with torch.cuda.graph(self.graph):
+            for i in range(self.num_chunks):
+                torch.matmul(self.input_chunks[i], self.weight, out=self.workspace[i])
+                self.kv_dest[i].copy_(self.workspace[i])
+        torch.cuda.synchronize(self.device)
+
+    def benchmark_fn(self) -> None:
+        if any(t is None for t in (self.input_chunks, self.weight, self.workspace, self.kv_dest)):
+            raise RuntimeError("Buffers not initialized")
+        if self.graph is None:
+            raise RuntimeError("CUDA graph not captured (setup() must run)")
+
+        enable_nvtx = get_nvtx_enabled(self.get_config())
+        with nvtx_range("moe_cuda_kv_overlap_graphed", enable=enable_nvtx):
+            self.graph.replay()
+        if self.kv_dest is None:
+            raise RuntimeError("KV destination missing")
+        self.output = self.kv_dest[0, :1, : min(8, self.hidden_size)].detach().float().clone()
+        if self.output is None:
+            raise RuntimeError("benchmark_fn() did not produce output")
+        meta = torch.tensor([self.hidden_size], dtype=torch.int64, device="cpu")
+        self._payload_meta = meta
+
+    def capture_verification_payload(self) -> None:
+        meta = self._payload_meta
+        if meta is None or self.output is None:
+            raise RuntimeError("benchmark_fn() must run before capture_verification_payload()")
+        self._set_verification_payload(
+            inputs={"meta": meta},
+            output=self.output,
+            batch_size=1,
+            parameter_count=0,
+            precision_flags={},
+            output_tolerance=(0.1, 1.0),
+        )
+
+    def teardown(self) -> None:
+        self.graph = None
+        self.input_chunks = None
+        self.weight = None
+        self.workspace = None
+        self.kv_dest = None
+        
+        torch.cuda.empty_cache()
+
+    def get_config(self) -> BenchmarkConfig:
+        return BenchmarkConfig(iterations=10, warmup=10)  # CUDA graphs need extra warmup
+
+    def get_workload_metadata(self) -> Optional[WorkloadMetadata]:
+        return self._workload
+
+    def get_custom_metrics(self) -> Optional[dict]:
+        return None
+
+    def validate_result(self) -> Optional[str]:
+        if any(t is None for t in (self.input_chunks, self.weight, self.workspace, self.kv_dest)):
+            return "Buffers not initialized"
+        return None
+
+def get_benchmark() -> BaseBenchmark:
+    return GraphedKVTransferBenchmark()

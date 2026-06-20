@@ -1,0 +1,35 @@
+from pathlib import Path
+
+from ch10.flash_attention_common import FLASH_ATTENTION_OUTPUT_TOLERANCE
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_flash_attention_is_tried_before_other_sdpa_backends() -> None:
+    source = (REPO_ROOT / "ch10/optimized_flash_attention.py").read_text()
+    flash_idx = source.index("SDPBackend.FLASH_ATTENTION")
+    efficient_idx = source.index("SDPBackend.EFFICIENT_ATTENTION")
+    assert flash_idx < efficient_idx
+    assert "[SDPBackend.FLASH_ATTENTION, SDPBackend.EFFICIENT_ATTENTION]" not in source
+    assert "major >= 10" in source
+    assert "FAIL FAST: FlashAttention required for ch10" in source
+
+
+def test_external_flashattention_engines_are_probed_in_preference_order() -> None:
+    source = (REPO_ROOT / "ch10/optimized_flash_attention.py").read_text()
+
+    flash3_idx = source.index("flash_attn_3.flash_attn_interface")
+    flash2_idx = source.index("flash_attn.flash_attn_interface")
+
+    assert flash3_idx < flash2_idx
+
+
+def test_flash_attention_pair_shares_verification_tolerance() -> None:
+    baseline = (REPO_ROOT / "ch10/baseline_flash_attention.py").read_text()
+    optimized = (REPO_ROOT / "ch10/optimized_flash_attention.py").read_text()
+
+    assert FLASH_ATTENTION_OUTPUT_TOLERANCE == (5e-2, 5e-2)
+    assert "output_tolerance=FLASH_ATTENTION_OUTPUT_TOLERANCE" in baseline
+    assert "output_tolerance=FLASH_ATTENTION_OUTPUT_TOLERANCE" in optimized
+    assert "output_tolerance=(0.2, 2.0)" not in baseline

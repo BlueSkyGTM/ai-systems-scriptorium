@@ -1,0 +1,199 @@
+# MCP Server & Client
+
+This directory contains both the MCP server implementation and a robust client library.
+
+## Files
+
+- `mcp_server.py` - MCP server tool catalog for AI performance engineering (see `--list` for count)
+- `mcp_client.py` - Robust client implementation with proper message ID tracking
+- `tool_generator.py` - Tool generation utilities
+
+## Quick Start
+
+### Server
+
+```bash
+# Start server
+python -m mcp.mcp_server --serve
+
+# List available tools
+python -m mcp.mcp_server --list
+```
+
+## Common Workflow: Baseline vs Optimized Deep-Dive Compare
+
+This is the standard "run → deep_dive profile → compare baseline vs optimized (nsys+ncu)" chain.
+
+### One-shot (recommended)
+
+Call the single MCP tool `benchmark_deep_dive_compare` (targets or path):
+
+```json
+{
+  "targets": ["ch10:atomic_reduction"],
+  "output_dir": "artifacts/mcp-deep-dive",
+  "async": true
+}
+```
+
+Or pass a benchmark file path directly:
+
+```json
+{
+  "path": "ch10/baseline_atomic_reduction.py",
+  "output_dir": "artifacts/mcp-deep-dive",
+  "async": true
+}
+```
+
+Then poll `job_status` until complete and read:
+- `run_dir`, `results_json`, `analysis_json`
+- `benchmarks[]` entries, each with `profiles_dir` and `followup_tool_calls` (ready-to-run chaining inputs)
+
+### Environment mode flags (strict by default)
+
+All benchmark-oriented MCP tools now use the same validity contract as CLI:
+- `validity_profile` (benchmark validity profile): `strict` (default; fail-fast with full validity checks) or `portable` (compatibility mode for virtualized/limited hosts)
+- `allow_portable_expectations_update`: optional override when you want portable runs to write expectation files
+
+Strict example (default behavior):
+
+```json
+{
+  "targets": ["ch10:atomic_reduction"],
+  "profile": "minimal",
+  "validity_profile": "strict"
+}
+```
+
+Portable compatibility example:
+
+```json
+{
+  "targets": ["ch10:atomic_reduction"],
+  "profile": "minimal",
+  "validity_profile": "portable",
+  "allow_portable_expectations_update": true
+}
+```
+
+### Manual chaining (explicit steps)
+
+1. Discover targets: `benchmark_targets`
+2. Run: `run_benchmarks` with `profile=\"deep_dive\"` and an `artifacts_dir`
+3. If async: poll with `job_status`
+4. Analyze benchmark results: `benchmark_triage` using the returned `results_json`
+5. Compare profiles: `profile_compare`, `compare_nsys`, `compare_ncu`
+
+Profiling tools return JSON metrics in their result payloads:
+- `profile_nsys` -> `nsys_metrics`
+- `profile_ncu` -> `ncu_metrics`
+- `profile_torch` -> `torch_metrics` (plus `report` alias)
+- `profile_hta` -> `nsys_metrics`
+
+Compare tools always attach `nsys_comparison` and `ncu_comparison` when profiles are captured; use these metrics to explain regressions and speedups.
+
+### Client
+
+```python
+from mcp.mcp_client import create_client
+
+# Simple usage
+with create_client(debug=True) as client:
+    # List tools
+    tools = client.list_tools()
+    print(f"Found {len(tools)} tools")
+    
+    # Call a tool
+    result = client.call_tool("status", {})
+    print(result)
+```
+
+## Robustness Features
+
+### Server (`mcp_server.py`)
+- ✅ Request deduplication
+- ✅ Automatic stale request cleanup
+- ✅ Graceful error handling
+- ✅ Debug logging support
+
+### Client (`mcp_client.py`)
+- ✅ Thread-safe message ID generation
+- ✅ Request/response correlation
+- ✅ Automatic timeout handling
+- ✅ Duplicate response detection
+- ✅ Graceful error recovery
+- ✅ Context manager support
+
+## Examples
+
+See `examples/mcp_client_example.py` for usage examples.
+
+## Documentation
+
+- `docs/mcp_client_guide.md` - Comprehensive robustness guide
+- `docs/mcp_tools.md` - Tool reference documentation
+
+## Testing
+
+```bash
+# Test server
+pytest tests/test_mcp_tools.py
+
+# Test client
+pytest tests/test_mcp_client.py
+```
+
+## Configuration
+
+### Environment Variables
+
+- `AISP_MCP_DEBUG=1` - Enable debug logging (server)
+
+Server-side request timeout is not configured through a dedicated environment
+variable in the current code. Set the client timeout explicitly when constructing
+`RobustMCPClient` or calling `create_client(...)`.
+
+### Client Options
+
+```python
+client = RobustMCPClient(
+    command=["python", "-m", "mcp.mcp_server", "--serve"],
+    cwd="/path/to/workspace",
+    timeout=300.0,  # Request timeout
+    enable_debug=True  # Debug logging
+)
+```
+
+## Architecture
+
+```
+┌─────────────────┐
+│  MCP Client     │  ← Robust client with message ID tracking
+│  (mcp_client)   │
+└────────┬────────┘
+         │ JSON-RPC over stdio
+         ↓
+┌─────────────────┐
+│  MCP Server     │  ← Server with deduplication & cleanup
+│  (mcp_server)   │
+└────────┬────────┘
+         │
+         ↓
+┌─────────────────┐
+│ PerformanceEngine│  ← Core functionality
+│  (see --list)   │
+└─────────────────┘
+```
+
+## Troubleshooting
+
+### "Unknown message ID" errors
+
+The robust client handles this automatically. If using a custom client:
+1. Track all pending requests by message ID
+2. Handle unknown IDs gracefully (log but don't crash)
+3. Clean up stale requests periodically
+4. Reset on reconnection
+
+See `docs/mcp_client_guide.md` for details.

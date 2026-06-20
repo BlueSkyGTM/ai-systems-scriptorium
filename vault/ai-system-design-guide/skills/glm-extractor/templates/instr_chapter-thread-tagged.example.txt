@@ -1,0 +1,12 @@
+TASK: Produce exactly ONE markdown section documenting the single guide section file below, for Module 2 · Prompting and Context (chapter 05).
+
+OUTPUT FORMAT — output ONLY the section, no preamble, no surrounding code fences:
+### NN · Title
+A dense 3-5 sentence technical summary of what the section covers — the key techniques, when they apply, and any tradeoffs.
+**Key concepts:** comma-separated short list of the concepts/techniques/tools introduced.
+
+RULES:
+- NN = the EXACT two-digit numeric prefix of the SECTION FILE name shown below (e.g. file `02-few-shot-and-icl.md` -> NN is `02`). NEVER derive the number from the content or headings.
+- Title = the section's main H1/H2 heading text (not the slug).
+- FLAG: append ` [THREAD: versioning]` to the heading line if the section deals with prompt/config versioning, prompt registries, or prompt optimization/management as a versioned artifact.
+- Extract faithfully. No opinions.

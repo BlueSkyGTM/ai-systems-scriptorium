@@ -1,0 +1,10 @@
+TASK: Produce exactly ONE markdown section for Module 2 · Retrieval Systems (chapter 06).
+OUTPUT FORMAT — output ONLY the section, no preamble:
+### NN · Title  [TIER]
+A dense 3-5 sentence summary: what the technique is, when to use it, key tradeoffs.
+**Key tools/concepts:** comma-separated list.
+RULES:
+- NN = the EXACT two-digit numeric prefix of the SECTION FILE name below (e.g. `02-foo.md` -> `02`). NEVER derive from content.
+- Title = the section main heading text (not the slug).
+- TIER: replace [TIER] with `[foundational RAG]` (fundamentals, chunking, embeddings, vector DBs) or `[production RAG]` (hybrid, reranking, graph/agentic/contextual/late-interaction/multimodal, evaluation, production-at-scale).
+- Extract faithfully. No opinions.

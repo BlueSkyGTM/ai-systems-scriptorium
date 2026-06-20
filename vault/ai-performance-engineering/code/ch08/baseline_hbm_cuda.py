@@ -1,0 +1,42 @@
+"""Python harness wrapper for baseline_hbm_cuda.cu."""
+
+from __future__ import annotations
+from typing import Optional
+
+from pathlib import Path
+
+from core.harness.benchmark_harness import BaseBenchmark
+from core.benchmark.cuda_binary_benchmark import CudaBinaryBenchmark
+
+
+class BaselineHBMCudaBenchmark(CudaBinaryBenchmark):
+    """Wraps the baseline HBM CUDA binary."""
+
+    def __init__(self) -> None:
+        chapter_dir = Path(__file__).parent
+        rows = 4096
+        cols = 2048
+        bytes_per_iter = rows * cols * 4 + rows * 4
+        super().__init__(
+            chapter_dir=chapter_dir,
+            binary_name="baseline_hbm_cuda",
+            friendly_name="Baseline HBM CUDA",
+            iterations=5,
+            warmup=5,
+            timeout_seconds=120,
+            workload_params={
+                "rows": rows,
+                "cols": cols,
+                "dtype": "float32",
+            },
+        )
+        self.register_workload_metadata(bytes_per_iteration=float(bytes_per_iter))
+
+    def get_custom_metrics(self) -> Optional[dict]:
+        return None
+
+
+def get_benchmark() -> BaseBenchmark:
+    return BaselineHBMCudaBenchmark()
+
+

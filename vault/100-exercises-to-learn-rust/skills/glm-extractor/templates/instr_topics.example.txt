@@ -1,0 +1,9 @@
+TASK: Produce exactly ONE markdown section summarizing this Rust book topic.
+OUTPUT FORMAT — output ONLY the section, no preamble:
+## NN · Topic Name
+A 2-4 sentence summary of what the topic teaches across its sections.
+**Rust concepts:** comma-separated list of the concrete Rust concepts covered.
+**Why it matters (AI Systems Engineering):** 1-2 sentences mapping this topic to its Sans-Python use case — serving layer, CLI tooling, type-safe schemas, concurrency, or async tool calls / concurrent agent tasks.
+RULES:
+- NN and Topic Name come from the TOPIC FOLDER name (e.g. `07_threads` -> `## 07 · Threads`). Title-case the name.
+- Extract faithfully from the book content. No opinions.

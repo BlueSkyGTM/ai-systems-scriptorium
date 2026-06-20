@@ -1,0 +1,330 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Memory That Improves - Sans Python — Production AI Engineering</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/copy-to-claude-dcee30da.css">
+        <link rel="stylesheet" href="../theme/syntax-polish-5e51e1c1.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "rust";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "../searchindex-49915c1e.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-519ea03c.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Sans Python — Production AI Engineering</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="memory-that-improves"><a class="header" href="#memory-that-improves">Memory That Improves</a></h1>
+<p>The memory system from lesson 10 stores and retrieves; but it doesn’t get better. This lesson covers three patterns that make memory smarter over time without touching a model weight: typed blocks that consolidate off the critical path, skill libraries that turn execution history into reusable code, and checkpoints that let a failed run resume instead of restart.</p>
+<h2 id="from-reflexion-to-general-memory-writes"><a class="header" href="#from-reflexion-to-general-memory-writes">From Reflexion to General Memory Writes</a></h2>
+<p>In lesson 03, Reflexion wrote a verbal lesson after each failure and stored it in an episodic buffer. That was a specific instance of a general pattern: <em>any</em> meaningful event can become a memory write. This lesson generalizes it. The post-failure reflection is a write to episodic memory (L2). A discovered user preference is a write to the core block. A verified, reusable tool sequence is a write to the skill library. The shapes are different; the principle is the same: turn experience into structure the agent can retrieve later.</p>
+<h2 id="memory-blocks-and-sleep-time-compute-letta"><a class="header" href="#memory-blocks-and-sleep-time-compute-letta">Memory Blocks and Sleep-Time Compute (Letta)</a></h2>
+<p>Letta’s 2026 architecture adds typed, editable memory blocks to the MemGPT pattern. A block is a named, bounded region with a schema; not a free-form string. The three built-in types are <code>Human</code> (facts about the user), <code>Persona</code> (the agent’s own character and role), and <code>Custom</code> (domain-specific slots you define). Blocks live in core memory (always in context), recall memory (recent session history), and archival memory (long-term store); the same three tiers from lesson 10, with blocks as the data model.</p>
+<p>The block operations are:</p>
+<pre><code class="language-python"># Append new content to a block (bounded — triggers eviction if full)
+block_append(block_label="human", content="Prefers concise answers, no preamble")
+
+# Replace a field within a block
+block_replace(block_label="persona", field="tone", value="direct, technical")
+
+# Summarize a block when it hits capacity
+block_summarize(block_label="human")
+</code></pre>
+<p>The problem these blocks solve is <em>memory rot</em>: a flat episodic buffer accumulates contradictions and stale facts across sessions. A typed block enforces schema on write, evicts on overflow (triggering a summarize), and makes the structure inspectable.</p>
+<p>The bigger innovation is <strong>sleep-time compute</strong>: a background agent that consolidates memory asynchronously, off the critical path. While the primary agent is idle between sessions, a lighter model reviews recent episodic memories, merges duplicates, resolves contradictions, and writes cleaned facts back into the blocks. The user’s next session starts with a consolidated, current memory state; not the raw accumulation of every prior turn.</p>
+<p>The two-agent loop in pseudocode:</p>
+<pre><code class="language-python"># Primary agent: serves responses, writes raw observations to recall
+async def primary_turn(user_message):
+    response = await agent.run(user_message)
+    recall_memory.append(user_message, response)
+    return response
+
+# Sleep-time agent: runs between sessions, never on the critical path
+async def sleep_time_consolidate():
+    raw = recall_memory.recent(limit=50)
+    summary = await cheap_model.summarize(raw)
+    block_replace(block_label="human", field="summary", value=summary)
+    recall_memory.prune(older_than="24h")
+</code></pre>
+<p>The claude-haiku-4-5 model is the right choice for the sleep-time agent: cheap, fast, and capable enough for summarization work that the claude-opus-4-8 primary does not need to do.</p>
+<p>This is the pattern behind Claude Code’s <code>CLAUDE.md</code> learnings and the <code>/learn</code> command: when a session ends, the rule you write is a sleep-time consolidation into a persistent block the next session reads on startup.</p>
+<p>Microsoft Agent Framework formalizes this pattern through <code>ContextProvider</code> and <code>HistoryProvider</code>: <code>InMemoryHistoryProvider</code> keeps history in session state, and a second provider with <code>store_context_messages=True</code> acts as an audit store; both chained via <code>context_providers=[...]</code>. (<a href="https://learn.microsoft.com/agent-framework/get-started/memory">Microsoft Agent Framework memory and persistence</a>)</p>
+<h2 id="skill-libraries-voyager"><a class="header" href="#skill-libraries-voyager">Skill Libraries (Voyager)</a></h2>
+<p>A skill library treats executable code as a retrievable asset. Voyager (Wang et al., 2024) is the reference: in Minecraft, an agent builds a library of named Python functions (skills), each tagged with a natural-language description. When a new task arrives, the agent searches the library by description similarity and retrieves relevant skills to compose, rather than re-deriving behavior from scratch. The loop runs three ways:</p>
+<ol>
+<li><strong>Attempt</strong>; the agent tries a task using available skills.</li>
+<li><strong>Verify</strong>; an external check (a test, an assertion, an execution result) confirms success or failure.</li>
+<li><strong>Refine</strong>; on failure, the agent revises the skill code and overwrites the library entry.</li>
+</ol>
+<p>The result is a library that gets sharper with use. A skill that fails twice gets rewritten. A skill that succeeds consistently gets promoted (tagged as high-confidence and preferred in future retrieval).</p>
+<p>This is the reference architecture for the Claude Agent SDK skills pattern: capabilities are programs stored in a library and loaded on demand, not re-derived from a prompt each session. A skill is named, has a description the retrieval system queries against, and is callable by the agent loop.</p>
+<pre><code class="language-python"># A skill decorator (illustrative — your library wires the registration pattern)
+@skill(name="parse_json_schema", description="Parse and validate a JSON Schema, return typed fields")
+def parse_json_schema(schema: str) -&gt; list[dict]:
+    import json
+    import jsonschema
+    data = json.loads(schema)
+    # validate and extract fields ...
+    return fields
+</code></pre>
+<p>A skill decorator such as the one above registers the function in the library with a name and a description the retrieval system queries against. The agent searches by description at task time, retrieves the matching skill, and calls it; the same composition pattern the agent loop uses for tool calls, but with code that survives sessions.</p>
+<p>Azure AI Foundry Agent Service’s Toolbox is the production version of this pattern: a curated bundle of versioned tools, configured once and exposed as a single MCP-compatible endpoint that any agent can consume. (<a href="https://learn.microsoft.com/azure/foundry/agents/concepts/tool-catalog">Agent tools overview for Foundry Agent Service</a>)</p>
+<h2 id="checkpointing-and-resume"><a class="header" href="#checkpointing-and-resume">Checkpointing and Resume</a></h2>
+<p>A 40-step agent run that fails at step 37 costs everything: tokens spent, time elapsed, intermediate results computed. Checkpointing fixes this. After each successful step, the agent writes its full state, message buffer, tool call history, intermediate results, turn number, to a durable store. When the run fails, the harness rehydrates from the last checkpoint and continues from step 37, not from zero.</p>
+<p>The checkpoint state shape for <code>module3-agent/</code>:</p>
+<pre><code class="language-python">@dataclass
+class AgentCheckpoint:
+    run_id: str
+    turn: int
+    messages: list[dict]      # full message buffer
+    tool_results: list[dict]  # results already computed
+    memory_snapshot: dict     # current L1/L2 state
+    timestamp: str
+
+def save_checkpoint(cp: AgentCheckpoint, path: str):
+    with open(path, "w") as f:
+        json.dump(asdict(cp), f)
+
+def load_checkpoint(path: str) -&gt; AgentCheckpoint:
+    with open(path) as f:
+        return AgentCheckpoint(**json.load(f))
+</code></pre>
+<p>In production, the store is Cosmos DB with a <code>CosmosDBWorkflowCheckpointStorage</code> provider (Microsoft Agent Framework) or via Azure Durable Task directly. The Durable Task runtime checkpoints every state transition automatically and resumes from the last checkpoint on any infrastructure failure; process crash, deployment, scale-in event. You get this without adding retry logic to your agent code.</p>
+<p>Azure Durable Task handles this in production: the runtime checkpoints every state transition, LLM responses, tool results, control flow, and resumes automatically from the last checkpoint on any infrastructure failure, without adding retry logic to your agent code. (<a href="https://learn.microsoft.com/azure/durable-task/sdks/durable-task-for-ai-agents">Durable Task for AI agents</a>)</p>
+<h2 id="safety-the-memory-attack-surface-expands"><a class="header" href="#safety-the-memory-attack-surface-expands">Safety: the Memory Attack Surface Expands</a></h2>
+<p>Skill libraries and memory blocks extend the attack surface from lesson 10. A poisoned skill, malicious code injected into a library entry via an adversarial tool result, executes the next time the agent retrieves and calls it. Sleep-time consolidation running a cheaper model is a lower-scrutiny path: an attacker who can influence the recall buffer may be able to plant content that the sleep-time agent summarizes into a core block without the primary agent’s guardrails in place. Run Prompt Shields on inputs to the sleep-time agent as well, not just the primary. Version your skill library so a malicious write can be rolled back.</p>
+<h2 id="what-you-build"><a class="header" href="#what-you-build">What You Build</a></h2>
+<p>You extend <code>module3-agent/</code> with three additions. First, <code>memory/blocks.py</code>: a typed block manager with <code>block_append</code>, <code>block_replace</code>, and <code>block_summarize</code>. Second, <code>memory/skills.py</code>: a skill library with <code>register</code>, <code>search</code> (keyword similarity over descriptions), and <code>call</code>. Third, <code>memory/sleep_agent.py</code>: a stub sleep-time consolidation loop that reads from recall memory, summarizes with claude-haiku-4-5, and writes back to the human block. The existing checkpoint hook from the agent loop writes a full <code>AgentCheckpoint</code> after each turn; a <code>--resume</code> flag on the loop entry point reloads from the last checkpoint.</p>
+<p>Memory that gets better with use is not a nice-to-have; it is the difference between an agent that costs the same on run 1000 as on run 1, and one that already knows what works.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>Any meaningful event, a failure, a discovered preference, a verified tool sequence, is a candidate memory write; Reflexion’s post-failure reflection is one instance of this general pattern.</li>
+<li>Typed memory blocks (Human/Persona/Custom) prevent memory rot by enforcing schema on write and summarizing on overflow; sleep-time compute consolidates off the critical path so latency stays low.</li>
+<li>A skill library stores executable code as named, retrievable, refinable assets; the pattern behind the Claude Agent SDK skills system, where capabilities load from a library rather than re-derive from a prompt.</li>
+<li>Checkpointing every turn means a failed long run resumes from the last checkpoint; without it, every failure discards all tokens spent.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module3/11-memory-that-improves/">
+<p><strong>Build It in Claude Code</strong>: Extend <code>module3-agent/</code> with typed memory blocks (block_append/replace/summarize), a skill library with register/search/call, and a sleep-time consolidation stub using claude-haiku-4-5. Wire a checkpoint/resume hook into the agent loop: save state after each turn, add a –resume flag that reloads from the last checkpoint.</p>
+</div>
+
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../module3/10-memory-tiers-and-stores.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../module3/12-frameworks-and-the-four-primitives.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../module3/10-memory-tiers-and-stores.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../module3/12-frameworks-and-the-four-primitives.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/copy-to-claude-66056049.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

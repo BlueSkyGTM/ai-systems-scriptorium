@@ -1,0 +1,94 @@
+"""Python harness wrapper for optimized_dsmem_reduction_warp_specialized.cu.
+
+DSMEM Warp Specialized: Combines warp specialization with DSMEM for maximum throughput.
+
+BOOK REFERENCE (Ch10): Warp specialization divides warps into different roles
+for better resource utilization.
+
+Key pattern:
+  1. All warps perform block-level reduction with vectorized float4 loads
+  2. Only warp 0 handles cluster communication via DSMEM
+  3. 4-CTA cluster (matches baseline workload)
+
+Optimizations:
+  - Vectorized float4 loads for 4x bandwidth efficiency
+  - Warp specialization reduces cross-CTA communication overhead
+  - Dedicated communication warp avoids blocking compute warps
+"""
+
+from __future__ import annotations
+from typing import Optional
+
+from pathlib import Path
+
+from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig
+from core.benchmark.cuda_binary_benchmark import CudaBinaryBenchmark
+from core.benchmark.verification import simple_signature
+
+
+class OptimizedDSMEMWarpSpecializedBenchmark(CudaBinaryBenchmark):
+    """Wraps DSMEM warp-specialized reduction."""
+
+    def __init__(self) -> None:
+        chapter_dir = Path(__file__).parent
+        workload_n = 64 * 1024 * 1024
+        super().__init__(
+            chapter_dir=chapter_dir,
+            binary_name="optimized_dsmem_reduction_warp_specialized",
+            friendly_name="Optimized Dsmem Reduction Warp Specialized",
+            iterations=3,
+            warmup=5,
+            # Full deep-dive instrumentation can slow the standalone CUDA binary
+            # enough that the default subprocess budget becomes a false failure.
+            timeout_seconds=600,
+            workload_params={
+                "batch_size": 1024,
+                "dtype": "float32",
+                "N": workload_n,
+                "cluster_size": 4,
+                "block_elems": 4096,
+            },
+        )
+        self.register_workload_metadata(bytes_per_iteration=float(workload_n * 4))
+
+    def get_custom_metrics(self) -> Optional[dict]:
+        """Report the reduction workload without fake pipeline timing."""
+        from ch10.benchmark_metrics_common import compute_workload_param_metrics
+
+        metrics = compute_workload_param_metrics(self._workload_params)
+        metrics["reduction.uses_dsmem"] = 1.0
+        metrics["reduction.warp_specialized"] = 1.0
+        metrics["reduction.cluster_size"] = float(self._workload_params["cluster_size"])
+        return metrics
+
+    def get_input_signature(self) -> dict:
+        """Signature for warp-specialized DSMEM reduction."""
+        return simple_signature(
+            batch_size=1,
+            dtype="float32",
+            N=64 * 1024 * 1024,
+        ).to_dict()
+
+    def get_output_tolerance(self) -> tuple[float, float]:
+        return (0.0, 0.0)
+
+    def get_config(self) -> BenchmarkConfig:
+        config = super().get_config()
+        # This standalone CUDA binary does not benefit from full library tracing,
+        # and deep-dive NSYS captures are more reliable with the light preset.
+        config.nsys_timeout_seconds = 300
+        config.nsys_preset_override = "light"
+        config.profiling_warmup = 0
+        config.profiling_iterations = 1
+        config.profile_env_overrides = {
+            "AISP_CUDA_BINARY_PROFILE_WARMUP": "0",
+            "AISP_CUDA_BINARY_PROFILE_ITERATIONS": "1",
+        }
+        return config
+
+
+def get_benchmark() -> BaseBenchmark:
+    """Factory for discover_benchmarks()."""
+    return OptimizedDSMEMWarpSpecializedBenchmark()
+
+

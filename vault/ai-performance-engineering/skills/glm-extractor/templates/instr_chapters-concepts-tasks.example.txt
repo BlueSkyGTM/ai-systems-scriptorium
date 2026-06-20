@@ -1,0 +1,4 @@
+TASK: From this inference-serving chapter README, extract a compact concepts + tasks block. Output ONLY these two lines, no heading, no preamble, no code fence:
+**Key concepts:** comma-separated inference-serving concepts the chapter actually covers (e.g. vLLM, SGLang, TensorRT-LLM, KV cache, paged attention, continuous batching, disaggregated prefill/decode, NVLink KV pooling, MoE serving, speculative decoding, quantization/precision, goodput, cost-per-token, throughput-per-dollar, profiling — only those present).
+**Hands-on tasks:** a short comma-or-semicolon list of what the student deploys, benchmarks, or measures in this chapter (deploy/benchmark/measure framing). Students benchmark and deploy — they do NOT write GPU kernels.
+Be faithful to the README. Do not invent.

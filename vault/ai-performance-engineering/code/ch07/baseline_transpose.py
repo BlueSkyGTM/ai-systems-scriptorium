@@ -1,0 +1,41 @@
+"""Python harness wrapper for ch07's baseline_transpose.cu."""
+
+from __future__ import annotations
+from typing import Optional
+
+from pathlib import Path
+
+from core.harness.benchmark_harness import BaseBenchmark
+from core.benchmark.cuda_binary_benchmark import CudaBinaryBenchmark
+
+
+class BaselineTransposeBenchmark(CudaBinaryBenchmark):
+    """Wraps the naïve matrix transpose kernel."""
+
+    def __init__(self) -> None:
+        chapter_dir = Path(__file__).parent
+        width = 4096
+        matrix_bytes = width * width * 4
+        super().__init__(
+            chapter_dir=chapter_dir,
+            binary_name="baseline_transpose",
+            friendly_name="Baseline Transpose",
+            iterations=3,
+            warmup=5,
+            timeout_seconds=90,
+            workload_params={
+                "width": width,
+                "dtype": "float32",
+            },
+        )
+        self.register_workload_metadata(bytes_per_iteration=float(matrix_bytes * 2))
+
+    def get_custom_metrics(self) -> Optional[dict]:
+        """Return memory access metrics."""
+        return None
+
+def get_benchmark() -> BaselineTransposeBenchmark:
+    """Factory for discover_benchmarks()."""
+    return BaselineTransposeBenchmark()
+
+

@@ -1,0 +1,24 @@
+"""Branch-heavy threshold benchmark baseline."""
+
+from __future__ import annotations
+
+from ch08.threshold_benchmark_base import ThresholdBenchmarkBase
+
+
+class BaselineThresholdBenchmark(ThresholdBenchmarkBase):
+    nvtx_label = "baseline_threshold"
+
+    def _invoke_kernel(self) -> None:
+        assert self.extension is not None
+        assert self.inputs is not None
+        assert self.outputs is not None
+        # Naive kernel with branch divergence - data is already on GPU
+        # The kernel uses nested if/else branches that cause warp divergence
+        self.extension.threshold_baseline(self.inputs, self.outputs, self.threshold)
+
+
+
+def get_benchmark() -> ThresholdBenchmarkBase:
+    return BaselineThresholdBenchmark()
+
+

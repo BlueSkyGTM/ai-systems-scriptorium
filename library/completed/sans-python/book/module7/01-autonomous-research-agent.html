@@ -1,0 +1,289 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Autonomous Research Agent - Sans Python — Production AI Engineering</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/copy-to-claude-dcee30da.css">
+        <link rel="stylesheet" href="../theme/syntax-polish-5e51e1c1.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "rust";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "../searchindex-49915c1e.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-519ea03c.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Sans Python — Production AI Engineering</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="the-autonomous-research-agent"><a class="header" href="#the-autonomous-research-agent">The Autonomous Research Agent</a></h1>
+<p>One agent grinding through a hard research question is slow, expensive, and, worse, answers to no one. This build replaces it with a team that splits the work, checks itself, and runs on a leash.</p>
+<h2 id="the-business-problem"><a class="header" href="#the-business-problem">The Business Problem</a></h2>
+<p>A real research question does not fit in one context window. Ask “what makes a multi-agent system reliable in production?” and a single agent has to hold the failure literature, the verification techniques, and the cost-governance patterns at once, then reason over all of it in one degrading buffer. It is slow because it works in sequence, and it is expensive because every turn re-reads everything. But the cost is not the part that should worry you.</p>
+<p>The part that should worry you is that a lone agent grades its own homework. When it decides it is finished, nobody checked whether its answer is grounded in evidence or invented on the spot. Berkeley’s MAST study put a number on where multi-agent systems break, and the largest single cause after specification was the <em>verification gap</em>: no independent check, so a wrong answer ships because nobody was assigned to catch it. Research that goes out on that basis is not a productivity win. It is a liability with citations.</p>
+<p>A research team fixes both problems at once. A supervisor splits the question into independent sub-questions and fans them out to sub-agents, each working a fresh, isolated context; parallel, and cheap because no agent carries the others’ baggage. And every finding passes a verification gate before it can enter the answer, so a fabricated citation is rejected rather than synthesized. The payoff is not “more agents.” It is <strong>governed parallelism</strong>: a traceable, cited answer you can stand behind, produced for a bounded cost.</p>
+<h2 id="the-capability-and-what-it-composes"><a class="header" href="#the-capability-and-what-it-composes">The Capability, and What It Composes</a></h2>
+<p>The capability is a sentence: <strong>plan a question into sub-questions, research each in a sandbox, verify every finding, synthesize the verified ones; all under a shared budget and a kill switch.</strong> That is a plan-execute-verify loop with sub-agents, the shape the Module 5 capstone calls an autonomous research agent.</p>
+<p>Here is the discipline that makes this a Module 7 build and not a from-scratch one: you compose it. Nothing below is new code you invent. It is patterns you already shipped, wired together at a higher altitude.</p>
+<ul>
+<li><strong>The sub-agent is the Module 6 worker.</strong> The research sub-agent is the terminal coding agent’s loop, observe, think, act, under a budget and a kill switch, pointed at a sub-question instead of a bug. The job changes (retrieve evidence, not edit code); the loop does not. You import the shape; you do not rebuild it.</li>
+<li><strong>The supervisor is the Module 4 supervisor-worker pattern.</strong> One lead plans and delegates, workers execute in fresh parallel contexts and report back, the lead synthesizes. And you wire supervision as <strong>direct tool calls</strong>, not a supervisor library, the 2026 guidance from that lesson, because the context boundary is the one knob that decides both answer quality and the bill, and a library hides it.</li>
+<li><strong>The planning is Module 3’s ReWOO / plan-and-execute.</strong> The supervisor’s Planner describes the whole decomposition before any tool fires; the Solver synthesizes a clean evidence packet at the end. Two model calls bracket a parallel middle, instead of re-conditioning on the full history every turn.</li>
+<li><strong>The verification gate is Module 3’s CRITIC.</strong> Route the check through an external signal the generator cannot hallucinate around. For the coding agent that signal was a test run; here it is the evidence the sub-agent actually retrieved. A finding is accepted only when every citation it makes is grounded in that evidence.</li>
+<li><strong>The budget and kill switch are Module 4’s fleet governance.</strong> The per-task governor, raised to a shared pool across the whole team, and one boolean every agent reads but none can write.</li>
+</ul>
+<p>Name what you reuse and the build shrinks to the part that is genuinely new: the seams between these pieces.</p>
+<h2 id="the-build-sequence"><a class="header" href="#the-build-sequence">The Build Sequence</a></h2>
+<p>You assemble the team in the order the data flows.</p>
+<ol>
+<li><strong>The shared budget and the kill switch first.</strong> Build the governance before the agents, so there is no moment where an agent runs ungoverned. The budget is the Module 6 cost ceiling with one change that matters: it is a <em>single shared pool</em> the supervisor and every sub-agent charge. A fan-out to N sub-agents can burn N times the tokens, so the runaway you are guarding against is a fleet of loops, not one; and the cap belongs at the team level. The kill switch is the same read-only boolean as Module 6, now read by every team member.</li>
+<li><strong>The sandbox.</strong> A sub-agent’s “execution” is retrieval, so its sandbox is a no-egress evidence corpus it can search and nothing else. The capstone runs each experiment with no network egress and strict limits; the same principle applied to reading means a sub-agent reaches a fixed, vetted corpus, never the open internet. It returns evidence as structured records; each with an id a finding can cite.</li>
+<li><strong>The sub-agent.</strong> Drop the Module 6 worker loop in. One sub-question, a fresh context, one tool (<code>search</code>), the shared budget, the kill switch. It loops until it emits a finding or a control surface stops it. Critically, it does <strong>not</strong> mark its own finding verified; that authority lives one level up.</li>
+<li><strong>The verify gate.</strong> Deterministic code, no model. It reads a finding and the set of evidence ids the sub-agent retrieved, and accepts only when every citation in the finding is grounded in that set. A finding with no citation, or one that cites a source the sub-agent never pulled, is rejected. That second case is the fabricated citation, the seed of a cascading error, caught before it spreads.</li>
+<li><strong>The supervisor.</strong> Now wire the four into the supervisor-worker flow: <code>plan</code> the question into sub-questions, <code>dispatch</code> one sub-agent per sub-question (each in its own sandbox), <code>verify</code> each returned finding through the gate, and <code>synthesize</code> only the accepted findings into one cited answer. Every step is a function call you wrote; there is no hidden routing.</li>
+</ol>
+<p>The deterministic mock is what lets you prove all of this offline. One mock plays three roles, Planner, sub-agent, Solver, behind the same seams a real model would, the same trick Module 6 used to make its run reproducible. Swap the mock for the Anthropic adapter and the topology does not change. That is the point of building the seams yourself.</p>
+<h2 id="the-operator-surfaces"><a class="header" href="#the-operator-surfaces">The Operator Surfaces</a></h2>
+<p>Module 8 hands this running team to a student who is the operator; they set the budget, hold the kill switch, and judge the output. So the controls have to be real. This team exposes three, and the first two are raised a level from Module 6.</p>
+<p><strong>The shared fleet budget.</strong> A single agent’s runaway bills you for one loop. A team’s runaway bills you for every loop at once, and a budget metered per-agent would let three sub-agents each stay “under budget” while the team as a whole blows past what the question was worth. So the budget is one pool. Every model call from any agent, supervisor or sub-agent, charges the same ledger, and a breach by any one of them stops the team before the next action. The ledger is tagged by agent, so the operator reads per-role spend the way they would read a bill: who cost what.</p>
+<p><strong>The per-result verification gate.</strong> This is the surface that closes the MAST verification gap, and it is the heart of why a team is trustable. Every finding is gated before synthesis; not the answer at the end, each finding on the way in. The gate is deterministic and external: it does not ask the sub-agent whether it is confident; it checks the sub-agent’s claim against the evidence the sub-agent actually retrieved. An ungrounded finding never reaches the report. The default is REJECT, and the only path to ACCEPT is grounded citation.</p>
+<p><strong>The kill switch.</strong> One boolean the whole team reads before every action and no agent can write. The read-only boundary is the entire point: if any agent could clear the switch, the team could disable its own stop. The operator holds the write path; the agents hold a view that only reads. Trip it once and the supervisor and every sub-agent halt at their next action boundary.</p>
+<h2 id="the-buildtest-gate"><a class="header" href="#the-buildtest-gate">The BUILD→TEST Gate</a></h2>
+<p>The scaffold passes locally and offline before it ships, and the bar is the same as Module 6, raised for composition. <code>python smoke.py</code> and <code>python -m pytest tests/</code> run on the <strong>standard library plus pytest alone</strong>; no Docker, no cloud, no network, no API key. The <code>anthropic</code> import sits behind a guard; the real model is opt-in through <code>.env</code>.</p>
+<p>The smoke run is the proof that a <em>team</em> coordinates, not one agent. It plans the fixed question into three sub-questions, dispatches three sub-agents that each search their own sandbox and return a cited finding, gates each finding, and synthesizes the verified ones; and the trace shows every step, with spend attributed across the agents. The test suite then pins each claim: the composition completes as a team; an unverified sub-result is rejected and never synthesized; a fleet budget breach stops the whole team before the next action; the kill switch halts it. The reject-unverified test is the one that earns the gate’s trust; a sub-agent declaring an answer is not evidence, and the test proves the gate catches the fabricated citation the sub-agent was confident about.</p>
+<h2 id="the-strong-project-bar"><a class="header" href="#the-strong-project-bar">The Strong-Project Bar</a></h2>
+<p>These artifacts exist to be hireable, so “done” has a checklist and this build meets it: a real entry point you run from a terminal, not a notebook, and one that runs a <em>team</em> rather than a single agent; a README that frames the business problem before the code and names exactly what it reuses from M3, M4, and M6; an evaluation that is a genuine per-result acceptance gate, with the sub-agent’s self-report shown to be the weaker signal the gate has to backstop; tests over the composition and every operator surface; a clean, versioned layout with no secrets committed; and a shipped <code>outputs/skill-autonomous-research-agent.md</code>. The done-when is not “it runs once”; it is “it runs green on the gate, offline, and a stranger reading the README can see which earlier agents this team is built from.”</p>
+<h2 id="what-m8-reuses"><a class="header" href="#what-m8-reuses">What M8 Reuses</a></h2>
+<p>This team is a <strong>node pattern</strong>, and that is the thing to carry forward. The shape, <em>a supervisor plans, sub-agents work in isolated sandboxes, a gate verifies each result before it is used, and a shared budget plus a kill switch govern the whole</em>, is the reusable unit. The Module 7 finale wires several such governed nodes under one operator console, and Module 8 points that console at a production problem: it configures the budget, holds the kill switch, reads the verified-versus-rejected split, and judges the synthesized answer against a rubric. The verification gate is what makes that judgment possible at all; the report M8 grades is assembled from grounded findings, not from promises. Build the gate honest here, and every team you compose on top of it inherits a spine you can trust.</p>
+<h2 id="what-you-build"><a class="header" href="#what-you-build">What You Build</a></h2>
+<p>You build an autonomous research team that answers a question no single agent could hold. A supervisor decomposes the question, dispatches one sub-agent per sub-question into its own no-egress sandbox, verifies each returned finding against the evidence it actually retrieved, and synthesizes only the verified findings into one cited answer; the whole team bounded by a shared budget and a kill switch it cannot disable. A deterministic mock plays planner, sub-agent, and solver so the build gate runs offline and reproducible; a one-line swap puts a live Anthropic model behind the same seams. It reuses the Module 6 worker, the Module 4 supervisor-worker pattern and fleet governance, and the Module 3 ReWOO and CRITIC patterns, composed, not rebuilt, and it becomes a node the Module 8 system governs.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>A research team beats a lone research agent not by adding agents but by adding governance: isolated sub-agent contexts make the work parallel and cheap, and a per-finding verification gate makes the answer trustable; the MAST verification gap closed with code.</li>
+<li>The build composes rather than authors: the sub-agent is the M6 worker loop, the supervisor is the M4 supervisor-worker pattern wired as direct tool calls, the planning is M3 ReWOO, and the gate is M3 CRITIC; naming what you reuse shrinks the build to the seams between them.</li>
+<li>A fleet budget is a single shared pool, not a per-agent allowance, because a team’s runaway is N loops at once; a breach by any agent stops the whole team, and the ledger is tagged per agent so cost is attributable.</li>
+<li>The verify gate is deterministic and external: a finding enters the answer only when every citation is grounded in evidence the sub-agent actually retrieved, so a fabricated citation is rejected before it can cascade; the sub-agent never marks its own work done.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module7/01-autonomous-research-agent/">
+<p><strong>Build It in Claude Code</strong>: Compose the autonomous research team: a supervisor that plans a question into sub-questions and dispatches them through direct tool calls (the M4 supervisor-worker pattern), sub-agents that reuse the M6 worker loop to search a no-egress sandbox and return cited findings, a verify gate that grounds every citation against retrieved evidence and defaults to REJECT (M3 CRITIC), and the operator surfaces; a <em>shared</em> fleet budget that stops the whole team on breach, and a kill switch every agent reads but none can write. Drive it with a deterministic mock that plays planner, sub-agent, and solver so <code>python smoke.py</code> runs the whole team offline, and write <code>tests/</code> that prove the composition completes as a team, an unverified finding is rejected (not synthesized), a budget breach stops the team, and the kill switch halts it. Keep the smoke path standard-library-only; make the real Anthropic model opt-in via <code>.env</code>.</p>
+</div>
+
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../module7/index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../module7/02-devops-k8s-agent.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../module7/index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../module7/02-devops-k8s-agent.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/copy-to-claude-66056049.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

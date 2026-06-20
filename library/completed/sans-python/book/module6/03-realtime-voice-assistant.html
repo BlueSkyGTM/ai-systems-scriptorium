@@ -1,0 +1,300 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Real-Time Voice Assistant - Sans Python — Production AI Engineering</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/copy-to-claude-dcee30da.css">
+        <link rel="stylesheet" href="../theme/syntax-polish-5e51e1c1.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "rust";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "../searchindex-49915c1e.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-519ea03c.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Sans Python — Production AI Engineering</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="real-time-voice-assistant"><a class="header" href="#real-time-voice-assistant">Real-Time Voice Assistant</a></h1>
+<p>A chatbot can think for two seconds and nobody minds. A voice agent that thinks for two seconds sounds broken; the caller talks over it, repeats the question, hangs up. Voice is the one interface where the model is the easy part and the clock is the problem, and this artifact is about building to the clock.</p>
+<p>You read the architecture in Module 4: the VAD → STT → LLM → TTS → transport cascade, ruled by a mouth-to-ear budget of roughly 450–600 ms. Now you build it; a streaming pipeline you can measure stage by stage, a budget you enforce instead of hope for, and barge-in handling that stops the agent the instant the user speaks.</p>
+<h2 id="the-business-problem"><a class="header" href="#the-business-problem">The Business Problem</a></h2>
+<p>A voice agent answers the phone, books the appointment, takes the order, handles the support call, and the bar it has to clear is not intelligence. It is latency. Conversation has a rhythm, and past a certain delay that rhythm breaks: the human starts talking into the silence, the agent starts replying into the human, and you get two voices at once. The working target is roughly <strong>450–600 ms end to end</strong>, mouth to ear, through every stage; the budget Module 4 named, and the one the cascade is built to defend.</p>
+<p>That budget is the spec everything bends to, and it forces two design choices before you write a line. First, <strong>stream in fragments</strong>: wait for a complete utterance and you have spent your budget before the model starts, so the pipeline processes speech as it arrives. Second, <strong>handle barge-in</strong>: when the user talks over the agent, the agent must stop synthesizing <em>now</em>. Keep going and the worst failure in voice UX plays out; the agent monologues over a person trying to interrupt it.</p>
+<p>Strip the romance off and the job is narrow. You are not building a smarter model. You are building a clock you cannot miss, with a pipeline whose every hop is a withdrawal from a budget of half a second.</p>
+<h2 id="capability-and-one-stack"><a class="header" href="#capability-and-one-stack">Capability and One Stack</a></h2>
+<p>The capability is <strong>streaming under a hard latency budget</strong>: VAD → STT → LLM → TTS, wired through a transport, with barge-in. The reference stack, one concrete choice, is <strong>Pipecat</strong>; an open-source Python framework for real-time voice agents. It models the system as a <code>Pipeline</code> of <code>FrameProcessor</code> stages that pass <code>Frame</code>s between them, driven by a <code>PipelineTask</code> and a <code>PipelineRunner</code>. The scaffold reproduces that shape in the standard library so you can run it offline; real Pipecat swaps in behind the same seam.</p>
+<p>That shape is the one you want to reason about: audio and text flow through the stages as <strong>frames</strong> with an explicit direction; DOWNSTREAM toward the speaker, UPSTREAM for control like an interrupt. Each <code>FrameProcessor</code> consumes a frame and emits the next. The reference cascade maps one provider per stage:</p>
+<ul>
+<li><strong>VAD</strong>; Voice Activity Detection decides when the user is speaking versus pausing (Silero via <code>SileroVADAnalyzer</code>, from <code>pipecat.audio.vad.silero</code>).</li>
+<li><strong>STT</strong>; Speech-to-Text turns audio into text (Deepgram via <code>DeepgramSTTService</code>, from <code>pipecat.services.deepgram.stt</code>).</li>
+<li><strong>LLM</strong>; the model generates the reply, streaming (Anthropic via <code>AnthropicLLMService</code>, from <code>pipecat.services.anthropic.llm</code>). Pick the model for latency, not raw capability, a fast Sonnet over the flagship, and read the current model id from the environment rather than pinning one in code, so the choice doesn’t go stale.</li>
+<li><strong>TTS</strong>; Text-to-Speech turns the reply back into audio (Cartesia via <code>CartesiaTTSService</code>, from <code>pipecat.services.cartesia.tts</code>).</li>
+<li><strong>transport</strong>; streams the audio to the user, over WebRTC for low latency (Pipecat’s <code>DailyTransport</code>).</li>
+</ul>
+<p>One stack, named, so the choices are honest. But the stack is not the lesson. The seam is.</p>
+<h2 id="the-portable-seam"><a class="header" href="#the-portable-seam">The Portable Seam</a></h2>
+<p>One interface carries this whole system: the <strong>pipeline stage</strong>. Every stage is a <code>FrameProcessor</code> with a single method, <code>process(frame) -&gt; frame</code>, and a declared per-stage latency. Bind to that, and every provider becomes a drop-in swap.</p>
+<pre><code class="language-python">class FrameProcessor:
+    name: str
+    sim_latency_ms: float
+    def process(self, frame: Frame) -&gt; Frame | None: ...
+</code></pre>
+<p>The STT stage doesn’t know whether the next stage is a real model or a mock; the LLM stage doesn’t know whether its output goes to Cartesia or a stand-in. Swap Deepgram for Whisper, or Cartesia for ElevenLabs, and the cascade above and below the swapped stage does not move. That is the trade Module 4 named, and it is the choice LiveKit puts in front of you directly: its <code>MultimodalAgent</code> sends audio straight to one multimodal model and cuts two hops, while its <code>VoicePipelineAgent</code> is the explicit STT → LLM → TTS cascade. The cascade costs you milliseconds against the direct path, but it buys you a stage you can replace and a stage you can measure. This artifact is the cascade because the cascade is the one you can instrument.</p>
+<p>The same seam is where real Pipecat plugs in. Every provider import sits behind a guarded <code>try_real_*</code> helper that returns the real service or <code>None</code> if it isn’t installed. The mock stage and the real stage satisfy the same <code>process</code> contract, so the swap is config; install the package, set the key, hand the pipeline the real stage. The pipeline never learns the difference.</p>
+<h2 id="the-build-sequence"><a class="header" href="#the-build-sequence">The Build Sequence</a></h2>
+<p>Build it in the order the dependencies force, each step runnable before the next:</p>
+<ol>
+<li><strong>The frame model</strong>; <code>Frame</code> (type, direction, payload, a latency ledger in <code>meta</code>) and the <code>FrameProcessor</code> base class. This is the contract every stage speaks.</li>
+<li><strong>The stages</strong>; <code>mock_vad</code>, <code>mock_stt</code>, <code>mock_llm</code>, <code>mock_tts</code>, and a transport hop. Each is deterministic and adds a configurable <em>simulated</em> latency. The mock LLM returns a canned reply keyed off the transcript, so a turn is reproducible.</li>
+<li><strong>The pipeline</strong>; <code>VoicePipeline</code> chains the stages and drives one turn DOWNSTREAM, accumulating each stage’s latency into a ledger on the finished turn.</li>
+<li><strong>Latency measurement</strong>; <code>measure(turn)</code> reads the ledger, sums it, and reports per-stage plus end-to-end against the budget.</li>
+<li><strong>The gate</strong>; <code>enforce(report)</code> raises on a blown budget instead of shipping a laggy turn. The budget is a parameter, surfaced as <code>VOICE_BUDGET_MS</code> in <code>.env.example</code>, not a constant baked into the code.</li>
+<li><strong>Barge-in</strong>; a controller the pipeline polls before each stage; a new user frame cancels the in-flight turn before it reaches the speaker.</li>
+</ol>
+<p>The simulated latency is doing real work, not papering over a gap. A real STT call blocks on a network round trip you can’t make on the smoke path; a configurable per-stage millisecond budget is what makes the <em>interesting</em> part, the measurement, the gate, the interrupt, testable in CI without audio hardware or a cloud account. Latency is the thing you are engineering, so latency is the thing the scaffold models directly.</p>
+<h2 id="the-operator-surfaces"><a class="header" href="#the-operator-surfaces">The Operator Surfaces</a></h2>
+<p>Module 8 hands the student the operator’s chair: set the budget, watch the clock, hold the kill-switch. So this artifact exposes the surfaces the student will drive, and they are real, not decorative.</p>
+<p><strong>The latency budget is an enforced gate.</strong> This is the surface that defines the artifact. <code>latency.py</code> sums the per-stage cost off the finished turn and renders a budget table; every hop, the total, the verdict, the headroom. <code>enforce()</code> then <em>raises</em> when the total exceeds the budget. In production you wire that to drop the turn, fall back to a cheaper stage, or alert; anything but silently ship a turn that took 1.2 seconds. The budget is config, so the operator tightens it for a snappy phone menu and loosens it for a tolerant back-office assistant. The smoke harness blows one stage on purpose and confirms the gate catches it; a gate you can’t watch bite is a gate you don’t trust.</p>
+<p><strong>Barge-in is the turn’s kill-switch.</strong> When VAD detects the user talking mid-turn, the agent must stop. The barge-in controller is polled before each stage; on an interrupt the in-flight turn is abandoned, its TTS never reaches transport, so the agent goes quiet the instant the user speaks. This is the operator surface that maps to the M8 kill-switch: a signal that halts work in flight, owned by something other than the model generating it.</p>
+<p><strong>The turn is observable.</strong> Every stage writes its latency into a ledger the finished turn carries, the same data a production tracer (OpenTelemetry GenAI spans, from Module 5) would emit. You can’t fix a budget you can’t see broken down by hop, so the breakdown is a first-class output, not a debug print.</p>
+<h2 id="the-buildtest-gate"><a class="header" href="#the-buildtest-gate">The BUILD→TEST Gate</a></h2>
+<p>The whole artifact runs on the Python standard library alone; no audio hardware, no cloud, no network, no GPU. <code>python smoke.py</code> wires the default cascade, drives one text-driven turn through it, prints the per-stage latency budget and the total, and asserts the turn is within budget. Then it re-runs with one stage’s budget deliberately blown and confirms <code>enforce</code> raises. Then it fires a barge-in mid-turn and confirms the in-flight turn cancels. <code>python -m pytest tests/</code> asserts the three promises hold: a turn completes end to end with audio out, the latency report sums correctly and the gate flags a blown budget, and barge-in cancels the in-flight turn. A stdlib <code>unittest</code> fallback ships too, so the gate runs even where pytest isn’t installed.</p>
+<p>Every third-party import, Pipecat and the Deepgram, Anthropic, and Cartesia provider SDKs, sits behind a guarded <code>try_real_*</code> helper that returns the real service or falls back to the stdlib mock on the smoke path. Real services are opt-in through <code>.env</code>. Latency is simulated, so the gate is deterministic regardless of how fast the machine is. The gate you can run on a plane is the gate that runs in CI.</p>
+<h2 id="strong-project-done-when"><a class="header" href="#strong-project-done-when">Strong-Project Done-When</a></h2>
+<p>This clears the hireability bar: a real entry point you run from a shell, not a notebook; a README that frames the business problem, the brutal latency budget, before the code; evaluation in the form of a measured budget with a pass/fail gate, and the cascade-vs-direct trade named as the design comparison; tests covering the smoke path and both operator surfaces; a clean, versioned layout; and a shipped <code>outputs/skill-realtime-voice-assistant.md</code>. Done means the smoke gate is green and a stranger can read the README, run two commands, and watch a turn pass the budget, a blown turn get blocked, and a barge-in cancel mid-sentence.</p>
+<h2 id="what-module-7-reuses"><a class="header" href="#what-module-7-reuses">What Module 7 Reuses</a></h2>
+<p>This artifact is the <strong>human-interface channel</strong>. In Module 7 the voice pipeline stops being a standalone agent and becomes the way a person talks to a governed fleet in real time: it takes the caller’s turn, hands the transcript to the team, and streams the team’s answer back through TTS; under the same budget gate. The latency gate and the barge-in kill-switch carry forward unchanged, because they are exactly the operator surfaces the M8 student drives when the human interface is live. You are not rebuilding the pipeline in M7; you are wiring this channel onto a larger machine. That is the compounding the course promised: the single agent you ship here is how a human reaches the team you ship next.</p>
+<h2 id="what-you-build"><a class="header" href="#what-you-build">What You Build</a></h2>
+<p>A streaming voice pipeline against a hard latency budget: a Pipecat-shaped frame model, deterministic mock VAD/STT/LLM/TTS stages each carrying a simulated per-stage latency, a <code>VoicePipeline</code> that drives a turn through the cascade, a latency layer that measures per-stage and end-to-end against the budget and enforces it as a gate, and barge-in handling that cancels an in-flight turn; all passing an offline, stdlib-only BUILD→TEST smoke gate, with real Pipecat provider services opt-in behind guarded imports.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>A voice agent is engineered to a clock, not to intelligence: a ~450–600 ms mouth-to-ear budget forces streaming fragments and barge-in, and every pipeline hop is a withdrawal from that half-second.</li>
+<li>The portable seam is the pipeline stage, a <code>FrameProcessor</code> with one <code>process(frame)</code> method and a declared latency, so every STT/TTS/LLM/transport provider is a drop-in swap and the rest of the cascade never moves.</li>
+<li>The latency budget is an operator surface you enforce, not observe: <code>measure</code> sums the per-stage ledger and <code>enforce</code> raises on a blown budget, so a laggy turn is blocked instead of shipped.</li>
+<li>Barge-in is the turn’s kill-switch: a new user frame mid-turn cancels the in-flight TTS so the agent stops talking the instant the user does; the same halt-work-in-flight control the M8 operator holds.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module6/03-realtime-voice-assistant/">
+<p><strong>Build It in Claude Code</strong>: Assemble the real-time voice assistant: a Pipecat-shaped frame model, the mock VAD → STT → LLM → TTS → transport cascade with a simulated per-stage latency, a <code>VoicePipeline</code> that drives one turn, a latency layer that measures and enforces the ~450–600 ms budget, and barge-in that cancels an in-flight turn. Prove it: <code>python smoke.py</code> exits zero printing a within-budget turn, a blocked blown-budget turn, and a cancelled barge-in, and <code>python -m pytest tests/</code> is green. Then swap a mock stage for real Pipecat behind the guarded import.</p>
+</div>
+
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../module6/02-production-rag-chatbot.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../module6/04-issue-to-pr-agent.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../module6/02-production-rag-chatbot.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../module6/04-issue-to-pr-agent.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/copy-to-claude-66056049.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

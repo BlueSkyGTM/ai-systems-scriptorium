@@ -1,0 +1,18 @@
+{
+  "name": "loop-engineering",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate:registry": "node scripts/validate-registry.mjs",
+    "check:loop-init": "node scripts/check-loop-init-sync.mjs",
+    "test:loop-audit": "cd tools/loop-audit && npm test",
+    "test:loop-init": "cd tools/loop-init && npm test",
+    "test:loop-cost": "cd tools/loop-cost && npm test",
+    "test:tools": "npm run test:loop-audit && npm run test:loop-init && npm run test:loop-cost",
+    "build:tools": "cd tools/loop-audit && npm run build && cd ../loop-init && npm run build && cd ../loop-cost && npm run build"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "yaml": "^2.8.0"
+  }
+}

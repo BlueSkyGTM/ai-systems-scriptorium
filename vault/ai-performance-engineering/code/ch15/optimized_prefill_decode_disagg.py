@@ -1,0 +1,21 @@
+#!/usr/bin/env python3
+"""Optimized prefill/decode disaggregation benchmark (single GPU)."""
+
+from __future__ import annotations
+
+from core.harness.benchmark_harness import BaseBenchmark
+
+from ch15.prefill_decode_disagg_common import (
+    PeerPrefillDecodeDisaggBenchmark,
+    attach_benchmark_metadata,
+)
+
+
+def get_benchmark() -> BaseBenchmark:
+    bench = PeerPrefillDecodeDisaggBenchmark(
+        multi_gpu=False,
+        label="optimized_prefill_decode_disagg",
+    )
+    return attach_benchmark_metadata(bench, __file__)
+
+

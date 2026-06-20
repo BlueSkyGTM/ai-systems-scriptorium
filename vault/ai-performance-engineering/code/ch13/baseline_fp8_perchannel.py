@@ -1,0 +1,198 @@
+"""Baseline FP8 per-tensor quantization for comparison.
+
+Per-tensor quantization uses a single scale factor for the entire tensor,
+which is simpler but less accurate than per-channel scaling.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import torch
+import torch.nn as nn
+from typing import Optional
+
+from core.benchmark.verification_mixin import VerificationPayloadMixin
+from core.harness.benchmark_harness import (
+    BaseBenchmark,
+    BenchmarkConfig,
+    WorkloadMetadata,
+)
+
+
+class FP8PerTensorLinear(nn.Module):
+    """Linear layer with simulated per-tensor FP8 quantization."""
+    
+    def __init__(self, in_features: int, out_features: int, bias: bool = True):
+        super().__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        self.fp8_max = 448.0  # E4M3 max value
+        
+        self.weight = nn.Parameter(torch.empty(out_features, in_features))
+        if bias:
+            self.bias = nn.Parameter(torch.empty(out_features))
+        else:
+            self.register_parameter('bias', None)
+        
+        self._reset_parameters()
+    
+    def _reset_parameters(self):
+        nn.init.kaiming_uniform_(self.weight, a=5**0.5)
+        if self.bias is not None:
+            nn.init.zeros_(self.bias)
+    
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Per-tensor FP8 quantized forward pass."""
+        # Per-tensor quantization of input
+        input_amax = x.abs().max()
+        input_scale = torch.clamp(input_amax / self.fp8_max, min=1e-12)
+        x_q = torch.clamp(x / input_scale, -self.fp8_max, self.fp8_max).round()
+        
+        # Per-tensor quantization of weights
+        weight_amax = self.weight.abs().max()
+        weight_scale = torch.clamp(weight_amax / self.fp8_max, min=1e-12)
+        weight_q = torch.clamp(self.weight / weight_scale, -self.fp8_max, self.fp8_max).round()
+        
+        # Simulated FP8 GEMM
+        output_q = torch.nn.functional.linear(x_q, weight_q, bias=None)
+        output = (output_q * input_scale * weight_scale).to(x.dtype)
+        
+        if self.bias is not None:
+            output = output + self.bias
+        
+        return output
+
+
+class BaselineFP8PerChannelBenchmark(VerificationPayloadMixin, BaseBenchmark):
+    """Baseline: Per-tensor FP8 quantization."""
+
+    def __init__(self):
+        super().__init__()
+        self.model = None
+        self.x = None
+        self.batch_size = 32
+        self.seq_len = 512
+        self.in_features = 4096
+        self.out_features = 4096
+        self.dtype = torch.float32
+        self._last = 0.0
+        self._error_sum = 0.0
+        self._verify_input: Optional[torch.Tensor] = None
+        self.parameter_count: int = 0
+        
+        tokens = self.batch_size * self.seq_len
+        self._workload = WorkloadMetadata(
+            requests_per_iteration=float(self.batch_size),
+            tokens_per_iteration=float(tokens),
+        )
+        self.output = None
+        self.register_workload_metadata(
+            requests_per_iteration=float(self.batch_size),
+            tokens_per_iteration=float(tokens),
+        )
+
+    def setup(self) -> None:
+        """Setup: Initialize per-tensor FP8 model."""
+        torch.manual_seed(42)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(42)
+
+        # Create model with per-tensor FP8
+        self.model = FP8PerTensorLinear(
+            self.in_features, self.out_features
+        ).to(self.device, self.dtype).eval()
+        
+        # Create reference model for error calculation
+        self.ref_model = nn.Linear(
+            self.in_features, self.out_features
+        ).to(self.device, self.dtype).eval()
+        
+        # Copy weights
+        with torch.no_grad():
+            self.ref_model.weight.copy_(self.model.weight)
+            if self.model.bias is not None:
+                self.ref_model.bias.copy_(self.model.bias)
+        self.parameter_count = sum(p.numel() for p in self.model.parameters())
+        
+        self.x = torch.randn(
+            self.batch_size, self.seq_len, self.in_features,
+            device=self.device, dtype=self.dtype
+        )
+        self._verify_input = self.x.detach().clone()
+        
+        # Warmup
+        for _ in range(3):
+            with torch.no_grad():
+                _ = self.model(self.x)
+        torch.cuda.synchronize(self.device)
+
+    def benchmark_fn(self) -> None:
+        """Benchmark: Per-tensor FP8 forward pass."""
+        with torch.no_grad():
+            self.output = self.model(self.x)
+        if self._verify_input is None:
+            raise RuntimeError("Verification input not initialized")
+        dtype = self._verify_input.dtype
+        self._payload_dtype = dtype
+
+    def capture_verification_payload(self) -> None:
+        if self.output is None:
+            raise RuntimeError("benchmark_fn() must run before capture_verification_payload()")
+        dtype = self._payload_dtype
+        self._set_verification_payload(
+            inputs={"input": self._verify_input},
+            output=self.output.detach().clone(),
+            batch_size=self._verify_input.shape[0],
+            parameter_count=self.parameter_count,
+            precision_flags={
+                "fp16": dtype == torch.float16,
+                "bf16": dtype == torch.bfloat16,
+                "fp8": False,
+                "tf32": torch.backends.cuda.matmul.allow_tf32,
+            },
+            output_tolerance=self.get_output_tolerance(),
+        )
+
+    def teardown(self) -> None:
+        """Teardown: Clean up resources."""
+        self.model = None
+        self.ref_model = None
+        self.x = None
+        torch.cuda.empty_cache()
+
+    def get_config(self) -> BenchmarkConfig:
+        """Return benchmark configuration."""
+        return BenchmarkConfig(
+            iterations=50,
+            warmup=10,
+            timing_method="wall_clock",
+        )
+    
+    def get_workload_metadata(self) -> Optional[WorkloadMetadata]:
+        return self._workload
+
+    def get_custom_metrics(self) -> Optional[dict]:
+        """Return domain-specific metrics using standardized helper."""
+        from core.benchmark.metrics import compute_precision_metrics
+        return compute_precision_metrics(
+            fp32_time_ms=getattr(self, '_last_elapsed_ms', None),
+            reduced_precision_time_ms=None,
+            precision_type="fp8",
+        )
+
+    def validate_result(self) -> Optional[str]:
+        """Validate benchmark result."""
+        if self.model is None or self.x is None:
+            return "Model not initialized"
+        return None
+
+    def get_output_tolerance(self) -> tuple:
+        """Return tolerance for numerical comparison."""
+        return (0.5, 5.0)
+
+
+def get_benchmark() -> BaseBenchmark:
+    """Factory function for benchmark discovery."""
+    return BaselineFP8PerChannelBenchmark()
+

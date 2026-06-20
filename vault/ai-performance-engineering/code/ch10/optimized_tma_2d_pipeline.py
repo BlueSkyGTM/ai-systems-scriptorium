@@ -1,0 +1,63 @@
+"""Optimized wrapper for the Blackwell TMA 2D pipeline benchmark."""
+
+from __future__ import annotations
+from typing import Optional
+
+from pathlib import Path
+
+from core.harness.benchmark_harness import BaseBenchmark
+from core.benchmark.cuda_binary_benchmark import CudaBinaryBenchmark
+from core.benchmark.verification import simple_signature
+
+
+class OptimizedTma2DPipelineBenchmark(CudaBinaryBenchmark):
+    """Runs the TMA-enabled pipeline to overlap cp.async tensor copies with compute."""
+
+    def __init__(self) -> None:
+        chapter_dir = Path(__file__).parent
+        super().__init__(
+            chapter_dir=chapter_dir,
+            binary_name="tma_2d_pipeline_blackwell",
+            friendly_name="TMA 2D Pipeline Optimized (Tensor Memory Accelerator)",
+            iterations=1,
+            warmup=1,
+            timeout_seconds=90,
+            run_args=(),
+            requires_pipeline_api=True,
+            workload_params={
+                "batch_size": 4096,
+                "dtype": "float32",
+                "M": 4096,
+                "N": 4096,
+            },
+        )
+        self.register_workload_metadata(bytes_per_iteration=1024 * 1024)
+
+    def get_custom_metrics(self) -> Optional[dict]:
+        """Report the TMA-enabled workload without fake stage timing."""
+        from ch10.benchmark_metrics_common import compute_pipeline_variant_metrics
+
+        return compute_pipeline_variant_metrics(
+            self._workload_params,
+            num_stages=2,
+            uses_tma=True,
+        )
+
+    def get_input_signature(self) -> dict:
+        """Signature for optimized TMA 2D pipeline."""
+        return simple_signature(
+            batch_size=4096,
+            dtype="float32",
+            M=4096,
+            N=4096,
+        ).to_dict()
+
+    def get_output_tolerance(self) -> tuple[float, float]:
+        # The VERIFY mode checksum matches exactly between baseline-only and TMA
+        # paths, so keep tolerance strict.
+        return (0.0, 0.0)
+
+def get_benchmark() -> CudaBinaryBenchmark:
+    return OptimizedTma2DPipelineBenchmark()
+
+

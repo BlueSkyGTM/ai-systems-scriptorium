@@ -1,0 +1,33 @@
+name: Release loop-init
+
+on:
+  push:
+    tags:
+      - 'loop-init-v*'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Ensure npm supports trusted publishing (OIDC)
+        run: npm install -g npm@latest
+
+      - name: Test, build & publish
+        working-directory: tools/loop-init
+        run: |
+          npm ci
+          npm test
+          npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

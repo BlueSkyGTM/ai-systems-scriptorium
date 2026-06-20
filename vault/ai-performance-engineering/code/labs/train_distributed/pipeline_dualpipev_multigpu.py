@@ -1,0 +1,28 @@
+"""Dispatcher for baseline vs optimized DualPipeV demos."""
+
+from __future__ import annotations
+
+import argparse
+import sys
+
+from core.benchmark.gpu_requirements import require_min_gpus
+
+import labs.train_distributed.baseline_pipeline_dualpipev_multigpu as baseline_run
+import labs.train_distributed.optimized_pipeline_dualpipev_multigpu as optimized_run
+
+
+def main():
+    require_min_gpus(2, script_name="pipeline_dualpipev_multigpu.py")
+    parser = argparse.ArgumentParser(description="DualPipeV toy pipeline.")
+    parser.add_argument("--mode", choices=["baseline", "optimized"], default="optimized")
+    args, remaining = parser.parse_known_args()
+
+    sys.argv = [sys.argv[0]] + remaining
+    if args.mode == "baseline":
+        baseline_run.main()
+    else:
+        optimized_run.main()
+
+
+if __name__ == "__main__":
+    main()

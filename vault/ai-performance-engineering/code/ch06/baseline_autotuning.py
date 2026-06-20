@@ -1,0 +1,101 @@
+"""baseline_autotuning.py - Baseline without autotuning."""
+
+from __future__ import annotations
+
+from typing import Optional
+
+import torch
+import torch.nn.functional as F
+
+from core.benchmark.verification_mixin import VerificationPayloadMixin
+from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig, WorkloadMetadata
+
+
+class BaselineAutotuningBenchmark(VerificationPayloadMixin, BaseBenchmark):
+    """Baseline: fixed parameters without autotuning."""
+    
+    def __init__(self):
+        super().__init__()
+        self.input: Optional[torch.Tensor] = None
+        self.output: Optional[torch.Tensor] = None
+        self._output_buffer: Optional[torch.Tensor] = None
+        self.N = 4_000_000
+        self.block_size = 2048  # Fixed micro-chunk
+        # Autotuning benchmark - fixed input size
+        self._workload = WorkloadMetadata(
+            requests_per_iteration=1.0,
+            tokens_per_iteration=float(self.N),
+        )
+    
+    def setup(self) -> None:
+        """Setup: Initialize tensors."""
+        torch.manual_seed(42)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(42)
+        self.input = torch.randn(self.N, device=self.device, dtype=torch.float32)
+        self.output = None
+        self._output_buffer = torch.empty_like(self.input)
+        self._synchronize()
+
+    def _transform(self, tensor: torch.Tensor) -> torch.Tensor:
+        out = tensor.mul(1.75)
+        out = out.add(0.1)
+        return F.silu(out)
+    
+    def benchmark_fn(self) -> None:
+        """Benchmark: Operations with fixed parameters."""
+        assert self.input is not None
+        assert self._output_buffer is not None and self._output_buffer.shape == self.input.shape
+        with self._nvtx_range("baseline_autotuning"):
+            for start in range(0, self.N, self.block_size):
+                end = min(start + self.block_size, self.N)
+                window = self.input[start:end]
+                transformed = self._transform(window)
+                self._output_buffer[start:end].copy_(transformed)
+            self.output = self._output_buffer
+
+    def capture_verification_payload(self) -> None:
+        self._set_verification_payload(
+            inputs={"input": self.input},
+            output=self.output.detach(),
+            batch_size=self.N,
+            parameter_count=0,
+            output_tolerance=(1e-4, 1e-4),
+        )
+    
+    def teardown(self) -> None:
+        """Teardown: Clean up resources."""
+        self.input = None
+        self.output = None
+        self._output_buffer = None
+        torch.cuda.empty_cache()
+    
+    def get_config(self) -> BenchmarkConfig:
+        """Return benchmark configuration."""
+        return BenchmarkConfig(
+            iterations=100,
+            warmup=10,
+        )
+    
+    def get_workload_metadata(self) -> Optional[WorkloadMetadata]:
+        return self._workload
+    
+    def get_custom_metrics(self) -> Optional[dict]:
+        """Return domain-specific metrics using standardized helper."""
+        from core.benchmark.metrics import compute_kernel_fundamentals_metrics
+        return compute_kernel_fundamentals_metrics(
+            num_elements=getattr(self, 'N', getattr(self, 'num_elements', 1024)),
+            num_iterations=1,
+        )
+
+    def validate_result(self) -> Optional[str]:
+        """Validate benchmark result."""
+        if self.output is None:
+            return "Output tensor not initialized"
+        return None
+
+
+
+def get_benchmark() -> BaseBenchmark:
+    """Factory function for benchmark discovery."""
+    return BaselineAutotuningBenchmark()

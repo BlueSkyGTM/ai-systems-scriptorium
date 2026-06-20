@@ -1,0 +1,120 @@
+"""baseline_torchao_quantization.py - FP32 baseline for torchao int8 quantization."""
+
+from __future__ import annotations
+
+from typing import Optional
+
+import torch
+import torch.nn as nn
+
+from core.benchmark.verification_mixin import VerificationPayloadMixin
+from core.harness.benchmark_harness import BaseBenchmark, BenchmarkConfig, WorkloadMetadata
+from core.utils.compile_utils import configure_tf32, restore_tf32
+
+
+class BaselineTorchAOQuantizationBenchmark(VerificationPayloadMixin, BaseBenchmark):
+    """Baseline: FP32 inference for torchao quantization comparison."""
+
+    signature_equivalence_group = "ch13_torchao_quantization_precision"
+    signature_equivalence_ignore_fields = ("precision_flags",)
+
+    def __init__(self):
+        super().__init__()
+        self.model = None
+        self.data = None
+        self._tf32_state = (None, None)
+        self.batch_size = 8192
+        self.in_features = 4096
+        self.hidden_features = 4096
+        self.out_features = 4096
+        tokens = self.batch_size * self.in_features
+        self._workload = WorkloadMetadata(
+            requests_per_iteration=1.0,
+            tokens_per_iteration=float(tokens),
+        )
+        self.output = None
+        self.parameter_count: int = 0
+        self._verify_input: Optional[torch.Tensor] = None
+        self.register_workload_metadata(
+            requests_per_iteration=1.0,
+            tokens_per_iteration=float(tokens),
+        )
+
+    def setup(self) -> None:
+        torch.manual_seed(42)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(42)
+        if not torch.cuda.is_available():
+            raise RuntimeError("CUDA required for torchao quantization benchmark")
+        # Measure a true FP32 baseline instead of the default TF32-backed matmul path.
+        self._tf32_state = configure_tf32(
+            matmul_precision="highest",
+            cudnn_precision="highest",
+        )
+
+        self.model = nn.Sequential(
+            nn.Linear(self.in_features, self.hidden_features),
+            nn.ReLU(),
+            nn.Linear(self.hidden_features, self.out_features),
+        ).to(self.device).to(torch.float32)
+        self.model.eval()
+        self.parameter_count = sum(p.numel() for p in self.model.parameters())
+
+        self.data = torch.randn(
+            self.batch_size,
+            self.in_features,
+            device=self.device,
+            dtype=torch.float32,
+        )
+        self._verify_input = self.data.detach().clone()
+
+    def benchmark_fn(self) -> None:
+        if self.model is None or self.data is None:
+            raise RuntimeError("Model/data not initialized")
+        with self._nvtx_range("baseline_torchao_quantization"):
+            with torch.no_grad():
+                self.output = self.model(self.data)
+        if self._verify_input is None or self.output is None:
+            raise RuntimeError("benchmark_fn() must produce output for verification")
+
+    def capture_verification_payload(self) -> None:
+        self._set_verification_payload(
+            inputs={"input": self._verify_input},
+            output=self.output.detach().float().clone(),
+            batch_size=self._verify_input.shape[0],
+            parameter_count=self.parameter_count,
+            precision_flags={
+                "fp16": False,
+                "bf16": False,
+                "fp8": False,
+                "tf32": False,
+            },
+            output_tolerance=(1.0, 10.0),
+        )
+
+    def teardown(self) -> None:
+        self.model = None
+        self.data = None
+        self._verify_input = None
+        restore_tf32(self._tf32_state)
+        self._tf32_state = (None, None)
+        super().teardown()
+
+    def get_config(self) -> BenchmarkConfig:
+        return BenchmarkConfig(
+            iterations=20,
+            warmup=5,
+        )
+
+    def get_workload_metadata(self) -> Optional[WorkloadMetadata]:
+        return self._workload
+
+    def validate_result(self) -> Optional[str]:
+        if self.model is None:
+            return "Model not initialized"
+        return None
+
+
+def get_benchmark() -> BaselineTorchAOQuantizationBenchmark:
+    """Factory function for harness discovery."""
+    return BaselineTorchAOQuantizationBenchmark()

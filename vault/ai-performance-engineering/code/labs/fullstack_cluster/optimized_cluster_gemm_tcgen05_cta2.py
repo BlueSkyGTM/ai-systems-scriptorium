@@ -1,0 +1,39 @@
+"""tcgen05 CTA-group::2 benchmark built for SM100 hardware."""
+
+from __future__ import annotations
+
+from labs.fullstack_cluster import optimized_matmul_tcgen05_cta2
+from labs.fullstack_cluster.capstone_benchmarks import CapstoneMatmulBenchmark
+from labs.fullstack_cluster.gpu_requirements import ensure_tcgen05_supported
+
+EXAMPLE_NAME = "cluster_gemm_tcgen05_cta2"
+BASELINE_ALIAS = "cluster_gemm_tcgen05"
+
+
+class OptimizedCapstoneGemmTCGen05CTA2Benchmark(CapstoneMatmulBenchmark):
+    def __init__(self) -> None:
+        super().__init__(
+            runner=optimized_matmul_tcgen05_cta2,
+            label="capstone_optimized_tcgen05_cta2",
+            iterations=3,
+            warmup=5,
+            timeout_seconds=360,
+            validate_against_baseline=False,
+        )
+        # Metadata for discovery/expectation tooling: reuse the tcgen05 baseline
+        # but expose a distinct example name for CTA-group::2 kernels.
+        self.example_name = EXAMPLE_NAME
+        self.baseline_alias = BASELINE_ALIAS
+
+    def setup(self) -> None:
+        ensure_tcgen05_supported()
+        super().setup()
+
+    def get_optimization_goal(self) -> str:
+        """This tcgen05 CTA-group follow-up stays runnable as a comparison benchmark."""
+        return "comparison"
+
+
+
+def get_benchmark() -> OptimizedCapstoneGemmTCGen05CTA2Benchmark:
+    return OptimizedCapstoneGemmTCGen05CTA2Benchmark()

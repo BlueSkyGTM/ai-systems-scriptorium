@@ -1,0 +1,9 @@
+TASK: Document ONE case study as a single markdown table ROW for the Module 4 case-study catalog.
+OUTPUT — output ONLY one line, a markdown table row, exactly in this shape:
+| NN · Title | Architecture type | What the student replicates | Seam |
+RULES:
+- NN = the EXACT two-digit numeric prefix of the SECTION FILE name below. Title = the case study name.
+- Architecture type = a short phrase (e.g. "Enterprise RAG", "Multi-agent orchestration", "Computer-use agent", "Eval-gated CI/CD").
+- What the student replicates = one concise phrase naming the system they would build.
+- Seam = exactly one of: Build, Deploy, Both.
+- Output ONLY the single row line starting with `|`. No header row, no separator line, no prose, no code fence.

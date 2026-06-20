@@ -1,0 +1,6 @@
+# Module 2 · Prompting and Context — Chapter 05 Extract
+
+> Source: `05-prompting-and-context/` (8 sections). Prompt engineering → context engineering → structured generation → injection defense.
+> Tag legend: `[THREAD: versioning]` = prompt/config versioning, registries, prompt optimization as a managed artifact.
+
+## Sections

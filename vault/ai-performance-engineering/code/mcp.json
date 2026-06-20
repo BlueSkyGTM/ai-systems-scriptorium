@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "aisp": {
+      "command": "python",
+      "args": ["-m", "mcp.mcp_server", "--serve"],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}",
+        "PYTHONUNBUFFERED": "1"
+      }
+    }
+  }
+}

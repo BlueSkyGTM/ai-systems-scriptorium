@@ -1,0 +1,391 @@
+// Chapter 10 baseline: cluster-aware warp-specialized GEMM without cuda::pipeline.
+//
+// WHAT:
+//   - Leader CTA stages A/B tiles synchronously into shared memory
+//   - Cluster peers read those tiles through DSMEM
+//   - Compute/store warps keep the row-band split used by the optimized sample
+//
+// WHY THIS IS THE BASELINE:
+//   - Shared tiles are published cluster-wide, but the leader uses plain loads
+//   - No async producer/consumer pipeline hides staging latency
+//   - It preserves the chapter's cluster story without the optimized pipeline path
+
+#include <cuda_runtime.h>
+
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <numeric>
+#include <vector>
+
+#if defined(__CUDACC_VER_MAJOR__) && (__CUDACC_VER_MAJOR__ >= 13)
+
+#include <cooperative_groups.h>
+#include "../core/common/headers/cuda_verify.cuh"
+#include "../core/common/nvtx_utils.cuh"
+
+namespace cg = cooperative_groups;
+
+namespace {
+
+constexpr int TILE_SIZE = 96;
+constexpr int TILE_ELEMS = TILE_SIZE * TILE_SIZE;
+constexpr int CLUSTER_BLOCKS = 4;
+constexpr int WARPS_PER_BLOCK = 3;
+constexpr int THREADS_PER_BLOCK = WARPS_PER_BLOCK * 32;
+constexpr int DEFAULT_TILES = 8;
+constexpr int WARMUP_ITERS = 5;
+constexpr int BENCH_ITERS = 20;
+constexpr int kComputeRepeats = 4;
+
+#define CUDA_CHECK(call)                                                         \
+    do {                                                                         \
+        cudaError_t _status = (call);                                            \
+        if (_status != cudaSuccess) {                                            \
+            std::fprintf(stderr, "CUDA error %s:%d: %s\n",                       \
+                         __FILE__, __LINE__, cudaGetErrorString(_status));       \
+            std::abort();                                                        \
+        }                                                                        \
+    } while (0)
+
+__device__ void compute_rows_from_ds(const float* __restrict__ A_src,
+                                     const float* __restrict__ B_src,
+                                     float* __restrict__ C_dst,
+                                     int row_begin,
+                                     int row_end,
+                                     int lane_id) {
+    for (int row = row_begin + lane_id; row < row_end; row += warpSize) {
+        for (int col = 0; col < TILE_SIZE; ++col) {
+            float repeated_acc = 0.0f;
+            #pragma unroll
+            for (int repeat = 0; repeat < kComputeRepeats; ++repeat) {
+                float acc = 0.0f;
+                #pragma unroll
+                for (int k = 0; k < TILE_SIZE; ++k) {
+                    acc += A_src[row * TILE_SIZE + k] * B_src[k * TILE_SIZE + col];
+                }
+                repeated_acc += acc;
+            }
+            C_dst[row * TILE_SIZE + col] = repeated_acc / static_cast<float>(kComputeRepeats);
+        }
+    }
+}
+
+__global__ void dsmem_probe_kernel(float* out) {
+    cg::cluster_group cluster = cg::this_cluster();
+    __shared__ float buffer[32];
+    const int cluster_rank = cluster.block_rank();
+
+    if (cluster_rank == 0 && threadIdx.x == 0) {
+        buffer[0] = 123.0f;
+    }
+    cluster.sync();
+    if (cluster_rank == 1 && threadIdx.x == 0) {
+        float* remote = cluster.map_shared_rank(buffer, 0);
+        out[0] = remote[0];
+    }
+    cluster.sync();
+}
+
+struct ProbeResult {
+    bool ok;
+    const char* stage;
+    cudaError_t error;
+};
+
+ProbeResult probe_dsmem_support() {
+    float* d_out = nullptr;
+    cudaError_t alloc_status = cudaMalloc(&d_out, sizeof(float));
+    if (alloc_status != cudaSuccess) {
+        return {false, "cudaMalloc", alloc_status};
+    }
+
+    cudaLaunchConfig_t cfg{};
+    cfg.gridDim = dim3(2);
+    cfg.blockDim = dim3(32);
+    cfg.dynamicSmemBytes = 0;
+
+    cudaLaunchAttribute attrs[1]{};
+    attrs[0].id = cudaLaunchAttributeClusterDimension;
+    attrs[0].val.clusterDim.x = 2;
+    attrs[0].val.clusterDim.y = 1;
+    attrs[0].val.clusterDim.z = 1;
+    cfg.attrs = attrs;
+    cfg.numAttrs = 1;
+
+    void* args[] = {&d_out};
+    cudaError_t launch_status = cudaLaunchKernelExC(&cfg, (void*)dsmem_probe_kernel, args);
+    if (launch_status != cudaSuccess) {
+        cudaFree(d_out);
+        return {false, "cudaLaunchKernelExC", launch_status};
+    }
+
+    cudaError_t sync_status = cudaDeviceSynchronize();
+    cudaFree(d_out);
+    if (sync_status != cudaSuccess) {
+        return {false, "cudaDeviceSynchronize", sync_status};
+    }
+    return {true, nullptr, cudaSuccess};
+}
+
+extern "C" __global__ void baseline_warp_specialized_cluster_pipeline_kernel(
+    const float* __restrict__ A_global,
+    const float* __restrict__ B_global,
+    float* __restrict__ C_global,
+    int num_tiles) {
+    cg::thread_block cta = cg::this_thread_block();
+    cg::cluster_group cluster = cg::this_cluster();
+
+    extern __shared__ float shared_mem[];
+    float* A_tile_local = shared_mem;
+    float* B_tile_local = A_tile_local + TILE_ELEMS;
+    float* C_tile_local = B_tile_local + TILE_ELEMS;
+
+    const int lane_id = threadIdx.x & 31;
+    const int warp_id = threadIdx.x >> 5;
+    const int cluster_rank = cluster.block_rank();
+    const dim3 cluster_dims = cluster.dim_blocks();
+    const int blocks_in_cluster =
+        cluster_dims.x * cluster_dims.y * cluster_dims.z;
+
+    for (int tile = blockIdx.x / cluster_dims.x; tile < num_tiles;
+         tile += gridDim.x / cluster_dims.x) {
+        const size_t offset = static_cast<size_t>(tile) * TILE_ELEMS;
+
+        // The leader CTA stages each tile synchronously. This keeps the cluster
+        // behavior aligned with the optimized sample, but without async overlap.
+        if (cluster_rank == 0 && warp_id == 0) {
+            for (int idx = lane_id; idx < TILE_ELEMS; idx += warpSize) {
+                A_tile_local[idx] = A_global[offset + idx];
+                B_tile_local[idx] = B_global[offset + idx];
+            }
+        }
+
+        cta.sync();
+        cluster.sync();
+
+        const float* A_src = cluster.map_shared_rank(A_tile_local, 0);
+        const float* B_src = cluster.map_shared_rank(B_tile_local, 0);
+
+        const int rows_per_block =
+            (TILE_SIZE + blocks_in_cluster - 1) / blocks_in_cluster;
+        const int row_begin = min(cluster_rank * rows_per_block, TILE_SIZE);
+        const int row_end = min(row_begin + rows_per_block, TILE_SIZE);
+
+        if (warp_id == 1) {
+            compute_rows_from_ds(A_src, B_src, C_tile_local, row_begin, row_end, lane_id);
+        }
+
+        cta.sync();
+
+        if (warp_id == 2) {
+            for (int row = row_begin + lane_id; row < row_end; row += warpSize) {
+                for (int col = 0; col < TILE_SIZE; ++col) {
+                    C_global[offset + row * TILE_SIZE + col] =
+                        C_tile_local[row * TILE_SIZE + col];
+                }
+            }
+        }
+
+        cluster.sync();
+    }
+}
+
+void initialize_inputs(std::vector<float>& h_A, std::vector<float>& h_B) {
+    for (size_t i = 0; i < h_A.size(); ++i) {
+        h_A[i] = static_cast<float>((i % TILE_SIZE) * 0.5f);
+        h_B[i] = static_cast<float>((i % TILE_SIZE) * 0.25f + 1.0f);
+    }
+}
+
+double verify_output(const std::vector<float>& h_A,
+                     const std::vector<float>& h_B,
+                     const std::vector<float>& h_C,
+                     int num_tiles) {
+    double max_err = 0.0;
+    for (int tile = 0; tile < num_tiles; ++tile) {
+        const size_t tile_offset = static_cast<size_t>(tile) * TILE_ELEMS;
+        for (int row = 0; row < TILE_SIZE; ++row) {
+            for (int col = 0; col < TILE_SIZE; ++col) {
+                float ref = 0.0f;
+                for (int k = 0; k < TILE_SIZE; ++k) {
+                    ref += h_A[tile_offset + row * TILE_SIZE + k] *
+                           h_B[tile_offset + k * TILE_SIZE + col];
+                }
+                max_err = std::max(
+                    max_err,
+                    static_cast<double>(
+                        std::abs(ref - h_C[tile_offset + row * TILE_SIZE + col])));
+            }
+        }
+    }
+    return max_err;
+}
+
+int run_baseline(int num_tiles) {
+    cudaDeviceProp prop{};
+    CUDA_CHECK(cudaGetDeviceProperties(&prop, 0));
+
+    int cluster_launch = 0;
+#ifdef cudaDevAttrClusterLaunch
+    CUDA_CHECK(cudaDeviceGetAttribute(&cluster_launch, cudaDevAttrClusterLaunch, 0));
+#endif
+    const bool supports_clusters = (cluster_launch > 0) || (prop.major >= 9);
+    if (!supports_clusters) {
+        std::fprintf(stderr,
+                     "SKIPPED: Warp specialization cluster pipelines require thread block cluster hardware support on %s (SM %d.%d).\n",
+                     prop.name,
+                     prop.major,
+                     prop.minor);
+        return 3;
+    }
+
+    ProbeResult probe = probe_dsmem_support();
+    if (!probe.ok) {
+        std::fprintf(stderr,
+                     "SKIPPED: Distributed shared memory unavailable on %s (SM %d.%d). Stage=%s error=%s\n",
+                     prop.name,
+                     prop.major,
+                     prop.minor,
+                     probe.stage,
+                     cudaGetErrorString(probe.error));
+        return 3;
+    }
+
+    const size_t bytes = static_cast<size_t>(num_tiles) * TILE_ELEMS * sizeof(float);
+    std::vector<float> h_A(bytes / sizeof(float));
+    std::vector<float> h_B(bytes / sizeof(float));
+    std::vector<float> h_C(bytes / sizeof(float), 0.0f);
+    initialize_inputs(h_A, h_B);
+
+    float* d_A = nullptr;
+    float* d_B = nullptr;
+    float* d_C = nullptr;
+    CUDA_CHECK(cudaMalloc(&d_A, bytes));
+    CUDA_CHECK(cudaMalloc(&d_B, bytes));
+    CUDA_CHECK(cudaMalloc(&d_C, bytes));
+    CUDA_CHECK(cudaMemcpy(d_A, h_A.data(), bytes, cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_B, h_B.data(), bytes, cudaMemcpyHostToDevice));
+
+    const size_t shared_bytes = 3ull * TILE_ELEMS * sizeof(float);
+    int max_dynamic_smem = 0;
+    CUDA_CHECK(cudaDeviceGetAttribute(
+        &max_dynamic_smem,
+        cudaDevAttrMaxSharedMemoryPerBlockOptin,
+        0));
+    if (shared_bytes > static_cast<size_t>(max_dynamic_smem)) {
+        std::fprintf(stderr,
+                     "SKIPPED: baseline_warp_specialized_cluster_pipeline requires %zu bytes of dynamic shared memory, but the device limit is %d bytes.\n",
+                     shared_bytes,
+                     max_dynamic_smem);
+        CUDA_CHECK(cudaFree(d_A));
+        CUDA_CHECK(cudaFree(d_B));
+        CUDA_CHECK(cudaFree(d_C));
+        return 3;
+    }
+
+    CUDA_CHECK(cudaFuncSetAttribute(
+        baseline_warp_specialized_cluster_pipeline_kernel,
+        cudaFuncAttributeNonPortableClusterSizeAllowed,
+        1));
+    CUDA_CHECK(cudaFuncSetAttribute(
+        baseline_warp_specialized_cluster_pipeline_kernel,
+        cudaFuncAttributeMaxDynamicSharedMemorySize,
+        static_cast<int>(shared_bytes)));
+
+    const int clusters_in_grid = std::max(1, std::min(num_tiles, prop.multiProcessorCount));
+    cudaStream_t stream{};
+    CUDA_CHECK(cudaStreamCreate(&stream));
+
+    cudaLaunchConfig_t cfg{};
+    cfg.gridDim = dim3(clusters_in_grid * CLUSTER_BLOCKS);
+    cfg.blockDim = dim3(THREADS_PER_BLOCK);
+    cfg.dynamicSmemBytes = shared_bytes;
+    cfg.stream = stream;
+
+    cudaLaunchAttribute attrs[1]{};
+    attrs[0].id = cudaLaunchAttributeClusterDimension;
+    attrs[0].val.clusterDim.x = CLUSTER_BLOCKS;
+    attrs[0].val.clusterDim.y = 1;
+    attrs[0].val.clusterDim.z = 1;
+    cfg.attrs = attrs;
+    cfg.numAttrs = 1;
+
+    for (int i = 0; i < WARMUP_ITERS; ++i) {
+        CUDA_CHECK(cudaLaunchKernelEx(
+            &cfg,
+            baseline_warp_specialized_cluster_pipeline_kernel,
+            d_A,
+            d_B,
+            d_C,
+            num_tiles));
+    }
+    CUDA_CHECK(cudaDeviceSynchronize());
+
+    cudaEvent_t start{};
+    cudaEvent_t stop{};
+    CUDA_CHECK(cudaEventCreate(&start));
+    CUDA_CHECK(cudaEventCreate(&stop));
+    CUDA_CHECK(cudaEventRecord(start, stream));
+    {
+        NVTX_RANGE("compute_kernel:baseline_warp_specialized_cluster_pipeline");
+        for (int i = 0; i < BENCH_ITERS; ++i) {
+            CUDA_CHECK(cudaLaunchKernelEx(
+                &cfg,
+                baseline_warp_specialized_cluster_pipeline_kernel,
+                d_A,
+                d_B,
+                d_C,
+                num_tiles));
+        }
+    }
+    CUDA_CHECK(cudaEventRecord(stop, stream));
+    CUDA_CHECK(cudaEventSynchronize(stop));
+
+    float ms = 0.0f;
+    CUDA_CHECK(cudaEventElapsedTime(&ms, start, stop));
+    const float avg_ms = ms / BENCH_ITERS;
+
+    CUDA_CHECK(cudaMemcpy(h_C.data(), d_C, bytes, cudaMemcpyDeviceToHost));
+    const double max_err = verify_output(h_A, h_B, h_C, num_tiles);
+
+    double checksum = 0.0;
+    for (float value : h_C) {
+        checksum += value;
+    }
+
+    std::printf("baseline_warp_specialized_cluster_pipeline: %d tiles, %.3f ms, checksum %.6f\n",
+                num_tiles,
+                avg_ms,
+                checksum / h_C.size());
+    std::printf("Verification complete (max error %.3e)\n", max_err);
+
+#ifdef VERIFY
+    VERIFY_PRINT_CHECKSUM(static_cast<float>(checksum));
+#endif
+
+    CUDA_CHECK(cudaEventDestroy(start));
+    CUDA_CHECK(cudaEventDestroy(stop));
+    CUDA_CHECK(cudaStreamDestroy(stream));
+    CUDA_CHECK(cudaFree(d_A));
+    CUDA_CHECK(cudaFree(d_B));
+    CUDA_CHECK(cudaFree(d_C));
+    return 0;
+}
+
+}  // namespace
+
+int main() {
+    NVTX_RANGE("main");
+    return run_baseline(DEFAULT_TILES);
+}
+
+#else
+
+int main() {
+    std::fprintf(stderr, "SKIPPED: CUDA 13+ required for warp specialization cluster pipelines.\n");
+    return 3;
+}
+
+#endif
