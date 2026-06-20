@@ -20,7 +20,7 @@ writing stack is **TypeScript** for the product layer and **Rust** for the servi
 moment you first need it, never as an upfront tax. That is why the course is called *Sans Python*: not without
 Python, but **get started without it**; the gate comes down.
 
-The job at the end of the path is **AI Platform Engineering**: the infrastructure that MLOps engineers and
+The job at the end of the path is **Production AI Engineering**: the infrastructure that MLOps engineers and
 application developers *use*. It sits at the seam where building and deploying converge; serving engines,
 agent fleets, gateways, cost controls, the layer that holds under production load. It is its own discipline,
 not a blend of two, and its core bet is that **inference-platform engineering matters more than model

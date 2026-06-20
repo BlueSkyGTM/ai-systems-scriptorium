@@ -37,7 +37,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-49915c1e.js";
+            window.path_to_searchindex_js = "../searchindex-a740a402.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-519ea03c.js"></script>
@@ -179,7 +179,7 @@
                         <h1 id="the-optimization-levers-quantization-speculative-decoding-disaggregation"><a class="header" href="#the-optimization-levers-quantization-speculative-decoding-disaggregation">The Optimization Levers: Quantization, Speculative Decoding, Disaggregation</a></h1>
 <p>The engine is running and the batch is full. Latency is still too high or the GPU bill is still too large, and now you reach past the defaults for the levers that trade one resource for another. There are three big ones, each buys a different thing, and each can quietly cost you something you weren’t watching.</p>
 <h2 id="why-this-is-a-decision-lesson-not-a-recipe"><a class="header" href="#why-this-is-a-decision-lesson-not-a-recipe">Why This Is a Decision Lesson, Not a Recipe</a></h2>
-<p>Every lever here is a trade, and the seam is exactly where the trade gets adjudicated. The AI Engineer guards output quality; does the model still answer well? The MLOps engineer guards the service-level objective (SLO) and the bill; is it faster, is it cheaper? A platform engineer pulls a lever only when <em>both</em> hold, and the failure mode of every one of these techniques is the same: a real win on the metric you watched, paid for with a regression on the metric you didn’t. So the rule that governs all three comes first: <strong>measure on your own traffic before and after, or you are gambling.</strong> None of these is free, and none is universal.</p>
+<p>Every lever here is a trade, and the seam is exactly where the trade gets adjudicated. The AI Engineer guards output quality; does the model still answer well? The MLOps engineer guards the service-level objective (SLO) and the bill; is it faster, is it cheaper? A Production AI Engineer pulls a lever only when <em>both</em> hold, and the failure mode of every one of these techniques is the same: a real win on the metric you watched, paid for with a regression on the metric you didn’t. So the rule that governs all three comes first: <strong>measure on your own traffic before and after, or you are gambling.</strong> None of these is free, and none is universal.</p>
 <h2 id="quantization-smaller-weights-watch-the-cache-and-the-calibration"><a class="header" href="#quantization-smaller-weights-watch-the-cache-and-the-calibration">Quantization: Smaller Weights, Watch the Cache and the Calibration</a></h2>
 <p><strong>Quantization</strong> stores the model’s weights in fewer bits, 16-bit down to 8, 4, even lower, so the model takes less memory and moves through it faster. Since decode is memory-bound, less memory traffic means faster tokens, and a smaller model fits cheaper hardware. That is the win, and it is large.</p>
 <p>The format is not a free choice; it is a function of your hardware, engine, and workload. The current landscape sorts roughly into GGUF k-quants for CPU and edge serving, AWQ as the datacenter GPU default for 4-bit, GPTQ where you serve many fine-tuned adapters, and FP8 as the near-lossless middle ground on recent NVIDIA silicon.</p>

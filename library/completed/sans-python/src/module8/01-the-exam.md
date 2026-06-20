@@ -30,7 +30,7 @@ Here is the division of labor, and it is the whole point of the exam. The fleet 
 
 Your job sits on top of theirs. You are the operator: you configure the registry and the budgets, you work the human-in-the-loop (HITL) inbox to approve or reject the merge, you read the cross-agent audit after the run, and you hold the kill switch. You are the judge: you grade the produced system against an acceptance rubric, by criterion, not by vibe. And you are the architect-of-record: when it fails, you are the one who says why and what changes. The fleet is the substrate, the task spec is the input, and your judgment is the grade.
 
-This is the AI Platform Engineer's job. The engineers who lose it try to do the agents' work for them; micromanaging the loop, hand-editing the diffs. The ones who keep it run the fleet as infrastructure: set the policy, watch the gates, intervene on breach, and stay accountable for every action the system takes.
+This is the Production AI Engineer's job. The engineers who lose it try to do the agents' work for them; micromanaging the loop, hand-editing the diffs. The ones who keep it run the fleet as infrastructure: set the policy, watch the gates, intervene on breach, and stay accountable for every action the system takes.
 
 ## The Terminal Node of the Compounding Arc
 
@@ -46,7 +46,7 @@ You build a task spec and operate a fleet against it. You choose a track and a r
 
 - The final exam is not a new build but an operation: you point the shipped Module 7 governed fleet at a production problem, and the grade is whether you can run it as infrastructure and judge what it ships.
 - "Build a version of" means replicate a real reference architecture scoped down to its load-bearing seam; not clone a hyperscaler, and not invent from a blank page, which is where weak portfolios fail.
-- The fleet does the building; you do the operating and the judging, operator, judge, and architect-of-record, and that division of labor is the AI Platform Engineering job itself.
+- The fleet does the building; you do the operating and the judging, operator, judge, and architect-of-record, and that division of labor is the Production AI Engineering job itself.
 - The exam is the terminal node of the compounding arc: single agent → team → governed fleet → production system, each link load-bearing for the next.
 
 <div class="claude-handoff" data-exercise="exercises/module8/">

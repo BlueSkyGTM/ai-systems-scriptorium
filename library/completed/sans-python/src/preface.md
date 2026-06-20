@@ -2,7 +2,7 @@
 
 Most courses teach you everything and prepare you for nothing.
 
-This one is built the other way around. It teaches a single job; AI Platform Engineer, the person who
+This one is built the other way around. It teaches a single job; Production AI Engineer, the person who
 builds, serves, and governs the systems that run models; and it cuts everything that doesn't serve that
 job. What's left is dense on purpose.
 

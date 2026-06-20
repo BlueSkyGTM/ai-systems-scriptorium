@@ -37,7 +37,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-49915c1e.js";
+            window.path_to_searchindex_js = "../searchindex-a740a402.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-519ea03c.js"></script>
@@ -195,7 +195,7 @@
 <h2 id="the-fleet-builds-you-operate-and-judge"><a class="header" href="#the-fleet-builds-you-operate-and-judge">The Fleet Builds; You Operate and Judge</a></h2>
 <p>Here is the division of labor, and it is the whole point of the exam. The fleet does the building. The architect decomposes your feature into slices, two coders implement them in parallel as the Module 6 loop, the tester runs the acceptance suite for a deterministic verdict, and the reviewer gates the merge. That is five agents doing the work you would otherwise do by hand.</p>
 <p>Your job sits on top of theirs. You are the operator: you configure the registry and the budgets, you work the human-in-the-loop (HITL) inbox to approve or reject the merge, you read the cross-agent audit after the run, and you hold the kill switch. You are the judge: you grade the produced system against an acceptance rubric, by criterion, not by vibe. And you are the architect-of-record: when it fails, you are the one who says why and what changes. The fleet is the substrate, the task spec is the input, and your judgment is the grade.</p>
-<p>This is the AI Platform Engineer’s job. The engineers who lose it try to do the agents’ work for them; micromanaging the loop, hand-editing the diffs. The ones who keep it run the fleet as infrastructure: set the policy, watch the gates, intervene on breach, and stay accountable for every action the system takes.</p>
+<p>This is the Production AI Engineer’s job. The engineers who lose it try to do the agents’ work for them; micromanaging the loop, hand-editing the diffs. The ones who keep it run the fleet as infrastructure: set the policy, watch the gates, intervene on breach, and stay accountable for every action the system takes.</p>
 <h2 id="the-terminal-node-of-the-compounding-arc"><a class="header" href="#the-terminal-node-of-the-compounding-arc">The Terminal Node of the Compounding Arc</a></h2>
 <p>The book has been building one structure the whole way, and this is its last node. You built a single agent and made it verifiable; “done” became a fact from running tests, not a claim. You governed that agent with a budget, a kill switch, and a human gate. You composed the controls into a fleet. You wrapped the fleet around the agents, and the result shipped software. Now you point that result at a production system and run it.</p>
 <p>Single agent → team → governed fleet → production system, operated and judged. Nothing in that chain was busywork; each link is load-bearing for the next. The coding agent you made verifiable in Module 6 is the reason the reviewer can trust a coder node in Module 7, which is the reason you can govern the fleet in Module 8 at all. The exam is not a new mountain. It is the summit of the one you have been climbing; and the proof you can stand on it.</p>
@@ -205,7 +205,7 @@
 <ul>
 <li>The final exam is not a new build but an operation: you point the shipped Module 7 governed fleet at a production problem, and the grade is whether you can run it as infrastructure and judge what it ships.</li>
 <li>“Build a version of” means replicate a real reference architecture scoped down to its load-bearing seam; not clone a hyperscaler, and not invent from a blank page, which is where weak portfolios fail.</li>
-<li>The fleet does the building; you do the operating and the judging, operator, judge, and architect-of-record, and that division of labor is the AI Platform Engineering job itself.</li>
+<li>The fleet does the building; you do the operating and the judging, operator, judge, and architect-of-record, and that division of labor is the Production AI Engineering job itself.</li>
 <li>The exam is the terminal node of the compounding arc: single agent → team → governed fleet → production system, each link load-bearing for the next.</li>
 </ul>
 <div class="claude-handoff" data-exercise="exercises/module8/">

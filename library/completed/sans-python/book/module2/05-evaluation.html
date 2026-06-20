@@ -37,7 +37,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-49915c1e.js";
+            window.path_to_searchindex_js = "../searchindex-a740a402.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-519ea03c.js"></script>
@@ -218,8 +218,8 @@
 <p>Confidence intervals on Wilson or bootstrap methods are more honest than point estimates. Report them.</p>
 <h3 id="8-close-the-loop"><a class="header" href="#8-close-the-loop">8. Close the Loop</a></h3>
 <p>Evaluation findings are not reports; they’re action items. Map each failure category to a hypothesis: wrong answer → prompt needs more context; hallucinated citation → groundedness judge fires, retrieval needs reranking; wrong format → add a format constraint to the system prompt. Build the iteration cycle and track whether each change moved the eval metric. That’s the inner loop.</p>
-<h2 id="why-the-ai-platform-engineer-owns-this"><a class="header" href="#why-the-ai-platform-engineer-owns-this">Why the AI Platform Engineer Owns This</a></h2>
-<p>Build owns the prompt. Deploy owns the serving layer. Neither owns the eval pipeline; it spans both. You define what quality means, instrument it, run it in CI, and close the gap between development-time expectations and production-time behavior. Evals are the regression suite for non-deterministic systems, and the AI Platform Engineer is the one who builds and runs them.</p>
+<h2 id="why-the-production-ai-engineer-owns-this"><a class="header" href="#why-the-production-ai-engineer-owns-this">Why the Production AI Engineer Owns This</a></h2>
+<p>Build owns the prompt. Deploy owns the serving layer. Neither owns the eval pipeline; it spans both. You define what quality means, instrument it, run it in CI, and close the gap between development-time expectations and production-time behavior. Evals are the regression suite for non-deterministic systems, and the Production AI Engineer is the one who builds and runs them.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
 <li>LLM-as-judge is the production answer to quality measurement: exact-match and human review both fail to scale.</li>

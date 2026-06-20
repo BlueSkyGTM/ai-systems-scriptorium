@@ -8,7 +8,7 @@ Module 2 taught the RAG spine, ingestion, chunking, embedding, storage, retrieva
 
 A native-text PDF reads cleanly. A two-column research paper, a scanned contract, a slide with a table and a chart, an invoice; these are where naive extraction dies. Pull the raw text stream out of a two-column PDF and you get the left column's first line, then the right column's first line, then back to the left: reading order destroyed. Tables flatten into a run of numbers with no rows. The chart that carried the actual finding becomes nothing, because it was never text. You can chunk that output perfectly and embed it flawlessly, and you have still indexed nonsense.
 
-This is the step the AI Platform Engineer owns and the step that decides retrieval quality. It deserves a real tool, not a regex over `pdftotext`.
+This is the step the Production AI Engineer owns and the step that decides retrieval quality. It deserves a real tool, not a regex over `pdftotext`.
 
 ## Docling, and the DoclingDocument Seam
 

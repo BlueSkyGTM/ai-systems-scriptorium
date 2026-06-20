@@ -122,7 +122,7 @@ python verify.py
 
 All five lines print without errors. That is done.
 
-An AI Platform Engineer owns the environment that serves models; a reproducible, layer-by-layer setup is the substrate that everything else runs on.
+An Production AI Engineer owns the environment that serves models; a reproducible, layer-by-layer setup is the substrate that everything else runs on.
 
 ## Core Concepts
 

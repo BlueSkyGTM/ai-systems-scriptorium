@@ -37,7 +37,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-49915c1e.js";
+            window.path_to_searchindex_js = "../searchindex-a740a402.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-519ea03c.js"></script>
@@ -203,7 +203,7 @@
 <p>A better base model does not fix a role you never specified. It does not fix a handoff that drops context, or a chain with no verifier, or a blackboard that lets a hallucinated fact propagate. Swap the strongest model in the world into a system with a verification gap and you get a strong model confidently shipping unverified answers. The failure lives in the wiring, the specification, the coordination, the missing check, and wiring is something you own, not something you wait on a model release to repair.</p>
 <p>This is why the back half of this module is built the way it is. Budgets, kill switches, propose-then-commit checkpoints, fleet registries with explicit identity and audit; every one of them is a design answer to a MAST family. Specification problems demand explicit scope contracts. Coordination failures demand typed handoffs and audited state. Verification gaps demand an independent verifier the builder can’t overrule. You are not waiting for the model to get good enough. You are building the system that makes a good-enough model reliable.</p>
 <h2 id="the-seam-this-sits-on"><a class="header" href="#the-seam-this-sits-on">The Seam This Sits On</a></h2>
-<p>Debate is the AI Engineer’s question; can coordination produce a better answer, and how sparsely can I wire it. MAST is the MLOps engineer’s answer; most of what breaks is operational, and operational problems get operational fixes. An AI Platform Engineer holds both: reach for debate when accuracy justifies the tokens, wire it sparse, and treat every failure mode as a design input rather than a model complaint. The model is not the variable you control. The system around it is.</p>
+<p>Debate is the AI Engineer’s question; can coordination produce a better answer, and how sparsely can I wire it. MAST is the MLOps engineer’s answer; most of what breaks is operational, and operational problems get operational fixes. An Production AI Engineer holds both: reach for debate when accuracy justifies the tokens, wire it sparse, and treat every failure mode as a design input rather than a model complaint. The model is not the variable you control. The system around it is.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
 <li>Multi-agent debate (“society of minds”) improves factuality and reasoning by having N agents propose then critique over R rounds; agent count and round count contribute independently, and cross-model debate beats a single-model monoculture by decorrelating errors.</li>

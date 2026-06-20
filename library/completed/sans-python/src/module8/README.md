@@ -19,5 +19,5 @@ one-jump-from-Platform-Engineer scoping). The System-Design roadmap is the struc
 ## Why It's the Finale
 
 A fleet of agents, run as governed infrastructure, building a production system, judged against real
-reference architectures; that is the AI Platform Engineering job description, demonstrated. The exam is the
+reference architectures; that is the Production AI Engineering job description, demonstrated. The exam is the
 portfolio capstone: not an academic demo, a proof you can do the work.

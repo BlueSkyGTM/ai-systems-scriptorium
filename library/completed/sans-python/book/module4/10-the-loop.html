@@ -37,7 +37,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-49915c1e.js";
+            window.path_to_searchindex_js = "../searchindex-a740a402.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-519ea03c.js"></script>
@@ -181,7 +181,7 @@
 <h2 id="replacing-yourself-as-the-prompter"><a class="header" href="#replacing-yourself-as-the-prompter">Replacing Yourself as the Prompter</a></h2>
 <p>Module 3 built an agent: a loop that observes, thinks, acts, and stops on a condition you defined. You were still the trigger. You opened the session, gave it a goal, watched it run, and read what it produced. The agent was capable; you were the scheduler, the dispatcher, and the verifier, all by hand.</p>
 <p>A <em>loop</em>, in the sense this lesson means, removes you from that seat. It is one agent system wrapped in the machinery that decides <em>when</em> it runs, <em>what</em> it works on, <em>whether</em> the result is good, and <em>when</em> to stop spending. You design the system that discovers work, assigns it, verifies the output, and persists state across runs, instead of being that system yourself. The agent is the worker; the loop is the operation around it.</p>
-<p>This is the AI-Engineer ∪ MLOps cusp stated plainly. The AI Engineer makes the agent good at the task. The platform engineer makes the agent <em>runnable unattended</em>; on a schedule, against real repositories, with a verdict gate and a kill switch, leaving an audit trail. A capable agent nobody can run safely overnight is a demo. The loop is what turns it into infrastructure.</p>
+<p>This is the AI-Engineer ∪ MLOps cusp stated plainly. The AI Engineer makes the agent good at the task. The Production AI Engineer makes the agent <em>runnable unattended</em>; on a schedule, against real repositories, with a verdict gate and a kill switch, leaving an audit trail. A capable agent nobody can run safely overnight is a demo. The loop is what turns it into infrastructure.</p>
 <h2 id="the-shape-trigger--action--verification--budgetkill-switch"><a class="header" href="#the-shape-trigger--action--verification--budgetkill-switch">The Shape: Trigger → Action → Verification → Budget/Kill-switch</a></h2>
 <p>Every loop, whatever it does, has the same four-stage shape. Learn the shape once and you can read any loop pattern in the next lesson at a glance.</p>
 <p><strong>Trigger</strong>; what makes the loop fire. A cron schedule (every weekday at 7 a.m.), an interval (every fifteen minutes during active hours), or an event (CI failed, a PR opened, a dependency alert landed). The trigger is also where the loop earns its keep by <em>not</em> running: a no-op early exit when there is nothing to do. A loop that wakes, finds an empty watchlist, and spends fifty thousand tokens deciding it has nothing to do is a loop that bankrupts you on quiet days.</p>

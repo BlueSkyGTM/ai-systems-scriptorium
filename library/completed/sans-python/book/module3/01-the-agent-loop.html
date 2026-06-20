@@ -37,7 +37,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-49915c1e.js";
+            window.path_to_searchindex_js = "../searchindex-a740a402.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-519ea03c.js"></script>
@@ -215,7 +215,7 @@
 
   return partial_result_or_error(messages)
 </code></pre>
-<p>The loop itself is eight lines of logic. The interesting work is in what you put in <code>tools</code>, how you write <code>format_observation</code>, and what your stop condition recognizes. Those are the surfaces a platform engineer controls.</p>
+<p>The loop itself is eight lines of logic. The interesting work is in what you put in <code>tools</code>, how you write <code>format_observation</code>, and what your stop condition recognizes. Those are the surfaces a Production AI Engineer controls.</p>
 <h2 id="safety-the-kill-switch"><a class="header" href="#safety-the-kill-switch">Safety: the Kill Switch</a></h2>
 <p>A running agent can call tools with real side effects; it can write files, call APIs, spend money. Two controls belong in every loop from day one:</p>
 <p>A <strong>turn budget</strong> is the first line of defense against runaway loops. Set it low for development (5–10 turns); raise it only for tasks that genuinely need depth.</p>

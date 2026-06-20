@@ -37,7 +37,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-49915c1e.js";
+            window.path_to_searchindex_js = "../searchindex-a740a402.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-519ea03c.js"></script>
@@ -180,7 +180,7 @@
 <p>You spent four modules making the model <em>reason</em> well. This module is about making it <em>run</em>, fast, cheap, and under load, and the skill that decides whether you can is performance engineering, not machine learning.</p>
 <p>That is the thesis of Module 5, and it surprises people. The hard, hireable problem in production AI is rarely “train a better model.” It is “serve this model to ten thousand concurrent users at a latency they’ll tolerate and a cost the business will sign off on.” That is a systems problem, queueing, memory, batching, scheduling, wearing a machine-learning costume. The model is a given; the engineering is yours.</p>
 <h2 id="why-this-lands-at-the-seam"><a class="header" href="#why-this-lands-at-the-seam">Why This Lands at the Seam</a></h2>
-<p>This is the part of the job an AI Engineer and an MLOps engineer both reach for and neither fully owns. The AI Engineer asks “which model, which prompt, which decoding settings?” The MLOps engineer asks “how many GPUs, what autoscaling, what service-level objective (SLO)?” The serving engine is where those two questions collide into one artifact, and the platform engineer is the person who picks it, wires it, and answers for its p99. Module 5 is the seam’s home turf; the infrastructure both halves <em>use</em>. Get the engine choice wrong and no amount of prompt tuning saves the latency.</p>
+<p>This is the part of the job an AI Engineer and an MLOps engineer both reach for and neither fully owns. The AI Engineer asks “which model, which prompt, which decoding settings?” The MLOps engineer asks “how many GPUs, what autoscaling, what service-level objective (SLO)?” The serving engine is where those two questions collide into one artifact, and the Production AI Engineer is the person who picks it, wires it, and answers for its p99. Module 5 is the seam’s home turf; the infrastructure both halves <em>use</em>. Get the engine choice wrong and no amount of prompt tuning saves the latency.</p>
 <h2 id="inference-infrastructure-is-not-training-infrastructure"><a class="header" href="#inference-infrastructure-is-not-training-infrastructure">Inference Infrastructure Is Not Training Infrastructure</a></h2>
 <p>Start by unlearning a reflex. The stack that <em>trains</em> a model, data-parallel clusters, gradient all-reduce, checkpoints measured in terabytes, jobs that run for days, has almost nothing to do with the stack that <em>serves</em> it. Training is a throughput job you run a few times; serving is a latency job you run forever. They optimize different things, fail in different ways, and run on different software.</p>
 <p>The training rigs, the CUDA kernels, the optimizer math; that depth is real, but it is not on the road to this job. What is on the road is the serving layer: the program that holds the model weights in GPU memory, accepts requests over HTTP, batches them, and streams tokens back. That program is an <strong>inference serving engine</strong>, and choosing one is the first real decision of the module.</p>

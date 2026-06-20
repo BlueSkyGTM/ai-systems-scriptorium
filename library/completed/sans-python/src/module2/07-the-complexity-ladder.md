@@ -36,7 +36,7 @@ The decision principle: refuse a framework until the architecture can be drawn a
 
 This ladder is the editorial spine of Modules 3 and 4. Module 3 builds the single-agent rung in depth; the agent loop, tool execution, MCP, memory, and evaluation. Module 4 extends to multi-agent orchestration. The sequence is deliberate: you need to own the single-agent rung before multi-agent complexity is legible.
 
-An AI Platform Engineer adds complexity only when the problem demands it; that discipline, applied at scale, is what separates a system that holds under production load from one that collapses under its own architecture.
+An Production AI Engineer adds complexity only when the problem demands it; that discipline, applied at scale, is what separates a system that holds under production load from one that collapses under its own architecture.
 
 ## Core Concepts
 

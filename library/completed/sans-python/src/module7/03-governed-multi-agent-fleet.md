@@ -8,7 +8,7 @@ You shipped a coding agent in Module 6. It reads a failing file, writes a fix, r
 
 The settled 2026 answer is a team. An architect plans, coders work in parallel, a reviewer gates, a tester verifies; the software factory, staffed by agents. Stand that up and you get throughput. You also get a new and worse failure mode: five agents that can write code and merge it, running while you sleep, and no single place that can tell you what they did. That is not a productivity win. That is an incident waiting for a correlation ID nobody wrote.
 
-So the problem this artifact solves is not "build a team that ships software." A team that ships software is a weekend hack. The problem is **building a team that ships software while a human stays accountable for every action it takes**; and that second clause is the entire job of an AI Platform Engineer. The team is the easy half, the way the model was the easy half of the coding agent. The governance is the work.
+So the problem this artifact solves is not "build a team that ships software." A team that ships software is a weekend hack. The problem is **building a team that ships software while a human stays accountable for every action it takes**; and that second clause is the entire job of an Production AI Engineer. The team is the easy half, the way the model was the easy half of the coding agent. The governance is the work.
 
 ## Elevate, Don't Author
 
@@ -91,7 +91,7 @@ This is the system the exam operates. Module 8 does not have you build something
 
 Build it so that hand-off costs nothing. The registry is the contract M8 edits to retarget the team; a new agent, a tighter budget, a stricter gate, all reviewed changes to one file. The orchestrator reads the contract and runs whatever it points at, with no rewrite. That is the meaning of governance-as-code: a control plane reading a registry to know what it governs, Claude Code today and a local model tomorrow, the contract unchanged.
 
-And that is the thesis, full circle. The book started by naming one job; the person who builds, serves, and governs the systems that run models. You built single agents. You composed them into a team. The team builds the final system, and you govern it. A fleet of agents run as governed infrastructure, with a human accountable for every action it takes, is not a feature of AI Platform Engineering. It is the whole of it; and you just built one that runs.
+And that is the thesis, full circle. The book started by naming one job; the person who builds, serves, and governs the systems that run models. You built single agents. You composed them into a team. The team builds the final system, and you govern it. A fleet of agents run as governed infrastructure, with a human accountable for every action it takes, is not a feature of Production AI Engineering. It is the whole of it; and you just built one that runs.
 
 ## What You Build
 

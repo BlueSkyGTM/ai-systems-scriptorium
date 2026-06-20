@@ -37,7 +37,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-49915c1e.js";
+            window.path_to_searchindex_js = "../searchindex-a740a402.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-519ea03c.js"></script>
@@ -197,7 +197,7 @@
 <p><strong>Debugging difficulty.</strong> When one agent fails you read one trace. When five agents coordinate, a failure can hide in the handoff between two of them; a misread instruction, a lost message, a hallucinated “fact” that a downstream agent trusted. The trace is now a graph, and the bug lives on an edge. This is the failure surface lesson 04 catalogs and the rest of the module learns to govern.</p>
 <p>So multi-agent buys you scale and pays for it in latency, money, and observability. That trade is the whole reason the back half of this module exists: budgets, kill switches, human checkpoints, and fleet governance are what make the trade survivable in production.</p>
 <h2 id="the-seam-this-module-sits-on"><a class="header" href="#the-seam-this-module-sits-on">The Seam This Module Sits On</a></h2>
-<p>Single agent to many is the seam’s defining move. The AI Engineer half asks <em>will the coordination produce a better answer</em>; topology, debate, role specialization. The MLOps half asks <em>what does it cost to run, and how do I stop it when it goes wrong</em>; budgets, identity, audit, kill switches. A bigger agent hides both questions inside one process. Splitting into many forces both into the open, which is exactly why an AI Platform Engineer has to own them. The next lesson starts at the open question: once you have many agents, how do they talk without lying to each other.</p>
+<p>Single agent to many is the seam’s defining move. The AI Engineer half asks <em>will the coordination produce a better answer</em>; topology, debate, role specialization. The MLOps half asks <em>what does it cost to run, and how do I stop it when it goes wrong</em>; budgets, identity, audit, kill switches. A bigger agent hides both questions inside one process. Splitting into many forces both into the open, which is exactly why an Production AI Engineer has to own them. The next lesson starts at the open question: once you have many agents, how do they talk without lying to each other.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
 <li>Multi-agent is the next rung of the complexity ladder: reach for it only when a single agent hits a nameable wall; context overflow, mixed expertise in one prompt, or a sequential bottleneck.</li>

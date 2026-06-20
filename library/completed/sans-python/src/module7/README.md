@@ -13,7 +13,7 @@ same offline BUILD→TEST gate as M6; but now the smoke run proves a *team* coor
 
 **Finale principle; elevate, don't author:** the fleet artifact reuses an existing multi-agent project and
 layers fleet governance onto it (DRY), not a from-scratch fleet build. A fleet of agents run as governed
-infrastructure = AI Platform Engineering; the thesis, full circle.
+infrastructure = Production AI Engineering; the thesis, full circle.
 
 Each artifact exposes the **operator surfaces** the Module 8 student drives; budget, kill-switch, HITL gate,
 audit, acceptance eval. The finale (03) is the full console: its registry is the contract Module 8 edits to

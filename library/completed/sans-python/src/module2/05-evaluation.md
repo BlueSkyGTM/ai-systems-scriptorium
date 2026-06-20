@@ -68,9 +68,9 @@ Confidence intervals on Wilson or bootstrap methods are more honest than point e
 
 Evaluation findings are not reports; they're action items. Map each failure category to a hypothesis: wrong answer → prompt needs more context; hallucinated citation → groundedness judge fires, retrieval needs reranking; wrong format → add a format constraint to the system prompt. Build the iteration cycle and track whether each change moved the eval metric. That's the inner loop.
 
-## Why the AI Platform Engineer Owns This
+## Why the Production AI Engineer Owns This
 
-Build owns the prompt. Deploy owns the serving layer. Neither owns the eval pipeline; it spans both. You define what quality means, instrument it, run it in CI, and close the gap between development-time expectations and production-time behavior. Evals are the regression suite for non-deterministic systems, and the AI Platform Engineer is the one who builds and runs them.
+Build owns the prompt. Deploy owns the serving layer. Neither owns the eval pipeline; it spans both. You define what quality means, instrument it, run it in CI, and close the gap between development-time expectations and production-time behavior. Evals are the regression suite for non-deterministic systems, and the Production AI Engineer is the one who builds and runs them.
 
 ## Core Concepts
 

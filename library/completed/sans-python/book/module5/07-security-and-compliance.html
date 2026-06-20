@@ -37,7 +37,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-49915c1e.js";
+            window.path_to_searchindex_js = "../searchindex-a740a402.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-519ea03c.js"></script>
@@ -177,7 +177,7 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="security--compliance-for-ai-ops"><a class="header" href="#security--compliance-for-ai-ops">Security &amp; Compliance for AI Ops</a></h1>
-<p>Your serving stack holds an API key worth thousands of dollars a day and answers questions about other people’s data. The application layer can be flawless and you still lose the company if that key sits in a config file or the wrong tenant reads the wrong context. Security here is not the model’s behavior; it is the substrate the model runs on, and it is the platform engineer’s name on the incident report.</p>
+<p>Your serving stack holds an API key worth thousands of dollars a day and answers questions about other people’s data. The application layer can be flawless and you still lose the company if that key sits in a config file or the wrong tenant reads the wrong context. Security here is not the model’s behavior; it is the substrate the model runs on, and it is the Production AI Engineer’s name on the incident report.</p>
 <p>You have hardened the layers above this one. Module 3 scoped MCP tools, pinned descriptions, and put OAuth on remote servers. Module 4 wrapped the agent in guardrails and a kill switch. Those defend what the model <em>does</em>. This lesson defends where it <em>lives</em>, the secrets it reaches for, the identities that can touch it, the surface an attacker probes, and it folds the compliance frameworks in as engineering requirements, not legal reading. SOC 2 (a security-controls audit), HIPAA (US health-data law), and the EU AI Act don’t ask you to feel responsible. They ask you to build specific things. Build them.</p>
 <h2 id="secrets-never-live-in-the-code"><a class="header" href="#secrets-never-live-in-the-code">Secrets Never Live in the Code</a></h2>
 <p>The provider key is the crown jewel, and the most common way to lose it is the most boring: someone commits it. Not in the app; in a config file, a <code>.env</code> checked in by accident, a notebook, a CI log. The 2026 supply-chain attacks didn’t crack encryption; they read environment variables off compromised build pipelines. A static key in a file is a key already half-leaked.</p>

@@ -2,9 +2,9 @@
 
 A web server treats every request the same: take it, do the work, return the answer, move on. Run a language model that way and you will waste most of your GPU. An inference engine is not a REST server with a model bolted on; it is a different machine, built around two facts about how a transformer generates text, and this lesson is what lives below the API you've been calling.
 
-## Why a Seam Engineer Opens the Box
+## Why a Production AI Engineer Opens the Box
 
-In Module 3 you learned to order a prompt "static content first, dynamic content last" so the **key-value cache**, the KV cache, the engine's memory of every token it has already processed, could be reused across turns. That lesson promised the serving layer would show you *how* it implements that cache below the API. This is where the promise comes due. The AI Engineer treats the engine as a black box that returns tokens; the platform engineer has to size its memory, read its throughput, and explain its tail latency to whoever pays the GPU bill. You cannot tune what you don't understand, and the two mechanisms below are where every serving-cost decision starts.
+In Module 3 you learned to order a prompt "static content first, dynamic content last" so the **key-value cache**, the KV cache, the engine's memory of every token it has already processed, could be reused across turns. That lesson promised the serving layer would show you *how* it implements that cache below the API. This is where the promise comes due. The AI Engineer treats the engine as a black box that returns tokens; the Production AI Engineer has to size its memory, read its throughput, and explain its tail latency to whoever pays the GPU bill. You cannot tune what you don't understand, and the two mechanisms below are where every serving-cost decision starts.
 
 ## A Language Model Request Is Two Phases, Not One
 
@@ -34,7 +34,7 @@ The block table buys a second win for free. Two requests that share a prefix, th
 
 ## The Cache Is the Cost
 
-Two consequences a platform engineer carries from this lesson. First, **the KV cache, not the model weights, often dominates serving memory at production batch sizes**; a 7-billion-parameter model quantized to 4 bits may be roughly 4 GB of weights and 10–30 GB of KV cache under load, which is why "the model fits" is the wrong question and "the model *plus its cache at my batch size* fits" is the right one. Second, the metrics that matter, TTFT, TPOT, throughput, are properties of the scheduler and the allocator, not of the model. Managed platforms hide this: an Azure OpenAI provisioned deployment exposes the result as a utilization metric in Azure Monitor and returns HTTP 429 once utilization passes 100%; the same KV-and-scheduler ceiling, surfaced as a quota signal instead of an out-of-memory error.
+Two consequences a Production AI Engineer carries from this lesson. First, **the KV cache, not the model weights, often dominates serving memory at production batch sizes**; a 7-billion-parameter model quantized to 4 bits may be roughly 4 GB of weights and 10–30 GB of KV cache under load, which is why "the model fits" is the wrong question and "the model *plus its cache at my batch size* fits" is the right one. Second, the metrics that matter, TTFT, TPOT, throughput, are properties of the scheduler and the allocator, not of the model. Managed platforms hide this: an Azure OpenAI provisioned deployment exposes the result as a utilization metric in Azure Monitor and returns HTTP 429 once utilization passes 100%; the same KV-and-scheduler ceiling, surfaced as a quota signal instead of an out-of-memory error.
 
 A REST server scales by adding stateless replicas. An inference engine scales by packing more sequences into a batch and more blocks into memory without missing a latency target; a different machine, solving a different problem, and now not a black box.
 

@@ -40,7 +40,7 @@ So multi-agent buys you scale and pays for it in latency, money, and observabili
 
 ## The Seam This Module Sits On
 
-Single agent to many is the seam's defining move. The AI Engineer half asks *will the coordination produce a better answer*; topology, debate, role specialization. The MLOps half asks *what does it cost to run, and how do I stop it when it goes wrong*; budgets, identity, audit, kill switches. A bigger agent hides both questions inside one process. Splitting into many forces both into the open, which is exactly why an AI Platform Engineer has to own them. The next lesson starts at the open question: once you have many agents, how do they talk without lying to each other.
+Single agent to many is the seam's defining move. The AI Engineer half asks *will the coordination produce a better answer*; topology, debate, role specialization. The MLOps half asks *what does it cost to run, and how do I stop it when it goes wrong*; budgets, identity, audit, kill switches. A bigger agent hides both questions inside one process. Splitting into many forces both into the open, which is exactly why an Production AI Engineer has to own them. The next lesson starts at the open question: once you have many agents, how do they talk without lying to each other.
 
 ## Core Concepts
 

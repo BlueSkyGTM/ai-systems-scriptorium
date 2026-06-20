@@ -47,7 +47,7 @@ Three of those seven, inbox-HITL, economics, kill switch, you already built for 
 
 ## The Fleet Is Addressable as Code
 
-Here is the part that makes this platform engineering and not a spreadsheet of agents. The registry is not a wiki page someone updates by hand. It is a machine-readable file, JSON or YAML, and every governance check reads against it. Two schemas carry the load: an **AgentManifest** that declares one agent's identity, permissions, autonomy tier, budget, and required human gates; and an **AgentRegistry** that indexes every manifest with its owner and status. Both ship as JSON Schema, so a malformed registry fails validation in CI before it governs anything.
+Here is the part that makes this production AI engineering and not a spreadsheet of agents. The registry is not a wiki page someone updates by hand. It is a machine-readable file, JSON or YAML, and every governance check reads against it. Two schemas carry the load: an **AgentManifest** that declares one agent's identity, permissions, autonomy tier, budget, and required human gates; and an **AgentRegistry** that indexes every manifest with its owner and status. Both ship as JSON Schema, so a malformed registry fails validation in CI before it governs anything.
 
 ```yaml
 # module4-fleet/registry.yaml — the fleet's source of truth, diffable and reviewable
@@ -68,7 +68,7 @@ agents:
 
 Everything that governs the fleet, identity, permissions, budgets, gates, lives in a file you can `git diff`, review in a pull request, and validate in CI. That is the everything-as-code stance: the fleet's governance is not tribal knowledge held by whoever has been on the team longest; it is a reviewable artifact. The **autonomy tier** field (F0 through F3, manual to fully autonomous) is how an agent earns trust over time; a new agent ships at F1 (report-only, human-gated), and promotion to a higher tier is a reviewed change to this file, not a quiet config edit.
 
-Because the registry is addressable as code, something else falls out for free: a control plane can *point at it*. Today that control plane is Claude Code reading the registry to know what agents it governs; tomorrow it is a local model doing the same. The fleet does not care who reads it, only that what governs it is written down in a contract a machine can parse. This is the golden-path, internal-developer-platform idea from platform engineering, applied to a fleet of agents: the registry is the platform's source of truth, and every agent is a paved-road tenant of it.
+Because the registry is addressable as code, something else falls out for free: a control plane can *point at it*. Today that control plane is Claude Code reading the registry to know what agents it governs; tomorrow it is a local model doing the same. The fleet does not care who reads it, only that what governs it is written down in a contract a machine can parse. This is the golden-path, internal-developer-platform idea from production AI engineering, applied to a fleet of agents: the registry is the platform's source of truth, and every agent is a paved-road tenant of it.
 
 Microsoft's agent platforms encode this same shape. Azure AI Foundry Agent Service gives each agent its own Entra-backed identity, scopes what it may touch with role-based access control, tracks per-agent cost and quota centrally, and gates tool calls behind human approval workflows; governance declared centrally rather than wired into each agent. You are building the open, file-backed version of the same control plane.
 
@@ -81,7 +81,7 @@ Do not romanticize this. Standing up a fleet is unglamorous: a two-hour inventor
 - Loops live inside fleets: a loop is one governed agent system (`trigger → action → verification → budget/kill-switch`); a fleet is the registry-and-oversight layer above many loops, and you graduate at the 3-loop / 5-agent threshold; not before, because below it the controls are theater.
 - The accountability test; *which agent, with what authority, against what task, evidenced by what?*; is the whole standard; a fleet that cannot answer all four clauses for every action is unattended, not governed.
 - A fleet governs seven concerns in order, registry → identity → permissions → inbox-HITL → audit → economics → kill switch, and three of them (inbox-HITL, economics, kill switch) are the single-agent controls from lessons 06–08 pointed at many agents, not rebuilt.
-- The registry and per-agent manifests are machine-readable JSON/YAML validated in CI, which makes the fleet addressable as code; a control plane (Claude Code now, a local model later) reads the contract to know what it governs; that is platform engineering applied to agents.
+- The registry and per-agent manifests are machine-readable JSON/YAML validated in CI, which makes the fleet addressable as code; a control plane (Claude Code now, a local model later) reads the contract to know what it governs; that is production AI engineering applied to agents.
 
 <div class="claude-handoff" data-exercise="exercises/module4/12-the-fleet/">
 

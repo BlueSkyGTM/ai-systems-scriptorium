@@ -58,7 +58,7 @@ agent_loop(goal, tools, max_turns):
   return partial_result_or_error(messages)
 ```
 
-The loop itself is eight lines of logic. The interesting work is in what you put in `tools`, how you write `format_observation`, and what your stop condition recognizes. Those are the surfaces a platform engineer controls.
+The loop itself is eight lines of logic. The interesting work is in what you put in `tools`, how you write `format_observation`, and what your stop condition recognizes. Those are the surfaces a Production AI Engineer controls.
 
 ## Safety: the Kill Switch
 

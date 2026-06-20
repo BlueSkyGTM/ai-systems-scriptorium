@@ -37,7 +37,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-49915c1e.js";
+            window.path_to_searchindex_js = "../searchindex-a740a402.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-519ea03c.js"></script>
@@ -180,7 +180,7 @@
 <p>A bug in a normal service throws an error and stops. A bug in an agent keeps reasoning, keeps calling tools, and keeps billing; because nothing in the loop was designed to make it stop. The failure has a name: Denial of Wallet, and the only defense is a stack of limits that fire before the invoice does.</p>
 <h2 id="denial-of-wallet-is-the-agent-native-outage"><a class="header" href="#denial-of-wallet-is-the-agent-native-outage">Denial of Wallet Is the Agent-Native Outage</a></h2>
 <p>Classic denial of service exhausts your CPU or your bandwidth. An agent exhausts your <em>budget</em>. Give a loop a goal, a model, and a credit card behind the API key, and a single bad prompt, or a single adversarial input, can send it into a retry spiral that spends thousands of dollars before a human notices. There is no segfault, no 500, no page. Just a metered loop doing exactly what it was told, forever.</p>
-<p>This is the failure mode that makes long-horizon agents (lesson 05) financially dangerous. Durability is what keeps a long run alive; budgets are what keep an alive run from bankrupting you. The two are a pair; you do not ship one without the other. This is squarely the MLOps half of the seam: the AI Engineer makes the agent capable, and the platform engineer is the one who has to answer for the bill when capable goes sideways at 3 a.m.</p>
+<p>This is the failure mode that makes long-horizon agents (lesson 05) financially dangerous. Durability is what keeps a long run alive; budgets are what keep an alive run from bankrupting you. The two are a pair; you do not ship one without the other. This is squarely the MLOps half of the seam: the AI Engineer makes the agent capable, and the Production AI Engineer is the one who has to answer for the bill when capable goes sideways at 3 a.m.</p>
 <h2 id="one-cap-is-not-a-budget"><a class="header" href="#one-cap-is-not-a-budget">One Cap Is Not a Budget</a></h2>
 <p>The instinct is to set a monthly spending cap and call it done. That cap is real, and it is also useless against the failure you actually fear. A monthly limit catches a runaway <em>after the wallet is already gone</em>; by the time you hit it, the damage is done. Different failure modes live at different time scales, and a budget worth the name puts a limit at each one.</p>
 <p>Think of it as a stack, from the single call up to the calendar:</p>

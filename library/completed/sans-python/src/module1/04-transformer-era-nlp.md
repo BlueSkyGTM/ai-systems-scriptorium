@@ -14,7 +14,7 @@ Every frontier LLM ships on subword tokenization, BPE, WordPiece, or Unigram, fo
 
 The practical split: BPE is used by GPT, Llama, Gemma, Mistral, and Qwen. Unigram is used by T5 and mBART. SentencePiece trains vocabularies on raw Unicode; tiktoken and HuggingFace Tokenizers encode text with a pre-built vocabulary. They are not interchangeable; the tokenizer is part of the model contract.
 
-Why this matters for platform engineering: the tokenizer determines prompt cost, context budget, and the way code, numbers, and non-English text consume tokens. A 1,000-word English prompt is not the same token count as a 1,000-word Japanese prompt.
+Why this matters for production AI engineering: the tokenizer determines prompt cost, context budget, and the way code, numbers, and non-English text consume tokens. A 1,000-word English prompt is not the same token count as a 1,000-word Japanese prompt.
 
 ## Structured Outputs and Constrained Decoding
 

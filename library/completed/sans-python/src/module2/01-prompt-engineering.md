@@ -38,7 +38,7 @@ Prompts drift. A prompt you shipped in March behaves differently in September be
 
 This is a development-time practice, not a production afterthought. Every prompt that matters ships with a registry entry and a version tag. When the model swaps, you recompile; you don't guess.
 
-The prompt is the program; and an AI Platform Engineer treats it as versioned, testable infrastructure, not a string in a config file.
+The prompt is the program; and an Production AI Engineer treats it as versioned, testable infrastructure, not a string in a config file.
 
 ## Core Concepts
 

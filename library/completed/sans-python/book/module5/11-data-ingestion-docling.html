@@ -37,7 +37,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-49915c1e.js";
+            window.path_to_searchindex_js = "../searchindex-a740a402.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-519ea03c.js"></script>
@@ -181,7 +181,7 @@
 <h2 id="the-front-door-nobody-wants-to-own"><a class="header" href="#the-front-door-nobody-wants-to-own">The Front Door Nobody Wants to Own</a></h2>
 <p>Module 2 taught the RAG spine, ingestion, chunking, embedding, storage, retrieval, generation, and then moved fast past the first step to spend its attention on hybrid search and reranking. That order was honest about where the lessons were, but it inverts where the failures are. The same lesson noted that, by widely-cited industry estimates, the large majority of enterprise RAG failures trace to retrieval rather than generation; and a large share of those failures are upstream of retrieval entirely: the document was parsed wrong before it was ever chunked.</p>
 <p>A native-text PDF reads cleanly. A two-column research paper, a scanned contract, a slide with a table and a chart, an invoice; these are where naive extraction dies. Pull the raw text stream out of a two-column PDF and you get the left column’s first line, then the right column’s first line, then back to the left: reading order destroyed. Tables flatten into a run of numbers with no rows. The chart that carried the actual finding becomes nothing, because it was never text. You can chunk that output perfectly and embed it flawlessly, and you have still indexed nonsense.</p>
-<p>This is the step the AI Platform Engineer owns and the step that decides retrieval quality. It deserves a real tool, not a regex over <code>pdftotext</code>.</p>
+<p>This is the step the Production AI Engineer owns and the step that decides retrieval quality. It deserves a real tool, not a regex over <code>pdftotext</code>.</p>
 <h2 id="docling-and-the-doclingdocument-seam"><a class="header" href="#docling-and-the-doclingdocument-seam">Docling, and the DoclingDocument Seam</a></h2>
 <p><a href="https://github.com/docling-project/docling">Docling</a> is that tool: an open-source document-processing library, MIT-licensed and hosted as a project in the LF AI &amp; Data Foundation, that parses the messy formats into one structured representation. It converts PDF, DOCX, PPTX, XLSX, HTML, images, and audio into a single in-memory model called the <code>DoclingDocument</code>. The basic call is three lines:</p>
 <pre><code class="language-python">from docling.document_converter import DocumentConverter

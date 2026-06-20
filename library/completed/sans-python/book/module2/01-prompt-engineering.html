@@ -37,7 +37,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-49915c1e.js";
+            window.path_to_searchindex_js = "../searchindex-a740a402.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-519ea03c.js"></script>
@@ -196,7 +196,7 @@
 <h2 id="the-versioning-thread"><a class="header" href="#the-versioning-thread">The Versioning Thread</a></h2>
 <p>Prompts drift. A prompt you shipped in March behaves differently in September because the model updated, the data shifted, or a well-meaning colleague added a clause. Treat prompts as versioned artifacts; the same way you version code. MLflow’s prompt registry stores prompt text with version aliases (<code>champion</code>, <code>challenger</code>, <code>staging</code>) so you can run experiments and roll back without touching application code.</p>
 <p>This is a development-time practice, not a production afterthought. Every prompt that matters ships with a registry entry and a version tag. When the model swaps, you recompile; you don’t guess.</p>
-<p>The prompt is the program; and an AI Platform Engineer treats it as versioned, testable infrastructure, not a string in a config file.</p>
+<p>The prompt is the program; and an Production AI Engineer treats it as versioned, testable infrastructure, not a string in a config file.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
 <li>The instruction hierarchy (system → developer → user → assistant) determines which instructions survive conflict; higher tiers outweigh lower ones.</li>

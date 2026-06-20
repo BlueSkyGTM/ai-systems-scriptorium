@@ -6,7 +6,7 @@ A bug in a normal service throws an error and stops. A bug in an agent keeps rea
 
 Classic denial of service exhausts your CPU or your bandwidth. An agent exhausts your *budget*. Give a loop a goal, a model, and a credit card behind the API key, and a single bad prompt, or a single adversarial input, can send it into a retry spiral that spends thousands of dollars before a human notices. There is no segfault, no 500, no page. Just a metered loop doing exactly what it was told, forever.
 
-This is the failure mode that makes long-horizon agents (lesson 05) financially dangerous. Durability is what keeps a long run alive; budgets are what keep an alive run from bankrupting you. The two are a pair; you do not ship one without the other. This is squarely the MLOps half of the seam: the AI Engineer makes the agent capable, and the platform engineer is the one who has to answer for the bill when capable goes sideways at 3 a.m.
+This is the failure mode that makes long-horizon agents (lesson 05) financially dangerous. Durability is what keeps a long run alive; budgets are what keep an alive run from bankrupting you. The two are a pair; you do not ship one without the other. This is squarely the MLOps half of the seam: the AI Engineer makes the agent capable, and the Production AI Engineer is the one who has to answer for the bill when capable goes sideways at 3 a.m.
 
 ## One Cap Is Not a Budget
 

@@ -61,7 +61,7 @@ The measured deltas from the serving chapters only mean anything inside this loo
 
 The fastest way to lie to yourself is a sloppy measurement, so the reference fences the method as hard as the optimization. Align the runs before timing, clamp the random seed, the preprocessing, the batch shapes, so the delta comes from your change and not from a different workload sneaking in. Measure the *steady state*, warm up first, run the compile and the cache-fill before you start the clock, so first-iteration noise never lands in the reported number. Track throughput and latency *together*; tokens per second next to milliseconds, because an optimization that improves one while quietly wrecking the other is a regression wearing a win's clothes. And log the environment every run, GPU, driver, toolkit, the exact command, so a number is replayable and a regression is traceable to the thing that changed.
 
-For the AI Platform Engineer, this is the habit the title is built on: you are the person who can say *where the time goes* and prove it, before anyone spends a sprint optimizing a part of the system that was already at its roof. Measure first. The lever comes second, and only the measurement tells you which one.
+For the Production AI Engineer, this is the habit the title is built on: you are the person who can say *where the time goes* and prove it, before anyone spends a sprint optimizing a part of the system that was already at its roof. Measure first. The lever comes second, and only the measurement tells you which one.
 
 ## Core Concepts
 

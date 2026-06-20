@@ -50,7 +50,7 @@ A deficient run fails the criterion it offends, which is what makes the rubric a
 
 ## Assumed, Not Taught: Distributed-Systems Vocabulary
 
-The exam asks you to operate a fleet at the scale of a system, and at that scale a vocabulary shows up that this course applies but does not teach as its own module. Naming it is deliberate (deviation D6: the curriculum is scoped one jump from the Platform Engineer role, and the System-Design roadmap is the structural benchmark for what sits just outside it).
+The exam asks you to operate a fleet at the scale of a system, and at that scale a vocabulary shows up that this course applies but does not teach as its own module. Naming it is deliberate (deviation D6: the curriculum is scoped one jump from the Production AI Engineer role, and the System-Design roadmap is the structural benchmark for what sits just outside it).
 
 You are assumed to already speak it: **load balancing** (spreading requests across replicas so no one node is the bottleneck), **caching** (serving a repeated result without recomputing it, the explanation cache in #11, the eval cache in a CI gate), **sharding and federation** (partitioning data or routing across partitions so one store does not have to hold or answer everything, the spine of multi-tenant isolation), **async and queues** (decoupling a slow producer from a fast consumer so a spike does not topple the system, the HITL inbox is a queue with a human consumer), and **CAP for distributed agent state** (when the fleet's state is spread across nodes you choose, under partition, between consistency and availability, and an agent that reads stale budget or a stale kill switch is a CAP decision you made by accident if you did not make it on purpose).
 

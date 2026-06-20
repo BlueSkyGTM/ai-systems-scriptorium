@@ -1,6 +1,6 @@
 # The Production Performance Checklist
 
-The previous lesson taught you to measure before you optimize. This one is what you reach for once the measurement points somewhere; a prioritized list of the checks that actually move production inference, and the hardware facts you need to reason about them. The source is a 200-plus-item reference checklist from the performance-engineering literature. Reproducing 200 items would be its own kind of clutter; most of them are training- and kernel-deep and out of scope here. What follows is the load-bearing subset; the roughly two dozen an AI Platform Engineer runs against a serving stack before it ships, in the order the evidence says to run them.
+The previous lesson taught you to measure before you optimize. This one is what you reach for once the measurement points somewhere; a prioritized list of the checks that actually move production inference, and the hardware facts you need to reason about them. The source is a 200-plus-item reference checklist from the performance-engineering literature. Reproducing 200 items would be its own kind of clutter; most of them are training- and kernel-deep and out of scope here. What follows is the load-bearing subset; the roughly two dozen an Production AI Engineer runs against a serving stack before it ships, in the order the evidence says to run them.
 
 ## Read It in Priority Order, Not Top to Bottom
 
@@ -10,7 +10,7 @@ One discipline sits above all the items and never bends: **profile before and af
 
 ## Hardware and Topology: the Ceiling No Software Tweak Outruns
 
-Before the software checks, the facts that set the ceiling. The reference is blunt: your hardware, interconnects, and data paths cap performance and cost-efficiency, and no software tweak can outrun a starved GPU. The platform engineer has to reason about three of them.
+Before the software checks, the facts that set the ceiling. The reference is blunt: your hardware, interconnects, and data paths cap performance and cost-efficiency, and no software tweak can outrun a starved GPU. The Production AI Engineer has to reason about three of them.
 
 **Memory bandwidth is the decode budget.** Autoregressive decode is memory-bound (lesson 09), so the number that bounds your single-stream latency is how fast the GPU moves bytes from HBM (high-bandwidth memory, the GPU's on-package DRAM), not its peak FLOPs. When you size a serving box, the HBM bandwidth and capacity are the spec to read first for decode-heavy workloads; capacity sets how much KV cache and how many concurrent sequences you hold, bandwidth sets how fast you can decode them.
 
@@ -60,7 +60,7 @@ Grouped by bound. Enter from the one your profiling named.
 
 The reference's operator playbook ends on a discipline more important than any single item, and it is the one to carry: keep capability-limited outcomes *truthful*. When a check can't run on your hardware, no NVLink to pool across, no multi-GPU to disaggregate, mark it skipped or partial, never fake-green. When a check fails, root-cause it in the most local correct place, fix it there, re-run that one target, and only then move on; do not paper over a failure to keep the list moving. And do not disable the profiler to make a run pass; a green checklist that turned off its own measurement is worth nothing.
 
-That honesty is the whole value of the artifact. A checklist exists to produce a findings document a teammate can trust; what is green, what is partial because your hardware can't exercise it, what is an open finding ranked by impact. The platform engineer who hands over *that* is worth more than the one who hands over a wall of checkmarks, because the first one told you where the bodies are and the second one hid them.
+That honesty is the whole value of the artifact. A checklist exists to produce a findings document a teammate can trust; what is green, what is partial because your hardware can't exercise it, what is an open finding ranked by impact. The Production AI Engineer who hands over *that* is worth more than the one who hands over a wall of checkmarks, because the first one told you where the bodies are and the second one hid them.
 
 ## Core Concepts
 

@@ -39,7 +39,7 @@ curl https://api.anthropic.com/v1/messages \
     "model": "claude-opus-4-8",
     "max_tokens": 256,
     "messages": [
-      {"role": "user", "content": "What is one sentence every AI Platform Engineer should know?"}
+      {"role": "user", "content": "What is one sentence every Production AI Engineer should know?"}
     ]
   }'
 ```

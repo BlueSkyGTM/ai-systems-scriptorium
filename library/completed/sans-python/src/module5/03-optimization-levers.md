@@ -4,7 +4,7 @@ The engine is running and the batch is full. Latency is still too high or the GP
 
 ## Why This Is a Decision Lesson, Not a Recipe
 
-Every lever here is a trade, and the seam is exactly where the trade gets adjudicated. The AI Engineer guards output quality; does the model still answer well? The MLOps engineer guards the service-level objective (SLO) and the bill; is it faster, is it cheaper? A platform engineer pulls a lever only when *both* hold, and the failure mode of every one of these techniques is the same: a real win on the metric you watched, paid for with a regression on the metric you didn't. So the rule that governs all three comes first: **measure on your own traffic before and after, or you are gambling.** None of these is free, and none is universal.
+Every lever here is a trade, and the seam is exactly where the trade gets adjudicated. The AI Engineer guards output quality; does the model still answer well? The MLOps engineer guards the service-level objective (SLO) and the bill; is it faster, is it cheaper? A Production AI Engineer pulls a lever only when *both* hold, and the failure mode of every one of these techniques is the same: a real win on the metric you watched, paid for with a regression on the metric you didn't. So the rule that governs all three comes first: **measure on your own traffic before and after, or you are gambling.** None of these is free, and none is universal.
 
 ## Quantization: Smaller Weights, Watch the Cache and the Calibration
 

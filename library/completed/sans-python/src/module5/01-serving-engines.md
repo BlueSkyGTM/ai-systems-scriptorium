@@ -6,7 +6,7 @@ That is the thesis of Module 5, and it surprises people. The hard, hireable prob
 
 ## Why This Lands at the Seam
 
-This is the part of the job an AI Engineer and an MLOps engineer both reach for and neither fully owns. The AI Engineer asks "which model, which prompt, which decoding settings?" The MLOps engineer asks "how many GPUs, what autoscaling, what service-level objective (SLO)?" The serving engine is where those two questions collide into one artifact, and the platform engineer is the person who picks it, wires it, and answers for its p99. Module 5 is the seam's home turf; the infrastructure both halves *use*. Get the engine choice wrong and no amount of prompt tuning saves the latency.
+This is the part of the job an AI Engineer and an MLOps engineer both reach for and neither fully owns. The AI Engineer asks "which model, which prompt, which decoding settings?" The MLOps engineer asks "how many GPUs, what autoscaling, what service-level objective (SLO)?" The serving engine is where those two questions collide into one artifact, and the Production AI Engineer is the person who picks it, wires it, and answers for its p99. Module 5 is the seam's home turf; the infrastructure both halves *use*. Get the engine choice wrong and no amount of prompt tuning saves the latency.
 
 ## Inference Infrastructure Is Not Training Infrastructure
 

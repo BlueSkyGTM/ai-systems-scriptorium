@@ -1,6 +1,6 @@
 # Security & Compliance for AI Ops
 
-Your serving stack holds an API key worth thousands of dollars a day and answers questions about other people's data. The application layer can be flawless and you still lose the company if that key sits in a config file or the wrong tenant reads the wrong context. Security here is not the model's behavior; it is the substrate the model runs on, and it is the platform engineer's name on the incident report.
+Your serving stack holds an API key worth thousands of dollars a day and answers questions about other people's data. The application layer can be flawless and you still lose the company if that key sits in a config file or the wrong tenant reads the wrong context. Security here is not the model's behavior; it is the substrate the model runs on, and it is the Production AI Engineer's name on the incident report.
 
 You have hardened the layers above this one. Module 3 scoped MCP tools, pinned descriptions, and put OAuth on remote servers. Module 4 wrapped the agent in guardrails and a kill switch. Those defend what the model *does*. This lesson defends where it *lives*, the secrets it reaches for, the identities that can touch it, the surface an attacker probes, and it folds the compliance frameworks in as engineering requirements, not legal reading. SOC 2 (a security-controls audit), HIPAA (US health-data law), and the EU AI Act don't ask you to feel responsible. They ask you to build specific things. Build them.
 

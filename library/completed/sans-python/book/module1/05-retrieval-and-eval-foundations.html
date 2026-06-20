@@ -37,7 +37,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-49915c1e.js";
+            window.path_to_searchindex_js = "../searchindex-a740a402.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-519ea03c.js"></script>
@@ -188,7 +188,7 @@
 <p><strong>LLM-as-judge</strong> is the production answer to the scaling problem: exact-match metrics miss semantic equivalence, and human review doesn’t scale. The trust protocol is non-negotiable; freeze the judge model and version (a judge upgrade changes your historical scores), calibrate against roughly 100 human labels, require Spearman ρ ≥ 0.7 before using the judge in CI. G-Eval produces a 0–1 score with a custom rubric; RAGAS produces four named metrics; DeepEval runs in pytest so the eval loop becomes a test suite. Silent failure modes: length bias (longer answers score higher regardless of quality), same-family bias (a model prefers its own outputs), JSON parse failures that silently drop cases from the average.</p>
 <p><strong>Long-context evaluation</strong> closes the gap between what a model advertises and what you can rely on. Advertised context length and usable context length are not the same number. Gemini 2.5 Pro advertises 1M tokens; at 1M tokens, its 8-needle MRCR score drops to 26.3%. The rule is to report two numbers for any model you operate: retrieval-effective length (where single-fact recall holds) and reasoning-effective length (where multi-hop accuracy holds, typically 25–50% of advertised). NIAH (needle-in-haystack) is the baseline; RULER adds 13 task types and reveals multi-hop failures; MRCR scales the needle count to stress multi-round coreference. This feeds the eval-driven development thread that runs through the course.</p>
 <p>Module 2 takes these components and builds them into a RAG system and an eval loop. The components are the same; what changes is the system design around them.</p>
-<p>An AI Platform Engineer who knows these components can look at a failing RAG pipeline and name which layer broke, retrieval recall, reranker precision, chunk size mismatch, or judge calibration, instead of treating the whole system as a black box.</p>
+<p>An Production AI Engineer who knows these components can look at a failing RAG pipeline and name which layer broke, retrieval recall, reranker precision, chunk size mismatch, or judge calibration, instead of treating the whole system as a black box.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
 <li>The retriever→reader split is the structural foundation of RAG; the IR pipeline under the retriever has four layers (BM25 sparse, dense, RRF fusion, cross-encoder rerank) that catch different failure modes.</li>

@@ -37,7 +37,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-49915c1e.js";
+            window.path_to_searchindex_js = "../searchindex-a740a402.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-519ea03c.js"></script>
@@ -216,7 +216,7 @@
 <p>The measured deltas from the serving chapters only mean anything inside this loop. In the reference’s own benchmark runs, a tensor-core decode kernel showed a 15.65x speedup on one target; cache-aware reuse of the rotary-position and query path showed 23.53x; a smarter routing policy showed 7.07x with the underlying workload unchanged. Those are not numbers to quote at a stranger’s stack. They are numbers that were <em>attributed</em>; profiled deep-dive to confirm the win came from the cache movement, the scheduling, or the decode behavior the engineer claimed it did, not from a lucky batch. Re-measure on your own hardware before you treat any published delta as a threshold. A speedup you cannot reproduce on your machine is a rumor, not a result.</p>
 <h2 id="measure-honestly-or-dont-bother"><a class="header" href="#measure-honestly-or-dont-bother">Measure Honestly or Don’t Bother</a></h2>
 <p>The fastest way to lie to yourself is a sloppy measurement, so the reference fences the method as hard as the optimization. Align the runs before timing, clamp the random seed, the preprocessing, the batch shapes, so the delta comes from your change and not from a different workload sneaking in. Measure the <em>steady state</em>, warm up first, run the compile and the cache-fill before you start the clock, so first-iteration noise never lands in the reported number. Track throughput and latency <em>together</em>; tokens per second next to milliseconds, because an optimization that improves one while quietly wrecking the other is a regression wearing a win’s clothes. And log the environment every run, GPU, driver, toolkit, the exact command, so a number is replayable and a regression is traceable to the thing that changed.</p>
-<p>For the AI Platform Engineer, this is the habit the title is built on: you are the person who can say <em>where the time goes</em> and prove it, before anyone spends a sprint optimizing a part of the system that was already at its roof. Measure first. The lever comes second, and only the measurement tells you which one.</p>
+<p>For the Production AI Engineer, this is the habit the title is built on: you are the person who can say <em>where the time goes</em> and prove it, before anyone spends a sprint optimizing a part of the system that was already at its roof. Measure first. The lever comes second, and only the measurement tells you which one.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
 <li>Optimization without measurement is negative work: a fix applied to a part of the system that was not the bottleneck adds complexity and buys nothing, so you do not optimize a workload you have not profiled.</li>

@@ -8,7 +8,7 @@ Module 3 built an agent: a loop that observes, thinks, acts, and stops on a cond
 
 A *loop*, in the sense this lesson means, removes you from that seat. It is one agent system wrapped in the machinery that decides *when* it runs, *what* it works on, *whether* the result is good, and *when* to stop spending. You design the system that discovers work, assigns it, verifies the output, and persists state across runs, instead of being that system yourself. The agent is the worker; the loop is the operation around it.
 
-This is the AI-Engineer ∪ MLOps cusp stated plainly. The AI Engineer makes the agent good at the task. The platform engineer makes the agent *runnable unattended*; on a schedule, against real repositories, with a verdict gate and a kill switch, leaving an audit trail. A capable agent nobody can run safely overnight is a demo. The loop is what turns it into infrastructure.
+This is the AI-Engineer ∪ MLOps cusp stated plainly. The AI Engineer makes the agent good at the task. The Production AI Engineer makes the agent *runnable unattended*; on a schedule, against real repositories, with a verdict gate and a kill switch, leaving an audit trail. A capable agent nobody can run safely overnight is a demo. The loop is what turns it into infrastructure.
 
 ## The Shape: Trigger → Action → Verification → Budget/Kill-switch
 
