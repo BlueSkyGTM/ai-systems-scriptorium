@@ -1,4 +1,4 @@
-# CONTEXT — Data Engineering (PLANNED)
+# CONTEXT — Upstream (PLANNED)
 
 A planned book covering the **data-engineering gap** — the MLOps-native half Sans Python kept light: SQL
 and the data platform (ingestion, pipelines, streaming, warehouses, lineage — Kafka / Spark / Airflow and

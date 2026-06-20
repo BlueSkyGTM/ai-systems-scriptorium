@@ -18,11 +18,11 @@ routed_boundaries:
   root: .
   library: library
   book_sans_python: library/completed/sans-python
-  planned_getting_hired: library/planned/getting-hired
+  planned_show_dont_tell: library/planned/show-dont-tell
   planned_simple_systems: library/planned/simple-systems
   planned_just_python: library/planned/just-python
-  planned_machine_learning: library/planned/machine-learning
-  planned_data_engineering: library/planned/data-engineering
+  planned_ml_in_proportion: library/planned/ml-in-proportion
+  planned_upstream: library/planned/upstream
   platform: platform
   platform_pipeline: platform/pipeline
   platform_conventions: platform/conventions

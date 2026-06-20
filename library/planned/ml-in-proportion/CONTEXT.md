@@ -1,4 +1,4 @@
-# CONTEXT — Machine Learning (PLANNED)
+# CONTEXT — ML in Proportion (PLANNED)
 
 A planned book covering the **machine-learning gaps** Sans Python set aside as Path-A (MLE) material:
 classic ML fundamentals (regression, trees, boosting, AUC-ROC, feature engineering) **and the math they

@@ -26,8 +26,8 @@ the thesis core); the production performance checklist (topology awareness, the 
 **Data, experiments & the model lifecycle [lite] (11–13)** — the MLOps-native skills the hiring bar rewards,
 brought back at *literacy depth*: data ingestion at production scale (**Docling**, the RAG front door);
 experiment tracking & the LLMOps outer loop (MLflow); fine-tuning in proportion (LoRA/QLoRA literacy — when to
-fine-tune vs RAG vs prompt). The deep model-training build stays in the [Antilibrary](../antilibrary.md) (a
-future *Avec Python*).
+fine-tune vs RAG vs prompt). The deep model-training build stays in the [Antilibrary](../antilibrary.md) (deferred to a
+focused companion).
 
 **Rust (entry) (14–15)** — the second compiled language enters at point-of-use: Rust break-in (ownership,
 borrowing) and async Rust for serving (tokio, an inference proxy on the hot path), with Python still the

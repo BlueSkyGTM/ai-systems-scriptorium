@@ -7,8 +7,8 @@ self-contained (`src/` + `exercises/` + `theme/` + `book.toml`) so a single one 
 
 - `library/completed/` — shipped books. Currently: `sans-python`.
 - `library/in-progress/` — actively authoring. Currently: none.
-- `library/planned/` — dossier/ore identified, not started. Currently: `getting-hired`,
-  `simple-systems`, `just-python`, `machine-learning`, `data-engineering`.
+- `library/planned/` — dossier/ore identified, not started. Currently: `show-dont-tell`,
+  `simple-systems`, `just-python`, `ml-in-proportion`, `upstream`.
 
 ## Route in
 

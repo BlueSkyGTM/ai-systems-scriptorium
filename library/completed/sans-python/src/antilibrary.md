@@ -33,7 +33,7 @@ Made-with-ML *deep* model-centric MLOps: training pipelines, model lifecycle, de
 pipeline orchestration (Airflow/Prefect/Kubeflow), and fine-tuning *implementation* (training loops, dataset
 engineering, optimizer internals). **Brought back at literacy depth in M5 ch5 (lessons 11–13):** data
 ingestion (Docling), experiment tracking (MLflow), and fine-tuning *decisions* (LoRA/QLoRA literacy) — enough
-to build the common case and speak to the rest; the deep build stays here → *Avec Python*.
+to build the common case and speak to the rest; the deep build stays here, deferred to a focused companion book.
 
 **M6–M8 — model-training builds.** GPT-from-scratch (capstone Part-2, 30–49: BPE → embeddings → attention →
 transformer block → GPT assembly → training loop → SFT → DPO) + distributed training from scratch (76–81:
@@ -47,7 +47,7 @@ computer vision, speech/audio, reinforcement learning, LLMs-from-scratch (Karpat
 antilibrary subset: Ch01 (LLM internals at implementation depth), Ch03 (training/adaptation), Ch04 (inference
 optimization — handled in M5 via aipe).
 
-**Named *Avec Python* candidates** (the conceptual companion that may one day compile this antilibrary): the
+**Companion-book candidates** (the gaps a focused companion would pick up): the
 **ML math** above (linear algebra / calculus / probability — the Machine-Learning-Engineer / Path-A
 prerequisites the cusp splinter deliberately left behind) and **advanced Python** (NumPy / Pandas / vectorized
 ops — the ~94%-of-postings screen the point-of-use "Sans Python" approach does not drill). Held, not

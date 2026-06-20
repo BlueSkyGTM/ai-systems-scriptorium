@@ -1,7 +1,7 @@
-# CONTEXT — Getting Hired (PLANNED)
+# CONTEXT — Show, Don't Tell (PLANNED)
 
-A planned book on landing the AI-platform-engineering role: interview prep + systems-design under
-interview conditions, anchored to the portfolio artifacts the Scriptorium already produces.
+A planned book on landing the role by **showing, not telling** — the portfolio is the resume: interview
+prep + systems-design under interview conditions, anchored to the artifacts the Scriptorium already produces.
 
 **Not started.** Starting it is gated at `GATE-NAME-BOOK` (propose the real title first).
 
