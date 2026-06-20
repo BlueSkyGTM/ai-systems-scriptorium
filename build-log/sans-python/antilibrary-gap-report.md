@@ -29,14 +29,15 @@ by how much they actually cost the [`hireability-alignment.md`](hireability-alig
   book's name opts out of. **#2 PyTorch** is close behind.
 - **Rows 7–11 are *correctly* cut** — they don't block the AI-Engineer target, and chasing them would
   weaken the fork (the [`roadmap-coverage.md`](roadmap-coverage.md) MLE-splinter decision).
-- **Rows 1, 2, 3, 6 are the real exposure** — and they are almost exactly the **"Avec Python" table of
-  contents** already named in the antilibrary (advanced Python + ML math, plus classic-ML literacy). So
-  the biggest gaps are not a problem to patch in *this* book — they are the outline of the companion.
+- **Rows 1, 2, 3, 6 are the real exposure** — and they are now the spine of the **focused planned books**
+  (the retired "Avec Python" umbrella, split): row 1 → **Just Python**; rows 2/3/6 → **Machine Learning**
+  (applied/literacy depth). Not a problem to patch in *this* book — the outline of the next ones.
 - **Rows 4–5 are the only place a small literacy touch in *this* book might still pay off** (a data-eng /
   SQL nod beyond the Docling front-door).
 
 ## Next move
 
-The gaps map to a book, not a backfill: seed **Avec Python** (the companion under
-`library/in-progress/everything-else`) with rows 1/2/3/6 as its spine. Nothing here is a deficit — it is
-the next move, already located.
+The gaps map to **focused books, not a backfill**. The "Avec Python" umbrella is retired; the rows split
+into planned books under `library/planned/`: row 1 → **Just Python**, rows 2/3/6 → **Machine Learning**,
+row 4 → **Data Engineering**. Rows 5 and 7–11 stay light or cut. Nothing here is a deficit — it is the
+next move, already located.

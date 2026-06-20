@@ -6,16 +6,15 @@ self-contained (`src/` + `exercises/` + `theme/` + `book.toml`) so a single one 
 ## Buckets
 
 - `library/completed/` — shipped books. Currently: `sans-python`.
-- `library/in-progress/` — actively authoring. Currently: `everything-else`.
+- `library/in-progress/` — actively authoring. Currently: none.
 - `library/planned/` — dossier/ore identified, not started. Currently: `getting-hired`,
-  `simple-systems`.
+  `simple-systems`, `just-python`, `machine-learning`, `data-engineering`.
 
 ## Route in
 
 Go to the specific book's `CONTEXT.md` — that is where the per-book intent sub-router lives:
 
 - Author / fix / publish / status of the shipped book → `library/completed/sans-python/CONTEXT.md`.
-- Continue the in-progress book → `library/in-progress/everything-else/CONTEXT.md`.
 - Start a planned book → its `CONTEXT.md` (stops at `GATE-NAME-BOOK`).
 
 ## Load / don't-load
