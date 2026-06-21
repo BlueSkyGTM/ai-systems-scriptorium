@@ -6,10 +6,12 @@ not a script to recite. It treats answer construction as an engineering discipli
 AI Engineer hiring loop in full — behavioral, technical, and AI/ML systems-design interviews — and
 positions the Sans Python portfolio artifacts as the resume.
 
-**Graduated to in-progress 2026-06-21.** `GATE-NAME-BOOK` cleared (title **Answer Engineering**,
-slug `answer-engineering`). No module locked yet; the next step is to process the ore and draft the
-Module 1 plan. Module 1 ("The Framework", two lessons + two exercises) already has a working draft
-in `draft/` from the planning phase — author from it, do not discard it.
+**Graduated to in-progress 2026-06-21; Module 1 shipped.** `GATE-NAME-BOOK` cleared (title **Answer
+Engineering**, slug `answer-engineering`). M1 "The Framework" (overview + 2 lessons + 2 exercises) was
+authored conductor-direct, reviewed to STYLE + STANDARDS with MS-Learn citations verified live, built
+clean (`mdbook build`), and shipped (`GATE-APPROVE-SHIP`, 2026-06-21). It installs the four-step
+Algorithm and seeds the prep-dossier throughline (`exercises/prep/` + `check_prep.py`). See
+`build-log/answer-engineering/build-progress.md`. Next: Module 2 (The Algorithm in Detail).
 
 ## Ore (in the vault — not yet distilled)
 
@@ -37,6 +39,7 @@ makes it especially legible to both.
 
 ## Handoff & gates
 
-`GATE-NAME-BOOK` cleared. For Module 1: draft its `build-log/answer-engineering/m1/PLAN.md`, stop at
-`GATE-LOCK-PLAN`, then the fleet authors via `platform/pipeline/CONTEXT.md`, and stop at
-`GATE-APPROVE-SHIP` per stage. See `platform/HUMAN-GATES.md`.
+`GATE-NAME-BOOK` cleared; M1 shipped. For the next module: draft its
+`build-log/answer-engineering/m2/PLAN.md`, stop at `GATE-LOCK-PLAN`, then the fleet authors via
+`platform/pipeline/CONTEXT.md`, and stop at `GATE-APPROVE-SHIP` per stage. See
+`platform/HUMAN-GATES.md`.

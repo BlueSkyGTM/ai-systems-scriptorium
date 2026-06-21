@@ -1,0 +1,16 @@
+# mdBook config — Answer Engineering course
+# Build: `mdbook serve` (live) / `mdbook build` (static). Install: `cargo install mdbook`.
+# mdbook binary: ~/.tools/mdbook/mdbook.exe
+
+[book]
+title = "Answer Engineering — The AI Engineer's Interview Framework"
+authors = ["Raymond Fenton"]
+language = "en"
+src = "src"
+
+[output.html]
+default-theme = "rust"
+preferred-dark-theme = "ayu"
+git-repository-url = ""
+additional-js = ["theme/copy-to-claude.js"]
+additional-css = ["theme/copy-to-claude.css", "theme/syntax-polish.css", "theme/readability.css"]
