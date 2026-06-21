@@ -36,8 +36,10 @@ reference theme the other books in the lineup inherit (see `platform/conventions
   syntax-colored blocks looked edged while plain blocks (a no-language block, a shell one-liner) looked
   border-less, so the page seemed to have borders on some blocks and not others. The edge is on every
   `pre > code` (it never was truly missing); the neutral alpha was raised to a clearly visible but quiet
-  level so all blocks carry the same card edge: Ayu `rgba(190,188,182,0.30)`, light `rgba(120,113,100,0.32)`.
-  Still neutral, not the accent, which stays reserved for the handoff CTA, inline code, and syntax tokens.
+  level. The semi-transparent values still read too faint on the Ayu dark theme, where the code canvas
+  sits a hair off the page, so the edge is now a solid neutral color and every block reads as a clear card:
+  Ayu `#3a424e`, light `#c7baa1`. Still neutral, not the accent, which stays reserved for the handoff CTA,
+  inline code, and syntax tokens.
 
 ## The Claude Code handoff block (`theme/copy-to-claude.{css,js}`)
 
