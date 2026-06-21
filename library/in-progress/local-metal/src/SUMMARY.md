@@ -51,3 +51,13 @@
 - [Signals and Thresholds](module5/signals-and-thresholds.md)
 - [Build the Router](module5/build-the-router.md)
 - [Record the Policy](module5/record-the-policy.md)
+
+---
+
+# Module 6: Wire to Claude Code
+
+- [Overview](module6/00-overview.md)
+- [MCP in One Page](module6/mcp-in-one-page.md)
+- [Build the MCP Server](module6/build-the-mcp-server.md)
+- [Register with Claude Code](module6/register-with-claude-code.md)
+- [Log the Delegation](module6/log-the-delegation.md)

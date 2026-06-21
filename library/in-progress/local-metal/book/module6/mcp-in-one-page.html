@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Overview - Local Metal — Build and Network Your Own AI Inference Server</title>
+        <title>MCP in One Page - Local Metal — Build and Network Your Own AI Inference Server</title>
 
 
         <!-- Custom HTML head -->
@@ -177,38 +177,102 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="module-1-the-build"><a class="header" href="#module-1-the-build">Module 1: The Build</a></h1>
-<p>A local model server is a hardware problem before it is a software problem. You can read every Ollama
-tutorial in existence, but until a machine with the right GPU sits on your desk, none of it runs. This
-module gets you that machine, and gets you it for the right reasons.</p>
-<p>The temptation is to treat the parts list as a shopping trip: pick a GPU, grab some RAM, check out.
-That path leaves you with a gaming PC that happens to run a model, and a set of choices you cannot
-defend when one of them becomes a bottleneck. Local Metal treats the build as engineering. Every part
-in the reference machine was chosen to serve inference, and you should be able to say why each one is
-there before you pay for it.</p>
-<p>So this module moves in order. First, the case for owning compute at all, and the shape of the rig
-that answers it. Then the parts, one decision at a time: why sixteen gigabytes of VRAM and not eight,
-why DDR5-6000 and not a cheaper kit, why a small-form-factor case changes the power supply you buy.
-Then the build itself, done the low-risk way, at a counter that assembles and stress-tests it for you.
-Finally, the record: you commit the machine you actually bought to a file called <code>HARDWARE.md</code>, the
-first artifact in the repository that becomes your portfolio.</p>
-<p>The reference build is a small-form-factor machine with a Ryzen 7 7700X, a 16GB RTX 4060 Ti, 64GB of
-DDR5-6000, and a 2TB NVMe drive, codenamed Cthulhu in the spec this book is built from. Your build does
-not have to match it part for part. It has to match the reasoning, so that when you substitute a part,
-you substitute it on purpose.</p>
-<p>You leave this module with a parts list you can defend, a machine that boots and holds under load, and
-a documented build record. That record is the foundation the rest of the book stands on: there is no
-model stack, no routing layer, and no delegation until the metal is real.</p>
+                        <h1 id="mcp-in-one-page"><a class="header" href="#mcp-in-one-page">MCP in One Page</a></h1>
+<p>Before you build the server, know the protocol. It is smaller than its reputation, and understanding it up front means you can read a raw JSON trace and tell exactly where a handshake went wrong.</p>
+<h2 id="step-1-what-mcp-is"><a class="header" href="#step-1-what-mcp-is">Step 1: What MCP Is</a></h2>
+<p>The Model Context Protocol is a standard that lets an AI client connect to servers that expose tools, discover what those tools do, and call them. Claude Code is an MCP client. When it connects to your server, it finds <code>ask_local</code>, learns its input shape, and calls it mid-session without you doing anything. The client side is already built; your job is to build the server side.</p>
+<p>The wire format is JSON-RPC 2.0. If you have seen a language server or a debug adapter, the structure is familiar: a thin envelope carrying a method name and params, a matching reply carrying a result or an error. Everything else in MCP is built on top of that envelope.</p>
+<h2 id="step-2-the-stdio-transport"><a class="header" href="#step-2-the-stdio-transport">Step 2: The stdio Transport</a></h2>
+<p>A local MCP server is a process. It reads JSON-RPC messages from stdin and writes responses to stdout. Messages are newline-delimited: one JSON object per line, and a single message must not contain an embedded newline. That is the complete transport for a local server. No sockets, no HTTP, no port to bind, no TLS to configure: stdin goes in, stdout comes out, newlines keep the framing straight.</p>
+<p>The simplicity is deliberate. The same server process that Claude Code launches on your machine could, in principle, speak the same protocol over a different transport for remote use. But for the local case, stdio is all you need, and its constraints eliminate an entire class of setup problems.</p>
+<h2 id="step-3-the-three-methods-that-matter"><a class="header" href="#step-3-the-three-methods-that-matter">Step 3: The Three Methods That Matter</a></h2>
+<p>MCP defines more methods than you need for a minimal server. For <code>ask_local</code>, three are enough.</p>
+<p><strong><code>initialize</code></strong> opens the session. The client sends:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2025-11-25",
+    "capabilities": {},
+    "clientInfo": { "name": "claude-code", "version": "1.0" }
+  }
+}
+</code></pre>
+<p>The server replies with its own <code>protocolVersion</code>, <code>capabilities</code>, and <code>serverInfo</code>. After that, the client sends a <code>notifications/initialized</code> notification (see Step 4) and the session is open.</p>
+<p><strong><code>tools/list</code></strong> lets the client discover what the server offers. The server returns:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "tools": [
+      {
+        "name": "ask_local",
+        "description": "Send a prompt to the local model via the router.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "prompt": { "type": "string" }
+          },
+          "required": ["prompt"]
+        }
+      }
+    ]
+  }
+}
+</code></pre>
+<p>Each tool entry carries a name, a description, and an <code>inputSchema</code>: a JSON Schema object describing the arguments the tool accepts. Claude Code uses that schema to decide whether and how to call the tool.</p>
+<p><strong><code>tools/call</code></strong> runs the tool. The client sends:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "name": "ask_local",
+    "arguments": { "prompt": "Summarize this log file." }
+  }
+}
+</code></pre>
+<p>The server replies with a content array:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "result": {
+    "content": [
+      { "type": "text", "text": "The log shows three failed retries between 14:02 and 14:05." }
+    ],
+    "isError": false
+  }
+}
+</code></pre>
+<p>The content is always an array, even when there is only one item. <code>isError</code> is <code>false</code> on success and <code>true</code> when the tool itself encountered an error (as opposed to a protocol-level error). The current protocol version string for all of these exchanges is <code>2025-11-25</code>.</p>
+<h2 id="step-4-requests-vs-notifications"><a class="header" href="#step-4-requests-vs-notifications">Step 4: Requests vs Notifications</a></h2>
+<p>JSON-RPC distinguishes two message kinds: requests and notifications. A request carries an <code>id</code> field and expects a response. A notification has no <code>id</code> and gets no response.</p>
+<p>In the MCP lifecycle, <code>initialize</code> is a request (it carries <code>"id": 1</code>), and <code>notifications/initialized</code> is a notification (no <code>id</code>). This matters in practice: if you send a response to a notification, the client’s message loop will not know what to do with it, and the handshake hangs. If you fail to respond to a request, it hangs for the opposite reason. Getting the <code>id</code> presence right is the mechanical test that keeps the session alive.</p>
+<p><code>tools/list</code> and <code>tools/call</code> are both requests and both need responses.</p>
+<p>Knowing which is which means you can read a raw JSON trace and spot the problem in seconds: a hanging initialize almost always means the server sent a response to <code>notifications/initialized</code>, or never replied to <code>initialize</code> itself.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>MCP is JSON-RPC 2.0: every message is a thin envelope carrying a method name, params, and either an id (request) or no id (notification).</li>
+<li>The stdio transport for a local server is newline-delimited JSON on stdin and stdout; no sockets, no HTTP.</li>
+<li>Three methods cover a minimal server: <code>initialize</code> opens the session, <code>tools/list</code> publishes the tool catalog, and <code>tools/call</code> runs a tool and returns a content array.</li>
+<li>Requests carry an <code>id</code> and require a response; notifications carry no <code>id</code> and must not receive one; mixing these up is the most common cause of a hanging handshake.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module6/mcp-in-one-page/">
+<p><strong>Build It in Claude Code</strong>: Write out the JSON-RPC messages of a minimal MCP handshake by hand: the initialize request and response, the initialized notification, and a tools/list and tools/call exchange; mark which messages carry an id and which do not.</p>
+</div>
+
+<!-- SOURCES: https://modelcontextprotocol.io/specification/2025-11-25/basic | https://modelcontextprotocol.io/specification/draft/basic/transports/stdio | https://modelcontextprotocol.io/specification/2025-11-25/server/tools -->
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module6/00-overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module1/the-cost-wall-and-the-rig.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module6/build-the-mcp-server.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -218,11 +282,11 @@ model stack, no routing layer, and no delegation until the metal is real.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module6/00-overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module1/the-cost-wall-and-the-rig.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module6/build-the-mcp-server.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

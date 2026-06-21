@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-1bfabdbd.js";
+            window.path_to_searchindex_js = "searchindex-647bc5d5.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-8f379981.js"></script>
+        <script src="toc-a1cde07b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -2547,6 +2547,614 @@ of cost.</li>
 </div>
 
 <!-- SOURCES: https://docs.litellm.ai/docs/routing -->
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-6-wire-to-claude-code"><a class="header" href="#module-6-wire-to-claude-code">Module 6: Wire to Claude Code</a></h1>
+<p>Five modules in, you have a rig that serves a model, a benchmark that proves what it costs, and a
+router that decides when to use it. What you do not have is a reason to open any of it during a normal
+workday. Infrastructure you have to remember to reach for is infrastructure you stop reaching for.
+This module closes that gap by putting the rig inside the tool you already live in.</p>
+<p>The mechanism is the Model Context Protocol. Claude Code is an MCP client: it can connect to small
+servers that expose tools, discover what those tools do, and call them mid-session. You will build one
+of those servers. It exposes a single tool, <code>ask_local</code>, and when Claude Code calls it, the request
+runs through the router you built in Module 5, which sends it to the local model you built in Module 3.
+Claude Code stays the driver; the rig becomes a place it can delegate to.</p>
+<p>That delegation is the point. The routine, high-volume, privacy-sensitive work that does not need a
+frontier model can go to the rig you already paid for, while Claude handles the rest. The decision is
+the router’s; your job in this module is to give Claude Code a clean way to ask.</p>
+<p>The server is deliberately small and built from the standard library. The Model Context Protocol is
+JSON-RPC 2.0 over stdio: a handful of methods, plain JSON in and out. You will implement the three
+that matter, <code>initialize</code>, <code>tools/list</code>, and <code>tools/call</code>, with a dispatch function pure enough to
+self-test offline, no editor and no rig required. The production path uses the official MCP SDK; the
+stdlib server you build here is the one you can read end to end and prove correct.</p>
+<p>You leave this module with a sixth file in the portfolio repository: <code>DELEGATION.md</code>, a logged session
+of Claude Code handing real work to the local rig and getting an answer back. The metal, the runtime,
+the stack, its speed, and the routing policy were documented across the first five modules; now the
+bridge into your daily tooling is too. The runnable spine reads end to end: <code>ollama_client.py</code> calls
+the model, <code>route.py</code> decides when to, and <code>mcp_server.py</code> lets Claude Code pull the lever. Module 7
+is the last one: making all of it faster.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="mcp-in-one-page"><a class="header" href="#mcp-in-one-page">MCP in One Page</a></h1>
+<p>Before you build the server, know the protocol. It is smaller than its reputation, and understanding it up front means you can read a raw JSON trace and tell exactly where a handshake went wrong.</p>
+<h2 id="step-1-what-mcp-is"><a class="header" href="#step-1-what-mcp-is">Step 1: What MCP Is</a></h2>
+<p>The Model Context Protocol is a standard that lets an AI client connect to servers that expose tools, discover what those tools do, and call them. Claude Code is an MCP client. When it connects to your server, it finds <code>ask_local</code>, learns its input shape, and calls it mid-session without you doing anything. The client side is already built; your job is to build the server side.</p>
+<p>The wire format is JSON-RPC 2.0. If you have seen a language server or a debug adapter, the structure is familiar: a thin envelope carrying a method name and params, a matching reply carrying a result or an error. Everything else in MCP is built on top of that envelope.</p>
+<h2 id="step-2-the-stdio-transport"><a class="header" href="#step-2-the-stdio-transport">Step 2: The stdio Transport</a></h2>
+<p>A local MCP server is a process. It reads JSON-RPC messages from stdin and writes responses to stdout. Messages are newline-delimited: one JSON object per line, and a single message must not contain an embedded newline. That is the complete transport for a local server. No sockets, no HTTP, no port to bind, no TLS to configure: stdin goes in, stdout comes out, newlines keep the framing straight.</p>
+<p>The simplicity is deliberate. The same server process that Claude Code launches on your machine could, in principle, speak the same protocol over a different transport for remote use. But for the local case, stdio is all you need, and its constraints eliminate an entire class of setup problems.</p>
+<h2 id="step-3-the-three-methods-that-matter"><a class="header" href="#step-3-the-three-methods-that-matter">Step 3: The Three Methods That Matter</a></h2>
+<p>MCP defines more methods than you need for a minimal server. For <code>ask_local</code>, three are enough.</p>
+<p><strong><code>initialize</code></strong> opens the session. The client sends:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2025-11-25",
+    "capabilities": {},
+    "clientInfo": { "name": "claude-code", "version": "1.0" }
+  }
+}
+</code></pre>
+<p>The server replies with its own <code>protocolVersion</code>, <code>capabilities</code>, and <code>serverInfo</code>. After that, the client sends a <code>notifications/initialized</code> notification (see Step 4) and the session is open.</p>
+<p><strong><code>tools/list</code></strong> lets the client discover what the server offers. The server returns:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "tools": [
+      {
+        "name": "ask_local",
+        "description": "Send a prompt to the local model via the router.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "prompt": { "type": "string" }
+          },
+          "required": ["prompt"]
+        }
+      }
+    ]
+  }
+}
+</code></pre>
+<p>Each tool entry carries a name, a description, and an <code>inputSchema</code>: a JSON Schema object describing the arguments the tool accepts. Claude Code uses that schema to decide whether and how to call the tool.</p>
+<p><strong><code>tools/call</code></strong> runs the tool. The client sends:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "name": "ask_local",
+    "arguments": { "prompt": "Summarize this log file." }
+  }
+}
+</code></pre>
+<p>The server replies with a content array:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "result": {
+    "content": [
+      { "type": "text", "text": "The log shows three failed retries between 14:02 and 14:05." }
+    ],
+    "isError": false
+  }
+}
+</code></pre>
+<p>The content is always an array, even when there is only one item. <code>isError</code> is <code>false</code> on success and <code>true</code> when the tool itself encountered an error (as opposed to a protocol-level error). The current protocol version string for all of these exchanges is <code>2025-11-25</code>.</p>
+<h2 id="step-4-requests-vs-notifications"><a class="header" href="#step-4-requests-vs-notifications">Step 4: Requests vs Notifications</a></h2>
+<p>JSON-RPC distinguishes two message kinds: requests and notifications. A request carries an <code>id</code> field and expects a response. A notification has no <code>id</code> and gets no response.</p>
+<p>In the MCP lifecycle, <code>initialize</code> is a request (it carries <code>"id": 1</code>), and <code>notifications/initialized</code> is a notification (no <code>id</code>). This matters in practice: if you send a response to a notification, the client’s message loop will not know what to do with it, and the handshake hangs. If you fail to respond to a request, it hangs for the opposite reason. Getting the <code>id</code> presence right is the mechanical test that keeps the session alive.</p>
+<p><code>tools/list</code> and <code>tools/call</code> are both requests and both need responses.</p>
+<p>Knowing which is which means you can read a raw JSON trace and spot the problem in seconds: a hanging initialize almost always means the server sent a response to <code>notifications/initialized</code>, or never replied to <code>initialize</code> itself.</p>
+<h2 id="core-concepts-20"><a class="header" href="#core-concepts-20">Core Concepts</a></h2>
+<ul>
+<li>MCP is JSON-RPC 2.0: every message is a thin envelope carrying a method name, params, and either an id (request) or no id (notification).</li>
+<li>The stdio transport for a local server is newline-delimited JSON on stdin and stdout; no sockets, no HTTP.</li>
+<li>Three methods cover a minimal server: <code>initialize</code> opens the session, <code>tools/list</code> publishes the tool catalog, and <code>tools/call</code> runs a tool and returns a content array.</li>
+<li>Requests carry an <code>id</code> and require a response; notifications carry no <code>id</code> and must not receive one; mixing these up is the most common cause of a hanging handshake.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module6/mcp-in-one-page/">
+<p><strong>Build It in Claude Code</strong>: Write out the JSON-RPC messages of a minimal MCP handshake by hand: the initialize request and response, the initialized notification, and a tools/list and tools/call exchange; mark which messages carry an id and which do not.</p>
+</div>
+
+<!-- SOURCES: https://modelcontextprotocol.io/specification/2025-11-25/basic | https://modelcontextprotocol.io/specification/draft/basic/transports/stdio | https://modelcontextprotocol.io/specification/2025-11-25/server/tools -->
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="build-the-mcp-server"><a class="header" href="#build-the-mcp-server">Build the MCP Server</a></h1>
+<p>You know the protocol; now implement it. <code>mcp_server.py</code> is the piece that makes the entire stack
+reachable from Claude Code: it translates three JSON-RPC methods into real work and hands the live
+path off to the router you built in Module 5.</p>
+<h2 id="step-1-the-shape"><a class="header" href="#step-1-the-shape">Step 1: The Shape</a></h2>
+<p>The entry point is <code>dispatch(message, responder)</code>. It takes one JSON-RPC message and returns a
+response dict, or <code>None</code> when the message is a notification that must not receive a reply.</p>
+<p>Because <code>dispatch</code> has no side effects and no network calls, <code>--selftest</code> can assert all three
+methods offline with a fake responder. No stdio loop, no rig, no editor. This is the same
+offline-core, live-path pattern as <code>ollama_client.py</code> and <code>route.py</code>: the pure function is the
+machine-checkable done-when, and the live path is layered on top.</p>
+<p>Two small helpers keep the shape consistent. <code>result(request_id, payload)</code> wraps a success
+payload in a standard JSON-RPC envelope. <code>error(request_id, code, message)</code> wraps a failure.
+Every branch of <code>dispatch</code> returns one or the other.</p>
+<h2 id="step-2-the-ask_local-tool"><a class="header" href="#step-2-the-ask_local-tool">Step 2: The ask_local Tool</a></h2>
+<p><code>tools/list</code> advertises a single tool: <code>ask_local</code>. Its <code>inputSchema</code> requires one field, <code>prompt</code>,
+typed as a string. That schema is what Claude Code reads to know it can call this tool and what
+argument to supply.</p>
+<p><code>tools/call</code> runs the tool. It validates the tool name and prompt, then calls <code>responder(prompt)</code>
+and wraps the return value in a content array with <code>"isError": false</code>.</p>
+<p>The default <code>responder</code> is the compounding payoff: it imports <code>route()</code> from the Module 5 router
+and <code>call()</code> from the Module 3 client, runs the routing decision, and on a local decision calls
+the rig directly. When <code>route.py</code> is absent, it returns a plain fallback string instead of
+crashing. When the rig is unreachable, it returns the routing decision so the caller still knows
+what would have happened. <code>ask_local</code> is the lever Claude Code pulls; the entire stack you built
+sits behind it.</p>
+<h2 id="step-3-the-serve-loop"><a class="header" href="#step-3-the-serve-loop">Step 3: The Serve Loop</a></h2>
+<p><code>serve()</code> reads newline-delimited JSON from stdin one line at a time, calls <code>dispatch</code>, and writes
+the response to stdout followed by a newline and a flush. When <code>dispatch</code> returns <code>None</code> (a
+notification), <code>serve</code> skips the write. That is the complete stdio transport: no sockets, no port,
+no TLS.</p>
+<p>One detail matters in practice: the flush. Without it, the client receives no response until the
+buffer drains, and the handshake hangs silently. Every response must flush before the loop
+continues.</p>
+<h2 id="step-4-build-and-run-it"><a class="header" href="#step-4-build-and-run-it">Step 4: Build and Run It</a></h2>
+<p>Create <code>exercises/module6/build-the-mcp-server/mcp_server.py</code> with this exact code:</p>
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+mcp_server.py: a minimal Model Context Protocol server exposing the local rig to Claude Code.
+
+Speaks MCP over stdio (JSON-RPC 2.0, newline-delimited): initialize, tools/list,
+tools/call. Its one tool, ask_local, routes a prompt through the Module 5 router
+and, on a local decision, calls the Module 3 ollama_client. The production path
+uses the official `mcp` SDK; this stdlib server is the readable, testable version.
+
+Usage:
+  python mcp_server.py             # run as an MCP stdio server (Claude Code launches this)
+  python mcp_server.py --selftest  # offline: assert the JSON-RPC dispatch for the 3 core methods
+"""
+
+import argparse
+import json
+import sys
+
+PROTOCOL_VERSION = "2025-11-25"
+SERVER_INFO = {"name": "local-rig", "version": "1.0.0"}
+
+ASK_LOCAL_TOOL = {
+    "name": "ask_local",
+    "description": "Delegate a prompt to the local inference rig (routed local vs cloud by policy).",
+    "inputSchema": {
+        "type": "object",
+        "properties": {"prompt": {"type": "string", "description": "the prompt to delegate"}},
+        "required": ["prompt"],
+    },
+}
+
+
+def default_responder(prompt):
+    """Live path: route the prompt, and on a local decision call the Module 3 client."""
+    try:
+        from route import route, Request, LOCAL_MODEL
+    except ImportError:
+        return "router unavailable: put route.py (Module 5) on the path"
+    decision = route(Request(prompt_tokens=max(1, len(prompt) // 4)))
+    if decision.target == "local":
+        try:
+            from ollama_client import call
+            return call(prompt, model=LOCAL_MODEL)
+        except Exception:
+            return f"[routed local: {decision.reason}] local server unreachable"
+    return f"[routed cloud: {decision.reason}] wire your cloud provider here"
+
+
+def result(request_id, payload):
+    return {"jsonrpc": "2.0", "id": request_id, "result": payload}
+
+
+def error(request_id, code, message):
+    return {"jsonrpc": "2.0", "id": request_id, "error": {"code": code, "message": message}}
+
+
+def dispatch(message, responder=default_responder):
+    """Pure JSON-RPC dispatch: a message in, a response dict out (None for a notification)."""
+    method = message.get("method")
+    request_id = message.get("id")
+    if method == "initialize":
+        return result(request_id, {
+            "protocolVersion": PROTOCOL_VERSION,
+            "capabilities": {"tools": {}},
+            "serverInfo": SERVER_INFO,
+        })
+    if method == "notifications/initialized":
+        return None  # notification: no response
+    if method == "tools/list":
+        return result(request_id, {"tools": [ASK_LOCAL_TOOL]})
+    if method == "tools/call":
+        params = message.get("params", {})
+        if params.get("name") != "ask_local":
+            return error(request_id, -32602, f"unknown tool: {params.get('name')}")
+        prompt = params.get("arguments", {}).get("prompt", "")
+        if not prompt:
+            return error(request_id, -32602, "ask_local requires a 'prompt' argument")
+        text = responder(prompt)
+        return result(request_id, {"content": [{"type": "text", "text": text}], "isError": False})
+    return error(request_id, -32601, f"method not found: {method}")
+
+
+def serve(stdin=sys.stdin, stdout=sys.stdout):
+    """Read newline-delimited JSON-RPC from stdin, write responses to stdout."""
+    for line in stdin:
+        line = line.strip()
+        if not line:
+            continue
+        message = json.loads(line)
+        response = dispatch(message)
+        if response is not None:
+            stdout.write(json.dumps(response) + "\n")
+            stdout.flush()
+
+
+def selftest():
+    """Assert the dispatch for the three core methods offline, with a fake responder."""
+    init = dispatch({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}})
+    assert init["result"]["protocolVersion"] == PROTOCOL_VERSION, "initialize protocolVersion wrong"
+    assert init["result"]["serverInfo"]["name"] == "local-rig", "serverInfo missing"
+
+    note = dispatch({"jsonrpc": "2.0", "method": "notifications/initialized"})
+    assert note is None, "a notification must not produce a response"
+
+    listed = dispatch({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
+    names = [tool["name"] for tool in listed["result"]["tools"]]
+    assert "ask_local" in names, "ask_local not advertised by tools/list"
+
+    called = dispatch(
+        {"jsonrpc": "2.0", "id": 3, "method": "tools/call",
+         "params": {"name": "ask_local", "arguments": {"prompt": "hello"}}},
+        responder=lambda prompt: f"echo: {prompt}",
+    )
+    content = called["result"]["content"]
+    assert content[0]["type"] == "text" and content[0]["text"] == "echo: hello", "tools/call result shape wrong"
+
+    missing = dispatch(
+        {"jsonrpc": "2.0", "id": 4, "method": "tools/call",
+         "params": {"name": "ask_local", "arguments": {}}}
+    )
+    assert "error" in missing, "a tools/call with no prompt should return an error"
+
+    print("selftest passed: initialize, tools/list, tools/call dispatch correctly")
+    return 0
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Minimal MCP stdio server for the local rig.")
+    parser.add_argument("--selftest", action="store_true", help="assert the JSON-RPC dispatch offline")
+    args = parser.parse_args()
+    if args.selftest:
+        sys.exit(selftest())
+    serve()
+
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+<p>Walk the pieces before you pipe anything through them.</p>
+<p><code>PROTOCOL_VERSION</code> and <code>SERVER_INFO</code> are constants at the top. The version string <code>2025-11-25</code>
+must match what the client sends in <code>initialize</code>; mismatches surface as capability negotiation
+failures, not clean errors. <code>SERVER_INFO</code> is what Claude Code shows in its tool list.</p>
+<p><code>ASK_LOCAL_TOOL</code> is a plain dict that gets serialized into the <code>tools/list</code> response. The
+<code>inputSchema</code> is standard JSON Schema: Claude Code reads the <code>required</code> array to know the field
+is not optional, and reads the property type to know how to fill it. A tool description that says
+what the tool does (not what it is) is the difference between Claude picking it and Claude ignoring
+it.</p>
+<p><code>default_responder</code> defers its imports. The <code>from route import ...</code> line inside the function body
+means <code>--selftest</code> works even when <code>route.py</code> is absent: the import is never reached. The same
+pattern protects <code>ollama_client</code>. The live path fails loudly and descriptively; the test path does
+not fail at all.</p>
+<p><code>dispatch</code> is a flat if-chain, not a registry. Four branches: <code>initialize</code>, the notification,
+<code>tools/list</code>, <code>tools/call</code>. An unknown method falls through to the final <code>error</code> return. The
+<code>responder</code> argument is the injection point that makes the selftest possible: pass a lambda in
+tests, leave it defaulted in production.</p>
+<p><code>selftest</code> covers five cases. The <code>initialize</code> check verifies both the protocol version and the
+server name. The notification check verifies <code>None</code>. The <code>tools/list</code> check verifies <code>ask_local</code>
+is advertised. The <code>tools/call</code> check with a fake responder verifies the content array shape. The
+missing-prompt check verifies that a bad call returns an error, not a crash.</p>
+<h2 id="run-it-3"><a class="header" href="#run-it-3">Run It</a></h2>
+<p>With no rig and no key, run the selftest:</p>
+<pre><code class="language-bash">python mcp_server.py --selftest
+</code></pre>
+<p>What you should see:</p>
+<pre><code>selftest passed: initialize, tools/list, tools/call dispatch correctly
+</code></pre>
+<p>To confirm the wire format by hand, pipe a real handshake through the serve loop. Run the server
+in one terminal and send messages from another, or pipe a file of newline-delimited messages
+directly:</p>
+<pre><code class="language-bash">printf '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}\n{"jsonrpc":"2.0","method":"notifications/initialized"}\n{"jsonrpc":"2.0","id":2,"method":"tools/list"}\n' | python mcp_server.py
+</code></pre>
+<p>What you should see (formatted for readability; the server writes each on one line):</p>
+<pre><code class="language-json">{"jsonrpc": "2.0", "id": 1, "result": {"protocolVersion": "2025-11-25", "capabilities": {"tools": {}}, "serverInfo": {"name": "local-rig", "version": "1.0.0"}}}
+{"jsonrpc": "2.0", "id": 2, "result": {"tools": [{"name": "ask_local", "description": "Delegate a prompt to the local inference rig (routed local vs cloud by policy).", "inputSchema": {"type": "object", "properties": {"prompt": {"type": "string", "description": "the prompt to delegate"}}, "required": ["prompt"]}}]}}
+</code></pre>
+<p>Notice: the <code>notifications/initialized</code> message produces no line in the output. That silence is
+correct. One request in, one response out; one notification in, nothing out.</p>
+<p>The next lesson registers <code>mcp_server.py</code> with Claude Code and logs a live delegation session,
+closing the loop from silicon to AI assistant.</p>
+<h2 id="core-concepts-21"><a class="header" href="#core-concepts-21">Core Concepts</a></h2>
+<ul>
+<li>The pure <code>dispatch</code> function is testable offline: a message in, a response dict or <code>None</code> out,
+with no network calls, so <code>--selftest</code> runs anywhere with no rig.</li>
+<li><code>ask_local</code> wraps the entire prior stack: the router decides local vs cloud, the Module 3 client
+handles the local call, and the fallback strings keep the server alive when either is absent.</li>
+<li>The stdio loop is newline-delimited JSON with a flush after every write; without the flush, the
+client’s handshake hangs silently.</li>
+<li>Notifications carry no <code>id</code> and must not receive a response; sending one anyway is the most
+common cause of a hanging MCP session.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module6/build-the-mcp-server/">
+<p><strong>Build It in Claude Code</strong>: Create <code>exercises/module6/build-the-mcp-server/mcp_server.py</code>, a stdlib MCP stdio server whose pure <code>dispatch()</code> answers initialize/tools/list/tools/call and whose <code>ask_local</code> tool wraps your Module 5 <code>route.py</code>, with a <code>--selftest</code> mode that asserts the dispatch offline.</p>
+</div>
+
+<!-- SOURCES: https://modelcontextprotocol.io/specification/2025-11-25/server/tools | https://modelcontextprotocol.io/specification/2025-11-25/basic -->
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="register-with-claude-code"><a class="header" href="#register-with-claude-code">Register with Claude Code</a></h1>
+<p>The server runs. Claude Code does not know that yet. This lesson fixes that: you tell Claude Code
+where <code>mcp_server.py</code> lives, and it handles the rest.</p>
+<h2 id="step-1-two-ways-to-register"><a class="header" href="#step-1-two-ways-to-register">Step 1: Two Ways to Register</a></h2>
+<p>Claude Code discovers MCP servers from two sources: a CLI command and a project config file. Both
+produce the same result; pick the one that fits your workflow.</p>
+<p>The CLI registers the server immediately and writes the entry into your local project scope (private
+to you, not committed):</p>
+<pre><code class="language-bash">claude mcp add --scope project local-rig -- python mcp_server.py
+</code></pre>
+<p>The <code>--</code> separates Claude Code’s own flags from the command it will launch. Everything after <code>--</code> is
+passed verbatim to the OS: <code>python mcp_server.py</code> is the process Claude Code starts when it opens the
+server connection. If your Python binary is <code>python3</code>, or if <code>mcp_server.py</code> lives at a full path,
+adjust those tokens accordingly.</p>
+<p>The project config file <code>.mcp.json</code> at the repo root is the alternative. It travels with the
+repository, so anyone who clones it sees the same server entry. Step 2 shows the file format.</p>
+<p>Sources: <a href="https://code.claude.com/docs/en/mcp-quickstart">Claude Code MCP quickstart</a> and
+<a href="https://code.claude.com/docs/en/mcp">Claude Code MCP docs</a></p>
+<h2 id="step-2-the-mcpjson-file"><a class="header" href="#step-2-the-mcpjson-file">Step 2: The .mcp.json File</a></h2>
+<p>Create <code>.mcp.json</code> at your repo root with this content:</p>
+<pre><code class="language-json">{
+  "mcpServers": {
+    "local-rig": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["mcp_server.py"]
+    }
+  }
+}
+</code></pre>
+<p>The schema is straightforward. <code>mcpServers</code> maps a name, here <code>local-rig</code>, to a server entry.
+<code>type: "stdio"</code> tells Claude Code to use the local stdio transport: it launches the process,
+writes JSON-RPC messages to its stdin, and reads responses from its stdout. <code>command</code> is the
+executable; <code>args</code> is the argument list. Claude Code assembles these into a subprocess call and
+speaks MCP over the resulting pipes.</p>
+<h2 id="step-3-scopes"><a class="header" href="#step-3-scopes">Step 3: Scopes</a></h2>
+<p>Claude Code has three MCP scopes, and the choice matters for a portfolio repository.</p>
+<p><strong>local</strong> is the default for <code>claude mcp add</code>. The entry is private to you in this project and is
+not committed to version control. Use it for keys, secrets, or paths that should not travel.</p>
+<p><strong>project</strong> writes to <code>.mcp.json</code> at the repo root and is committed. Every collaborator, reviewer,
+or recruiter who clones the repo sees the same entry. For a portfolio repository where the server is
+part of the story you want to tell, project scope is the right choice.</p>
+<p><strong>user</strong> is also private, but it applies across all your projects, not just this one. Use it for
+shared infrastructure you want available everywhere without repeating the config in each repo.</p>
+<p>For this book’s throughline, project scope fits: the <code>.mcp.json</code> entry is evidence that the rig is
+integrated into your daily tooling, visible to anyone reading the repo.</p>
+<h2 id="step-4-what-claude-code-does-with-it"><a class="header" href="#step-4-what-claude-code-does-with-it">Step 4: What Claude Code Does with It</a></h2>
+<p>On startup, Claude Code reads <code>.mcp.json</code> and launches each listed server as a child process. It
+then sends the MCP <code>initialize</code> handshake (the same one you traced in the previous lesson) and
+follows with <code>tools/list</code> to discover what the server offers. For your server, that response
+contains one entry: <code>ask_local</code>.</p>
+<p>The first time Claude Code wants to call the tool mid-session, it asks you to approve it.
+Project-scoped servers appear as pending in the <code>/mcp</code> panel until you accept. After approval,
+<code>ask_local</code> is available for the rest of the session and across future sessions without further
+prompting. The <code>/mcp</code> panel shows connection status at any time, so you can confirm the server is
+up before you try to use it.</p>
+<p>Source: <a href="https://modelcontextprotocol.io/specification/2025-11-25/server/tools">MCP tools specification</a></p>
+<hr>
+<p>The rig is now a first-class citizen of your editor. The next lesson puts that to use: you will run
+a real session, log the delegation in <code>DELEGATION.md</code>, and close the throughline that started in
+Module 3.</p>
+<h2 id="core-concepts-22"><a class="header" href="#core-concepts-22">Core Concepts</a></h2>
+<ul>
+<li>Two registration paths exist: <code>claude mcp add --scope project local-rig -- python mcp_server.py</code>
+(CLI, immediate) and a <code>.mcp.json</code> file at the repo root (config, committed); both produce the
+same server entry.</li>
+<li>The <code>.mcp.json</code> schema maps a server name to a <code>type</code>, <code>command</code>, and <code>args</code>; <code>type: "stdio"</code>
+tells Claude Code to run the process and speak MCP over its stdin and stdout pipes.</li>
+<li>Three scopes control visibility: local (private to this project), project (committed to the repo,
+travels with it), and user (private, available across all projects); project scope is the right
+choice for a portfolio repository where the integration is part of the record.</li>
+<li>Claude Code discovers tools by calling <code>tools/list</code> after the initialize handshake; it asks you
+to approve a project-scoped server before the first <code>tools/call</code>, and the <code>/mcp</code> panel shows live
+connection status.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module6/register-with-claude-code/">
+<p><strong>Build It in Claude Code</strong>: Create a <code>.mcp.json</code> that registers your <code>mcp_server.py</code> as a project-scoped stdio MCP server named <code>local-rig</code>, or run <code>claude mcp add --scope project local-rig -- python mcp_server.py</code>; then confirm Claude Code lists the server.</p>
+</div>
+
+<!-- SOURCES: https://code.claude.com/docs/en/mcp-quickstart | https://code.claude.com/docs/en/mcp | https://modelcontextprotocol.io/specification/2025-11-25/server/tools -->
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="log-the-delegation"><a class="header" href="#log-the-delegation">Log the Delegation</a></h1>
+<p>The server is registered. Now use it, and record the proof. A <code>DELEGATION.md</code> sitting in the
+repository is what turns six modules of metal, runtime, and routing into a portfolio that a
+reviewer can actually run.</p>
+<h2 id="step-1-run-a-delegation"><a class="header" href="#step-1-run-a-delegation">Step 1: Run a Delegation</a></h2>
+<p>Open a Claude Code session with the local-rig server registered. Ask it to delegate a routine task to
+the local model. Claude Code will surface an approval prompt showing it intends to call <code>ask_local</code>;
+approve it, and let the call go through.</p>
+<p>What to capture before you close the session:</p>
+<ul>
+<li>The exact prompt you sent.</li>
+<li>The route the request took (did the router send it local or cloud, and why?).</li>
+<li>The model tag that answered.</li>
+<li>The reply the model returned.</li>
+</ul>
+<p>These four pieces are what <code>DELEGATION.md</code> records.</p>
+<h2 id="step-2-record-delegationmd"><a class="header" href="#step-2-record-delegationmd">Step 2: Record DELEGATION.md</a></h2>
+<p>Create <code>exercises/module6/log-the-delegation/DELEGATION.md</code>. The complete file, shown wrapped in a
+four-backtick outer fence so the inner triple-backtick reply block renders:</p>
+<pre><code class="language-markdown"># Delegation Log
+
+A session where Claude Code delegated work to the local rig through the MCP server.
+Read by check_delegation.py.
+
+## Setup
+
+MCP server: local-rig (mcp_server.py)
+Registered via: .mcp.json (project scope)
+Tool exposed: ask_local
+
+## Session
+
+Prompt: reformat this loop into a list comprehension
+Route: local (routine request fits the local window and is cost-sensitive)
+Model: qwen2.5-coder:14b
+
+```
+Rewritten as a list comprehension:
+
+    return [row.strip() for row in lines if row]
+```
+</code></pre>
+<p>The <code>Route</code> line is a real decision, not a label. Start it with <code>local</code> or <code>cloud</code> and say why: the
+router’s logic belongs in the record because that is the claim the validator enforces.</p>
+<h2 id="step-3-ship-the-validator-2"><a class="header" href="#step-3-ship-the-validator-2">Step 3: Ship the Validator</a></h2>
+<p>Create <code>exercises/module6/log-the-delegation/check_delegation.py</code> beside <code>DELEGATION.md</code>.</p>
+<p>What it enforces, in order:</p>
+<ul>
+<li>Both sections present (<code>## Setup</code> and <code>## Session</code>).</li>
+<li>Setup fields filled: <code>MCP server</code> and <code>Tool exposed</code>.</li>
+<li>Session fields filled: <code>Prompt</code>, <code>Route</code>, and <code>Model</code>.</li>
+<li>No placeholder tokens (including angle brackets, <code>TODO</code>, <code>TBD</code>, ellipses).</li>
+<li>The <code>Route</code> value is a real routing decision: it must start with <code>local</code> or <code>cloud</code>.</li>
+<li>A non-empty fenced reply block in <code>## Session</code> (at least ten characters).</li>
+</ul>
+<p>The <code>[^\S\n]</code> regex detail (horizontal whitespace only, same as the M2-M5 validators) keeps a blank
+field from grabbing the next line’s value and falsely passing the check.</p>
+<p>The complete validator:</p>
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+check_delegation.py: validate DELEGATION.md for the Local Metal module-6 throughline.
+
+Usage: python check_delegation.py [path/to/DELEGATION.md]
+Exits 0 when the delegation log is complete (setup, a routed session, and a
+captured reply); exits 1 and names the first gap found.
+"""
+
+import re
+import sys
+from pathlib import Path
+
+DELEGATION_PATH = Path(__file__).parent / "DELEGATION.md"
+
+REQUIRED_SECTIONS = ["## Setup", "## Session"]
+SETUP_FIELDS = ["MCP server", "Tool exposed"]
+SESSION_FIELDS = ["Prompt", "Route", "Model"]
+
+PLACEHOLDERS = {"TODO", "TBD", "xxx", "fill in", "&lt;", "&gt;", "..."}
+
+
+def fail(message: str) -&gt; None:
+    print(f"DELEGATION.md incomplete: {message}")
+    sys.exit(1)
+
+
+def load(path: Path) -&gt; str:
+    if not path.exists():
+        fail(f"{path} not found")
+    return path.read_text(encoding="utf-8")
+
+
+def check_sections(text: str) -&gt; None:
+    for section in REQUIRED_SECTIONS:
+        if section not in text:
+            fail(f'section "{section}" missing from DELEGATION.md')
+
+
+def check_no_placeholders(text: str) -&gt; None:
+    for token in PLACEHOLDERS:
+        if token in text:
+            fail(f'placeholder token "{token}" still present; fill in the real value')
+
+
+def extract_section(text: str, heading: str) -&gt; str:
+    match = re.search(rf"{re.escape(heading)}\n(.*?)(?=\n## |\Z)", text, re.DOTALL)
+    if not match:
+        fail(f'"{heading}" section has no content')
+    return match.group(1)
+
+
+def check_fields(section_text: str, fields: list, section_name: str) -&gt; None:
+    for field in fields:
+        # [^\S\n] is horizontal whitespace only: it must not span the newline,
+        # or a blank field would capture the next line's value.
+        match = re.search(rf"{re.escape(field)}[^\S\n]*:[^\S\n]*([^\n]+)", section_text)
+        if not match:
+            fail(f'field "{field}" not found in {section_name}')
+        if not match.group(1).strip():
+            fail(f'field "{field}" in {section_name} is empty')
+
+
+def check_route_decision(section_text: str) -&gt; None:
+    match = re.search(r"Route[^\S\n]*:[^\S\n]*([^\n]+)", section_text)
+    if not match:
+        fail('field "Route" not found in ## Session')
+    value = match.group(1).strip().lower()
+    if not (value.startswith("local") or value.startswith("cloud")):
+        fail(f'Route must be a real decision starting with "local" or "cloud"; got "{match.group(1).strip()}"')
+
+
+def check_reply_block(section_text: str) -&gt; None:
+    blocks = re.findall(r"```[^\n]*\n(.*?)```", section_text, re.DOTALL)
+    if not blocks:
+        fail('"## Session" has no fenced reply block; paste the ask_local reply in a ``` block')
+    if not any(len(block.strip()) &gt;= 10 for block in blocks):
+        fail('the fenced reply block in "## Session" is empty; paste the model reply')
+
+
+def main() -&gt; None:
+    path = Path(sys.argv[1]) if len(sys.argv) &gt; 1 else DELEGATION_PATH
+    text = load(path)
+    check_sections(text)
+    check_no_placeholders(text)
+    check_fields(extract_section(text, "## Setup"), SETUP_FIELDS, "## Setup")
+    session = extract_section(text, "## Session")
+    check_fields(session, SESSION_FIELDS, "## Session")
+    check_route_decision(session)
+    check_reply_block(session)
+    print("DELEGATION.md complete")
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+<h2 id="step-4-the-live-vs-expected-rule-2"><a class="header" href="#step-4-the-live-vs-expected-rule-2">Step 4: The Live-vs-Expected Rule</a></h2>
+<p>With the rig and Claude Code, run a real session and log what actually happened. Without them, paste
+the reference session from Step 2. The validator checks that the log is complete and well-formed: a
+real routing decision, a real reply. It does not compare your text to the reference, so either path
+exits 0 when the record is honest.</p>
+<p>Six portfolio files now describe the metal, the runtime, the stack, its speed, the routing policy,
+and the bridge into Claude Code. The runnable spine reads end to end: <code>ollama_client.py</code> calls the
+model, <code>route.py</code> decides when to, <code>mcp_server.py</code> lets Claude Code pull the lever, and
+<code>DELEGATION.md</code> is the receipt that proves it happened. The spine is the artifact a reviewer traces;
+Module 7 makes it faster.</p>
+<h2 id="core-concepts-23"><a class="header" href="#core-concepts-23">Core Concepts</a></h2>
+<ul>
+<li>The delegation log is the end-to-end proof: a <code>DELEGATION.md</code> with a real route and a real reply
+shows the whole stack firing in sequence, not just each piece in isolation.</li>
+<li>The validator gates a real routing decision: <code>Route</code> must start with <code>local</code> or <code>cloud</code> because
+a vague label is not evidence and a passing check on a label is not a gate.</li>
+<li>The six-file portfolio tells a complete story: hardware, runtime, model stack, benchmark, routing
+policy, and the Claude Code bridge cover every layer from the card to the tool.</li>
+<li>The compounding spine is the artifact a reviewer traces: <code>ollama_client.py</code> -&gt; <code>route.py</code> -&gt;
+<code>mcp_server.py</code> is a chain any interviewer can clone and run, and <code>DELEGATION.md</code> is the logged
+proof it ran.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module6/log-the-delegation/">
+<p><strong>Build It in Claude Code</strong>: Record a real delegation in <code>exercises/module6/log-the-delegation/DELEGATION.md</code> (the prompt, the route it took, the model, and the reply), then create <code>check_delegation.py</code> beside it so it exits 0 only when the log has both sections filled, a real local-or-cloud route, and a non-empty reply.</p>
+</div>
+
+<!-- SOURCES: https://code.claude.com/docs/en/mcp -->
 
                     </main>
 

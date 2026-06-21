@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Overview - Local Metal — Build and Network Your Own AI Inference Server</title>
+        <title>Log the Delegation - Local Metal — Build and Network Your Own AI Inference Server</title>
 
 
         <!-- Custom HTML head -->
@@ -177,40 +177,197 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="module-1-the-build"><a class="header" href="#module-1-the-build">Module 1: The Build</a></h1>
-<p>A local model server is a hardware problem before it is a software problem. You can read every Ollama
-tutorial in existence, but until a machine with the right GPU sits on your desk, none of it runs. This
-module gets you that machine, and gets you it for the right reasons.</p>
-<p>The temptation is to treat the parts list as a shopping trip: pick a GPU, grab some RAM, check out.
-That path leaves you with a gaming PC that happens to run a model, and a set of choices you cannot
-defend when one of them becomes a bottleneck. Local Metal treats the build as engineering. Every part
-in the reference machine was chosen to serve inference, and you should be able to say why each one is
-there before you pay for it.</p>
-<p>So this module moves in order. First, the case for owning compute at all, and the shape of the rig
-that answers it. Then the parts, one decision at a time: why sixteen gigabytes of VRAM and not eight,
-why DDR5-6000 and not a cheaper kit, why a small-form-factor case changes the power supply you buy.
-Then the build itself, done the low-risk way, at a counter that assembles and stress-tests it for you.
-Finally, the record: you commit the machine you actually bought to a file called <code>HARDWARE.md</code>, the
-first artifact in the repository that becomes your portfolio.</p>
-<p>The reference build is a small-form-factor machine with a Ryzen 7 7700X, a 16GB RTX 4060 Ti, 64GB of
-DDR5-6000, and a 2TB NVMe drive, codenamed Cthulhu in the spec this book is built from. Your build does
-not have to match it part for part. It has to match the reasoning, so that when you substitute a part,
-you substitute it on purpose.</p>
-<p>You leave this module with a parts list you can defend, a machine that boots and holds under load, and
-a documented build record. That record is the foundation the rest of the book stands on: there is no
-model stack, no routing layer, and no delegation until the metal is real.</p>
+                        <h1 id="log-the-delegation"><a class="header" href="#log-the-delegation">Log the Delegation</a></h1>
+<p>The server is registered. Now use it, and record the proof. A <code>DELEGATION.md</code> sitting in the
+repository is what turns six modules of metal, runtime, and routing into a portfolio that a
+reviewer can actually run.</p>
+<h2 id="step-1-run-a-delegation"><a class="header" href="#step-1-run-a-delegation">Step 1: Run a Delegation</a></h2>
+<p>Open a Claude Code session with the local-rig server registered. Ask it to delegate a routine task to
+the local model. Claude Code will surface an approval prompt showing it intends to call <code>ask_local</code>;
+approve it, and let the call go through.</p>
+<p>What to capture before you close the session:</p>
+<ul>
+<li>The exact prompt you sent.</li>
+<li>The route the request took (did the router send it local or cloud, and why?).</li>
+<li>The model tag that answered.</li>
+<li>The reply the model returned.</li>
+</ul>
+<p>These four pieces are what <code>DELEGATION.md</code> records.</p>
+<h2 id="step-2-record-delegationmd"><a class="header" href="#step-2-record-delegationmd">Step 2: Record DELEGATION.md</a></h2>
+<p>Create <code>exercises/module6/log-the-delegation/DELEGATION.md</code>. The complete file, shown wrapped in a
+four-backtick outer fence so the inner triple-backtick reply block renders:</p>
+<pre><code class="language-markdown"># Delegation Log
+
+A session where Claude Code delegated work to the local rig through the MCP server.
+Read by check_delegation.py.
+
+## Setup
+
+MCP server: local-rig (mcp_server.py)
+Registered via: .mcp.json (project scope)
+Tool exposed: ask_local
+
+## Session
+
+Prompt: reformat this loop into a list comprehension
+Route: local (routine request fits the local window and is cost-sensitive)
+Model: qwen2.5-coder:14b
+
+```
+Rewritten as a list comprehension:
+
+    return [row.strip() for row in lines if row]
+```
+</code></pre>
+<p>The <code>Route</code> line is a real decision, not a label. Start it with <code>local</code> or <code>cloud</code> and say why: the
+router’s logic belongs in the record because that is the claim the validator enforces.</p>
+<h2 id="step-3-ship-the-validator"><a class="header" href="#step-3-ship-the-validator">Step 3: Ship the Validator</a></h2>
+<p>Create <code>exercises/module6/log-the-delegation/check_delegation.py</code> beside <code>DELEGATION.md</code>.</p>
+<p>What it enforces, in order:</p>
+<ul>
+<li>Both sections present (<code>## Setup</code> and <code>## Session</code>).</li>
+<li>Setup fields filled: <code>MCP server</code> and <code>Tool exposed</code>.</li>
+<li>Session fields filled: <code>Prompt</code>, <code>Route</code>, and <code>Model</code>.</li>
+<li>No placeholder tokens (including angle brackets, <code>TODO</code>, <code>TBD</code>, ellipses).</li>
+<li>The <code>Route</code> value is a real routing decision: it must start with <code>local</code> or <code>cloud</code>.</li>
+<li>A non-empty fenced reply block in <code>## Session</code> (at least ten characters).</li>
+</ul>
+<p>The <code>[^\S\n]</code> regex detail (horizontal whitespace only, same as the M2-M5 validators) keeps a blank
+field from grabbing the next line’s value and falsely passing the check.</p>
+<p>The complete validator:</p>
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+check_delegation.py: validate DELEGATION.md for the Local Metal module-6 throughline.
+
+Usage: python check_delegation.py [path/to/DELEGATION.md]
+Exits 0 when the delegation log is complete (setup, a routed session, and a
+captured reply); exits 1 and names the first gap found.
+"""
+
+import re
+import sys
+from pathlib import Path
+
+DELEGATION_PATH = Path(__file__).parent / "DELEGATION.md"
+
+REQUIRED_SECTIONS = ["## Setup", "## Session"]
+SETUP_FIELDS = ["MCP server", "Tool exposed"]
+SESSION_FIELDS = ["Prompt", "Route", "Model"]
+
+PLACEHOLDERS = {"TODO", "TBD", "xxx", "fill in", "&lt;", "&gt;", "..."}
+
+
+def fail(message: str) -&gt; None:
+    print(f"DELEGATION.md incomplete: {message}")
+    sys.exit(1)
+
+
+def load(path: Path) -&gt; str:
+    if not path.exists():
+        fail(f"{path} not found")
+    return path.read_text(encoding="utf-8")
+
+
+def check_sections(text: str) -&gt; None:
+    for section in REQUIRED_SECTIONS:
+        if section not in text:
+            fail(f'section "{section}" missing from DELEGATION.md')
+
+
+def check_no_placeholders(text: str) -&gt; None:
+    for token in PLACEHOLDERS:
+        if token in text:
+            fail(f'placeholder token "{token}" still present; fill in the real value')
+
+
+def extract_section(text: str, heading: str) -&gt; str:
+    match = re.search(rf"{re.escape(heading)}\n(.*?)(?=\n## |\Z)", text, re.DOTALL)
+    if not match:
+        fail(f'"{heading}" section has no content')
+    return match.group(1)
+
+
+def check_fields(section_text: str, fields: list, section_name: str) -&gt; None:
+    for field in fields:
+        # [^\S\n] is horizontal whitespace only: it must not span the newline,
+        # or a blank field would capture the next line's value.
+        match = re.search(rf"{re.escape(field)}[^\S\n]*:[^\S\n]*([^\n]+)", section_text)
+        if not match:
+            fail(f'field "{field}" not found in {section_name}')
+        if not match.group(1).strip():
+            fail(f'field "{field}" in {section_name} is empty')
+
+
+def check_route_decision(section_text: str) -&gt; None:
+    match = re.search(r"Route[^\S\n]*:[^\S\n]*([^\n]+)", section_text)
+    if not match:
+        fail('field "Route" not found in ## Session')
+    value = match.group(1).strip().lower()
+    if not (value.startswith("local") or value.startswith("cloud")):
+        fail(f'Route must be a real decision starting with "local" or "cloud"; got "{match.group(1).strip()}"')
+
+
+def check_reply_block(section_text: str) -&gt; None:
+    blocks = re.findall(r"```[^\n]*\n(.*?)```", section_text, re.DOTALL)
+    if not blocks:
+        fail('"## Session" has no fenced reply block; paste the ask_local reply in a ``` block')
+    if not any(len(block.strip()) &gt;= 10 for block in blocks):
+        fail('the fenced reply block in "## Session" is empty; paste the model reply')
+
+
+def main() -&gt; None:
+    path = Path(sys.argv[1]) if len(sys.argv) &gt; 1 else DELEGATION_PATH
+    text = load(path)
+    check_sections(text)
+    check_no_placeholders(text)
+    check_fields(extract_section(text, "## Setup"), SETUP_FIELDS, "## Setup")
+    session = extract_section(text, "## Session")
+    check_fields(session, SESSION_FIELDS, "## Session")
+    check_route_decision(session)
+    check_reply_block(session)
+    print("DELEGATION.md complete")
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+<h2 id="step-4-the-live-vs-expected-rule"><a class="header" href="#step-4-the-live-vs-expected-rule">Step 4: The Live-vs-Expected Rule</a></h2>
+<p>With the rig and Claude Code, run a real session and log what actually happened. Without them, paste
+the reference session from Step 2. The validator checks that the log is complete and well-formed: a
+real routing decision, a real reply. It does not compare your text to the reference, so either path
+exits 0 when the record is honest.</p>
+<p>Six portfolio files now describe the metal, the runtime, the stack, its speed, the routing policy,
+and the bridge into Claude Code. The runnable spine reads end to end: <code>ollama_client.py</code> calls the
+model, <code>route.py</code> decides when to, <code>mcp_server.py</code> lets Claude Code pull the lever, and
+<code>DELEGATION.md</code> is the receipt that proves it happened. The spine is the artifact a reviewer traces;
+Module 7 makes it faster.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>The delegation log is the end-to-end proof: a <code>DELEGATION.md</code> with a real route and a real reply
+shows the whole stack firing in sequence, not just each piece in isolation.</li>
+<li>The validator gates a real routing decision: <code>Route</code> must start with <code>local</code> or <code>cloud</code> because
+a vague label is not evidence and a passing check on a label is not a gate.</li>
+<li>The six-file portfolio tells a complete story: hardware, runtime, model stack, benchmark, routing
+policy, and the Claude Code bridge cover every layer from the card to the tool.</li>
+<li>The compounding spine is the artifact a reviewer traces: <code>ollama_client.py</code> -&gt; <code>route.py</code> -&gt;
+<code>mcp_server.py</code> is a chain any interviewer can clone and run, and <code>DELEGATION.md</code> is the logged
+proof it ran.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module6/log-the-delegation/">
+<p><strong>Build It in Claude Code</strong>: Record a real delegation in <code>exercises/module6/log-the-delegation/DELEGATION.md</code> (the prompt, the route it took, the model, and the reply), then create <code>check_delegation.py</code> beside it so it exits 0 only when the log has both sections filled, a real local-or-cloud route, and a non-empty reply.</p>
+</div>
+
+<!-- SOURCES: https://code.claude.com/docs/en/mcp -->
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module6/register-with-claude-code.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module1/the-cost-wall-and-the-rig.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -218,13 +375,10 @@ model stack, no routing layer, and no delegation until the metal is real.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module6/register-with-claude-code.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module1/the-cost-wall-and-the-rig.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                    </a>
             </nav>
 
         </div>
