@@ -1,6 +1,6 @@
 # Stress-Test: Does the Method Complete the Books?
 
-Documentation for the experiment set up in the root `HANDOFF.md`. The question is not "did the books get made" but
+Definition of, and documentation for, the stress-test experiment (this README is its self-contained spec; the original root `HANDOFF.md` that launched it has been retired). The question is not "did the books get made" but
 **which part did the work — the Scriptorium's structure (deferred-context routing + contracts + gates +
 spawn-and-collapse) or Claude's built-in capability?** A cold agent + one `CLAUDE.md` is the baseline; this folder
 records the delta over that baseline, honestly.

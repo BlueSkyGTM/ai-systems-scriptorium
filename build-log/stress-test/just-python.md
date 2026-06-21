@@ -1,6 +1,6 @@
 # Stress-Test Log — Just Python
 
-Per-book log for the experiment in the root `HANDOFF.md`. Full reasoning + the cross-book verdict live in
+Per-book log for the stress-test experiment (defined in this folder's `README.md`). Full reasoning + the cross-book verdict live in
 `FINDINGS.md` (Findings 01–03); this file is the Just-Python-specific record using the README template.
 
 ## Track 1: Just Python M2 "NumPy in Depth" — plan → author → verify → build → ship

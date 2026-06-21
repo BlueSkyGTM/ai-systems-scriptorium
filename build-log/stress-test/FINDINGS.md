@@ -1,6 +1,6 @@
 # FINDINGS — Does the Method Complete the Books?
 
-Running verdict log for the experiment defined in the root `HANDOFF.md` and this folder's `README.md`.
+Running verdict log for the stress-test experiment defined in this folder's `README.md`.
 Verdict scale: `HOLDS` / `PARTIAL` / `MOSTLY-BUILT-IN`. Do not flatter the method.
 
 ## Verdict so far: PARTIAL, leaning HOLDS on the parts the structure owns (4 data points; one finding now REPRODUCED)
