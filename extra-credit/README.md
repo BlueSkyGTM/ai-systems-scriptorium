@@ -24,9 +24,27 @@ fight the forgetting curve. Added value, on top, opt-in.
 
 ## What Does NOT Belong Here
 
-- A general experiment sandbox, or a place to "stay busy between phases." This is not that.
-- Anything that does not serve the library's learning. Off-mission work (business tooling, unrelated
-  projects) gets its own repo.
+Be strict; this is the boundary that keeps the repo's role clear. One test: **does it make a reader's
+experience of a Library book better?** If no, it is off-mission and gets its own repo. Off-mission,
+explicitly, is:
+
+- **Business or operations tooling** — go-to-market, CRM, sales, analytics; anything serving a company
+  rather than a learner (e.g. `tools/gtm-ops`).
+- **Standalone apps or products** that reuse the curriculum's patterns but do not feed a book.
+- **Generic utilities** with no tie to a specific book, lesson, or the reader's progress.
+- **Experiments unconnected to any book or enhancer** — a probe must point at a real learning use, or it
+  does not enter the lab.
+
+These are not lesser; they are *elsewhere*. The Scriptorium stays a book factory plus the enhancers that
+serve it. Everything else earns its own home (and, ideally, its own clone of the engine).
+
+## Never From Scratch (Where Enhancers Come From)
+
+An enhancer does not have to be built here from zero, and usually should not be. The preferred path is to
+**salvage**: a thing you already built, or a useful component from an external repo you come across.
+Either way it enters as an **experiment**, runs through the connect protocol (wired to the logged
+material), and earns its way to **production**. The rule is reuse, not greenfield: start from the closest
+working thing and adapt it to serve the library.
 
 ## Lifecycle: Experiment → Production → Home
 
