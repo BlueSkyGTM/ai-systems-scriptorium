@@ -18,6 +18,14 @@ When a learner pastes an exercise into you, they are here to build, not to watch
   open `measure.py`, read what is already there, and understand where in the build the learner is. Do
   not re-implement what exists. Do not reset state you did not write.
 
+  **Module 4 composes the throughline: `exercises/module4/vectorization_report.py`**
+  M4 does not add to `measure.py`; it builds a new artifact, `vectorization_report.py`, that **imports
+  `measure.py` off disk** (`time_sum`, `broadcast_allocates`) and composes those functions into a
+  vectorize-or-not decision tool, built up across the four M4 lessons (profile → speedup table → apply
+  tax → memory check + recommendation). Before any M4 exercise: open `vectorization_report.py`, read its
+  current state, and add to it. Never rebuild `measure.py`; import it. This is the artifact-composition
+  pattern the M6/M7/M8 portfolio modules use.
+
   Later modules have their own throughline artifacts (the M6 wrangling pipeline, the M7 eval engine,
   the M8 exam script). The same rule applies: find the artifact, read it, then continue the build.
 

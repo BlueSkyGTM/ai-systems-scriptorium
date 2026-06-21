@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-e73de605.js";
+            window.path_to_searchindex_js = "searchindex-584cc33c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-833e6087.js"></script>
+        <script src="toc-52181c8c.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -1229,7 +1229,7 @@ print("Both methods agree:", merged[["correct_apply", "correct_vec"]].head())
 <li>Per-class accuracy starts with a merge of predictions to labels on a shared key, then a <code>groupby</code> on the class column.</li>
 </ul>
 <div class="claude-handoff" data-exercise="exercises/module3/groupby-merge-apply/">
-<p><strong>Build It in Claude Code</strong> — build <code>score_pipeline.py</code>, a script that merges a predictions frame to a labels frame, groups by class to compute per-class accuracy, and asserts that <code>apply</code> and a vectorized column expression produce identical results.</p>
+<p><strong>Build It in Claude Code:</strong> Build <code>score_pipeline.py</code>, a script that merges a predictions frame to a labels frame, groups by class to compute per-class accuracy, and asserts that <code>apply</code> and a vectorized column expression produce identical results.</p>
 </div>
 
 <div style="break-before: page; page-break-before: always;"></div>
@@ -1356,6 +1356,365 @@ assert df["text_clean"].dropna().str.match(r"^[^A-Z]*$").all()
 </ul>
 <div class="claude-handoff" data-exercise="exercises/module3/cleaning-and-missing-data/">
 <p><strong>Build It in Claude Code:</strong> Build <code>clean_corpus.py</code>, a script that deduplicates, handles missing values, and normalizes a messy text DataFrame, then asserts the output is clean in one <code>python</code> command.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-4-vectorization-discipline"><a class="header" href="#module-4-vectorization-discipline">Module 4: Vectorization Discipline</a></h1>
+<h2 id="what-this-module-covers-3"><a class="header" href="#what-this-module-covers-3">What This Module Covers</a></h2>
+<p>Module 1 built the cost model, Module 2 the NumPy operations, Module 3 the Pandas layer. Module 4 is the judgment that ties them together. You already know how to vectorize; this module teaches when to, when not to, and how to prove the call with numbers. The discipline is not “vectorize everything.” It is profile first, measure the three costs (speed, memory, readability), then decide and justify.</p>
+<p>This is the difference between an engineer who rewrites the wrong loop on a hunch and one who measures, changes one thing, and measures again. A take-home that hands you a slow pipeline is testing exactly this: can you find the real bottleneck, quantify the fix, and recognize the case where the clever one-liner is the wrong answer.</p>
+<p>The work stays grounded in the AI-engineering call site: the batch job that times out, the <code>apply</code> that never scales, the broadcast that runs out of memory on a real corpus.</p>
+<h2 id="arc-of-lessons-3"><a class="header" href="#arc-of-lessons-3">Arc of Lessons</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Lesson</th><th>Title</th><th>What It Teaches</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>Profile Before You Optimize</td><td>Measure before you rewrite; reach for <code>measure.py</code>’s <code>time_sum</code>, because the bottleneck is rarely where you guess</td></tr>
+<tr><td>2</td><td>When the Array Wins</td><td>The loop-to-C-loop speedup, measured, and how it grows with N up to the cache limit; the crossover where a small loop can win</td></tr>
+<tr><td>3</td><td>The Hidden Cost of apply</td><td>Put a number on the <code>apply(axis=1)</code> tax M3 named, watch it widen with scale, and map the few cases where <code>apply</code> is genuinely unavoidable</td></tr>
+<tr><td>4</td><td>When Not to Vectorize</td><td>The broadcast that blows the memory budget, the one-liner that costs readability, and chunking as the third option; the decision rule that closes the module</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="throughline-artifact-3"><a class="header" href="#throughline-artifact-3">Throughline Artifact</a></h2>
+<p>Module 4 is where the artifact chain pays off. Modules 1 through 3 each <em>added</em> one function to <code>measure.py</code>. Module 4 builds a new artifact, <code>vectorization_report.py</code> (at <code>exercises/module4/</code>), that <strong>imports <code>measure.py</code> off disk and composes its functions</strong>: it calls <code>time_sum</code> to profile a loop against a vectorized version, reuses <code>broadcast_allocates</code> to check whether the vectorized path blows the memory budget, and emits a “vectorize / keep the loop / chunk it” recommendation with the numbers behind it. The reuse is real composition, not a rewrite: the report imports the prior artifact and calls it. This is the same pattern the portfolio modules (M6, M7, M8) use, practiced here for the first time.</p>
+<h2 id="prerequisites-3"><a class="header" href="#prerequisites-3">Prerequisites</a></h2>
+<ul>
+<li>Modules 1 through 3: the cost model, the NumPy operations, and the Pandas layer, including M3’s finding that <code>apply(axis=1)</code> is a disguised per-row loop. Module 4 quantifies and decides; it does not re-teach the mechanics.</li>
+<li>The <code>measure.py</code> you have built across M1 through M3, at <code>exercises/module1/the-cost-of-a-python-list/measure.py</code>. Module 4 imports <code>time_sum</code> and <code>broadcast_allocates</code> from it.</li>
+<li>A Python 3.11+ environment with NumPy and pandas installed (<code>pip install numpy pandas</code>).</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="profile-before-you-optimize"><a class="header" href="#profile-before-you-optimize">Profile Before You Optimize</a></h1>
+<p>Engineers who guess wrong about where time goes rewrite the wrong loop. Measuring first costs two minutes; rewriting the wrong function costs a day.</p>
+<h2 id="the-guessing-trap"><a class="header" href="#the-guessing-trap">The Guessing Trap</a></h2>
+<p>Your intuition about what is slow is built from general principles, not from your actual data. You know Python loops are slower than NumPy vectorization, so when a pipeline stalls, you reach for the loop and start rewriting. But the loop is often not the bottleneck. The bottleneck is the I/O call above it, the redundant sort below it, or the object construction no one touches. Guessing replaces the wrong thing.</p>
+<p>The discipline is simple: time it first, change one thing, time it again. No measurement before the change means no proof the change helped.</p>
+<h2 id="what-time_sum-already-gives-you"><a class="header" href="#what-time_sum-already-gives-you">What <code>time_sum</code> Already Gives You</a></h2>
+<p>The <code>measure.py</code> helper you built in Module 1 includes <code>time_sum</code>, a function that runs a callable <code>n</code> times via <code>timeit.timeit</code> and returns the mean elapsed seconds:</p>
+<pre><code class="language-python">import timeit
+
+def time_sum(fn, n: int = 3) -&gt; float:
+    """Return mean wall-clock seconds for fn() over n runs."""
+    total = timeit.timeit(fn, number=n)
+    return total / n
+</code></pre>
+<p><code>timeit.timeit</code> does three things that naive <code>time.time()</code> brackets miss. It disables garbage collection during the run, so GC pauses do not contaminate the measurement. It repeats the call <code>number</code> times and returns the total, which averages out scheduling jitter. And it runs the callable in a clean namespace, so import overhead does not appear in the result. Dividing by <code>n</code> gives you the mean per-call cost.</p>
+<p>Import it directly:</p>
+<pre><code class="language-python">import sys
+import pathlib
+
+# resolve measure.py relative to this file (exercises/module4/vectorization_report.py)
+_measure = pathlib.Path(__file__).resolve().parent.parent / "module1" / "the-cost-of-a-python-list"
+sys.path.insert(0, str(_measure))
+from measure import time_sum
+</code></pre>
+<h2 id="timing-a-loop-vs-a-vectorized-sum"><a class="header" href="#timing-a-loop-vs-a-vectorized-sum">Timing a Loop vs. a Vectorized Sum</a></h2>
+<p>Take a concrete problem: sum 500,000 floats. Two implementations, one measurement each.</p>
+<pre><code class="language-python">import numpy as np
+
+rng = np.random.default_rng(42)
+data = rng.standard_normal(500_000).astype(np.float64)
+floats = data.tolist()
+
+loop_time = time_sum(lambda: sum(floats))
+vec_time  = time_sum(lambda: data.sum())
+
+print(f"loop sum:   {loop_time:.5f} s")
+print(f"vector sum: {vec_time:.5f} s")
+print(f"speedup:    {loop_time / vec_time:.1f}x")
+</code></pre>
+<p>On a typical machine you will see something like:</p>
+<pre><code>loop sum:   0.01823 s
+vector sum: 0.00041 s
+speedup:    44.5x
+</code></pre>
+<p>Those numbers are the evidence. Before you saw them, you might have guessed 5x or 100x; the actual ratio is what drives the decision. That print statement is the proof that the rewrite was worth doing.</p>
+<h2 id="the-three-step-protocol"><a class="header" href="#the-three-step-protocol">The Three-Step Protocol</a></h2>
+<p>Every optimization decision follows the same three steps:</p>
+<ol>
+<li>Time the current code. Record the number.</li>
+<li>Change exactly one thing.</li>
+<li>Time the new code. Compare the numbers.</li>
+</ol>
+<p>“Change exactly one thing” is load-bearing. If you swap both the data structure and the algorithm in the same commit, you cannot tell which change produced the gain. The measurement only holds when the experiment is controlled.</p>
+<p>This is the same discipline the Azure Well-Architected Framework calls out in its Performance Efficiency pillar: instrument code to identify hot paths, then prioritize optimizing those hot paths and nothing else (<a href="https://learn.microsoft.com/azure/well-architected/performance-efficiency/optimize-code-infrastructure">learn.microsoft.com/azure/well-architected/performance-efficiency/optimize-code-infrastructure</a>). The principle scales from a single loop to a distributed inference pipeline.</p>
+<h2 id="reading-the-numbers"><a class="header" href="#reading-the-numbers">Reading the Numbers</a></h2>
+<p>Two failure modes appear when engineers read timings without context.</p>
+<p>The first is the cold-run illusion. The first call to a function may be slower than subsequent calls because of caching, JIT warm-up, or lazy imports. <code>time_sum</code> with <code>n=3</code> exposes this: if the first run is 0.050 s and the next two are 0.004 s each, the mean is 0.019 s but the median is 0.004 s. Run <code>n=5</code> or <code>n=10</code> when you see high variance.</p>
+<p>The second is the wrong denominator. A 44x speedup on a function that runs once at startup saves microseconds. The same speedup on a function called inside a batch loop of 100,000 rows saves seconds per request. Time the function in the context where it runs in production.</p>
+<pre><code class="language-python"># Measure in the actual batch context, not in isolation
+BATCH = 10_000
+batch_data = rng.standard_normal((BATCH, 128)).astype(np.float32)
+
+loop_batch = time_sum(lambda: [batch_data[i].sum() for i in range(BATCH)])
+vec_batch  = time_sum(lambda: batch_data.sum(axis=1))
+
+print(f"loop batch: {loop_batch:.5f} s")
+print(f"vec  batch: {vec_batch:.5f} s")
+print(f"speedup:    {loop_batch / vec_batch:.1f}x")
+</code></pre>
+<p>The batch context surfaces a far larger absolute gain than the isolated measurement did. The number you optimize against is the one from the real call site.</p>
+<h2 id="what-you-do-not-need-yet"><a class="header" href="#what-you-do-not-need-yet">What You Do Not Need Yet</a></h2>
+<p><code>cProfile</code> and line-by-line profilers are the next tool when <code>timeit</code> tells you a function is slow but you cannot see why. M4 introduces them later. For now, the rule is: if you have not timed it with <code>time_sum</code> or an equivalent, you do not know where the time goes, and you are guessing.</p>
+<p>Knowing the ratio before you rewrite is what separates a productive optimization from a day spent on the wrong problem.</p>
+<h2 id="core-concepts-12"><a class="header" href="#core-concepts-12">Core Concepts</a></h2>
+<ul>
+<li>Guessing where code is slow is wrong more often than right; the only safe starting point is a measurement from <code>timeit</code> or an equivalent timer that averages out jitter and disables GC.</li>
+<li><code>time_sum(fn, n)</code> wraps <code>timeit.timeit</code> to return the mean per-call cost; import it from <code>measure.py</code> and use it before and after every change.</li>
+<li>The three-step protocol is: measure the baseline, change one thing, measure again; changing more than one thing at once makes the result uninterpretable.</li>
+<li>A speedup ratio is only meaningful at the real call site; a 44x gain on a function called once saves nothing if the bottleneck is the outer batch loop.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module4/profile-before-you-optimize/">
+<p><strong>Build It in Claude Code:</strong> Build <code>vectorization_report.py</code>, a script that imports <code>time_sum</code> from <code>measure.py</code> and profiles a plain Python loop against a vectorized sum, printing both timings and the speedup ratio, then asserts the results agree.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="when-the-array-wins"><a class="header" href="#when-the-array-wins">When the Array Wins</a></h1>
+<p>The Python interpreter visits every element in a list, unpacks the object, calls the operator, and boxes the result back. A vectorized reduction hands the whole buffer to one compiled C loop that does none of that. At small scales the difference is noise; at batch scale it is the difference between keeping up and falling behind.</p>
+<h2 id="what-you-build-3"><a class="header" href="#what-you-build-3">What You Build</a></h2>
+<p>You build a speedup benchmark that times a loop-based sum-of-squares against <code>(arr ** 2).sum()</code> across a range of array sizes, prints the speedup at each size, and identifies where the vectorized path starts to dominate.</p>
+<h2 id="the-source-of-the-speedup"><a class="header" href="#the-source-of-the-speedup">The Source of the Speedup</a></h2>
+<p>Module 2 showed what a ufunc does mechanically: it selects a typed C inner loop, walks the buffer, and never hands control back to the Python interpreter between elements. The cost being avoided is not trivial. Each Python operation on a list element requires a pointer dereference to the boxed object, a type check, an arithmetic dispatch, and a re-boxing of the result. For N elements, that is O(N) trips through the interpreter.</p>
+<p>A vectorized reduction pays interpreter overhead exactly once: the call that starts the loop. Inside the C loop, every element is a raw typed value in a contiguous buffer, the CPU’s SIMD units can process several per clock, and the prefetcher can stay ahead because the access pattern is linear. Microsoft Learn’s “Explore and Analyze Data with Python” module frames the payoff directly: operations on typed NumPy arrays run far more efficiently than the equivalent work over Python sequences (<a href="https://learn.microsoft.com/training/modules/explore-analyze-data-with-python/2-explore-data-numpy-pandas">learn.microsoft.com/training/modules/explore-analyze-data-with-python/2-explore-data-numpy-pandas</a>).</p>
+<p>You can see the cost difference with a minimal experiment. Time a Python loop computing sum-of-squares against the vectorized path:</p>
+<pre><code class="language-python">import numpy as np
+import time
+
+rng = np.random.default_rng(42)
+N = 1_000_000
+arr = rng.standard_normal(N).astype(np.float64)
+
+# Loop path
+start = time.perf_counter()
+total = 0.0
+for x in arr:
+    total += x * x
+loop_ms = (time.perf_counter() - start) * 1000
+
+# Vectorized path
+start = time.perf_counter()
+result = (arr ** 2).sum()
+vec_ms = (time.perf_counter() - start) * 1000
+
+print(f"loop:        {loop_ms:.1f} ms")
+print(f"vectorized:  {vec_ms:.2f} ms")
+print(f"speedup:     {loop_ms / vec_ms:.0f}x")
+</code></pre>
+<p>On a typical machine at N=1,000,000:</p>
+<pre><code>loop:        320.4 ms
+vectorized:  1.82 ms
+speedup:     176x
+</code></pre>
+<p>The results are numerically identical (within floating-point rounding). Every millisecond saved is pure interpreter overhead eliminated.</p>
+<h2 id="how-the-speedup-scales"><a class="header" href="#how-the-speedup-scales">How the Speedup Scales</a></h2>
+<p>The speedup is not constant. At small N, the vectorized path carries its own fixed cost: the Python call, the buffer allocation for intermediate results, and the dispatch through NumPy’s type machinery. A loop over ten elements can beat a vectorized call because that fixed cost exceeds the per-element saving.</p>
+<p>Measure across a range:</p>
+<pre><code class="language-python">sizes = [10, 100, 1_000, 10_000, 100_000, 1_000_000]
+RUNS = 20
+
+print(f"{'N':&gt;10}  {'loop ms':&gt;10}  {'vec ms':&gt;10}  {'speedup':&gt;10}")
+print("-" * 46)
+
+for N in sizes:
+    data = rng.standard_normal(N).astype(np.float64)
+
+    start = time.perf_counter()
+    for _ in range(RUNS):
+        total = 0.0
+        for x in data:
+            total += x * x
+    loop_ms = (time.perf_counter() - start) / RUNS * 1000
+
+    start = time.perf_counter()
+    for _ in range(RUNS):
+        result = (data ** 2).sum()
+    vec_ms = (time.perf_counter() - start) / RUNS * 1000
+
+    speedup = loop_ms / vec_ms
+    print(f"{N:&gt;10,}  {loop_ms:&gt;10.3f}  {vec_ms:&gt;10.4f}  {speedup:&gt;10.1f}x")
+</code></pre>
+<p>Typical output:</p>
+<pre><code>         N     loop ms      vec ms     speedup
+----------------------------------------------
+        10       0.005      0.0030        1.7x
+       100       0.040      0.0032       12.5x
+     1,000       0.360      0.0040       90.0x
+    10,000       3.420      0.0155      220.6x
+   100,000      34.100      0.1420      240.1x
+ 1,000,000     320.400      1.8200      176.1x
+</code></pre>
+<p>The crossover lives somewhere around N=10 to N=100. Below it, the vectorized path’s fixed overhead dominates and the loop can be faster. Above it, the speedup grows until the array outgrows cache, at which point memory bandwidth becomes the bottleneck for both paths and the ratio stabilizes.</p>
+<h2 id="the-crossover-and-when-to-care"><a class="header" href="#the-crossover-and-when-to-care">The Crossover and When to Care</a></h2>
+<p>The practical rule: if N is known at design time and is reliably small (single digits), a list comprehension is fine. For anything called at batch scale, with N in the thousands or more, the vectorized path is the default. The measurement above is not an academic exercise; it is the decision rule.</p>
+<p>At inference time, “batch” is the unit of work. A scoring function called on a batch of 512 embedding vectors runs the reduction 512 times per call. If each call spends 300 ms in a Python loop instead of 2 ms in a ufunc, the difference is 150 seconds versus one second per batch. The vectorized path is not a micro-optimization; it is the budget.</p>
+<h2 id="core-concepts-13"><a class="header" href="#core-concepts-13">Core Concepts</a></h2>
+<ul>
+<li>A vectorized reduction pays Python interpreter overhead once (the call) instead of once per element; inside the C loop, elements are raw typed values and SIMD can process several per clock, so the speedup grows with N.</li>
+<li>At small N (typically below ~100), the vectorized path’s fixed dispatch cost can exceed the per-element saving, meaning a Python loop may be faster; measuring this crossover is what “vectorization discipline” means.</li>
+<li>The speedup ratio is not constant: it grows as N increases from the crossover until the working set outgrows cache, where memory bandwidth limits both paths and the ratio stabilizes.</li>
+<li>At batch inference scale, the choice between a loop and a vectorized op is a throughput decision, not a style preference; the difference is measured in seconds per batch, not microseconds.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module4/when-the-array-wins/">
+<p><strong>Build It in Claude Code:</strong> Extend <code>vectorization_report.py</code> with a speedup benchmark: import <code>time_sum</code> from <code>measure.py</code>, time a loop vs a vectorized sum-of-squares across a range of array sizes, and print the speedup at each size.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-hidden-cost-of-apply"><a class="header" href="#the-hidden-cost-of-apply">The Hidden Cost of apply</a></h1>
+<p>M3 established the fact: <code>df.apply(func, axis=1)</code> is a disguised per-row Python loop. This lesson puts a number on it.</p>
+<h2 id="what-you-build-4"><a class="header" href="#what-you-build-4">What You Build</a></h2>
+<p>You extend <code>vectorization_report.py</code> with <code>apply_tax_report()</code>: a function that times <code>df.apply(axis=1)</code> against the vectorized column expression on a generated frame, prints the measured tax at each scale, and adds the apply profile to the running report.</p>
+<h2 id="the-apply-tax-measured"><a class="header" href="#the-apply-tax-measured">The Apply Tax, Measured</a></h2>
+<p>When pandas executes <code>df.apply(func, axis=1)</code>, it constructs a <code>Series</code> for each row, passes it to your function, collects the return value, and repeats. The overhead is not just the Python interpreter round-trip per element; it is the <code>Series</code> object construction per row on top of that. Each call allocates, each call type-checks, and pandas cannot batch these into a single typed C loop the way a column expression can.</p>
+<p>Time the contrast directly:</p>
+<pre><code class="language-python">import pandas as pd
+import numpy as np
+import time
+
+rng = np.random.default_rng(42)
+N = 500_000
+df = pd.DataFrame({
+    "score":  rng.standard_normal(N),
+    "weight": rng.uniform(0.5, 1.5, N),
+})
+
+# apply path: one Python call per row
+start = time.perf_counter()
+result_apply = df.apply(lambda row: row["score"] * row["weight"], axis=1)
+apply_ms = (time.perf_counter() - start) * 1000
+
+# vectorized path: one C-level column multiply
+start = time.perf_counter()
+result_vec = df["score"] * df["weight"]
+vec_ms = (time.perf_counter() - start) * 1000
+
+print(f"N={N:,}: apply {apply_ms:.1f} ms | vectorized {vec_ms:.2f} ms | tax {apply_ms/vec_ms:.0f}x")
+</code></pre>
+<p>At 500,000 rows, the output looks like this:</p>
+<pre><code>N=500,000: apply 4820.3 ms | vectorized 1.84 ms | tax 2619x
+</code></pre>
+<p>The exact ratio varies by machine. The pattern is stable: the gap widens with row count, because the apply overhead scales linearly while the vectorized path benefits from SIMD and cache. The pandas documentation confirms this directly: vectorized operations leverage optimized C functions via NumPy to process entire arrays at once, avoiding per-row Python function calls. The “Explore and Analyze Data with Python” module on Microsoft Learn grounds the same principle: typed NumPy array operations outperform the equivalent work over Python sequences by a wide margin (<a href="https://learn.microsoft.com/training/modules/explore-analyze-data-with-python/2-explore-data-numpy-pandas">learn.microsoft.com/training/modules/explore-analyze-data-with-python/2-explore-data-numpy-pandas</a>).</p>
+<h2 id="why-the-gap-widens-with-scale"><a class="header" href="#why-the-gap-widens-with-scale">Why the Gap Widens with Scale</a></h2>
+<p>At 100 rows, the apply overhead is invisible. Both paths finish in microseconds and the difference is lost in measurement noise. At 100,000 rows, apply’s linear overhead starts showing. At one million rows, the tax is a hard production fact: batch scoring jobs that take twenty minutes instead of two almost always have an apply call that nobody profiled.</p>
+<p>The apply overhead is not flat; it compounds. <code>Series</code> construction takes roughly constant time per row, so the total cost is O(N). The vectorized column multiply pays interpreter overhead once, then hands the whole buffer to a compiled loop. At scale, the ratio does not plateau; it stays wide.</p>
+<h2 id="the-decision-checklist"><a class="header" href="#the-decision-checklist">The Decision Checklist</a></h2>
+<p>Before you reach for <code>apply(axis=1)</code>, run this check:</p>
+<ol>
+<li>Does the function touch only values in the same row? If so, the vectorized column expression handles it. Column arithmetic, <code>.str</code> accessor methods, <code>np.where</code>, and <code>np.select</code> all operate on whole columns without a Python call per row.</li>
+<li>Does the logic branch on a condition across columns? <code>np.where</code> and <code>np.select</code> replace most row-wise conditionals without apply.</li>
+<li>Does the function need to call an external library that accepts scalars only, not arrays? That is a legitimate apply case.</li>
+<li>Does the function need data from other rows in the same group (e.g., subtract each row from its group mean)? Use <code>groupby().transform()</code> instead of apply.</li>
+</ol>
+<p>If you reach step 3 and can confirm the library truly has no vectorized path, apply is acceptable. Document it.</p>
+<h2 id="when-apply-is-genuinely-the-right-tool"><a class="header" href="#when-apply-is-genuinely-the-right-tool">When apply Is Genuinely the Right Tool</a></h2>
+<p>Two cases survive the checklist:</p>
+<p><strong>An external library that takes scalars.</strong> A model library with a <code>predict(x: float) -&gt; float</code> signature has no batch path. You cannot vectorize what the library won’t accept. Use apply, and note it: <code># apply: sklearn_custom_predictor takes scalar, no batch path</code>.</p>
+<p><strong>Group-wise logic that requires the full group.</strong> When the function for a row depends on the group’s aggregate (fitting a per-group model, running a sliding window), <code>groupby().apply()</code> is the right shape. This is not the <code>axis=1</code> row-loop case; it is a different API for a different problem.</p>
+<p>The rest is a vectorized column expression waiting to be written.</p>
+<h2 id="the-cheaper-escape-hatches"><a class="header" href="#the-cheaper-escape-hatches">The Cheaper Escape Hatches</a></h2>
+<p>When you cannot avoid row-wise dispatch but the function is simple, two tools cut the tax:</p>
+<p><code>np.where(condition, x, y)</code> replaces the most common apply pattern: a conditional that reads two columns and picks one. No <code>apply</code>, no <code>Series</code> construction.</p>
+<p><code>Series.map(dict)</code> replaces element-wise lookup with a hash-table join. When the “function” is a mapping from one set of values to another, <code>.map</code> is faster than <code>apply</code> because it delegates to a C-level loop over scalars, not a Python callable per row.</p>
+<p>For string columns, the <code>.str</code> accessor exposes vectorized string operations: <code>.str.upper()</code>, <code>.str.contains()</code>, <code>.str.replace()</code>. An apply that wraps a string operation is always replaceable by <code>.str</code>.</p>
+<p>The batch scoring job that times out in production is almost always an <code>apply</code> that ran unnoticed at 200 rows during development and surfaced its true cost at two million.</p>
+<h2 id="core-concepts-14"><a class="header" href="#core-concepts-14">Core Concepts</a></h2>
+<ul>
+<li><code>df.apply(func, axis=1)</code> pays interpreter overhead plus <code>Series</code> construction per row; the total cost scales linearly with N, making the tax grow wider as the frame grows.</li>
+<li>The vectorized column expression pays interpreter overhead once, then hands the buffer to a compiled C loop; at 500,000 rows the gap is routinely three to four orders of magnitude.</li>
+<li><code>np.where</code>, <code>np.select</code>, <code>Series.map</code>, and the <code>.str</code> accessor replace the most common <code>apply(axis=1)</code> patterns without leaving Python per row.</li>
+<li>apply earns its place in two cases: a scalar-only external library with no batch path, or group-wise logic via <code>groupby().apply()</code> where the function genuinely requires the full group.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module4/the-hidden-cost-of-apply/">
+<p><strong>Build It in Claude Code:</strong> Extend <code>vectorization_report.py</code> with <code>apply_tax_report()</code>: import <code>time_sum</code> from <code>measure.py</code>, time <code>df.apply(axis=1)</code> against the vectorized column multiply on a generated frame, print the measured tax, assert the results agree and the vectorized path is faster, and exit 0.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="when-not-to-vectorize"><a class="header" href="#when-not-to-vectorize">When Not to Vectorize</a></h1>
+<p>Vectorizing blindly trades a slow job for one that crashes the box. The <code>(N, D)</code> broadcast you learned in M2 is lazy until arithmetic forces it; the moment it materializes, it lands as <code>N * D * itemsize</code> bytes in RAM, all at once, no warning.</p>
+<h2 id="the-memory-blowup-case"><a class="header" href="#the-memory-blowup-case">The Memory Blowup Case</a></h2>
+<p>M2 showed that <code>np.broadcast_to</code> returns a zero-stride view with no new allocation. The cost arrives when you subtract, add, or multiply: NumPy writes the full output buffer. For embeddings, that is immediate.</p>
+<pre><code class="language-python">import numpy as np
+from measure import broadcast_allocates   # import path set up in the M4 exercise
+
+# 50 000 embeddings, 1 536 dimensions, float32
+N, D = 50_000, 1_536
+mean = np.zeros((1, D), dtype=np.float32)
+
+stats = broadcast_allocates(mean, (N, D))
+
+print(f"source (mean row):    {stats['source_bytes']:&gt;14,} bytes")
+print(f"view (lazy):          {stats['view_bytes']:&gt;14,} bytes")
+print(f"result (materialized):{stats['result_bytes']:&gt;14,} bytes")
+print(f"view still lazy?      {bool(stats['view_shares'])}")
+</code></pre>
+<p>Expected output on any platform:</p>
+<pre><code>source (mean row):              6,144 bytes
+view (lazy):            307,200,000 bytes
+result (materialized):  307,200,000 bytes
+view still lazy?      True
+</code></pre>
+<p>307 MB for one subtraction step. A batch of 50 000 embeddings is not exotic; Azure Machine Learning’s own scoring guidance warns that “whether or not you can load the entire mini-batch in memory depends on the size of the mini-batch” and that out-of-memory exceptions are a routine design constraint in production inference pipelines (<a href="https://learn.microsoft.com/azure/machine-learning/how-to-batch-scoring-script?view=azureml-api-2#best-practices-for-writing-scoring-scripts">learn.microsoft.com/azure/machine-learning/how-to-batch-scoring-script</a>). The materialization is not a bug; it is how array arithmetic works. The discipline is knowing it is coming before you commit to the shape.</p>
+<h2 id="the-readability-cost"><a class="header" href="#the-readability-cost">The Readability Cost</a></h2>
+<p>Memory is one cost. The second is maintenance. Consider centering embeddings in two ways:</p>
+<pre><code class="language-python"># Version A: loop
+def center_loop(embeddings: np.ndarray) -&gt; np.ndarray:
+    mean = embeddings.mean(axis=0)
+    result = np.empty_like(embeddings)
+    for i in range(len(embeddings)):
+        result[i] = embeddings[i] - mean
+    return result
+
+# Version B: one-liner vectorized
+def center_vec(embeddings: np.ndarray) -&gt; np.ndarray:
+    return embeddings - embeddings.mean(axis=0)
+</code></pre>
+<p>Version B is the right call here: it is faster, it fits in memory at normal batch sizes, and any NumPy practitioner reads it at a glance. Now consider a more elaborate version that a deadline-rushed engineer might write:</p>
+<pre><code class="language-python"># Version C: clever, but opaque
+def center_weird(e):
+    return e - e[np.arange(len(e))].mean(0)[None]
+</code></pre>
+<p>The <code>[np.arange(len(e))]</code> is a no-op index that copies the array, paying full allocation twice. The <code>[None]</code> inserts a size-1 axis to broadcast the mean. It produces the correct answer, passes tests, and will cost the next reader ten minutes to verify. Clever is not the same as clear. When a vectorized expression requires a comment longer than the line itself, the loop version is not the slower option; it is the cheaper one.</p>
+<h2 id="the-chunking-alternative"><a class="header" href="#the-chunking-alternative">The Chunking Alternative</a></h2>
+<p>When the full vectorized form blows the memory budget, the fix is to process the data in slices instead of refusing to vectorize at all.</p>
+<pre><code class="language-python">def center_chunked(
+    embeddings: np.ndarray,
+    chunk_size: int = 5_000,
+) -&gt; np.ndarray:
+    """Center embeddings in chunks to cap peak memory at chunk_size * D * itemsize."""
+    mean = embeddings.mean(axis=0)           # shape (D,) -- cheap, stays small
+    result = np.empty_like(embeddings)
+    for start in range(0, len(embeddings), chunk_size):
+        end = min(start + chunk_size, len(embeddings))
+        result[start:end] = embeddings[start:end] - mean  # one chunk at a time
+    return result
+</code></pre>
+<p>With <code>chunk_size=5_000</code> and <code>D=1_536</code> float32, each loop iteration peaks at 30 MB instead of 307 MB. The loop is not a retreat; it is a budget control. The vectorized arithmetic inside each slice still runs at C speed.</p>
+<h2 id="the-decision-rule"><a class="header" href="#the-decision-rule">The Decision Rule</a></h2>
+<p>Three costs, measured before you choose:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Cost</th><th>Measure it with</th><th>Acceptable threshold</th></tr>
+</thead>
+<tbody>
+<tr><td>Speed</td><td><code>time_sum</code> from <code>measure.py</code></td><td>Is it faster than the loop?</td></tr>
+<tr><td>Memory</td><td><code>broadcast_allocates</code> from <code>measure.py</code></td><td>Does the materialized buffer fit your budget?</td></tr>
+<tr><td>Clarity</td><td>Can the next reader understand it in 30 seconds?</td><td>If not, the loop is the default.</td></tr>
+</tbody>
+</table>
+</div>
+<p>Vectorize when it is faster, fits in memory, and stays readable. Keep the loop when it does not. Chunk when it would fit in pieces but not whole. The decision is not “is there a one-liner?”; it is “what is the cheapest way to get a correct result on production hardware with a budget?”</p>
+<h2 id="core-concepts-15"><a class="header" href="#core-concepts-15">Core Concepts</a></h2>
+<ul>
+<li>A broadcast that materializes a large intermediate allocates <code>N * D * itemsize</code> bytes at the moment of arithmetic, not lazily; <code>broadcast_allocates</code> from <code>measure.py</code> makes that cost visible before it becomes a crash.</li>
+<li>A vectorized expression is only superior when it wins on all three axes: speed, memory, and readability; winning on one while losing the other two is a bad trade.</li>
+<li>Chunking is not a fallback to loops: it applies vectorized arithmetic one slice at a time, keeping peak memory bounded without sacrificing C-speed element operations.</li>
+<li>The decision rule is a three-way check, not a reflex: measure speed with <code>time_sum</code>, measure memory with <code>broadcast_allocates</code>, and ask whether the next reader can verify the expression in 30 seconds cold.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module4/when-not-to-vectorize/">
+<p><strong>Build It in Claude Code:</strong> Extend <code>vectorization_report.py</code> with a memory check that imports <code>broadcast_allocates</code> and <code>time_sum</code> from the M1 <code>measure.py</code>, runs both fixtures (one where vectorizing wins, one where it OOMs), and prints a final “vectorize / keep the loop / chunk it” recommendation with the numbers behind it.</p>
 </div>
 
 

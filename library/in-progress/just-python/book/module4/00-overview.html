@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Broadcasting - Just Python — Applied Python for AI Engineers</title>
+        <title>Overview - Just Python — Applied Python for AI Engineers</title>
 
 
         <!-- Custom HTML head -->
@@ -177,103 +177,43 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="broadcasting"><a class="header" href="#broadcasting">Broadcasting</a></h1>
-<p>Subtracting the per-feature mean from a 512x1536 embedding matrix takes one line in NumPy, no loop, no copy of the mean array. That is broadcasting: NumPy aligns trailing dimensions, expands size-1 axes conceptually, and performs the arithmetic in C. Knowing the rule is the difference between writing that line with confidence and puzzling over a <code>ValueError</code> at 2 AM.</p>
-<h2 id="the-alignment-rule"><a class="header" href="#the-alignment-rule">The Alignment Rule</a></h2>
-<p>NumPy compares two arrays’ shapes from the right (trailing dimensions) and works left. At each position, the dimensions are compatible when they are equal or one of them is 1. If an array has fewer dimensions than the other, NumPy pads its shape with 1s on the left until the ranks match.</p>
-<pre><code class="language-python">import numpy as np
-
-embeddings = np.random.randn(512, 1536).astype(np.float32)  # shape (512, 1536)
-mean       = np.mean(embeddings, axis=0)                    # shape (1536,)
-
-# alignment check:
-#   embeddings:  512 x 1536
-#   mean:              1536   &lt;- NumPy pads left: becomes (1, 1536)
-#   result:      512 x 1536
-
-centered = embeddings - mean   # one line, no loop
-
-print(embeddings.shape)   # (512, 1536)
-print(mean.shape)         # (1536,)
-print(centered.shape)     # (512, 1536)
-</code></pre>
-<p>The 1536 trailing dimensions match, so the subtraction broadcasts the <code>(1536,)</code> mean across all 512 rows. The result is a new <code>(512, 1536)</code> array.</p>
-<p>Microsoft Learn’s “Explore and Analyze Data with Python” module introduces these vectorized array operations as the standard way to process numerical data with NumPy (<a href="https://learn.microsoft.com/training/modules/explore-analyze-data-with-python/2-explore-data-numpy-pandas">learn.microsoft.com/training/modules/explore-analyze-data-with-python</a>).</p>
-<h2 id="the-size-1-axis"><a class="header" href="#the-size-1-axis">The Size-1 Axis</a></h2>
-<p>Sometimes you want to broadcast across <em>columns</em> rather than rows. The shape <code>(512, 1)</code> broadcasts across all 1536 columns of a <code>(512, 1536)</code> array, because the trailing <code>1</code> expands to match <code>1536</code>.</p>
-<pre><code class="language-python">row_max = np.max(embeddings, axis=1, keepdims=True)  # shape (512, 1)
-
-# alignment check:
-#   embeddings:  512 x 1536
-#   row_max:     512 x 1       &lt;- the 1 expands to 1536
-#   result:      512 x 1536
-
-scaled = embeddings / row_max
-
-print(row_max.shape)   # (512, 1)
-print(scaled.shape)    # (512, 1536)
-</code></pre>
-<p><code>keepdims=True</code> is the lever here: it preserves the axis that <code>max</code> collapsed, delivering shape <code>(512, 1)</code> instead of <code>(512,)</code>. A <code>(512,)</code> mean would not broadcast correctly against <code>(512, 1536)</code> because the trailing dimensions would be <code>1536</code> vs <code>512</code>.</p>
-<p>When <code>keepdims</code> is not available (for example, on an intermediate array you computed earlier), reshape to insert the size-1 axis:</p>
-<pre><code class="language-python">norms = np.linalg.norm(embeddings, axis=1)         # shape (512,)
-norms_col = norms.reshape(512, 1)                   # shape (512, 1)
-# equivalently:
-norms_col = norms[:, np.newaxis]                    # shape (512, 1)
-
-unit = embeddings / norms_col                       # (512, 1536) / (512, 1)
-print(unit.shape)                                   # (512, 1536)
-</code></pre>
-<p><code>np.newaxis</code> is just <code>None</code>; it inserts a length-1 axis at the chosen position. Use it whenever you need to promote a 1-D array into a column vector for row-wise broadcast. Reshaping a 1-D reduction to <code>(N, 1)</code> before dividing an <code>(N, D)</code> matrix is the standard normalization move you will reach for constantly.</p>
-<h2 id="lazy-view-vs-materialized-buffer"><a class="header" href="#lazy-view-vs-materialized-buffer">Lazy View vs. Materialized Buffer</a></h2>
-<p>Broadcasting does not allocate memory for the expanded shape until an arithmetic operation forces it. You can inspect this with <code>np.broadcast_to</code>:</p>
-<pre><code class="language-python">mean_row = mean[np.newaxis, :]               # shape (1, 1536)
-view = np.broadcast_to(mean_row, (512, 1536))  # shape (512, 1536): no copy
-
-print(view.shape)                            # (512, 1536)
-print(view.nbytes)                           # 3,145,728 -- the logical size it reports
-print(view.base.nbytes)                      # 6,144 -- the actual backing buffer
-print(np.shares_memory(view, mean))          # True
-
-# Arithmetic forces materialization:
-result = view + 0.0                          # new buffer allocated
-
-print(result.nbytes)                         # 3,145,728 bytes (512 * 1536 * 4)
-print(np.shares_memory(result, mean))        # False
-</code></pre>
-<p><code>view.nbytes</code> reports the logical size of the broadcast shape, 3,145,728 bytes, but no buffer of that size exists yet: <code>np.broadcast_to</code> returns a read-only view with zero-strides on the broadcast axes, and the real backing memory is still the <code>(1, 1536)</code> source at 6,144 bytes (<code>view.base.nbytes</code>). <code>np.shares_memory(view, mean)</code> returning <code>True</code> is the proof. The moment you write <code>embeddings - mean</code>, NumPy allocates the full <code>(512, 1536)</code> output buffer. M1’s strides lesson established how zero-strides achieve this without a copy; the key thing to carry here is <em>when</em> the materialization happens, and that it scales with output size.</p>
-<h2 id="when-broadcasting-fails"><a class="header" href="#when-broadcasting-fails">When Broadcasting Fails</a></h2>
-<p>If the trailing dimensions are neither equal nor 1, NumPy raises <code>ValueError</code>:</p>
-<pre><code class="language-python">a = np.zeros((512, 1536))
-b = np.zeros((512,))       # trailing dim is 512, not 1536 or 1
-
-try:
-    _ = a - b
-except ValueError as e:
-    print(e)
-    # operands could not be broadcast together with shapes (512,1536) (512,)
-</code></pre>
-<p>The fix is always the same: decide which axis <code>b</code> represents and reshape or add a new axis to make the trailing dimensions line up. A <code>(512,)</code> row-wise bias becomes <code>(512, 1)</code> via <code>b[:, np.newaxis]</code>.</p>
-<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
-<ul>
-<li>Broadcasting aligns shapes from the right (trailing dimension first); NumPy pads the shorter shape with 1s on the left, then checks: each pair of dimensions must be equal or one must be 1.</li>
-<li>A size-1 axis on either array expands to match the other; use <code>keepdims=True</code> on reductions, or <code>[:, np.newaxis]</code> / <code>reshape</code>, to place that axis correctly before broadcasting.</li>
-<li><code>np.broadcast_to</code> returns a read-only zero-stride view with no new allocation; an arithmetic operation (subtraction, division) forces materialization of the full output buffer.</li>
-<li>Broadcasting fails with <code>ValueError</code> when trailing dimensions are neither equal nor 1; the fix is always to reshape one operand so its dimensions align.</li>
-</ul>
-<div class="claude-handoff" data-exercise="exercises/module2/broadcasting/">
-<p><strong>Try It in Claude Code:</strong> Add <code>broadcast_allocates</code> to your existing <code>measure.py</code> to prove that a broadcast view is near-zero bytes until an arithmetic op forces the full buffer.</p>
+                        <h1 id="module-4-vectorization-discipline"><a class="header" href="#module-4-vectorization-discipline">Module 4: Vectorization Discipline</a></h1>
+<h2 id="what-this-module-covers"><a class="header" href="#what-this-module-covers">What This Module Covers</a></h2>
+<p>Module 1 built the cost model, Module 2 the NumPy operations, Module 3 the Pandas layer. Module 4 is the judgment that ties them together. You already know how to vectorize; this module teaches when to, when not to, and how to prove the call with numbers. The discipline is not “vectorize everything.” It is profile first, measure the three costs (speed, memory, readability), then decide and justify.</p>
+<p>This is the difference between an engineer who rewrites the wrong loop on a hunch and one who measures, changes one thing, and measures again. A take-home that hands you a slow pipeline is testing exactly this: can you find the real bottleneck, quantify the fix, and recognize the case where the clever one-liner is the wrong answer.</p>
+<p>The work stays grounded in the AI-engineering call site: the batch job that times out, the <code>apply</code> that never scales, the broadcast that runs out of memory on a real corpus.</p>
+<h2 id="arc-of-lessons"><a class="header" href="#arc-of-lessons">Arc of Lessons</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Lesson</th><th>Title</th><th>What It Teaches</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>Profile Before You Optimize</td><td>Measure before you rewrite; reach for <code>measure.py</code>’s <code>time_sum</code>, because the bottleneck is rarely where you guess</td></tr>
+<tr><td>2</td><td>When the Array Wins</td><td>The loop-to-C-loop speedup, measured, and how it grows with N up to the cache limit; the crossover where a small loop can win</td></tr>
+<tr><td>3</td><td>The Hidden Cost of apply</td><td>Put a number on the <code>apply(axis=1)</code> tax M3 named, watch it widen with scale, and map the few cases where <code>apply</code> is genuinely unavoidable</td></tr>
+<tr><td>4</td><td>When Not to Vectorize</td><td>The broadcast that blows the memory budget, the one-liner that costs readability, and chunking as the third option; the decision rule that closes the module</td></tr>
+</tbody>
+</table>
 </div>
-
+<h2 id="throughline-artifact"><a class="header" href="#throughline-artifact">Throughline Artifact</a></h2>
+<p>Module 4 is where the artifact chain pays off. Modules 1 through 3 each <em>added</em> one function to <code>measure.py</code>. Module 4 builds a new artifact, <code>vectorization_report.py</code> (at <code>exercises/module4/</code>), that <strong>imports <code>measure.py</code> off disk and composes its functions</strong>: it calls <code>time_sum</code> to profile a loop against a vectorized version, reuses <code>broadcast_allocates</code> to check whether the vectorized path blows the memory budget, and emits a “vectorize / keep the loop / chunk it” recommendation with the numbers behind it. The reuse is real composition, not a rewrite: the report imports the prior artifact and calls it. This is the same pattern the portfolio modules (M6, M7, M8) use, practiced here for the first time.</p>
+<h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
+<ul>
+<li>Modules 1 through 3: the cost model, the NumPy operations, and the Pandas layer, including M3’s finding that <code>apply(axis=1)</code> is a disguised per-row loop. Module 4 quantifies and decides; it does not re-teach the mechanics.</li>
+<li>The <code>measure.py</code> you have built across M1 through M3, at <code>exercises/module1/the-cost-of-a-python-list/measure.py</code>. Module 4 imports <code>time_sum</code> and <code>broadcast_allocates</code> from it.</li>
+<li>A Python 3.11+ environment with NumPy and pandas installed (<code>pip install numpy pandas</code>).</li>
+</ul>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module2/vectorized-math-and-ufuncs.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module3/cleaning-and-missing-data.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module2/advanced-indexing.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module4/profile-before-you-optimize.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -283,11 +223,11 @@ except ValueError as e:
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module2/vectorized-math-and-ufuncs.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module3/cleaning-and-missing-data.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module2/advanced-indexing.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module4/profile-before-you-optimize.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

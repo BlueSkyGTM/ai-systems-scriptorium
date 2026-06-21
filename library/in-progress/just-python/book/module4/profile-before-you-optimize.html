@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Broadcasting - Just Python — Applied Python for AI Engineers</title>
+        <title>Profile Before You Optimize - Just Python — Applied Python for AI Engineers</title>
 
 
         <!-- Custom HTML head -->
@@ -177,91 +177,88 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="broadcasting"><a class="header" href="#broadcasting">Broadcasting</a></h1>
-<p>Subtracting the per-feature mean from a 512x1536 embedding matrix takes one line in NumPy, no loop, no copy of the mean array. That is broadcasting: NumPy aligns trailing dimensions, expands size-1 axes conceptually, and performs the arithmetic in C. Knowing the rule is the difference between writing that line with confidence and puzzling over a <code>ValueError</code> at 2 AM.</p>
-<h2 id="the-alignment-rule"><a class="header" href="#the-alignment-rule">The Alignment Rule</a></h2>
-<p>NumPy compares two arrays’ shapes from the right (trailing dimensions) and works left. At each position, the dimensions are compatible when they are equal or one of them is 1. If an array has fewer dimensions than the other, NumPy pads its shape with 1s on the left until the ranks match.</p>
+                        <h1 id="profile-before-you-optimize"><a class="header" href="#profile-before-you-optimize">Profile Before You Optimize</a></h1>
+<p>Engineers who guess wrong about where time goes rewrite the wrong loop. Measuring first costs two minutes; rewriting the wrong function costs a day.</p>
+<h2 id="the-guessing-trap"><a class="header" href="#the-guessing-trap">The Guessing Trap</a></h2>
+<p>Your intuition about what is slow is built from general principles, not from your actual data. You know Python loops are slower than NumPy vectorization, so when a pipeline stalls, you reach for the loop and start rewriting. But the loop is often not the bottleneck. The bottleneck is the I/O call above it, the redundant sort below it, or the object construction no one touches. Guessing replaces the wrong thing.</p>
+<p>The discipline is simple: time it first, change one thing, time it again. No measurement before the change means no proof the change helped.</p>
+<h2 id="what-time_sum-already-gives-you"><a class="header" href="#what-time_sum-already-gives-you">What <code>time_sum</code> Already Gives You</a></h2>
+<p>The <code>measure.py</code> helper you built in Module 1 includes <code>time_sum</code>, a function that runs a callable <code>n</code> times via <code>timeit.timeit</code> and returns the mean elapsed seconds:</p>
+<pre><code class="language-python">import timeit
+
+def time_sum(fn, n: int = 3) -&gt; float:
+    """Return mean wall-clock seconds for fn() over n runs."""
+    total = timeit.timeit(fn, number=n)
+    return total / n
+</code></pre>
+<p><code>timeit.timeit</code> does three things that naive <code>time.time()</code> brackets miss. It disables garbage collection during the run, so GC pauses do not contaminate the measurement. It repeats the call <code>number</code> times and returns the total, which averages out scheduling jitter. And it runs the callable in a clean namespace, so import overhead does not appear in the result. Dividing by <code>n</code> gives you the mean per-call cost.</p>
+<p>Import it directly:</p>
+<pre><code class="language-python">import sys
+import pathlib
+
+# resolve measure.py relative to this file (exercises/module4/vectorization_report.py)
+_measure = pathlib.Path(__file__).resolve().parent.parent / "module1" / "the-cost-of-a-python-list"
+sys.path.insert(0, str(_measure))
+from measure import time_sum
+</code></pre>
+<h2 id="timing-a-loop-vs-a-vectorized-sum"><a class="header" href="#timing-a-loop-vs-a-vectorized-sum">Timing a Loop vs. a Vectorized Sum</a></h2>
+<p>Take a concrete problem: sum 500,000 floats. Two implementations, one measurement each.</p>
 <pre><code class="language-python">import numpy as np
 
-embeddings = np.random.randn(512, 1536).astype(np.float32)  # shape (512, 1536)
-mean       = np.mean(embeddings, axis=0)                    # shape (1536,)
+rng = np.random.default_rng(42)
+data = rng.standard_normal(500_000).astype(np.float64)
+floats = data.tolist()
 
-# alignment check:
-#   embeddings:  512 x 1536
-#   mean:              1536   &lt;- NumPy pads left: becomes (1, 1536)
-#   result:      512 x 1536
+loop_time = time_sum(lambda: sum(floats))
+vec_time  = time_sum(lambda: data.sum())
 
-centered = embeddings - mean   # one line, no loop
-
-print(embeddings.shape)   # (512, 1536)
-print(mean.shape)         # (1536,)
-print(centered.shape)     # (512, 1536)
+print(f"loop sum:   {loop_time:.5f} s")
+print(f"vector sum: {vec_time:.5f} s")
+print(f"speedup:    {loop_time / vec_time:.1f}x")
 </code></pre>
-<p>The 1536 trailing dimensions match, so the subtraction broadcasts the <code>(1536,)</code> mean across all 512 rows. The result is a new <code>(512, 1536)</code> array.</p>
-<p>Microsoft Learn’s “Explore and Analyze Data with Python” module introduces these vectorized array operations as the standard way to process numerical data with NumPy (<a href="https://learn.microsoft.com/training/modules/explore-analyze-data-with-python/2-explore-data-numpy-pandas">learn.microsoft.com/training/modules/explore-analyze-data-with-python</a>).</p>
-<h2 id="the-size-1-axis"><a class="header" href="#the-size-1-axis">The Size-1 Axis</a></h2>
-<p>Sometimes you want to broadcast across <em>columns</em> rather than rows. The shape <code>(512, 1)</code> broadcasts across all 1536 columns of a <code>(512, 1536)</code> array, because the trailing <code>1</code> expands to match <code>1536</code>.</p>
-<pre><code class="language-python">row_max = np.max(embeddings, axis=1, keepdims=True)  # shape (512, 1)
-
-# alignment check:
-#   embeddings:  512 x 1536
-#   row_max:     512 x 1       &lt;- the 1 expands to 1536
-#   result:      512 x 1536
-
-scaled = embeddings / row_max
-
-print(row_max.shape)   # (512, 1)
-print(scaled.shape)    # (512, 1536)
+<p>On a typical machine you will see something like:</p>
+<pre><code>loop sum:   0.01823 s
+vector sum: 0.00041 s
+speedup:    44.5x
 </code></pre>
-<p><code>keepdims=True</code> is the lever here: it preserves the axis that <code>max</code> collapsed, delivering shape <code>(512, 1)</code> instead of <code>(512,)</code>. A <code>(512,)</code> mean would not broadcast correctly against <code>(512, 1536)</code> because the trailing dimensions would be <code>1536</code> vs <code>512</code>.</p>
-<p>When <code>keepdims</code> is not available (for example, on an intermediate array you computed earlier), reshape to insert the size-1 axis:</p>
-<pre><code class="language-python">norms = np.linalg.norm(embeddings, axis=1)         # shape (512,)
-norms_col = norms.reshape(512, 1)                   # shape (512, 1)
-# equivalently:
-norms_col = norms[:, np.newaxis]                    # shape (512, 1)
+<p>Those numbers are the evidence. Before you saw them, you might have guessed 5x or 100x; the actual ratio is what drives the decision. That print statement is the proof that the rewrite was worth doing.</p>
+<h2 id="the-three-step-protocol"><a class="header" href="#the-three-step-protocol">The Three-Step Protocol</a></h2>
+<p>Every optimization decision follows the same three steps:</p>
+<ol>
+<li>Time the current code. Record the number.</li>
+<li>Change exactly one thing.</li>
+<li>Time the new code. Compare the numbers.</li>
+</ol>
+<p>“Change exactly one thing” is load-bearing. If you swap both the data structure and the algorithm in the same commit, you cannot tell which change produced the gain. The measurement only holds when the experiment is controlled.</p>
+<p>This is the same discipline the Azure Well-Architected Framework calls out in its Performance Efficiency pillar: instrument code to identify hot paths, then prioritize optimizing those hot paths and nothing else (<a href="https://learn.microsoft.com/azure/well-architected/performance-efficiency/optimize-code-infrastructure">learn.microsoft.com/azure/well-architected/performance-efficiency/optimize-code-infrastructure</a>). The principle scales from a single loop to a distributed inference pipeline.</p>
+<h2 id="reading-the-numbers"><a class="header" href="#reading-the-numbers">Reading the Numbers</a></h2>
+<p>Two failure modes appear when engineers read timings without context.</p>
+<p>The first is the cold-run illusion. The first call to a function may be slower than subsequent calls because of caching, JIT warm-up, or lazy imports. <code>time_sum</code> with <code>n=3</code> exposes this: if the first run is 0.050 s and the next two are 0.004 s each, the mean is 0.019 s but the median is 0.004 s. Run <code>n=5</code> or <code>n=10</code> when you see high variance.</p>
+<p>The second is the wrong denominator. A 44x speedup on a function that runs once at startup saves microseconds. The same speedup on a function called inside a batch loop of 100,000 rows saves seconds per request. Time the function in the context where it runs in production.</p>
+<pre><code class="language-python"># Measure in the actual batch context, not in isolation
+BATCH = 10_000
+batch_data = rng.standard_normal((BATCH, 128)).astype(np.float32)
 
-unit = embeddings / norms_col                       # (512, 1536) / (512, 1)
-print(unit.shape)                                   # (512, 1536)
+loop_batch = time_sum(lambda: [batch_data[i].sum() for i in range(BATCH)])
+vec_batch  = time_sum(lambda: batch_data.sum(axis=1))
+
+print(f"loop batch: {loop_batch:.5f} s")
+print(f"vec  batch: {vec_batch:.5f} s")
+print(f"speedup:    {loop_batch / vec_batch:.1f}x")
 </code></pre>
-<p><code>np.newaxis</code> is just <code>None</code>; it inserts a length-1 axis at the chosen position. Use it whenever you need to promote a 1-D array into a column vector for row-wise broadcast. Reshaping a 1-D reduction to <code>(N, 1)</code> before dividing an <code>(N, D)</code> matrix is the standard normalization move you will reach for constantly.</p>
-<h2 id="lazy-view-vs-materialized-buffer"><a class="header" href="#lazy-view-vs-materialized-buffer">Lazy View vs. Materialized Buffer</a></h2>
-<p>Broadcasting does not allocate memory for the expanded shape until an arithmetic operation forces it. You can inspect this with <code>np.broadcast_to</code>:</p>
-<pre><code class="language-python">mean_row = mean[np.newaxis, :]               # shape (1, 1536)
-view = np.broadcast_to(mean_row, (512, 1536))  # shape (512, 1536): no copy
-
-print(view.shape)                            # (512, 1536)
-print(view.nbytes)                           # 3,145,728 -- the logical size it reports
-print(view.base.nbytes)                      # 6,144 -- the actual backing buffer
-print(np.shares_memory(view, mean))          # True
-
-# Arithmetic forces materialization:
-result = view + 0.0                          # new buffer allocated
-
-print(result.nbytes)                         # 3,145,728 bytes (512 * 1536 * 4)
-print(np.shares_memory(result, mean))        # False
-</code></pre>
-<p><code>view.nbytes</code> reports the logical size of the broadcast shape, 3,145,728 bytes, but no buffer of that size exists yet: <code>np.broadcast_to</code> returns a read-only view with zero-strides on the broadcast axes, and the real backing memory is still the <code>(1, 1536)</code> source at 6,144 bytes (<code>view.base.nbytes</code>). <code>np.shares_memory(view, mean)</code> returning <code>True</code> is the proof. The moment you write <code>embeddings - mean</code>, NumPy allocates the full <code>(512, 1536)</code> output buffer. M1’s strides lesson established how zero-strides achieve this without a copy; the key thing to carry here is <em>when</em> the materialization happens, and that it scales with output size.</p>
-<h2 id="when-broadcasting-fails"><a class="header" href="#when-broadcasting-fails">When Broadcasting Fails</a></h2>
-<p>If the trailing dimensions are neither equal nor 1, NumPy raises <code>ValueError</code>:</p>
-<pre><code class="language-python">a = np.zeros((512, 1536))
-b = np.zeros((512,))       # trailing dim is 512, not 1536 or 1
-
-try:
-    _ = a - b
-except ValueError as e:
-    print(e)
-    # operands could not be broadcast together with shapes (512,1536) (512,)
-</code></pre>
-<p>The fix is always the same: decide which axis <code>b</code> represents and reshape or add a new axis to make the trailing dimensions line up. A <code>(512,)</code> row-wise bias becomes <code>(512, 1)</code> via <code>b[:, np.newaxis]</code>.</p>
+<p>The batch context surfaces a far larger absolute gain than the isolated measurement did. The number you optimize against is the one from the real call site.</p>
+<h2 id="what-you-do-not-need-yet"><a class="header" href="#what-you-do-not-need-yet">What You Do Not Need Yet</a></h2>
+<p><code>cProfile</code> and line-by-line profilers are the next tool when <code>timeit</code> tells you a function is slow but you cannot see why. M4 introduces them later. For now, the rule is: if you have not timed it with <code>time_sum</code> or an equivalent, you do not know where the time goes, and you are guessing.</p>
+<p>Knowing the ratio before you rewrite is what separates a productive optimization from a day spent on the wrong problem.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>Broadcasting aligns shapes from the right (trailing dimension first); NumPy pads the shorter shape with 1s on the left, then checks: each pair of dimensions must be equal or one must be 1.</li>
-<li>A size-1 axis on either array expands to match the other; use <code>keepdims=True</code> on reductions, or <code>[:, np.newaxis]</code> / <code>reshape</code>, to place that axis correctly before broadcasting.</li>
-<li><code>np.broadcast_to</code> returns a read-only zero-stride view with no new allocation; an arithmetic operation (subtraction, division) forces materialization of the full output buffer.</li>
-<li>Broadcasting fails with <code>ValueError</code> when trailing dimensions are neither equal nor 1; the fix is always to reshape one operand so its dimensions align.</li>
+<li>Guessing where code is slow is wrong more often than right; the only safe starting point is a measurement from <code>timeit</code> or an equivalent timer that averages out jitter and disables GC.</li>
+<li><code>time_sum(fn, n)</code> wraps <code>timeit.timeit</code> to return the mean per-call cost; import it from <code>measure.py</code> and use it before and after every change.</li>
+<li>The three-step protocol is: measure the baseline, change one thing, measure again; changing more than one thing at once makes the result uninterpretable.</li>
+<li>A speedup ratio is only meaningful at the real call site; a 44x gain on a function called once saves nothing if the bottleneck is the outer batch loop.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module2/broadcasting/">
-<p><strong>Try It in Claude Code:</strong> Add <code>broadcast_allocates</code> to your existing <code>measure.py</code> to prove that a broadcast view is near-zero bytes until an arithmetic op forces the full buffer.</p>
+<div class="claude-handoff" data-exercise="exercises/module4/profile-before-you-optimize/">
+<p><strong>Build It in Claude Code:</strong> Build <code>vectorization_report.py</code>, a script that imports <code>time_sum</code> from <code>measure.py</code> and profiles a plain Python loop against a vectorized sum, printing both timings and the speedup ratio, then asserts the results agree.</p>
 </div>
 
 
@@ -269,11 +266,11 @@ except ValueError as e:
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module2/vectorized-math-and-ufuncs.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module4/00-overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module2/advanced-indexing.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module4/when-the-array-wins.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -283,11 +280,11 @@ except ValueError as e:
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module2/vectorized-math-and-ufuncs.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module4/00-overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module2/advanced-indexing.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module4/when-the-array-wins.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

@@ -31,3 +31,13 @@
 - [Reading and Writing AI Formats](module3/reading-and-writing-ai-formats.md)
 - [Groupby, Merge, and Apply](module3/groupby-merge-apply.md)
 - [Cleaning and Missing Data](module3/cleaning-and-missing-data.md)
+
+---
+
+# Module 4: Vectorization Discipline
+
+- [Overview](module4/00-overview.md)
+- [Profile Before You Optimize](module4/profile-before-you-optimize.md)
+- [When the Array Wins](module4/when-the-array-wins.md)
+- [The Hidden Cost of apply](module4/the-hidden-cost-of-apply.md)
+- [When Not to Vectorize](module4/when-not-to-vectorize.md)

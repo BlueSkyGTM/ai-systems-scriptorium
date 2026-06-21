@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Broadcasting - Just Python — Applied Python for AI Engineers</title>
+        <title>When Not to Vectorize - Just Python — Applied Python for AI Engineers</title>
 
 
         <!-- Custom HTML head -->
@@ -177,91 +177,90 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="broadcasting"><a class="header" href="#broadcasting">Broadcasting</a></h1>
-<p>Subtracting the per-feature mean from a 512x1536 embedding matrix takes one line in NumPy, no loop, no copy of the mean array. That is broadcasting: NumPy aligns trailing dimensions, expands size-1 axes conceptually, and performs the arithmetic in C. Knowing the rule is the difference between writing that line with confidence and puzzling over a <code>ValueError</code> at 2 AM.</p>
-<h2 id="the-alignment-rule"><a class="header" href="#the-alignment-rule">The Alignment Rule</a></h2>
-<p>NumPy compares two arrays’ shapes from the right (trailing dimensions) and works left. At each position, the dimensions are compatible when they are equal or one of them is 1. If an array has fewer dimensions than the other, NumPy pads its shape with 1s on the left until the ranks match.</p>
+                        <h1 id="when-not-to-vectorize"><a class="header" href="#when-not-to-vectorize">When Not to Vectorize</a></h1>
+<p>Vectorizing blindly trades a slow job for one that crashes the box. The <code>(N, D)</code> broadcast you learned in M2 is lazy until arithmetic forces it; the moment it materializes, it lands as <code>N * D * itemsize</code> bytes in RAM, all at once, no warning.</p>
+<h2 id="the-memory-blowup-case"><a class="header" href="#the-memory-blowup-case">The Memory Blowup Case</a></h2>
+<p>M2 showed that <code>np.broadcast_to</code> returns a zero-stride view with no new allocation. The cost arrives when you subtract, add, or multiply: NumPy writes the full output buffer. For embeddings, that is immediate.</p>
 <pre><code class="language-python">import numpy as np
+from measure import broadcast_allocates   # import path set up in the M4 exercise
 
-embeddings = np.random.randn(512, 1536).astype(np.float32)  # shape (512, 1536)
-mean       = np.mean(embeddings, axis=0)                    # shape (1536,)
+# 50 000 embeddings, 1 536 dimensions, float32
+N, D = 50_000, 1_536
+mean = np.zeros((1, D), dtype=np.float32)
 
-# alignment check:
-#   embeddings:  512 x 1536
-#   mean:              1536   &lt;- NumPy pads left: becomes (1, 1536)
-#   result:      512 x 1536
+stats = broadcast_allocates(mean, (N, D))
 
-centered = embeddings - mean   # one line, no loop
-
-print(embeddings.shape)   # (512, 1536)
-print(mean.shape)         # (1536,)
-print(centered.shape)     # (512, 1536)
+print(f"source (mean row):    {stats['source_bytes']:&gt;14,} bytes")
+print(f"view (lazy):          {stats['view_bytes']:&gt;14,} bytes")
+print(f"result (materialized):{stats['result_bytes']:&gt;14,} bytes")
+print(f"view still lazy?      {bool(stats['view_shares'])}")
 </code></pre>
-<p>The 1536 trailing dimensions match, so the subtraction broadcasts the <code>(1536,)</code> mean across all 512 rows. The result is a new <code>(512, 1536)</code> array.</p>
-<p>Microsoft Learn’s “Explore and Analyze Data with Python” module introduces these vectorized array operations as the standard way to process numerical data with NumPy (<a href="https://learn.microsoft.com/training/modules/explore-analyze-data-with-python/2-explore-data-numpy-pandas">learn.microsoft.com/training/modules/explore-analyze-data-with-python</a>).</p>
-<h2 id="the-size-1-axis"><a class="header" href="#the-size-1-axis">The Size-1 Axis</a></h2>
-<p>Sometimes you want to broadcast across <em>columns</em> rather than rows. The shape <code>(512, 1)</code> broadcasts across all 1536 columns of a <code>(512, 1536)</code> array, because the trailing <code>1</code> expands to match <code>1536</code>.</p>
-<pre><code class="language-python">row_max = np.max(embeddings, axis=1, keepdims=True)  # shape (512, 1)
-
-# alignment check:
-#   embeddings:  512 x 1536
-#   row_max:     512 x 1       &lt;- the 1 expands to 1536
-#   result:      512 x 1536
-
-scaled = embeddings / row_max
-
-print(row_max.shape)   # (512, 1)
-print(scaled.shape)    # (512, 1536)
+<p>Expected output on any platform:</p>
+<pre><code>source (mean row):              6,144 bytes
+view (lazy):            307,200,000 bytes
+result (materialized):  307,200,000 bytes
+view still lazy?      True
 </code></pre>
-<p><code>keepdims=True</code> is the lever here: it preserves the axis that <code>max</code> collapsed, delivering shape <code>(512, 1)</code> instead of <code>(512,)</code>. A <code>(512,)</code> mean would not broadcast correctly against <code>(512, 1536)</code> because the trailing dimensions would be <code>1536</code> vs <code>512</code>.</p>
-<p>When <code>keepdims</code> is not available (for example, on an intermediate array you computed earlier), reshape to insert the size-1 axis:</p>
-<pre><code class="language-python">norms = np.linalg.norm(embeddings, axis=1)         # shape (512,)
-norms_col = norms.reshape(512, 1)                   # shape (512, 1)
-# equivalently:
-norms_col = norms[:, np.newaxis]                    # shape (512, 1)
+<p>307 MB for one subtraction step. A batch of 50 000 embeddings is not exotic; Azure Machine Learning’s own scoring guidance warns that “whether or not you can load the entire mini-batch in memory depends on the size of the mini-batch” and that out-of-memory exceptions are a routine design constraint in production inference pipelines (<a href="https://learn.microsoft.com/azure/machine-learning/how-to-batch-scoring-script?view=azureml-api-2#best-practices-for-writing-scoring-scripts">learn.microsoft.com/azure/machine-learning/how-to-batch-scoring-script</a>). The materialization is not a bug; it is how array arithmetic works. The discipline is knowing it is coming before you commit to the shape.</p>
+<h2 id="the-readability-cost"><a class="header" href="#the-readability-cost">The Readability Cost</a></h2>
+<p>Memory is one cost. The second is maintenance. Consider centering embeddings in two ways:</p>
+<pre><code class="language-python"># Version A: loop
+def center_loop(embeddings: np.ndarray) -&gt; np.ndarray:
+    mean = embeddings.mean(axis=0)
+    result = np.empty_like(embeddings)
+    for i in range(len(embeddings)):
+        result[i] = embeddings[i] - mean
+    return result
 
-unit = embeddings / norms_col                       # (512, 1536) / (512, 1)
-print(unit.shape)                                   # (512, 1536)
+# Version B: one-liner vectorized
+def center_vec(embeddings: np.ndarray) -&gt; np.ndarray:
+    return embeddings - embeddings.mean(axis=0)
 </code></pre>
-<p><code>np.newaxis</code> is just <code>None</code>; it inserts a length-1 axis at the chosen position. Use it whenever you need to promote a 1-D array into a column vector for row-wise broadcast. Reshaping a 1-D reduction to <code>(N, 1)</code> before dividing an <code>(N, D)</code> matrix is the standard normalization move you will reach for constantly.</p>
-<h2 id="lazy-view-vs-materialized-buffer"><a class="header" href="#lazy-view-vs-materialized-buffer">Lazy View vs. Materialized Buffer</a></h2>
-<p>Broadcasting does not allocate memory for the expanded shape until an arithmetic operation forces it. You can inspect this with <code>np.broadcast_to</code>:</p>
-<pre><code class="language-python">mean_row = mean[np.newaxis, :]               # shape (1, 1536)
-view = np.broadcast_to(mean_row, (512, 1536))  # shape (512, 1536): no copy
-
-print(view.shape)                            # (512, 1536)
-print(view.nbytes)                           # 3,145,728 -- the logical size it reports
-print(view.base.nbytes)                      # 6,144 -- the actual backing buffer
-print(np.shares_memory(view, mean))          # True
-
-# Arithmetic forces materialization:
-result = view + 0.0                          # new buffer allocated
-
-print(result.nbytes)                         # 3,145,728 bytes (512 * 1536 * 4)
-print(np.shares_memory(result, mean))        # False
+<p>Version B is the right call here: it is faster, it fits in memory at normal batch sizes, and any NumPy practitioner reads it at a glance. Now consider a more elaborate version that a deadline-rushed engineer might write:</p>
+<pre><code class="language-python"># Version C: clever, but opaque
+def center_weird(e):
+    return e - e[np.arange(len(e))].mean(0)[None]
 </code></pre>
-<p><code>view.nbytes</code> reports the logical size of the broadcast shape, 3,145,728 bytes, but no buffer of that size exists yet: <code>np.broadcast_to</code> returns a read-only view with zero-strides on the broadcast axes, and the real backing memory is still the <code>(1, 1536)</code> source at 6,144 bytes (<code>view.base.nbytes</code>). <code>np.shares_memory(view, mean)</code> returning <code>True</code> is the proof. The moment you write <code>embeddings - mean</code>, NumPy allocates the full <code>(512, 1536)</code> output buffer. M1’s strides lesson established how zero-strides achieve this without a copy; the key thing to carry here is <em>when</em> the materialization happens, and that it scales with output size.</p>
-<h2 id="when-broadcasting-fails"><a class="header" href="#when-broadcasting-fails">When Broadcasting Fails</a></h2>
-<p>If the trailing dimensions are neither equal nor 1, NumPy raises <code>ValueError</code>:</p>
-<pre><code class="language-python">a = np.zeros((512, 1536))
-b = np.zeros((512,))       # trailing dim is 512, not 1536 or 1
-
-try:
-    _ = a - b
-except ValueError as e:
-    print(e)
-    # operands could not be broadcast together with shapes (512,1536) (512,)
+<p>The <code>[np.arange(len(e))]</code> is a no-op index that copies the array, paying full allocation twice. The <code>[None]</code> inserts a size-1 axis to broadcast the mean. It produces the correct answer, passes tests, and will cost the next reader ten minutes to verify. Clever is not the same as clear. When a vectorized expression requires a comment longer than the line itself, the loop version is not the slower option; it is the cheaper one.</p>
+<h2 id="the-chunking-alternative"><a class="header" href="#the-chunking-alternative">The Chunking Alternative</a></h2>
+<p>When the full vectorized form blows the memory budget, the fix is to process the data in slices instead of refusing to vectorize at all.</p>
+<pre><code class="language-python">def center_chunked(
+    embeddings: np.ndarray,
+    chunk_size: int = 5_000,
+) -&gt; np.ndarray:
+    """Center embeddings in chunks to cap peak memory at chunk_size * D * itemsize."""
+    mean = embeddings.mean(axis=0)           # shape (D,) -- cheap, stays small
+    result = np.empty_like(embeddings)
+    for start in range(0, len(embeddings), chunk_size):
+        end = min(start + chunk_size, len(embeddings))
+        result[start:end] = embeddings[start:end] - mean  # one chunk at a time
+    return result
 </code></pre>
-<p>The fix is always the same: decide which axis <code>b</code> represents and reshape or add a new axis to make the trailing dimensions line up. A <code>(512,)</code> row-wise bias becomes <code>(512, 1)</code> via <code>b[:, np.newaxis]</code>.</p>
+<p>With <code>chunk_size=5_000</code> and <code>D=1_536</code> float32, each loop iteration peaks at 30 MB instead of 307 MB. The loop is not a retreat; it is a budget control. The vectorized arithmetic inside each slice still runs at C speed.</p>
+<h2 id="the-decision-rule"><a class="header" href="#the-decision-rule">The Decision Rule</a></h2>
+<p>Three costs, measured before you choose:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Cost</th><th>Measure it with</th><th>Acceptable threshold</th></tr>
+</thead>
+<tbody>
+<tr><td>Speed</td><td><code>time_sum</code> from <code>measure.py</code></td><td>Is it faster than the loop?</td></tr>
+<tr><td>Memory</td><td><code>broadcast_allocates</code> from <code>measure.py</code></td><td>Does the materialized buffer fit your budget?</td></tr>
+<tr><td>Clarity</td><td>Can the next reader understand it in 30 seconds?</td><td>If not, the loop is the default.</td></tr>
+</tbody>
+</table>
+</div>
+<p>Vectorize when it is faster, fits in memory, and stays readable. Keep the loop when it does not. Chunk when it would fit in pieces but not whole. The decision is not “is there a one-liner?”; it is “what is the cheapest way to get a correct result on production hardware with a budget?”</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>Broadcasting aligns shapes from the right (trailing dimension first); NumPy pads the shorter shape with 1s on the left, then checks: each pair of dimensions must be equal or one must be 1.</li>
-<li>A size-1 axis on either array expands to match the other; use <code>keepdims=True</code> on reductions, or <code>[:, np.newaxis]</code> / <code>reshape</code>, to place that axis correctly before broadcasting.</li>
-<li><code>np.broadcast_to</code> returns a read-only zero-stride view with no new allocation; an arithmetic operation (subtraction, division) forces materialization of the full output buffer.</li>
-<li>Broadcasting fails with <code>ValueError</code> when trailing dimensions are neither equal nor 1; the fix is always to reshape one operand so its dimensions align.</li>
+<li>A broadcast that materializes a large intermediate allocates <code>N * D * itemsize</code> bytes at the moment of arithmetic, not lazily; <code>broadcast_allocates</code> from <code>measure.py</code> makes that cost visible before it becomes a crash.</li>
+<li>A vectorized expression is only superior when it wins on all three axes: speed, memory, and readability; winning on one while losing the other two is a bad trade.</li>
+<li>Chunking is not a fallback to loops: it applies vectorized arithmetic one slice at a time, keeping peak memory bounded without sacrificing C-speed element operations.</li>
+<li>The decision rule is a three-way check, not a reflex: measure speed with <code>time_sum</code>, measure memory with <code>broadcast_allocates</code>, and ask whether the next reader can verify the expression in 30 seconds cold.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module2/broadcasting/">
-<p><strong>Try It in Claude Code:</strong> Add <code>broadcast_allocates</code> to your existing <code>measure.py</code> to prove that a broadcast view is near-zero bytes until an arithmetic op forces the full buffer.</p>
+<div class="claude-handoff" data-exercise="exercises/module4/when-not-to-vectorize/">
+<p><strong>Build It in Claude Code:</strong> Extend <code>vectorization_report.py</code> with a memory check that imports <code>broadcast_allocates</code> and <code>time_sum</code> from the M1 <code>measure.py</code>, runs both fixtures (one where vectorizing wins, one where it OOMs), and prints a final “vectorize / keep the loop / chunk it” recommendation with the numbers behind it.</p>
 </div>
 
 
@@ -269,13 +268,10 @@ except ValueError as e:
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module2/vectorized-math-and-ufuncs.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module4/the-hidden-cost-of-apply.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module2/advanced-indexing.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -283,13 +279,10 @@ except ValueError as e:
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module2/vectorized-math-and-ufuncs.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module4/the-hidden-cost-of-apply.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module2/advanced-indexing.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                    </a>
             </nav>
 
         </div>

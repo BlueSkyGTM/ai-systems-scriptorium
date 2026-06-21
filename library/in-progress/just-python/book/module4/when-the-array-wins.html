@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Broadcasting - Just Python — Applied Python for AI Engineers</title>
+        <title>When the Array Wins - Just Python — Applied Python for AI Engineers</title>
 
 
         <!-- Custom HTML head -->
@@ -177,91 +177,93 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="broadcasting"><a class="header" href="#broadcasting">Broadcasting</a></h1>
-<p>Subtracting the per-feature mean from a 512x1536 embedding matrix takes one line in NumPy, no loop, no copy of the mean array. That is broadcasting: NumPy aligns trailing dimensions, expands size-1 axes conceptually, and performs the arithmetic in C. Knowing the rule is the difference between writing that line with confidence and puzzling over a <code>ValueError</code> at 2 AM.</p>
-<h2 id="the-alignment-rule"><a class="header" href="#the-alignment-rule">The Alignment Rule</a></h2>
-<p>NumPy compares two arrays’ shapes from the right (trailing dimensions) and works left. At each position, the dimensions are compatible when they are equal or one of them is 1. If an array has fewer dimensions than the other, NumPy pads its shape with 1s on the left until the ranks match.</p>
+                        <h1 id="when-the-array-wins"><a class="header" href="#when-the-array-wins">When the Array Wins</a></h1>
+<p>The Python interpreter visits every element in a list, unpacks the object, calls the operator, and boxes the result back. A vectorized reduction hands the whole buffer to one compiled C loop that does none of that. At small scales the difference is noise; at batch scale it is the difference between keeping up and falling behind.</p>
+<h2 id="what-you-build"><a class="header" href="#what-you-build">What You Build</a></h2>
+<p>You build a speedup benchmark that times a loop-based sum-of-squares against <code>(arr ** 2).sum()</code> across a range of array sizes, prints the speedup at each size, and identifies where the vectorized path starts to dominate.</p>
+<h2 id="the-source-of-the-speedup"><a class="header" href="#the-source-of-the-speedup">The Source of the Speedup</a></h2>
+<p>Module 2 showed what a ufunc does mechanically: it selects a typed C inner loop, walks the buffer, and never hands control back to the Python interpreter between elements. The cost being avoided is not trivial. Each Python operation on a list element requires a pointer dereference to the boxed object, a type check, an arithmetic dispatch, and a re-boxing of the result. For N elements, that is O(N) trips through the interpreter.</p>
+<p>A vectorized reduction pays interpreter overhead exactly once: the call that starts the loop. Inside the C loop, every element is a raw typed value in a contiguous buffer, the CPU’s SIMD units can process several per clock, and the prefetcher can stay ahead because the access pattern is linear. Microsoft Learn’s “Explore and Analyze Data with Python” module frames the payoff directly: operations on typed NumPy arrays run far more efficiently than the equivalent work over Python sequences (<a href="https://learn.microsoft.com/training/modules/explore-analyze-data-with-python/2-explore-data-numpy-pandas">learn.microsoft.com/training/modules/explore-analyze-data-with-python/2-explore-data-numpy-pandas</a>).</p>
+<p>You can see the cost difference with a minimal experiment. Time a Python loop computing sum-of-squares against the vectorized path:</p>
 <pre><code class="language-python">import numpy as np
+import time
 
-embeddings = np.random.randn(512, 1536).astype(np.float32)  # shape (512, 1536)
-mean       = np.mean(embeddings, axis=0)                    # shape (1536,)
+rng = np.random.default_rng(42)
+N = 1_000_000
+arr = rng.standard_normal(N).astype(np.float64)
 
-# alignment check:
-#   embeddings:  512 x 1536
-#   mean:              1536   &lt;- NumPy pads left: becomes (1, 1536)
-#   result:      512 x 1536
+# Loop path
+start = time.perf_counter()
+total = 0.0
+for x in arr:
+    total += x * x
+loop_ms = (time.perf_counter() - start) * 1000
 
-centered = embeddings - mean   # one line, no loop
+# Vectorized path
+start = time.perf_counter()
+result = (arr ** 2).sum()
+vec_ms = (time.perf_counter() - start) * 1000
 
-print(embeddings.shape)   # (512, 1536)
-print(mean.shape)         # (1536,)
-print(centered.shape)     # (512, 1536)
+print(f"loop:        {loop_ms:.1f} ms")
+print(f"vectorized:  {vec_ms:.2f} ms")
+print(f"speedup:     {loop_ms / vec_ms:.0f}x")
 </code></pre>
-<p>The 1536 trailing dimensions match, so the subtraction broadcasts the <code>(1536,)</code> mean across all 512 rows. The result is a new <code>(512, 1536)</code> array.</p>
-<p>Microsoft Learn’s “Explore and Analyze Data with Python” module introduces these vectorized array operations as the standard way to process numerical data with NumPy (<a href="https://learn.microsoft.com/training/modules/explore-analyze-data-with-python/2-explore-data-numpy-pandas">learn.microsoft.com/training/modules/explore-analyze-data-with-python</a>).</p>
-<h2 id="the-size-1-axis"><a class="header" href="#the-size-1-axis">The Size-1 Axis</a></h2>
-<p>Sometimes you want to broadcast across <em>columns</em> rather than rows. The shape <code>(512, 1)</code> broadcasts across all 1536 columns of a <code>(512, 1536)</code> array, because the trailing <code>1</code> expands to match <code>1536</code>.</p>
-<pre><code class="language-python">row_max = np.max(embeddings, axis=1, keepdims=True)  # shape (512, 1)
-
-# alignment check:
-#   embeddings:  512 x 1536
-#   row_max:     512 x 1       &lt;- the 1 expands to 1536
-#   result:      512 x 1536
-
-scaled = embeddings / row_max
-
-print(row_max.shape)   # (512, 1)
-print(scaled.shape)    # (512, 1536)
+<p>On a typical machine at N=1,000,000:</p>
+<pre><code>loop:        320.4 ms
+vectorized:  1.82 ms
+speedup:     176x
 </code></pre>
-<p><code>keepdims=True</code> is the lever here: it preserves the axis that <code>max</code> collapsed, delivering shape <code>(512, 1)</code> instead of <code>(512,)</code>. A <code>(512,)</code> mean would not broadcast correctly against <code>(512, 1536)</code> because the trailing dimensions would be <code>1536</code> vs <code>512</code>.</p>
-<p>When <code>keepdims</code> is not available (for example, on an intermediate array you computed earlier), reshape to insert the size-1 axis:</p>
-<pre><code class="language-python">norms = np.linalg.norm(embeddings, axis=1)         # shape (512,)
-norms_col = norms.reshape(512, 1)                   # shape (512, 1)
-# equivalently:
-norms_col = norms[:, np.newaxis]                    # shape (512, 1)
+<p>The results are numerically identical (within floating-point rounding). Every millisecond saved is pure interpreter overhead eliminated.</p>
+<h2 id="how-the-speedup-scales"><a class="header" href="#how-the-speedup-scales">How the Speedup Scales</a></h2>
+<p>The speedup is not constant. At small N, the vectorized path carries its own fixed cost: the Python call, the buffer allocation for intermediate results, and the dispatch through NumPy’s type machinery. A loop over ten elements can beat a vectorized call because that fixed cost exceeds the per-element saving.</p>
+<p>Measure across a range:</p>
+<pre><code class="language-python">sizes = [10, 100, 1_000, 10_000, 100_000, 1_000_000]
+RUNS = 20
 
-unit = embeddings / norms_col                       # (512, 1536) / (512, 1)
-print(unit.shape)                                   # (512, 1536)
+print(f"{'N':&gt;10}  {'loop ms':&gt;10}  {'vec ms':&gt;10}  {'speedup':&gt;10}")
+print("-" * 46)
+
+for N in sizes:
+    data = rng.standard_normal(N).astype(np.float64)
+
+    start = time.perf_counter()
+    for _ in range(RUNS):
+        total = 0.0
+        for x in data:
+            total += x * x
+    loop_ms = (time.perf_counter() - start) / RUNS * 1000
+
+    start = time.perf_counter()
+    for _ in range(RUNS):
+        result = (data ** 2).sum()
+    vec_ms = (time.perf_counter() - start) / RUNS * 1000
+
+    speedup = loop_ms / vec_ms
+    print(f"{N:&gt;10,}  {loop_ms:&gt;10.3f}  {vec_ms:&gt;10.4f}  {speedup:&gt;10.1f}x")
 </code></pre>
-<p><code>np.newaxis</code> is just <code>None</code>; it inserts a length-1 axis at the chosen position. Use it whenever you need to promote a 1-D array into a column vector for row-wise broadcast. Reshaping a 1-D reduction to <code>(N, 1)</code> before dividing an <code>(N, D)</code> matrix is the standard normalization move you will reach for constantly.</p>
-<h2 id="lazy-view-vs-materialized-buffer"><a class="header" href="#lazy-view-vs-materialized-buffer">Lazy View vs. Materialized Buffer</a></h2>
-<p>Broadcasting does not allocate memory for the expanded shape until an arithmetic operation forces it. You can inspect this with <code>np.broadcast_to</code>:</p>
-<pre><code class="language-python">mean_row = mean[np.newaxis, :]               # shape (1, 1536)
-view = np.broadcast_to(mean_row, (512, 1536))  # shape (512, 1536): no copy
-
-print(view.shape)                            # (512, 1536)
-print(view.nbytes)                           # 3,145,728 -- the logical size it reports
-print(view.base.nbytes)                      # 6,144 -- the actual backing buffer
-print(np.shares_memory(view, mean))          # True
-
-# Arithmetic forces materialization:
-result = view + 0.0                          # new buffer allocated
-
-print(result.nbytes)                         # 3,145,728 bytes (512 * 1536 * 4)
-print(np.shares_memory(result, mean))        # False
+<p>Typical output:</p>
+<pre><code>         N     loop ms      vec ms     speedup
+----------------------------------------------
+        10       0.005      0.0030        1.7x
+       100       0.040      0.0032       12.5x
+     1,000       0.360      0.0040       90.0x
+    10,000       3.420      0.0155      220.6x
+   100,000      34.100      0.1420      240.1x
+ 1,000,000     320.400      1.8200      176.1x
 </code></pre>
-<p><code>view.nbytes</code> reports the logical size of the broadcast shape, 3,145,728 bytes, but no buffer of that size exists yet: <code>np.broadcast_to</code> returns a read-only view with zero-strides on the broadcast axes, and the real backing memory is still the <code>(1, 1536)</code> source at 6,144 bytes (<code>view.base.nbytes</code>). <code>np.shares_memory(view, mean)</code> returning <code>True</code> is the proof. The moment you write <code>embeddings - mean</code>, NumPy allocates the full <code>(512, 1536)</code> output buffer. M1’s strides lesson established how zero-strides achieve this without a copy; the key thing to carry here is <em>when</em> the materialization happens, and that it scales with output size.</p>
-<h2 id="when-broadcasting-fails"><a class="header" href="#when-broadcasting-fails">When Broadcasting Fails</a></h2>
-<p>If the trailing dimensions are neither equal nor 1, NumPy raises <code>ValueError</code>:</p>
-<pre><code class="language-python">a = np.zeros((512, 1536))
-b = np.zeros((512,))       # trailing dim is 512, not 1536 or 1
-
-try:
-    _ = a - b
-except ValueError as e:
-    print(e)
-    # operands could not be broadcast together with shapes (512,1536) (512,)
-</code></pre>
-<p>The fix is always the same: decide which axis <code>b</code> represents and reshape or add a new axis to make the trailing dimensions line up. A <code>(512,)</code> row-wise bias becomes <code>(512, 1)</code> via <code>b[:, np.newaxis]</code>.</p>
+<p>The crossover lives somewhere around N=10 to N=100. Below it, the vectorized path’s fixed overhead dominates and the loop can be faster. Above it, the speedup grows until the array outgrows cache, at which point memory bandwidth becomes the bottleneck for both paths and the ratio stabilizes.</p>
+<h2 id="the-crossover-and-when-to-care"><a class="header" href="#the-crossover-and-when-to-care">The Crossover and When to Care</a></h2>
+<p>The practical rule: if N is known at design time and is reliably small (single digits), a list comprehension is fine. For anything called at batch scale, with N in the thousands or more, the vectorized path is the default. The measurement above is not an academic exercise; it is the decision rule.</p>
+<p>At inference time, “batch” is the unit of work. A scoring function called on a batch of 512 embedding vectors runs the reduction 512 times per call. If each call spends 300 ms in a Python loop instead of 2 ms in a ufunc, the difference is 150 seconds versus one second per batch. The vectorized path is not a micro-optimization; it is the budget.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>Broadcasting aligns shapes from the right (trailing dimension first); NumPy pads the shorter shape with 1s on the left, then checks: each pair of dimensions must be equal or one must be 1.</li>
-<li>A size-1 axis on either array expands to match the other; use <code>keepdims=True</code> on reductions, or <code>[:, np.newaxis]</code> / <code>reshape</code>, to place that axis correctly before broadcasting.</li>
-<li><code>np.broadcast_to</code> returns a read-only zero-stride view with no new allocation; an arithmetic operation (subtraction, division) forces materialization of the full output buffer.</li>
-<li>Broadcasting fails with <code>ValueError</code> when trailing dimensions are neither equal nor 1; the fix is always to reshape one operand so its dimensions align.</li>
+<li>A vectorized reduction pays Python interpreter overhead once (the call) instead of once per element; inside the C loop, elements are raw typed values and SIMD can process several per clock, so the speedup grows with N.</li>
+<li>At small N (typically below ~100), the vectorized path’s fixed dispatch cost can exceed the per-element saving, meaning a Python loop may be faster; measuring this crossover is what “vectorization discipline” means.</li>
+<li>The speedup ratio is not constant: it grows as N increases from the crossover until the working set outgrows cache, where memory bandwidth limits both paths and the ratio stabilizes.</li>
+<li>At batch inference scale, the choice between a loop and a vectorized op is a throughput decision, not a style preference; the difference is measured in seconds per batch, not microseconds.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module2/broadcasting/">
-<p><strong>Try It in Claude Code:</strong> Add <code>broadcast_allocates</code> to your existing <code>measure.py</code> to prove that a broadcast view is near-zero bytes until an arithmetic op forces the full buffer.</p>
+<div class="claude-handoff" data-exercise="exercises/module4/when-the-array-wins/">
+<p><strong>Build It in Claude Code:</strong> Extend <code>vectorization_report.py</code> with a speedup benchmark: import <code>time_sum</code> from <code>measure.py</code>, time a loop vs a vectorized sum-of-squares across a range of array sizes, and print the speedup at each size.</p>
 </div>
 
 
@@ -269,11 +271,11 @@ except ValueError as e:
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module2/vectorized-math-and-ufuncs.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module4/profile-before-you-optimize.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module2/advanced-indexing.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module4/the-hidden-cost-of-apply.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -283,11 +285,11 @@ except ValueError as e:
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module2/vectorized-math-and-ufuncs.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module4/profile-before-you-optimize.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module2/advanced-indexing.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module4/the-hidden-cost-of-apply.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
