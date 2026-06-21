@@ -1,9 +1,12 @@
 # Authoring Contract
 
-The curriculum the authoring agent follows. This is the Build phase: turn each migration ingredient into a
-finished mdBook lesson **and** its Claude Code exercise, in the locked voice, with nothing left to chance.
+The curriculum the authoring agent follows. This is the Build phase: turn each distilled ingredient into a
+finished mdBook lesson **and** its Claude Code exercise, in the locked voice, at the locked difficulty, with
+nothing left to chance.
 
-**Read this file first, then `STYLE.md`, before writing a single lesson.**
+**Read this file first, then `STANDARDS.md`, then `STYLE.md`, before writing a single lesson.** AUTHORING is
+the process; `STANDARDS.md` is the difficulty-and-strength bar; `STYLE.md` is the voice. All three are
+book-agnostic.
 
 ## What you're turning into what
 
@@ -55,20 +58,28 @@ clean.
 
 ## Order
 
-Author module by module, **M1 → M8**, in the SUMMARY order. Earlier modules are prerequisites for later
-ones; the threads (TS, Rust, eval, safety) only make sense in sequence.
+Author module by module, in the book's `SUMMARY` order (the eight-module shape; the reference book runs
+**M1 → M8**). Earlier modules are prerequisites for later ones; the threads (a second language, eval,
+safety, the data layer) only make sense in sequence. The difficulty ramp is governed by `STANDARDS.md`
+Part 1: no forward dependencies, one idea per lesson, difficulty earned from a real problem.
 
 ## Non-negotiables
 
-- **The voice is law.** `STYLE.md` wins every disagreement. The locked example is `src/preface.md` +
-  `src/README.md`.
+- **The voice is law.** `STYLE.md` wins every disagreement. The locked voice example is the book's own
+  `src/preface.md` + `src/README.md`; Sans Python's are the reference exemplar until a book locks its own.
+- **The bar is law.** Every lesson clears `STANDARDS.md`: the per-lesson difficulty self-check (Part 1) and,
+  for build lessons, the strong-project rubric (Part 2). The conductor reviews against it at the gate.
 - **Three sources, always** (rule 10). Microsoft Learn via the connector, not memory.
-- **Don't reproduce, link.** Do not rebuild `ai-engineering-from-scratch`'s 500+ from-scratch lessons —
-  link them as reference. The spine is business-application artifacts.
+- **Don't reproduce, link.** Do not rebuild the source repo's from-scratch lessons (for the reference book,
+  `ai-engineering-from-scratch`'s 500+); link them as reference. The spine is business-application artifacts.
 - **Out-of-scope stays cut.** Material outside the seam is left out, not authored into a lesson — routed to a
   focused companion book if it deserves one. If a lesson pulls toward it, you've drifted off the seam.
-- **Compounding holds.** M6 agents are reused in M7 teams; M7's team builds the M8 system. Author the
-  artifacts so the reuse is real, not restated.
+- **Ship the artifact contract** (`STANDARDS.md` Part 3). Every book has a named compounding throughline
+  (later artifacts reuse earlier ones; the capstone composes, it does not rebuild) and an
+  `exercises/CLAUDE.md` coaching contract (read the lesson, find the throughline artifact and read its
+  current state, then coach without solving). A book missing either does not graduate to ship.
+- **Compounding holds.** Author the artifacts so the reuse is real, not restated. In the reference book:
+  M6 agents are reused in M7 teams; M7's team builds the M8 system.
 
 ## Execution model — Opus orchestrates Sonnet
 

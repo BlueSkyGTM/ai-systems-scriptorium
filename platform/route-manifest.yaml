@@ -48,6 +48,7 @@ config_paths:
   fleet_adapter: library/completed/sans-python/exercises/module8/fleet_adapter.py
   human_gates: platform/HUMAN-GATES.md
   style_contract: platform/conventions/STYLE.md
+  standards_contract: platform/conventions/STANDARDS.md
   catalog: CATALOG.md
   backlog: BACKLOG.md
 
