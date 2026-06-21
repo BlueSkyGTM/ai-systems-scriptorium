@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>The Dual-Partition Plan - Local Metal — Build and Network Your Own AI Inference Server</title>
+        <title>Install Ollama and Docker - Local Metal — Build and Network Your Own AI Inference Server</title>
 
 
         <!-- Custom HTML head -->
@@ -177,86 +177,118 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="the-dual-partition-plan"><a class="header" href="#the-dual-partition-plan">The Dual-Partition Plan</a></h1>
-<p>You have a 2TB NVMe and two jobs for it: gaming on Windows, inference on Linux. How you split
-that drive determines whether your model server is a production host or an experiment that breaks
-the moment Windows decides to restart.</p>
-<h2 id="why-two-partitions-not-one"><a class="header" href="#why-two-partitions-not-one">Why Two Partitions, Not One</a></h2>
-<p>The tempting path is WSL2: install a Linux distribution inside Windows, point CUDA at the GPU,
-and call it done. Microsoft’s own documentation is honest about the trade-off. The WSL2 FAQ
-states that WSL “has been designed and built to use with inner loop development workflows” and
-lists the production differences that follow from that design: the utility VM shuts down
-automatically when no file handles are open, GPU access routes through a <code>/dev/dxg</code> device
-rather than talking to the hardware directly, and the networking stack uses virtualized
-components that assign the Linux instance a different IP address from the host (<a href="https://learn.microsoft.com/windows/wsl/faq#can-i-use-wsl-for-production-scenarios">learn.microsoft.com/windows/wsl/faq</a>).</p>
-<p>For a coding session or a quick experiment, none of that matters. For a 24/7 model server you
-SSH into and leave running, all three matter:</p>
-<ul>
-<li>Auto-shutdown means a server that disappears when you close your terminal session.</li>
-<li>The <code>/dev/dxg</code> translation layer sits between CUDA and the GPU; it works, but it is not the
-direct kernel driver path that production NVIDIA tooling expects.</li>
-<li>A virtualized network address complicates any client that needs to reach the host by IP.</li>
-</ul>
-<p>A bare Linux partition sidesteps all three. The kernel owns the hardware directly. The NVIDIA
-driver loads against the real PCIe device. The machine has one IP address. When you SSH in and
-launch Ollama, it runs until you stop it.</p>
-<p>Windows stays for the jobs it is genuinely better at: firmware updates, BIOS flashes, and
-gaming. NVIDIA still releases the display driver for Windows; flashing the GPU BIOS from Linux
-is possible but unnecessary when the other partition already handles it. The dual-boot split
-is not a compromise; it is the correct tool assignment.</p>
-<h2 id="splitting-the-2tb-drive"><a class="header" href="#splitting-the-2tb-drive">Splitting the 2TB Drive</a></h2>
-<p>The Crucial T500 (or Inland Performance Plus) ships as a single 2TB partition. You will shrink
-the Windows partition during Linux installation and allocate the freed space to Linux. The
-exact split depends on three numbers you control:</p>
-<ul>
-<li><strong>Windows reserve:</strong> enough for the OS, games, and a driver cache. 500GB is a reasonable
-starting floor for a gaming partition; more if you keep large game libraries on-disk.</li>
-<li><strong>Linux system + swap:</strong> the OS, the CUDA toolkit, Docker images, and running processes.
-50–80GB covers this comfortably on Ubuntu 24.04 LTS.</li>
-<li><strong>Model storage:</strong> the remainder goes to model weights. A 14B model at Q4 quantization runs
-roughly 8–9GB of VRAM but stores as a ~9GB file on disk. A 32B Q4 model is around 18–20GB.
-Plan for the models you want to keep loaded plus a working buffer.</li>
-</ul>
-<p>The goal is a Linux partition large enough that the model budget fits with room to spare. The
-exercise below makes this concrete: you encode your numbers as constants and let the script
-confirm the math before you touch the partitioner.</p>
-<h2 id="wsl2-is-still-the-right-answer-sometimes"><a class="header" href="#wsl2-is-still-the-right-answer-sometimes">WSL2 Is Still the Right Answer Sometimes</a></h2>
-<p>WSL2 is not wrong; it is wrong for this use case. For local development against a remote model
-server, for Windows-native tools that need a Linux environment for a build step, for
-experimenting with a new framework before you commit disk space to it: WSL2 is fast, easy, and
-the correct choice. Microsoft’s GPU acceleration guide for WSL2 covers CUDA, Docker, and
-PyTorch all running in a WSL2 instance with an NVIDIA card, and it works (<a href="https://learn.microsoft.com/windows/wsl/tutorials/gpu-compute">learn.microsoft.com/windows/wsl/tutorials/gpu-compute</a>).</p>
-<p>The line is serving. If the Linux environment needs to stay up, answer requests autonomously,
-and run without a Windows session keeping it alive, a bare partition is the correct substrate.
-WSL2’s auto-shutdown is a feature for development workflows; it is a defect for a serving host.</p>
+                        <h1 id="install-ollama-and-docker"><a class="header" href="#install-ollama-and-docker">Install Ollama and Docker</a></h1>
+<p>Module 2 left a GPU that answers to code. Nothing is serving yet, and that gap is the whole
+point of this lesson: the serving layer is the software that loads a model file, holds it in
+VRAM, and answers requests. Without it, you have a fast card attached to silence.</p>
+<h2 id="step-1-install-ollama-natively"><a class="header" href="#step-1-install-ollama-natively">Step 1: Install Ollama Natively</a></h2>
+<p>Ollama is the serving layer for this book. It handles model loading, quantization-aware
+memory planning, and the HTTP endpoint your tooling will call. Install it with the official
+one-liner:</p>
+<pre><code class="language-bash">curl -fsSL https://ollama.com/install.sh | sh
+</code></pre>
+<p>The script installs the <code>ollama</code> binary, creates an <code>ollama</code> system user, and registers a
+systemd service. After it finishes, confirm the service is running and set to start on boot:</p>
+<pre><code class="language-bash">sudo systemctl status ollama
+sudo systemctl enable ollama
+</code></pre>
+<p>What you should see from <code>systemctl status ollama</code>: a green <code>active (running)</code> line. The
+service file at <code>/etc/systemd/system/ollama.service</code> sets <code>ExecStart=/usr/bin/ollama serve</code>
+and runs the process as the <code>ollama</code> user, which keeps the daemon unprivileged.</p>
+<p>Source: <a href="https://docs.ollama.com/linux">docs.ollama.com/linux</a></p>
+<h2 id="step-2-confirm-the-endpoint"><a class="header" href="#step-2-confirm-the-endpoint">Step 2: Confirm the Endpoint</a></h2>
+<p>Ollama binds to <code>127.0.0.1:11434</code> by default. Verify it is listening:</p>
+<pre><code class="language-bash">curl http://localhost:11434/api/version
+</code></pre>
+<p>What you should see: a small JSON body reporting the server version.</p>
+<pre><code class="language-json">{"version":"0.30.10"}
+</code></pre>
+<p>Your version number will differ; the shape is what matters. If the request times out, check
+that the service is running (<code>sudo systemctl start ollama</code>) and try again. The bind address
+is <code>127.0.0.1:11434</code>; to expose Ollama on a different interface or port, set the
+<code>OLLAMA_HOST</code> environment variable before starting the service.</p>
+<p>Source: <a href="https://docs.ollama.com/api/introduction">docs.ollama.com/api/introduction</a></p>
+<h2 id="step-3-point-model-storage-at-the-linux-partition"><a class="header" href="#step-3-point-model-storage-at-the-linux-partition">Step 3: Point Model Storage at the Linux Partition</a></h2>
+<p>By default, Ollama stores downloaded models at <code>/usr/share/ollama/.ollama/models</code>. That
+path lives on whichever partition your root filesystem occupies, which may be small. The
+model library you build through this book will outgrow a modest root partition quickly.</p>
+<p>Override the storage location with the <code>OLLAMA_MODELS</code> environment variable. The right way
+to set it persistently for a systemd service is through a drop-in override:</p>
+<pre><code class="language-bash">sudo systemctl edit ollama.service
+</code></pre>
+<p>Add these lines in the editor that opens:</p>
+<pre><code class="language-ini">[Service]
+Environment="OLLAMA_MODELS=/your/linux/partition/path/models"
+</code></pre>
+<p>Save, then reload and restart the service:</p>
+<pre><code class="language-bash">sudo systemctl daemon-reload
+sudo systemctl restart ollama
+</code></pre>
+<p>The Linux partition you sized in Module 2 is the right destination. The goal is to keep
+model weights off the root filesystem entirely, so the root partition’s free space never
+constrains a download.</p>
+<p>Source: <a href="https://docs.ollama.com/faq">docs.ollama.com/faq</a></p>
+<h2 id="step-4-install-docker"><a class="header" href="#step-4-install-docker">Step 4: Install Docker</a></h2>
+<p>Later modules need Docker for containerized tooling. Install Docker Engine on Ubuntu via
+the official apt repository rather than the snap or convenience script, because the apt
+path gives you a stable, upgradeable installation that integrates cleanly with the rest of
+the system.</p>
+<p>The full steps are at
+<a href="https://docs.docker.com/engine/install/ubuntu/">docs.docker.com/engine/install/ubuntu/</a>.
+In summary: add Docker’s GPG key and the official apt repository, then install the package
+group:</p>
+<pre><code class="language-bash">sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+</code></pre>
+<p>After installation, add your user to the <code>docker</code> group so you can run containers without
+<code>sudo</code>:</p>
+<pre><code class="language-bash">sudo usermod -aG docker $USER
+</code></pre>
+<p>Log out and back in for the group change to take effect.</p>
+<h2 id="step-5-the-gpu-bridge-for-docker"><a class="header" href="#step-5-the-gpu-bridge-for-docker">Step 5: The GPU Bridge for Docker</a></h2>
+<p>Docker containers cannot reach the GPU unless the NVIDIA Container Toolkit is installed.
+The toolkit configures the NVIDIA container runtime, which is what makes
+<code>docker run --gpus=all ...</code> work. Install it following the guide at
+<a href="https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html">docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html</a>.</p>
+<p>In this book, Ollama runs natively, not inside a container. The native path is simpler and
+gives the GPU direct access with no runtime translation layer. The “Ollama in Docker”
+option exists and is worth knowing:</p>
+<pre><code class="language-bash">docker run -d --gpus=all -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
+</code></pre>
+<p>That command is named here because you will encounter it in documentation. It is not the
+path this book takes. Native Ollama serves faster on a dedicated rig, and the throughline
+artifact you build in this module assumes the native service is the source of truth.</p>
+<p>Source: <a href="https://docs.ollama.com/docker">docs.ollama.com/docker</a></p>
+<hr>
+<p>Two pieces are now in place: a model server ready to load weights and answer HTTP requests,
+and a container runtime that later modules can hand work to. The rig went from an attached
+card to a stack with a live endpoint; that endpoint is what every module after this one
+calls.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>A bare Linux partition gives the NVIDIA driver direct PCIe access, a stable IP address, and
-no auto-shutdown: the three properties a 24/7 model server requires that WSL2’s design does
-not provide.</li>
-<li>WSL2’s FAQ explicitly frames it as an inner-loop development tool; its GPU path routes through
-<code>/dev/dxg</code> and its network stack uses a virtualized IP, both deliberate trade-offs for ease
-of setup over production reliability.</li>
-<li>The NVMe split is a deliberate budget: Windows reserve + Linux system + model storage +
-safety margin; encoding it as checked constants before partitioning prevents regret later.</li>
-<li>WSL2 is correct for development and experimentation; the bare partition is correct for
-serving, because serving requires uptime the WSL VM lifecycle was not designed to guarantee.</li>
+<li>Ollama installs as a systemd service (<code>ollama.service</code>) running as an unprivileged
+<code>ollama</code> user; <code>sudo systemctl enable ollama</code> ensures it survives reboots.</li>
+<li>The default endpoint is <code>http://localhost:11434</code>; <code>curl /api/version</code> returning a JSON
+version string is the proof the server is up, not just installed.</li>
+<li>Model storage defaults to <code>/usr/share/ollama/.ollama/models</code> and belongs on the roomy
+Linux partition, set via <code>OLLAMA_MODELS</code> in a <code>systemctl edit</code> drop-in.</li>
+<li>In this book Ollama runs natively for direct GPU access; the <code>--gpus=all</code> Docker image
+exists and is named here, but the native service is the path we take.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module2/the-dual-partition-plan/">
-<p><strong>Build It in Claude Code</strong>: Write <code>partition_plan.py</code> that encodes your drive budget as constants, computes the Linux partition size, asserts the model storage fits with a safety margin, and prints the Windows/Linux split.</p>
+<div class="claude-handoff" data-exercise="exercises/module3/install-ollama-and-docker/">
+<p><strong>Build It in Claude Code</strong>: Create <code>exercises/module3/install-ollama-and-docker/stack_check.py</code>, a stdlib-only probe that GETs <code>http://localhost:11434/api/version</code> and reports the server version, with a <code>--selftest</code> mode that validates the logic offline.</p>
 </div>
 
-<!-- SOURCES: https://learn.microsoft.com/windows/wsl/faq#can-i-use-wsl-for-production-scenarios | https://learn.microsoft.com/windows/wsl/tutorials/gpu-compute | https://learn.microsoft.com/windows/ai/directml/gpu-cuda-in-wsl -->
+<!-- SOURCES: https://docs.ollama.com/linux | https://docs.ollama.com/api/introduction | https://docs.ollama.com/faq | https://docs.docker.com/engine/install/ubuntu/ | https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html | https://docs.ollama.com/docker -->
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module2/00-overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module3/00-overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module2/choosing-and-installing-linux.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module3/a-14b-model-on-card.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -266,11 +298,11 @@ serving, because serving requires uptime the WSL VM lifecycle was not designed t
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module2/00-overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module3/00-overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module2/choosing-and-installing-linux.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module3/a-14b-model-on-card.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

@@ -21,3 +21,13 @@
 - [Choosing and Installing Linux](module2/choosing-and-installing-linux.md)
 - [NVIDIA Drivers and CUDA](module2/nvidia-drivers-and-cuda.md)
 - [Verify the GPU Is Visible](module2/verify-the-gpu-is-visible.md)
+
+---
+
+# Module 3: The Model Stack
+
+- [Overview](module3/00-overview.md)
+- [Install Ollama and Docker](module3/install-ollama-and-docker.md)
+- [A 14B Model on the Card](module3/a-14b-model-on-card.md)
+- [The OpenAI-Compatible API](module3/the-openai-compatible-api.md)
+- [Record the Stack](module3/record-the-stack.md)
