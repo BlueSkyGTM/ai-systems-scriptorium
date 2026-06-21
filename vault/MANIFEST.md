@@ -1,4 +1,4 @@
-# vault MANIFEST — the nine source repos
+# vault MANIFEST — the source ore (nine repos + curated doc subtrees)
 
 The ore the Scriptorium distills into books. ~767M total, **committed to this private repo verbatim**
 (2026-06-20; previously gitignored/manifest-primary). Each repo is also recoverable by re-cloning the URL below.
@@ -15,6 +15,8 @@ Module feeds are from `ingredients/source/INDEX.md` (the librarian's inventory o
 | `made-with-ml` | `mwml` | 3.2M | M4 (design·develop·deploy·iterate) | https://github.com/GokuMohandas/Made-With-ML |
 | `typescript-projects` | `ts` | 1.8M | M1, M3 (TS threaded in) | https://github.com/LearningTypeScript/projects |
 | `100-exercises-to-learn-rust` | `rust` | 2.3M | M1, M5 (Rust threaded in) | https://github.com/mainmatter/100-exercises-to-learn-rust |
+| `numpy-docs` (subtree) | `npdoc` | 2.9M | Only Python (NumPy/vectorization) | github.com/numpy/numpy `doc/source/user/` @706b103, BSD-3 |
+| `pandas-docs` (subtree) | `pddoc` | 1.2M | Only Python, Data Currents (Pandas) | github.com/pandas-dev/pandas `doc/source/user_guide/` @c3a779c, BSD-3 |
 
 ## Notes
 
@@ -24,5 +26,10 @@ Module feeds are from `ingredients/source/INDEX.md` (the librarian's inventory o
 - **Versioned (2026-06-20):** the vault is now committed to this private repo verbatim (force-added past
   the vendored repos' own .gitignore), so git is the durable backup. The historical "gitignored, on-disk
   only" framing no longer applies.
+- **Curated doc subtrees (2026-06-20):** `numpy-docs` and `pandas-docs` are not full-repo clones;
+  they are the BSD-3 user-guide trees (`doc/source/user/` and `doc/source/user_guide/`), trimmed to
+  the applied arc, pulled as tactical ore for Only Python. Vetted via the tiered-orchestration run
+  (one Opus handler, four Sonnet workers). See each folder's `PROVENANCE.md`; recoverable at the pinned
+  commit. The PythonDataScienceHandbook was rejected: its prose is CC-BY-NC-ND (no derivatives).
 - **Provenance for distilled content** lives in `ingredients/source/_repos/<repo>/` (per-repo
   inventory, curriculum-map, antilibrary, visuals) and `ingredients/source/INDEX.md`.
