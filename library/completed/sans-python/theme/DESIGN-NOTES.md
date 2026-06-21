@@ -3,6 +3,11 @@
 The living record of the book's front-end choices, so a future theme-touch doesn't re-litigate them.
 Keep this current whenever a front-end choice changes.
 
+**Status (2026-06-20): design locked.** Ray approved the full theme — the rust/Ayu palette, the
+code-as-card blocks with quiet neutral edges, the rust handoff CTA, and the near-white Ayu reading
+text. Treat the choices below as settled; do not re-open them without a new directive. This is also the
+reference theme the other books in the lineup inherit (see `platform/conventions/PALETTES.md`).
+
 ## Theme
 
 - **mdBook themes:** `default-theme = "rust"` (warm light), `preferred-dark-theme = "ayu"` (deep, saturated
