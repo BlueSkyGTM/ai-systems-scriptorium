@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Reading and Writing AI Formats - Just Python — Applied Python for AI Engineers</title>
+        <title>Comprehensions and Generators - Just Python — Applied Python for AI Engineers</title>
 
 
         <!-- Custom HTML head -->
@@ -177,123 +177,102 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="reading-and-writing-ai-formats"><a class="header" href="#reading-and-writing-ai-formats">Reading and Writing AI Formats</a></h1>
-<p>Every AI pipeline moves data through exactly three formats, and the one you reach for by default determines how much time you spend debugging dtype surprises at 2 AM. CSV loses type information the moment you write it. JSONL preserves structure but not column types. Parquet keeps both, compresses the data, and lets you load a single column out of a ten-million-row file without touching the rest.</p>
+                        <h1 id="comprehensions-and-generators"><a class="header" href="#comprehensions-and-generators">Comprehensions and Generators</a></h1>
+<p>A loop that appends to a list is not the pattern the interviewer wants to see. A comprehension says the same thing in one line, and a generator says it without allocating the list at all.</p>
 <h2 id="what-you-build"><a class="header" href="#what-you-build">What You Build</a></h2>
-<p>You build <code>io_formats.py</code>, a script that writes a typed DataFrame to CSV, JSONL, and Parquet, reads each back, prints the dtypes before and after each round trip, and confirms what survived.</p>
-<h2 id="the-three-formats"><a class="header" href="#the-three-formats">The Three Formats</a></h2>
-<p>An AI pipeline uses these three formats for different reasons, at different stages.</p>
-<p><strong>CSV</strong> is the interchange default: the eval results table you hand to a reviewer, the split your training harness reads, the dataset someone ships you in a zip file. Every tool reads it. No tool preserves your dtypes.</p>
-<p><strong>JSONL</strong> (JSON Lines) is the corpus format: one JSON object per line, no enclosing array. Your annotation files are JSONL. Your fine-tuning dataset is JSONL. Your retrieval-augmentation source documents are JSONL. The record-per-line layout maps directly onto the made-with-ml <code>datasets/dataset.csv</code> pattern, which treats every row as an independent labeled record.</p>
-<p><strong>Parquet</strong> is the feature store and checkpoint format: columnar, typed, compressed. When your pipeline graduates from a few thousand rows to millions, Parquet is what you reach for because it lets you read one column without deserializing the rest.</p>
-<p>Microsoft Learn’s “Make Data Available in Azure Machine Learning” module shows these same tabular formats (CSV, JSON, Parquet) registered as versioned data assets in a production pipeline (<a href="https://learn.microsoft.com/training/modules/make-data-available-azure-machine-learning/">learn.microsoft.com/training/modules/make-data-available-azure-machine-learning</a>).</p>
-<h2 id="reading-and-writing-csv"><a class="header" href="#reading-and-writing-csv">Reading and Writing CSV</a></h2>
-<p>Start with a typed DataFrame that mirrors an eval results table:</p>
-<pre><code class="language-python">import pandas as pd
-import numpy as np
+<p>You build a script that constructs label maps and token sequences using comprehensions and a generator, measures the memory difference between the two approaches on a ten-million-item range, and prints a concrete comparison.</p>
+<h2 id="the-loop-a-reviewer-skips-past"><a class="header" href="#the-loop-a-reviewer-skips-past">The Loop a Reviewer Skips Past</a></h2>
+<p>Here is the pattern that signals you have not internalized the idiom:</p>
+<pre><code class="language-python">squares = []
+for x in range(10):
+    squares.append(x * x)
+</code></pre>
+<p>A list comprehension replaces all three lines with one:</p>
+<pre><code class="language-python">squares = [x * x for x in range(10)]
+print(squares)
+# [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
+</code></pre>
+<p>The result is identical. The comprehension states the <em>intent</em> (build a list of squares), not the <em>procedure</em> (initialize, loop, append). Python reviewers read comprehensions at a glance; they have to parse the loop.</p>
+<h2 id="dict-and-set-comprehensions"><a class="header" href="#dict-and-set-comprehensions">Dict and Set Comprehensions</a></h2>
+<p>The same syntax works for dicts and sets. In <code>data.py</code> from the Made With ML codebase, <code>CustomPreprocessor.fit</code> builds its label-to-index map with a dict comprehension:</p>
+<pre><code class="language-python">class_to_index = {tag: i for i, tag in enumerate(tags)}
+</code></pre>
+<p>And the reverse map inverts it in the same shape:</p>
+<pre><code class="language-python">index_to_class = {v: k for k, v in class_to_index.items()}
+</code></pre>
+<p>No loop, no intermediate list, no manual counter. Both maps are correct by construction because <code>enumerate</code> handles the index.</p>
+<p>You can filter inside any comprehension with an <code>if</code> clause:</p>
+<pre><code class="language-python"># Keep only tags that appear more than once
+filtered = {tag: i for tag, i in class_to_index.items() if i &gt; 0}
+</code></pre>
+<p>A set comprehension drops the value side:</p>
+<pre><code class="language-python">seen = {tag.lower() for tag in tags}
+</code></pre>
+<h2 id="generator-expressions-same-syntax-no-list"><a class="header" href="#generator-expressions-same-syntax-no-list">Generator Expressions: Same Syntax, No List</a></h2>
+<p>A generator expression uses parentheses instead of brackets:</p>
+<pre><code class="language-python">gen = (x * x for x in range(10))
+print(type(gen))   # &lt;class 'generator'&gt;
+</code></pre>
+<p>It does not build a list. It creates a generator object that yields one value at a time when you iterate it. You cannot index into it or call <code>len</code> on it. What you can do is stream it once, which is exactly what you need when the data is too large to hold in memory.</p>
+<pre><code class="language-python"># Consume the generator
+for val in gen:
+    print(val, end=" ")
+# 0 1 4 9 16 25 36 49 64 81
+</code></pre>
+<h2 id="the-memory-contrast"><a class="header" href="#the-memory-contrast">The Memory Contrast</a></h2>
+<p>The difference becomes concrete at scale. A list comprehension over ten million integers materializes every value:</p>
+<pre><code class="language-python">import sys
 
-df = pd.DataFrame({
-    "text":      ["classify this", "another sample", "third record"],
-    "label":     pd.array([1, 0, 1], dtype="int32"),
-    "score":     pd.array([0.91, 0.43, 0.78], dtype="float32"),
-    "timestamp": pd.to_datetime(["2024-01-01", "2024-01-02", "2024-01-03"]),
-})
+n = 10_000_000
+eager = [x * x for x in range(n)]
+print(f"list: {sys.getsizeof(eager):,} bytes")
+# list: 89,095,160 bytes  (roughly 85 MB)
+</code></pre>
+<p>The generator equivalent stays flat regardless of <code>n</code>:</p>
+<pre><code class="language-python">lazy = (x * x for x in range(n))
+print(f"generator: {sys.getsizeof(lazy):,} bytes")
+# generator: 208 bytes
+</code></pre>
+<p>The generator object is a few hundred bytes. It holds no squares, only the recipe for producing the next one. That recipe costs the same whether <code>n</code> is ten million or ten billion.</p>
+<h2 id="yield-functions"><a class="header" href="#yield-functions"><code>yield</code> Functions</a></h2>
+<p>A <code>yield</code> function gives you the same lazy behavior with more control. Where a generator expression is one line, a <code>yield</code> function can filter, transform, and maintain state across iterations:</p>
+<pre><code class="language-python">def tokenize_corpus(docs: list[str]):
+    """Yield one token list per document without building all of them at once."""
+    for doc in docs:
+        yield doc.lower().split()
 
-print(df.dtypes)
-# text                object
-# label                int32
-# score               float32
-# timestamp    datetime64[ns]
+corpus = ["Eval pipelines matter", "Retrieval beats memorization"]
+tokens = tokenize_corpus(corpus)
+print(next(tokens))   # ['eval', 'pipelines', 'matter']
+print(next(tokens))   # ['retrieval', 'beats', 'memorization']
 </code></pre>
-<p>Write it and read it back:</p>
-<pre><code class="language-python">df.to_csv("eval.csv", index=False)
-df_csv = pd.read_csv("eval.csv")
-
-print(df_csv.dtypes)
-# text         object
-# label         int64   &lt;-- int32 is gone
-# score        float64  &lt;-- float32 is gone
-# timestamp     object  &lt;-- datetime is gone
-</code></pre>
-<p>The round trip loses all three numeric dtypes and the datetime. CSV carries no schema: it is a text file with commas. When you read it back, pandas infers types from the character sequences it sees, and it guesses conservatively (<code>int64</code>, <code>float64</code>, <code>object</code>). To recover your types, pass <code>dtype</code> and <code>parse_dates</code> explicitly:</p>
-<pre><code class="language-python">df_csv = pd.read_csv(
-    "eval.csv",
-    dtype={"label": "int32", "score": "float32"},
-    parse_dates=["timestamp"],
-)
-
-print(df_csv.dtypes)
-# text                object
-# label                int32
-# score               float32
-# timestamp    datetime64[ns]
-</code></pre>
-<p>The <code>dtype</code> dict maps column names to types. <code>parse_dates</code> accepts a list of column names to coerce from string to <code>datetime64</code>. You own the schema when you read CSV; the file does not carry it for you. Microsoft Learn’s “Explore and Analyze Data with Python” module walks through loading and inspecting tabular data with Pandas this way (<a href="https://learn.microsoft.com/training/modules/explore-analyze-data-with-python/2-explore-data-numpy-pandas">learn.microsoft.com/training/modules/explore-analyze-data-with-python</a>).</p>
-<h2 id="reading-and-writing-jsonl"><a class="header" href="#reading-and-writing-jsonl">Reading and Writing JSONL</a></h2>
-<p>JSONL writes each row as a JSON object on its own line. Pandas calls this <code>orient="records"</code> combined with <code>lines=True</code>:</p>
-<pre><code class="language-python">df.to_json("corpus.jsonl", orient="records", lines=True)
-</code></pre>
-<p>The file looks like this:</p>
-<pre><code>{"text":"classify this","label":1,"score":0.9100000262260437,"timestamp":1704067200000}
-{"text":"another sample","label":0,"score":0.4300000071525574,"timestamp":1704153600000}
-{"text":"third record","label":1,"score":0.7799999713897705,"timestamp":1704240000000}
-</code></pre>
-<p>Two things to notice. First, <code>score</code> has expanded: the <code>float32</code> value <code>0.91</code> cannot be represented exactly in JSON’s floating-point encoding, so pandas serializes it at full <code>float64</code> precision. Second, <code>timestamp</code> is a millisecond epoch integer, not an ISO string; pandas serializes datetimes as integers by default.</p>
-<p>Read it back:</p>
-<pre><code class="language-python">df_jsonl = pd.read_json("corpus.jsonl", lines=True)
-
-print(df_jsonl.dtypes)
-# text         object
-# label         int64   &lt;-- int32 gone
-# score        float64  &lt;-- float32 gone
-# timestamp    datetime64[ns]  &lt;-- this one survives, pandas infers it
-</code></pre>
-<p>JSONL preserves the datetime (because pandas interprets epoch milliseconds as <code>datetime64</code>) but loses numeric subtypes just like CSV does. For a corpus, this is acceptable: the structure survives, and the text is what matters. For a typed feature store, it is not.</p>
-<h2 id="reading-and-writing-parquet"><a class="header" href="#reading-and-writing-parquet">Reading and Writing Parquet</a></h2>
-<p>Parquet encodes the schema alongside the data. Your dtypes do not need to survive inference; they are written into the file’s metadata and restored exactly on read. The engine that makes this work with pandas is <code>pyarrow</code> (<code>pip install pyarrow</code>):</p>
-<pre><code class="language-python">df.to_parquet("features.parquet", engine="pyarrow", index=False)
-df_parquet = pd.read_parquet("features.parquet", engine="pyarrow")
-
-print(df_parquet.dtypes)
-# text                object
-# label                int32   &lt;-- exact
-# score               float32  &lt;-- exact
-# timestamp    datetime64[ns]  &lt;-- exact
-</code></pre>
-<p>All four dtypes survive intact. The file is also smaller: the pandas docs note that Parquet uses columnar compression, which means a column of repeated <code>int32</code> values compresses far more aggressively than the same values encoded as ASCII digits in a CSV row. For a 3-row frame the size difference is negligible; at a million rows it is the difference between a 40 MB file and a 4 MB file.</p>
-<p>Parquet also supports column-subset reads. If your feature store has 200 columns and a downstream model needs only 3, you pull those 3 without deserializing the rest:</p>
-<pre><code class="language-python">subset = pd.read_parquet("features.parquet", columns=["text", "score"])
-print(subset.shape)    # (3, 2)
-print(subset.dtypes)
-# text      object
-# score    float32
-</code></pre>
-<p>CSV has no equivalent. Reading 3 columns from a CSV still parses every byte of every row.</p>
-<h2 id="the-round-trip-discipline"><a class="header" href="#the-round-trip-discipline">The Round-Trip Discipline</a></h2>
-<p>Before you commit a format choice, trace what survives the round trip for your specific dtypes:</p>
+<p>Each call to <code>next</code> runs the function body until the next <code>yield</code> and suspends. The rest of the corpus sits in <code>docs</code>, untouched, until you ask for it.</p>
+<h2 id="when-to-use-each"><a class="header" href="#when-to-use-each">When to Use Each</a></h2>
+<p>The choice is mechanical once you know the constraints:</p>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Format</th><th><code>int32</code></th><th><code>float32</code></th><th><code>datetime64</code></th><th>Column subset read</th></tr>
+<tr><th>Need</th><th>Use</th></tr>
 </thead>
 <tbody>
-<tr><td>CSV</td><td>No (needs <code>dtype=</code>)</td><td>No (needs <code>dtype=</code>)</td><td>No (needs <code>parse_dates=</code>)</td><td>No</td></tr>
-<tr><td>JSONL</td><td>No</td><td>No</td><td>Yes (epoch ms)</td><td>No</td></tr>
-<tr><td>Parquet</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+<tr><td>Reuse the result, index into it, or call <code>len</code></td><td>list/dict/set comprehension</td></tr>
+<tr><td>Stream a large or infinite source exactly once</td><td>generator expression or <code>yield</code> function</td></tr>
+<tr><td>Complex multi-step transformation per item</td><td><code>yield</code> function</td></tr>
+<tr><td>Simple one-expression transformation per item</td><td>generator expression</td></tr>
 </tbody>
 </table>
 </div>
-<p>The rule is: use the format that matches what you need to preserve, not the one that is most convenient to produce. Your eval table ships as CSV because every reviewer can open it. Your annotated corpus ships as JSONL because every annotation tool reads it. Your feature store ships as Parquet because memory and speed matter at scale, and nothing downstream should be re-inferring types from bytes.</p>
-<p>Format selection is a memory-and-speed contract with your pipeline, not a file extension you pick at random.</p>
+<p>The wrong choice is not always wrong; it is wasteful. A comprehension over a corpus that fits in RAM is fine. A comprehension over a corpus that does not fit will crash or swap. The generator never asks.</p>
+<p>The screen expects a comprehension, not a loop, and a generator when the data is a corpus you stream once. Reaching for the append loop signals you have not internalized the idiom; reaching for the generator signals you thought about what fits in memory.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>CSV serializes data as text and carries no schema; every numeric and datetime dtype must be explicitly declared on <code>read_csv</code> via <code>dtype=</code> and <code>parse_dates=</code>, or pandas infers conservatively and widens types.</li>
-<li>JSONL writes one JSON object per line using <code>orient="records", lines=True</code> and is the standard corpus format; it preserves structure but not numeric subtypes, so <code>int32</code> and <code>float32</code> return as <code>int64</code> and <code>float64</code>.</li>
-<li>Parquet encodes the DataFrame schema in the file’s metadata and restores all dtypes exactly on read, including <code>int32</code>, <code>float32</code>, and <code>datetime64</code>; it is the format you choose once data is big and column-subset reads matter.</li>
-<li>Each format has a natural pipeline role: CSV for eval interchange, JSONL for corpora and annotation, Parquet for feature stores and anything that needs typed round trips at scale.</li>
+<li>A list comprehension builds the entire sequence in memory at construction time; the append-loop equivalent does the same thing with three times the syntax and signals the wrong idiom to a reviewer.</li>
+<li>A dict comprehension <code>{k: v for k, v in items}</code> is the standard way to build or invert a label map; both forms are readable at a glance and correct by construction.</li>
+<li>A generator expression <code>(expr for x in iterable)</code> yields one item at a time and holds no result in memory, so it costs a fixed few hundred bytes regardless of the source size.</li>
+<li>A <code>yield</code> function suspends at each <code>yield</code> and resumes on the next <code>next()</code> call; use it when the per-item logic is too complex for a single expression.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module3/reading-and-writing-ai-formats/">
-<p><strong>Build It in Claude Code:</strong> Build <code>io_formats.py</code>, a self-contained script that round-trips a typed DataFrame through CSV, JSONL, and Parquet, asserts dtype behavior at each step, and confirms Parquet is smaller than CSV for the same data.</p>
+<div class="claude-handoff" data-exercise="exercises/module5/comprehensions-and-generators/">
+<p><strong>Build It in Claude Code:</strong> Build a script that constructs comprehensions and a generator over the same data, asserts they produce equal results, and demonstrates the memory difference between the eager and lazy forms.</p>
 </div>
 
 
@@ -301,11 +280,11 @@ print(subset.dtypes)
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module3/series-and-dataframe.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module5/00-overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module3/groupby-merge-apply.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module5/decorators.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -315,11 +294,11 @@ print(subset.dtypes)
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module3/series-and-dataframe.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module5/00-overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module3/groupby-merge-apply.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module5/decorators.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

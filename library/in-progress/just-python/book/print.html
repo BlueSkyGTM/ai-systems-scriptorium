@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-584cc33c.js";
+            window.path_to_searchindex_js = "searchindex-986954d7.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-52181c8c.js"></script>
+        <script src="toc-3357fa62.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -1715,6 +1715,418 @@ def center_weird(e):
 </ul>
 <div class="claude-handoff" data-exercise="exercises/module4/when-not-to-vectorize/">
 <p><strong>Build It in Claude Code:</strong> Extend <code>vectorization_report.py</code> with a memory check that imports <code>broadcast_allocates</code> and <code>time_sum</code> from the M1 <code>measure.py</code>, runs both fixtures (one where vectorizing wins, one where it OOMs), and prints a final “vectorize / keep the loop / chunk it” recommendation with the numbers behind it.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-5-python-idioms-at-interview-speed"><a class="header" href="#module-5-python-idioms-at-interview-speed">Module 5: Python Idioms at Interview Speed</a></h1>
+<h2 id="what-this-module-covers-4"><a class="header" href="#what-this-module-covers-4">What This Module Covers</a></h2>
+<p>Modules 1 through 4 made you fast with data. Module 5 makes you fluent in the Python a screen actually tests. The five idioms a take-home or a live round assumes you know cold are comprehensions, generators, decorators, type hints, and dataclasses. None of them are trivia. Each is the difference between code that reads like an engineer wrote it and code that reads like a beginner, and a reviewer judges that in the first ten lines.</p>
+<p>These idioms are not about NumPy or Pandas. They are core Python, and a hiring screen tests them directly: the comprehension a reviewer expects instead of an append loop, the generator that streams a corpus too big for RAM, the decorator that adds timing without touching the function, the type hint that makes a signature reviewable, the dataclass that replaces a fragile dict.</p>
+<h2 id="arc-of-lessons-4"><a class="header" href="#arc-of-lessons-4">Arc of Lessons</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Lesson</th><th>Title</th><th>What It Teaches</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>Comprehensions and Generators</td><td>Same syntax, opposite memory profile: a comprehension builds the whole sequence; a generator streams it one item at a time and never holds the result</td></tr>
+<tr><td>2</td><td>Decorators</td><td>Wrap behavior onto a function without touching its body; build <code>@timed</code> with <code>functools.wraps</code>, the production version of the manual timing you have done since M1</td></tr>
+<tr><td>3</td><td>Type Hints</td><td>The contract the reader and <code>mypy</code> both read; <code>list[float]</code>, <code>Optional</code>, <code>Callable</code>, <code>Protocol</code>, and what a reviewer scans for first</td></tr>
+<tr><td>4</td><td>Dataclasses</td><td>A typed record with <code>__init__</code>, <code>__repr__</code>, and <code>__eq__</code> for free; replaces the dict-of-fields that <code>measure.py</code> returns</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="throughline-artifact-4"><a class="header" href="#throughline-artifact-4">Throughline Artifact</a></h2>
+<p>Module 5 has no single new artifact. Its idioms are the polish you apply to the artifacts you already built and the one you are about to build. Each lesson demonstrates its idiom by refactoring a piece of your own <code>measure.py</code> or <code>vectorization_report.py</code>: <code>@timed</code> generalizes your hand-written timing, a <code>@dataclass</code> replaces a returned dict, type hints harden the signatures. The exercises stay self-contained (each is a focused, runnable demo of one idiom) so the lessons can teach cleanly without four files refactoring one. The named forward link: these five idioms are the ones Module 6’s <code>wrangle.py</code> is written with from the first line.</p>
+<h2 id="prerequisites-4"><a class="header" href="#prerequisites-4">Prerequisites</a></h2>
+<ul>
+<li>Modules 1 through 4, and the <code>measure.py</code> / <code>vectorization_report.py</code> artifacts you built. Module 5 refactors snippets of them to show each idiom in your own code.</li>
+<li>A Python 3.11+ environment. These lessons use the modern builtin-generic syntax (<code>list[float]</code>, <code>X | None</code>); no third-party packages are required (mypy is optional, noted where relevant).</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="comprehensions-and-generators"><a class="header" href="#comprehensions-and-generators">Comprehensions and Generators</a></h1>
+<p>A loop that appends to a list is not the pattern the interviewer wants to see. A comprehension says the same thing in one line, and a generator says it without allocating the list at all.</p>
+<h2 id="what-you-build-5"><a class="header" href="#what-you-build-5">What You Build</a></h2>
+<p>You build a script that constructs label maps and token sequences using comprehensions and a generator, measures the memory difference between the two approaches on a ten-million-item range, and prints a concrete comparison.</p>
+<h2 id="the-loop-a-reviewer-skips-past"><a class="header" href="#the-loop-a-reviewer-skips-past">The Loop a Reviewer Skips Past</a></h2>
+<p>Here is the pattern that signals you have not internalized the idiom:</p>
+<pre><code class="language-python">squares = []
+for x in range(10):
+    squares.append(x * x)
+</code></pre>
+<p>A list comprehension replaces all three lines with one:</p>
+<pre><code class="language-python">squares = [x * x for x in range(10)]
+print(squares)
+# [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
+</code></pre>
+<p>The result is identical. The comprehension states the <em>intent</em> (build a list of squares), not the <em>procedure</em> (initialize, loop, append). Python reviewers read comprehensions at a glance; they have to parse the loop.</p>
+<h2 id="dict-and-set-comprehensions"><a class="header" href="#dict-and-set-comprehensions">Dict and Set Comprehensions</a></h2>
+<p>The same syntax works for dicts and sets. In <code>data.py</code> from the Made With ML codebase, <code>CustomPreprocessor.fit</code> builds its label-to-index map with a dict comprehension:</p>
+<pre><code class="language-python">class_to_index = {tag: i for i, tag in enumerate(tags)}
+</code></pre>
+<p>And the reverse map inverts it in the same shape:</p>
+<pre><code class="language-python">index_to_class = {v: k for k, v in class_to_index.items()}
+</code></pre>
+<p>No loop, no intermediate list, no manual counter. Both maps are correct by construction because <code>enumerate</code> handles the index.</p>
+<p>You can filter inside any comprehension with an <code>if</code> clause:</p>
+<pre><code class="language-python"># Keep only tags that appear more than once
+filtered = {tag: i for tag, i in class_to_index.items() if i &gt; 0}
+</code></pre>
+<p>A set comprehension drops the value side:</p>
+<pre><code class="language-python">seen = {tag.lower() for tag in tags}
+</code></pre>
+<h2 id="generator-expressions-same-syntax-no-list"><a class="header" href="#generator-expressions-same-syntax-no-list">Generator Expressions: Same Syntax, No List</a></h2>
+<p>A generator expression uses parentheses instead of brackets:</p>
+<pre><code class="language-python">gen = (x * x for x in range(10))
+print(type(gen))   # &lt;class 'generator'&gt;
+</code></pre>
+<p>It does not build a list. It creates a generator object that yields one value at a time when you iterate it. You cannot index into it or call <code>len</code> on it. What you can do is stream it once, which is exactly what you need when the data is too large to hold in memory.</p>
+<pre><code class="language-python"># Consume the generator
+for val in gen:
+    print(val, end=" ")
+# 0 1 4 9 16 25 36 49 64 81
+</code></pre>
+<h2 id="the-memory-contrast"><a class="header" href="#the-memory-contrast">The Memory Contrast</a></h2>
+<p>The difference becomes concrete at scale. A list comprehension over ten million integers materializes every value:</p>
+<pre><code class="language-python">import sys
+
+n = 10_000_000
+eager = [x * x for x in range(n)]
+print(f"list: {sys.getsizeof(eager):,} bytes")
+# list: 89,095,160 bytes  (roughly 85 MB)
+</code></pre>
+<p>The generator equivalent stays flat regardless of <code>n</code>:</p>
+<pre><code class="language-python">lazy = (x * x for x in range(n))
+print(f"generator: {sys.getsizeof(lazy):,} bytes")
+# generator: 208 bytes
+</code></pre>
+<p>The generator object is a few hundred bytes. It holds no squares, only the recipe for producing the next one. That recipe costs the same whether <code>n</code> is ten million or ten billion.</p>
+<h2 id="yield-functions"><a class="header" href="#yield-functions"><code>yield</code> Functions</a></h2>
+<p>A <code>yield</code> function gives you the same lazy behavior with more control. Where a generator expression is one line, a <code>yield</code> function can filter, transform, and maintain state across iterations:</p>
+<pre><code class="language-python">def tokenize_corpus(docs: list[str]):
+    """Yield one token list per document without building all of them at once."""
+    for doc in docs:
+        yield doc.lower().split()
+
+corpus = ["Eval pipelines matter", "Retrieval beats memorization"]
+tokens = tokenize_corpus(corpus)
+print(next(tokens))   # ['eval', 'pipelines', 'matter']
+print(next(tokens))   # ['retrieval', 'beats', 'memorization']
+</code></pre>
+<p>Each call to <code>next</code> runs the function body until the next <code>yield</code> and suspends. The rest of the corpus sits in <code>docs</code>, untouched, until you ask for it.</p>
+<h2 id="when-to-use-each"><a class="header" href="#when-to-use-each">When to Use Each</a></h2>
+<p>The choice is mechanical once you know the constraints:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Need</th><th>Use</th></tr>
+</thead>
+<tbody>
+<tr><td>Reuse the result, index into it, or call <code>len</code></td><td>list/dict/set comprehension</td></tr>
+<tr><td>Stream a large or infinite source exactly once</td><td>generator expression or <code>yield</code> function</td></tr>
+<tr><td>Complex multi-step transformation per item</td><td><code>yield</code> function</td></tr>
+<tr><td>Simple one-expression transformation per item</td><td>generator expression</td></tr>
+</tbody>
+</table>
+</div>
+<p>The wrong choice is not always wrong; it is wasteful. A comprehension over a corpus that fits in RAM is fine. A comprehension over a corpus that does not fit will crash or swap. The generator never asks.</p>
+<p>The screen expects a comprehension, not a loop, and a generator when the data is a corpus you stream once. Reaching for the append loop signals you have not internalized the idiom; reaching for the generator signals you thought about what fits in memory.</p>
+<h2 id="core-concepts-16"><a class="header" href="#core-concepts-16">Core Concepts</a></h2>
+<ul>
+<li>A list comprehension builds the entire sequence in memory at construction time; the append-loop equivalent does the same thing with three times the syntax and signals the wrong idiom to a reviewer.</li>
+<li>A dict comprehension <code>{k: v for k, v in items}</code> is the standard way to build or invert a label map; both forms are readable at a glance and correct by construction.</li>
+<li>A generator expression <code>(expr for x in iterable)</code> yields one item at a time and holds no result in memory, so it costs a fixed few hundred bytes regardless of the source size.</li>
+<li>A <code>yield</code> function suspends at each <code>yield</code> and resumes on the next <code>next()</code> call; use it when the per-item logic is too complex for a single expression.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module5/comprehensions-and-generators/">
+<p><strong>Build It in Claude Code:</strong> Build a script that constructs comprehensions and a generator over the same data, asserts they produce equal results, and demonstrates the memory difference between the eager and lazy forms.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="decorators"><a class="header" href="#decorators">Decorators</a></h1>
+<p>Every time you want to add timing, logging, or retry logic to a function, you have two choices: copy the boilerplate into the body, or write it once and attach it with a single line. Decorators are the second choice, and they are how production Python code adds cross-cutting behavior without touching the function it wraps.</p>
+<h2 id="what-you-build-6"><a class="header" href="#what-you-build-6">What You Build</a></h2>
+<p>You build <code>@timed</code>, a reusable decorator that records elapsed time for any function you hand it, without modifying that function’s body, name, or docstring.</p>
+<h2 id="the-closure-foundation"><a class="header" href="#the-closure-foundation">The Closure Foundation</a></h2>
+<p>A decorator is a function that returns a function. To see why, start without the <code>@</code> syntax:</p>
+<pre><code class="language-python">import time
+
+def timed(fn):
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        result = fn(*args, **kwargs)
+        elapsed = time.perf_counter() - start
+        print(f"{fn.__name__} took {elapsed:.4f}s")
+        return result
+    return wrapper
+</code></pre>
+<p><code>timed</code> takes <code>fn</code> as its argument and closes over it inside <code>wrapper</code>. When <code>wrapper</code> runs, <code>fn</code> is still in scope because Python captured it at definition time. That captured reference is the closure: <code>wrapper</code> remembers <code>fn</code> even after <code>timed</code> has returned.</p>
+<p>The <code>*args, **kwargs</code> forwarding makes <code>wrapper</code> general. It passes every positional and keyword argument through to <code>fn</code> unchanged, so <code>@timed</code> works on any function signature without modification.</p>
+<h2 id="the--syntax"><a class="header" href="#the--syntax">The <code>@</code> Syntax</a></h2>
+<p>The <code>@decorator</code> line is sugar for reassigning the name:</p>
+<pre><code class="language-python">@timed
+def load_embeddings(path: str) -&gt; list:
+    """Load vectors from disk."""
+    time.sleep(0.05)  # simulate I/O
+    return [1.0, 2.0, 3.0]
+</code></pre>
+<p>Python executes that as <code>load_embeddings = timed(load_embeddings)</code> before the module finishes loading. From that point forward, <code>load_embeddings</code> refers to <code>wrapper</code>, not the original function. Call it:</p>
+<pre><code class="language-python">vectors = load_embeddings("embeddings.npy")
+# load_embeddings took 0.0512s
+print(vectors)
+# [1.0, 2.0, 3.0]
+</code></pre>
+<p>The original function ran, its result came back, and the timing printed. One decorator line, zero changes to the body.</p>
+<h2 id="why-functoolswraps-is-not-optional"><a class="header" href="#why-functoolswraps-is-not-optional">Why <code>functools.wraps</code> Is Not Optional</a></h2>
+<p>Without <code>wraps</code>, the wrapper replaces the function’s identity:</p>
+<pre><code class="language-python">print(load_embeddings.__name__)   # 'wrapper'  (wrong)
+print(load_embeddings.__doc__)    # None        (gone)
+</code></pre>
+<p>Tracebacks, logging frameworks, profilers, and docstring tools all read <code>__name__</code> and <code>__doc__</code>. If your wrapper swallows them, every tool in the stack reports the wrong function. The fix is one import and one line:</p>
+<pre><code class="language-python">import functools
+import time
+
+def timed(fn):
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        result = fn(*args, **kwargs)
+        elapsed = time.perf_counter() - start
+        print(f"{fn.__name__} took {elapsed:.4f}s")
+        return result
+    return wrapper
+</code></pre>
+<p><code>functools.wraps(fn)</code> copies <code>__name__</code>, <code>__doc__</code>, <code>__annotations__</code>, <code>__module__</code>, and <code>__qualname__</code> from <code>fn</code> onto <code>wrapper</code>. Now the decorator is transparent to every tool that inspects the function:</p>
+<pre><code class="language-python">@timed
+def load_embeddings(path: str) -&gt; list:
+    """Load vectors from disk."""
+    time.sleep(0.05)
+    return [1.0, 2.0, 3.0]
+
+print(load_embeddings.__name__)   # 'load_embeddings'
+print(load_embeddings.__doc__)    # 'Load vectors from disk.'
+</code></pre>
+<p>This is the pattern the MLflow tracing library uses for its own <code>@mlflow.trace</code> decorator, where <code>functools.wraps</code> keeps the wrapped function’s name visible in traces and tracebacks (<a href="https://learn.microsoft.com/azure/databricks/mlflow3/genai/tracing/app-instrumentation/manual-tracing/function-decorator">learn.microsoft.com/azure/databricks/mlflow3/genai/tracing/app-instrumentation/manual-tracing/function-decorator</a>).</p>
+<h2 id="a-second-practical-example-lru_cache"><a class="header" href="#a-second-practical-example-lru_cache">A Second Practical Example: <code>@lru_cache</code></a></h2>
+<p><code>functools.lru_cache</code> is a decorator from the standard library that caches return values by argument. You do not write the wrapper; you apply the decorator:</p>
+<pre><code class="language-python">import functools
+
+@functools.lru_cache(maxsize=128)
+def embed(text: str) -&gt; tuple:
+    """Return a fake embedding for text."""
+    return tuple(hash(c) % 100 for c in text[:4])
+
+print(embed("hello"))   # (4, 1, 8, 8)
+print(embed("hello"))   # same result, served from cache
+print(embed.cache_info())
+# CacheInfo(hits=1, misses=1, maxsize=128, currsize=1)
+</code></pre>
+<p>The decorator wraps <code>embed</code> with a lookup table keyed by arguments. The first call executes the function and stores the result; every identical call after that returns the cached value without running the body. <code>cache_info()</code> exposes the hit/miss ratio, so you can confirm caching is actually working.</p>
+<p><code>@lru_cache</code> is the production pattern for memoizing expensive, pure functions: embedding calls, tokenization, schema lookups. It is a decorator you apply in one line rather than build from scratch.</p>
+<h2 id="the-made-with-ml-pattern"><a class="header" href="#the-made-with-ml-pattern">The <code>made-with-ml</code> Pattern</a></h2>
+<p>In the <code>made-with-ml</code> utility module, helpers like <code>set_seeds</code> and <code>save_dict</code> do one job and stay small: each wraps an operation that production code calls in many places. Decorators take that same discipline to a meta level. Instead of putting timing or seeding logic inside each helper, you write it once as a decorator and attach it where it belongs. The body stays focused on the business logic; the wrapper handles the cross-cutting concern.</p>
+<p>Write <code>@timed</code> once; every function that needs it gets instrumented with no edits to its body. That is what a code reviewer means when they say the logic and the instrumentation belong in separate layers.</p>
+<h2 id="core-concepts-17"><a class="header" href="#core-concepts-17">Core Concepts</a></h2>
+<ul>
+<li>A decorator is a function that takes a function and returns a wrapper function; <code>@timed</code> is syntactic sugar for <code>fn = timed(fn)</code> applied before the module loads.</li>
+<li><code>*args, **kwargs</code> forwarding inside the wrapper makes the decorator general: it passes every argument through to the original function unchanged.</li>
+<li><code>functools.wraps(fn)</code> copies the wrapped function’s name, docstring, and annotations onto the wrapper; omitting it silently corrupts tracebacks, profilers, and logging frameworks.</li>
+<li><code>functools.lru_cache</code> is a standard-library decorator that caches return values by argument; apply it in one line to memoize any pure function without writing the cache yourself.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module5/decorators/">
+<p><strong>Build It in Claude Code:</strong> Build a self-contained script that implements <code>@timed</code> with <code>functools.wraps</code>, applies it to a function, and asserts that the wrapped function returns the correct result, that <code>__name__</code> equals the original, and that the recorded elapsed time is a non-negative float.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="type-hints-are-a-contract"><a class="header" href="#type-hints-are-a-contract">Type Hints Are a Contract</a></h1>
+<p>A code reviewer reads your function signature first. If it says <code>def process(data, fn, threshold)</code>, they stop and start guessing: what is <code>data</code>? A list? A dict? A string? What does <code>fn</code> do? A typed signature closes that gap before the question forms.</p>
+<h2 id="what-an-annotation-does"><a class="header" href="#what-an-annotation-does">What an Annotation Does</a></h2>
+<p>An annotation tells Python what type a parameter accepts and what a function returns. It is written with <code>:</code> after the parameter name and <code>-&gt;</code> before the return type:</p>
+<pre><code class="language-python">def clamp(value: float, low: float, high: float) -&gt; float:
+    return max(low, min(high, value))
+</code></pre>
+<p>That signature is documentation with no extra lines. The reader sees the contract. The runtime sees nothing new: Python does not enforce annotations at all. Pass a string to <code>clamp</code> and Python will not complain until the arithmetic fails. Annotations are for people and tools, not for the interpreter.</p>
+<h2 id="the-modern-syntax"><a class="header" href="#the-modern-syntax">The Modern Syntax</a></h2>
+<p>Before Python 3.9, the standard generics lived in the <code>typing</code> module: <code>List[float]</code>, <code>Dict[str, int]</code>, <code>Tuple[int, ...]</code>. Since 3.9 you can use the built-in types directly. Since 3.10, <code>X | None</code> replaces <code>Optional[X]</code>. On 3.11+, prefer the builtin forms:</p>
+<pre><code class="language-python"># old style (still valid, still common in older codebases)
+from typing import Dict, List, Optional, Tuple
+
+def score_batch(texts: List[str]) -&gt; Dict[str, float]:
+    ...
+
+def find_label(index: int, labels: Optional[List[str]] = None) -&gt; str | None:
+    ...
+
+# modern style (3.9+ generics, 3.10+ union)
+def score_batch(texts: list[str]) -&gt; dict[str, float]:
+    ...
+
+def find_label(index: int, labels: list[str] | None = None) -&gt; str | None:
+    ...
+</code></pre>
+<p>The vault production code in <code>madewithml/data.py</code> uses the <code>typing</code> import style (<code>Dict</code>, <code>List</code>, <code>Tuple</code>) because it was written before 3.9 was ubiquitous. You will see both in production. Know which version your runtime is on and stay consistent within a file.</p>
+<h2 id="optional-and-none"><a class="header" href="#optional-and-none">Optional and None</a></h2>
+<p>A parameter is optional when it can receive a real value or nothing. The <code>| None</code> union makes that explicit:</p>
+<pre><code class="language-python">def clean_text(text: str, max_len: int | None = None) -&gt; str:
+    if max_len is not None:
+        text = text[:max_len]
+    return text.strip()
+</code></pre>
+<p>Without the annotation, a caller has to read the body to discover that <code>max_len = None</code> is legal. With it, the signature explains the contract.</p>
+<h2 id="callable"><a class="header" href="#callable">Callable</a></h2>
+<p>When a parameter is itself a function, <code>Callable</code> names its signature. The form is <code>Callable[[arg_types], return_type]</code>:</p>
+<pre><code class="language-python">from typing import Callable
+
+def apply_to_batch(
+    records: list[str],
+    transform: Callable[[str], str],
+) -&gt; list[str]:
+    return [transform(r) for r in records]
+</code></pre>
+<p><code>Callable[[str], str]</code> says: a function that takes one string and returns a string. Pass <code>str.upper</code>, pass <code>clean_text</code>, pass any compatible function. Mypy will catch it if the shapes do not match.</p>
+<h2 id="reading-a-hinted-signature"><a class="header" href="#reading-a-hinted-signature">Reading a Hinted Signature</a></h2>
+<p>The point is not just to annotate your own functions. It is to read other people’s. Consider <code>stratify_split</code> in the vault:</p>
+<pre><code class="language-python">def stratify_split(
+    ds: Dataset,
+    stratify: str,
+    test_size: float,
+    shuffle: bool = True,
+    seed: int = 1234,
+) -&gt; Tuple[Dataset, Dataset]:
+</code></pre>
+<p>You know immediately: one dataset in, two datasets out, a float between 0 and 1 for the split. No docstring needed to answer those questions. Type hints are the first layer of documentation a reviewer trusts because they are part of the function, not a comment that can drift.</p>
+<h2 id="static-checking-with-mypy"><a class="header" href="#static-checking-with-mypy">Static Checking With mypy</a></h2>
+<p>Annotations do nothing at runtime. <code>mypy</code> is the tool that checks them statically, before a line of production code runs. Visual Studio integrates mypy directly through the <strong>Python &gt; Run Mypy</strong> command in Solution Explorer; it highlights annotation violations in the Error List window as you would expect from a compiler error. (<a href="https://learn.microsoft.com/visualstudio/python/editing-python-code-in-visual-studio?view=visualstudio-2022#use-intellisense-features">Microsoft Learn: Edit Python code and use IntelliSense</a>)</p>
+<p>You can also run it from the command line:</p>
+<pre><code>mypy your_module.py
+</code></pre>
+<p>A clean mypy run on a fully annotated file is a meaningful signal: every call site and return path has been checked by a static analyzer. That is the proof you cannot get from reading the code alone.</p>
+<h2 id="protocol-structural-typing"><a class="header" href="#protocol-structural-typing">Protocol: Structural Typing</a></h2>
+<p><code>Protocol</code> lets you type a parameter by what it can do, not what it inherits from. A class satisfies a Protocol if it implements the required methods, no explicit inheritance needed:</p>
+<pre><code class="language-python">from typing import Protocol
+
+class Scorer(Protocol):
+    def score(self, text: str) -&gt; float:
+        ...
+
+def rank(texts: list[str], scorer: Scorer) -&gt; list[str]:
+    return sorted(texts, key=scorer.score, reverse=True)
+</code></pre>
+<p>Any object with a <code>score(text: str) -&gt; float</code> method passes as a <code>Scorer</code>. This is structural typing: the shape of the interface, not the name of the class, is what counts.</p>
+<p>The reviewer who lands on a typed signature does not need to open the function body to know what it accepts. That saves time at review and catches mistakes before the test suite runs.</p>
+<h2 id="core-concepts-18"><a class="header" href="#core-concepts-18">Core Concepts</a></h2>
+<ul>
+<li>Type annotations are a contract for people and tools: Python does not enforce them at runtime, but <code>mypy</code> checks them statically and IDEs surface them as documentation.</li>
+<li>On Python 3.9+, use builtin generics (<code>list[str]</code>, <code>dict[str, int]</code>); use <code>X | None</code> instead of <code>Optional[X]</code> on 3.10+; the <code>typing</code> import forms remain valid in older code.</li>
+<li><code>Callable[[arg_type], return_type]</code> names the signature of a function parameter, letting static tools verify that what you pass matches what the function expects.</li>
+<li><code>Protocol</code> enables structural typing: a class satisfies a Protocol by implementing the required methods, with no inheritance required.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module5/type-hints/">
+<p><strong>Build It in Claude Code:</strong> Write a self-contained script with three fully annotated functions, use <code>typing.get_type_hints()</code> to assert the annotations exist at runtime, and add a <code>Protocol</code> stretch that proves structural typing works without inheritance. Open the repo and pick up from this lesson.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="dataclasses"><a class="header" href="#dataclasses">Dataclasses</a></h1>
+<p>A dict is a fine bag of data until a reviewer reads <code>result["speddup"]</code> and the typo costs you twenty minutes of debugging. <code>@dataclass</code> turns a bag of fields into a typed record whose contract the reader can see, and whose attributes the interpreter can catch.</p>
+<h2 id="the-dict-problem"><a class="header" href="#the-dict-problem">The Dict Problem</a></h2>
+<p><code>measure.py</code> and <code>vectorization_report.py</code> have been returning dicts since M1. They work. The issue is that a dict makes no promises:</p>
+<pre><code class="language-python"># what measure.py returns today
+stats = time_sum(arr)
+# stats["wall_s"]   -- correct
+# stats["wall_sec"] -- KeyError at runtime, no warning at write time
+</code></pre>
+<p>A string key is invisible to <code>mypy</code> and invisible to your IDE’s autocomplete. Every caller guesses the key name. The function’s output has no shape the tooling can read.</p>
+<h2 id="the-dataclass-solution"><a class="header" href="#the-dataclass-solution">The @dataclass Solution</a></h2>
+<p>Decorate a class with <code>@dataclass</code> and Python generates <code>__init__</code>, <code>__repr__</code>, and <code>__eq__</code> from the field annotations. The class body is a schema, not a bag:</p>
+<pre><code class="language-python">from dataclasses import dataclass, field
+
+@dataclass
+class TimingResult:
+    wall_s: float
+    iterations: int
+    label: str = "unnamed"
+</code></pre>
+<p>Python reads the annotated names and types, writes <code>__init__(self, wall_s: float, iterations: int, label: str = "unnamed")</code>, and wires it up. You get this for free:</p>
+<pre><code class="language-python">r = TimingResult(wall_s=0.0031, iterations=1000)
+print(r)
+# TimingResult(wall_s=0.0031, iterations=1000, label='unnamed')
+
+r2 = TimingResult(wall_s=0.0031, iterations=1000)
+print(r == r2)  # True -- field-by-field comparison, generated automatically
+</code></pre>
+<p>The <code>__repr__</code> names every field. The <code>__eq__</code> compares them structurally. Neither needed a line of your code.</p>
+<h2 id="named-access-and-typo-safety"><a class="header" href="#named-access-and-typo-safety">Named Access and Typo Safety</a></h2>
+<p>Once the dict becomes a dataclass, the caller’s code changes in exactly the right direction:</p>
+<pre><code class="language-python"># dict: a typo is a silent KeyError
+wall = stats["wall_s"]
+# also valid at write time, explodes at runtime:
+wall = stats["wall_secs"]
+
+# dataclass: a typo is a NameError the linter catches immediately
+wall = result.wall_s
+# also valid at write time? no -- mypy and your IDE both flag this:
+wall = result.wall_secs  # error: "TimingResult" has no attribute "wall_secs"
+</code></pre>
+<p>The attribute lookup makes the contract visible. A reviewer reading the function signature and the return type sees exactly what the caller is allowed to ask for.</p>
+<h2 id="mutable-defaults-and-field"><a class="header" href="#mutable-defaults-and-field">Mutable Defaults and field()</a></h2>
+<p>A default value that is mutable needs <code>field(default_factory=...)</code>. Without it, every instance shares the same list object:</p>
+<pre><code class="language-python">from dataclasses import dataclass, field
+from typing import List
+
+@dataclass
+class BenchmarkSuite:
+    name: str
+    results: List[float] = field(default_factory=list)  # each instance gets its own list
+    tags: List[str] = field(default_factory=list)
+</code></pre>
+<p>Python calls the factory once per instance. Omit it and <code>@dataclass</code> raises <code>ValueError</code> at class definition time, which is the right place to catch the mistake.</p>
+<p>Microsoft’s Semantic Kernel uses this pattern in its Python vector-store connectors: a <code>@dataclass</code> model carries annotated fields, with <code>field(default_factory=lambda: str(uuid4()))</code> to generate per-instance keys (<a href="https://learn.microsoft.com/semantic-kernel/concepts/vector-store-connectors/defining-your-data-model">learn.microsoft.com/semantic-kernel/concepts/vector-store-connectors/defining-your-data-model</a>). The pattern applies wherever a record has typed fields and a default that cannot be shared across instances.</p>
+<h2 id="frozentrue-for-immutability"><a class="header" href="#frozentrue-for-immutability">frozen=True for Immutability</a></h2>
+<p>When a record should not change after construction, <code>frozen=True</code> makes that guarantee structural:</p>
+<pre><code class="language-python">@dataclass(frozen=True)
+class RunConfig:
+    model: str
+    batch_size: int
+    seed: int = 42
+
+cfg = RunConfig(model="llama-3", batch_size=32)
+cfg.batch_size = 64  # raises dataclasses.FrozenInstanceError
+</code></pre>
+<p><code>frozen=True</code> also makes the instance hashable, so it can be used as a dict key or in a set. Use it for configuration objects and for records you want to pass around without defensive copying. The <code>madewithml</code> config holds constants, paths, and MLflow settings as module-level names; a <code>@dataclass(frozen=True)</code> is the typed version of that pattern, with the same guarantee that nothing downstream can silently mutate a shared config.</p>
+<h2 id="when-a-dict-is-still-right"><a class="header" href="#when-a-dict-is-still-right">When a Dict Is Still Right</a></h2>
+<p>A dict wins when the keys are genuinely dynamic: the set of keys is unknown at write time, or the keys come from user input, a database column list, or a parsed file. A dataclass wins when the fields are fixed and named: the output of a timing run, a benchmark record, a configuration object, a function’s return value. If you are writing <code>result["speedup"]</code> in more than one place, the dataclass is overdue.</p>
+<h2 id="converting-a-returned-dict"><a class="header" href="#converting-a-returned-dict">Converting a Returned Dict</a></h2>
+<p>Turning a dict-returning function into a dataclass-returning one is a two-step refactor: define the class, then change the return. The callers gain attribute access and typo safety with no logic change:</p>
+<pre><code class="language-python"># before
+def run_benchmark(arr) -&gt; dict:
+    ...
+    return {"speedup": speedup, "wall_s": wall}
+
+# after
+@dataclass
+class BenchmarkResult:
+    speedup: float
+    wall_s: float
+
+def run_benchmark(arr) -&gt; BenchmarkResult:
+    ...
+    return BenchmarkResult(speedup=speedup, wall_s=wall)
+
+# caller after refactor
+result = run_benchmark(arr)
+print(f"speedup: {result.speedup:.2f}x")  # not result["speedup"]
+</code></pre>
+<p>The function’s return type is now its documentation.</p>
+<p>Returning <code>result.speedup</code> instead of <code>result["speedup"]</code> is the difference between a contract and a convention: the contract is what a code reviewer actually trusts.</p>
+<h2 id="core-concepts-19"><a class="header" href="#core-concepts-19">Core Concepts</a></h2>
+<ul>
+<li><code>@dataclass</code> generates <code>__init__</code>, <code>__repr__</code>, and <code>__eq__</code> from field annotations; you get a typed, self-documenting record without writing any of those methods.</li>
+<li>Mutable defaults (lists, dicts) require <code>field(default_factory=...)</code> so each instance gets its own object, not a shared reference.</li>
+<li><code>frozen=True</code> makes a dataclass immutable and hashable: the right choice for configuration objects and records that should not be mutated after construction.</li>
+<li>Attribute access (<code>result.speedup</code>) is typo-safe and IDE/<code>mypy</code>-checkable; a string key (<code>result["speedup"]</code>) is neither.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module5/dataclasses/">
+<p><strong>Build It in Claude Code:</strong> Define a <code>BenchmarkResult</code> dataclass with typed fields and a mutable default, construct instances, and assert that the auto-generated <code>__eq__</code>, <code>__repr__</code>, and <code>field(default_factory=...)</code> all behave correctly. Run the script and confirm it exits 0.</p>
 </div>
 
 

@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Reading and Writing AI Formats - Just Python — Applied Python for AI Engineers</title>
+        <title>Decorators - Just Python — Applied Python for AI Engineers</title>
 
 
         <!-- Custom HTML head -->
@@ -177,123 +177,98 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="reading-and-writing-ai-formats"><a class="header" href="#reading-and-writing-ai-formats">Reading and Writing AI Formats</a></h1>
-<p>Every AI pipeline moves data through exactly three formats, and the one you reach for by default determines how much time you spend debugging dtype surprises at 2 AM. CSV loses type information the moment you write it. JSONL preserves structure but not column types. Parquet keeps both, compresses the data, and lets you load a single column out of a ten-million-row file without touching the rest.</p>
+                        <h1 id="decorators"><a class="header" href="#decorators">Decorators</a></h1>
+<p>Every time you want to add timing, logging, or retry logic to a function, you have two choices: copy the boilerplate into the body, or write it once and attach it with a single line. Decorators are the second choice, and they are how production Python code adds cross-cutting behavior without touching the function it wraps.</p>
 <h2 id="what-you-build"><a class="header" href="#what-you-build">What You Build</a></h2>
-<p>You build <code>io_formats.py</code>, a script that writes a typed DataFrame to CSV, JSONL, and Parquet, reads each back, prints the dtypes before and after each round trip, and confirms what survived.</p>
-<h2 id="the-three-formats"><a class="header" href="#the-three-formats">The Three Formats</a></h2>
-<p>An AI pipeline uses these three formats for different reasons, at different stages.</p>
-<p><strong>CSV</strong> is the interchange default: the eval results table you hand to a reviewer, the split your training harness reads, the dataset someone ships you in a zip file. Every tool reads it. No tool preserves your dtypes.</p>
-<p><strong>JSONL</strong> (JSON Lines) is the corpus format: one JSON object per line, no enclosing array. Your annotation files are JSONL. Your fine-tuning dataset is JSONL. Your retrieval-augmentation source documents are JSONL. The record-per-line layout maps directly onto the made-with-ml <code>datasets/dataset.csv</code> pattern, which treats every row as an independent labeled record.</p>
-<p><strong>Parquet</strong> is the feature store and checkpoint format: columnar, typed, compressed. When your pipeline graduates from a few thousand rows to millions, Parquet is what you reach for because it lets you read one column without deserializing the rest.</p>
-<p>Microsoft Learn’s “Make Data Available in Azure Machine Learning” module shows these same tabular formats (CSV, JSON, Parquet) registered as versioned data assets in a production pipeline (<a href="https://learn.microsoft.com/training/modules/make-data-available-azure-machine-learning/">learn.microsoft.com/training/modules/make-data-available-azure-machine-learning</a>).</p>
-<h2 id="reading-and-writing-csv"><a class="header" href="#reading-and-writing-csv">Reading and Writing CSV</a></h2>
-<p>Start with a typed DataFrame that mirrors an eval results table:</p>
-<pre><code class="language-python">import pandas as pd
-import numpy as np
+<p>You build <code>@timed</code>, a reusable decorator that records elapsed time for any function you hand it, without modifying that function’s body, name, or docstring.</p>
+<h2 id="the-closure-foundation"><a class="header" href="#the-closure-foundation">The Closure Foundation</a></h2>
+<p>A decorator is a function that returns a function. To see why, start without the <code>@</code> syntax:</p>
+<pre><code class="language-python">import time
 
-df = pd.DataFrame({
-    "text":      ["classify this", "another sample", "third record"],
-    "label":     pd.array([1, 0, 1], dtype="int32"),
-    "score":     pd.array([0.91, 0.43, 0.78], dtype="float32"),
-    "timestamp": pd.to_datetime(["2024-01-01", "2024-01-02", "2024-01-03"]),
-})
+def timed(fn):
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        result = fn(*args, **kwargs)
+        elapsed = time.perf_counter() - start
+        print(f"{fn.__name__} took {elapsed:.4f}s")
+        return result
+    return wrapper
+</code></pre>
+<p><code>timed</code> takes <code>fn</code> as its argument and closes over it inside <code>wrapper</code>. When <code>wrapper</code> runs, <code>fn</code> is still in scope because Python captured it at definition time. That captured reference is the closure: <code>wrapper</code> remembers <code>fn</code> even after <code>timed</code> has returned.</p>
+<p>The <code>*args, **kwargs</code> forwarding makes <code>wrapper</code> general. It passes every positional and keyword argument through to <code>fn</code> unchanged, so <code>@timed</code> works on any function signature without modification.</p>
+<h2 id="the--syntax"><a class="header" href="#the--syntax">The <code>@</code> Syntax</a></h2>
+<p>The <code>@decorator</code> line is sugar for reassigning the name:</p>
+<pre><code class="language-python">@timed
+def load_embeddings(path: str) -&gt; list:
+    """Load vectors from disk."""
+    time.sleep(0.05)  # simulate I/O
+    return [1.0, 2.0, 3.0]
+</code></pre>
+<p>Python executes that as <code>load_embeddings = timed(load_embeddings)</code> before the module finishes loading. From that point forward, <code>load_embeddings</code> refers to <code>wrapper</code>, not the original function. Call it:</p>
+<pre><code class="language-python">vectors = load_embeddings("embeddings.npy")
+# load_embeddings took 0.0512s
+print(vectors)
+# [1.0, 2.0, 3.0]
+</code></pre>
+<p>The original function ran, its result came back, and the timing printed. One decorator line, zero changes to the body.</p>
+<h2 id="why-functoolswraps-is-not-optional"><a class="header" href="#why-functoolswraps-is-not-optional">Why <code>functools.wraps</code> Is Not Optional</a></h2>
+<p>Without <code>wraps</code>, the wrapper replaces the function’s identity:</p>
+<pre><code class="language-python">print(load_embeddings.__name__)   # 'wrapper'  (wrong)
+print(load_embeddings.__doc__)    # None        (gone)
+</code></pre>
+<p>Tracebacks, logging frameworks, profilers, and docstring tools all read <code>__name__</code> and <code>__doc__</code>. If your wrapper swallows them, every tool in the stack reports the wrong function. The fix is one import and one line:</p>
+<pre><code class="language-python">import functools
+import time
 
-print(df.dtypes)
-# text                object
-# label                int32
-# score               float32
-# timestamp    datetime64[ns]
+def timed(fn):
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        result = fn(*args, **kwargs)
+        elapsed = time.perf_counter() - start
+        print(f"{fn.__name__} took {elapsed:.4f}s")
+        return result
+    return wrapper
 </code></pre>
-<p>Write it and read it back:</p>
-<pre><code class="language-python">df.to_csv("eval.csv", index=False)
-df_csv = pd.read_csv("eval.csv")
+<p><code>functools.wraps(fn)</code> copies <code>__name__</code>, <code>__doc__</code>, <code>__annotations__</code>, <code>__module__</code>, and <code>__qualname__</code> from <code>fn</code> onto <code>wrapper</code>. Now the decorator is transparent to every tool that inspects the function:</p>
+<pre><code class="language-python">@timed
+def load_embeddings(path: str) -&gt; list:
+    """Load vectors from disk."""
+    time.sleep(0.05)
+    return [1.0, 2.0, 3.0]
 
-print(df_csv.dtypes)
-# text         object
-# label         int64   &lt;-- int32 is gone
-# score        float64  &lt;-- float32 is gone
-# timestamp     object  &lt;-- datetime is gone
+print(load_embeddings.__name__)   # 'load_embeddings'
+print(load_embeddings.__doc__)    # 'Load vectors from disk.'
 </code></pre>
-<p>The round trip loses all three numeric dtypes and the datetime. CSV carries no schema: it is a text file with commas. When you read it back, pandas infers types from the character sequences it sees, and it guesses conservatively (<code>int64</code>, <code>float64</code>, <code>object</code>). To recover your types, pass <code>dtype</code> and <code>parse_dates</code> explicitly:</p>
-<pre><code class="language-python">df_csv = pd.read_csv(
-    "eval.csv",
-    dtype={"label": "int32", "score": "float32"},
-    parse_dates=["timestamp"],
-)
+<p>This is the pattern the MLflow tracing library uses for its own <code>@mlflow.trace</code> decorator, where <code>functools.wraps</code> keeps the wrapped function’s name visible in traces and tracebacks (<a href="https://learn.microsoft.com/azure/databricks/mlflow3/genai/tracing/app-instrumentation/manual-tracing/function-decorator">learn.microsoft.com/azure/databricks/mlflow3/genai/tracing/app-instrumentation/manual-tracing/function-decorator</a>).</p>
+<h2 id="a-second-practical-example-lru_cache"><a class="header" href="#a-second-practical-example-lru_cache">A Second Practical Example: <code>@lru_cache</code></a></h2>
+<p><code>functools.lru_cache</code> is a decorator from the standard library that caches return values by argument. You do not write the wrapper; you apply the decorator:</p>
+<pre><code class="language-python">import functools
 
-print(df_csv.dtypes)
-# text                object
-# label                int32
-# score               float32
-# timestamp    datetime64[ns]
-</code></pre>
-<p>The <code>dtype</code> dict maps column names to types. <code>parse_dates</code> accepts a list of column names to coerce from string to <code>datetime64</code>. You own the schema when you read CSV; the file does not carry it for you. Microsoft Learn’s “Explore and Analyze Data with Python” module walks through loading and inspecting tabular data with Pandas this way (<a href="https://learn.microsoft.com/training/modules/explore-analyze-data-with-python/2-explore-data-numpy-pandas">learn.microsoft.com/training/modules/explore-analyze-data-with-python</a>).</p>
-<h2 id="reading-and-writing-jsonl"><a class="header" href="#reading-and-writing-jsonl">Reading and Writing JSONL</a></h2>
-<p>JSONL writes each row as a JSON object on its own line. Pandas calls this <code>orient="records"</code> combined with <code>lines=True</code>:</p>
-<pre><code class="language-python">df.to_json("corpus.jsonl", orient="records", lines=True)
-</code></pre>
-<p>The file looks like this:</p>
-<pre><code>{"text":"classify this","label":1,"score":0.9100000262260437,"timestamp":1704067200000}
-{"text":"another sample","label":0,"score":0.4300000071525574,"timestamp":1704153600000}
-{"text":"third record","label":1,"score":0.7799999713897705,"timestamp":1704240000000}
-</code></pre>
-<p>Two things to notice. First, <code>score</code> has expanded: the <code>float32</code> value <code>0.91</code> cannot be represented exactly in JSON’s floating-point encoding, so pandas serializes it at full <code>float64</code> precision. Second, <code>timestamp</code> is a millisecond epoch integer, not an ISO string; pandas serializes datetimes as integers by default.</p>
-<p>Read it back:</p>
-<pre><code class="language-python">df_jsonl = pd.read_json("corpus.jsonl", lines=True)
+@functools.lru_cache(maxsize=128)
+def embed(text: str) -&gt; tuple:
+    """Return a fake embedding for text."""
+    return tuple(hash(c) % 100 for c in text[:4])
 
-print(df_jsonl.dtypes)
-# text         object
-# label         int64   &lt;-- int32 gone
-# score        float64  &lt;-- float32 gone
-# timestamp    datetime64[ns]  &lt;-- this one survives, pandas infers it
+print(embed("hello"))   # (4, 1, 8, 8)
+print(embed("hello"))   # same result, served from cache
+print(embed.cache_info())
+# CacheInfo(hits=1, misses=1, maxsize=128, currsize=1)
 </code></pre>
-<p>JSONL preserves the datetime (because pandas interprets epoch milliseconds as <code>datetime64</code>) but loses numeric subtypes just like CSV does. For a corpus, this is acceptable: the structure survives, and the text is what matters. For a typed feature store, it is not.</p>
-<h2 id="reading-and-writing-parquet"><a class="header" href="#reading-and-writing-parquet">Reading and Writing Parquet</a></h2>
-<p>Parquet encodes the schema alongside the data. Your dtypes do not need to survive inference; they are written into the file’s metadata and restored exactly on read. The engine that makes this work with pandas is <code>pyarrow</code> (<code>pip install pyarrow</code>):</p>
-<pre><code class="language-python">df.to_parquet("features.parquet", engine="pyarrow", index=False)
-df_parquet = pd.read_parquet("features.parquet", engine="pyarrow")
-
-print(df_parquet.dtypes)
-# text                object
-# label                int32   &lt;-- exact
-# score               float32  &lt;-- exact
-# timestamp    datetime64[ns]  &lt;-- exact
-</code></pre>
-<p>All four dtypes survive intact. The file is also smaller: the pandas docs note that Parquet uses columnar compression, which means a column of repeated <code>int32</code> values compresses far more aggressively than the same values encoded as ASCII digits in a CSV row. For a 3-row frame the size difference is negligible; at a million rows it is the difference between a 40 MB file and a 4 MB file.</p>
-<p>Parquet also supports column-subset reads. If your feature store has 200 columns and a downstream model needs only 3, you pull those 3 without deserializing the rest:</p>
-<pre><code class="language-python">subset = pd.read_parquet("features.parquet", columns=["text", "score"])
-print(subset.shape)    # (3, 2)
-print(subset.dtypes)
-# text      object
-# score    float32
-</code></pre>
-<p>CSV has no equivalent. Reading 3 columns from a CSV still parses every byte of every row.</p>
-<h2 id="the-round-trip-discipline"><a class="header" href="#the-round-trip-discipline">The Round-Trip Discipline</a></h2>
-<p>Before you commit a format choice, trace what survives the round trip for your specific dtypes:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Format</th><th><code>int32</code></th><th><code>float32</code></th><th><code>datetime64</code></th><th>Column subset read</th></tr>
-</thead>
-<tbody>
-<tr><td>CSV</td><td>No (needs <code>dtype=</code>)</td><td>No (needs <code>dtype=</code>)</td><td>No (needs <code>parse_dates=</code>)</td><td>No</td></tr>
-<tr><td>JSONL</td><td>No</td><td>No</td><td>Yes (epoch ms)</td><td>No</td></tr>
-<tr><td>Parquet</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
-</tbody>
-</table>
-</div>
-<p>The rule is: use the format that matches what you need to preserve, not the one that is most convenient to produce. Your eval table ships as CSV because every reviewer can open it. Your annotated corpus ships as JSONL because every annotation tool reads it. Your feature store ships as Parquet because memory and speed matter at scale, and nothing downstream should be re-inferring types from bytes.</p>
-<p>Format selection is a memory-and-speed contract with your pipeline, not a file extension you pick at random.</p>
+<p>The decorator wraps <code>embed</code> with a lookup table keyed by arguments. The first call executes the function and stores the result; every identical call after that returns the cached value without running the body. <code>cache_info()</code> exposes the hit/miss ratio, so you can confirm caching is actually working.</p>
+<p><code>@lru_cache</code> is the production pattern for memoizing expensive, pure functions: embedding calls, tokenization, schema lookups. It is a decorator you apply in one line rather than build from scratch.</p>
+<h2 id="the-made-with-ml-pattern"><a class="header" href="#the-made-with-ml-pattern">The <code>made-with-ml</code> Pattern</a></h2>
+<p>In the <code>made-with-ml</code> utility module, helpers like <code>set_seeds</code> and <code>save_dict</code> do one job and stay small: each wraps an operation that production code calls in many places. Decorators take that same discipline to a meta level. Instead of putting timing or seeding logic inside each helper, you write it once as a decorator and attach it where it belongs. The body stays focused on the business logic; the wrapper handles the cross-cutting concern.</p>
+<p>Write <code>@timed</code> once; every function that needs it gets instrumented with no edits to its body. That is what a code reviewer means when they say the logic and the instrumentation belong in separate layers.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>CSV serializes data as text and carries no schema; every numeric and datetime dtype must be explicitly declared on <code>read_csv</code> via <code>dtype=</code> and <code>parse_dates=</code>, or pandas infers conservatively and widens types.</li>
-<li>JSONL writes one JSON object per line using <code>orient="records", lines=True</code> and is the standard corpus format; it preserves structure but not numeric subtypes, so <code>int32</code> and <code>float32</code> return as <code>int64</code> and <code>float64</code>.</li>
-<li>Parquet encodes the DataFrame schema in the file’s metadata and restores all dtypes exactly on read, including <code>int32</code>, <code>float32</code>, and <code>datetime64</code>; it is the format you choose once data is big and column-subset reads matter.</li>
-<li>Each format has a natural pipeline role: CSV for eval interchange, JSONL for corpora and annotation, Parquet for feature stores and anything that needs typed round trips at scale.</li>
+<li>A decorator is a function that takes a function and returns a wrapper function; <code>@timed</code> is syntactic sugar for <code>fn = timed(fn)</code> applied before the module loads.</li>
+<li><code>*args, **kwargs</code> forwarding inside the wrapper makes the decorator general: it passes every argument through to the original function unchanged.</li>
+<li><code>functools.wraps(fn)</code> copies the wrapped function’s name, docstring, and annotations onto the wrapper; omitting it silently corrupts tracebacks, profilers, and logging frameworks.</li>
+<li><code>functools.lru_cache</code> is a standard-library decorator that caches return values by argument; apply it in one line to memoize any pure function without writing the cache yourself.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module3/reading-and-writing-ai-formats/">
-<p><strong>Build It in Claude Code:</strong> Build <code>io_formats.py</code>, a self-contained script that round-trips a typed DataFrame through CSV, JSONL, and Parquet, asserts dtype behavior at each step, and confirms Parquet is smaller than CSV for the same data.</p>
+<div class="claude-handoff" data-exercise="exercises/module5/decorators/">
+<p><strong>Build It in Claude Code:</strong> Build a self-contained script that implements <code>@timed</code> with <code>functools.wraps</code>, applies it to a function, and asserts that the wrapped function returns the correct result, that <code>__name__</code> equals the original, and that the recorded elapsed time is a non-negative float.</p>
 </div>
 
 
@@ -301,11 +276,11 @@ print(subset.dtypes)
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module3/series-and-dataframe.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module5/comprehensions-and-generators.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module3/groupby-merge-apply.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module5/type-hints.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -315,11 +290,11 @@ print(subset.dtypes)
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module3/series-and-dataframe.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module5/comprehensions-and-generators.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module3/groupby-merge-apply.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module5/type-hints.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

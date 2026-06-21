@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Reading and Writing AI Formats - Just Python — Applied Python for AI Engineers</title>
+        <title>Overview - Just Python — Applied Python for AI Engineers</title>
 
 
         <!-- Custom HTML head -->
@@ -177,135 +177,41 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="reading-and-writing-ai-formats"><a class="header" href="#reading-and-writing-ai-formats">Reading and Writing AI Formats</a></h1>
-<p>Every AI pipeline moves data through exactly three formats, and the one you reach for by default determines how much time you spend debugging dtype surprises at 2 AM. CSV loses type information the moment you write it. JSONL preserves structure but not column types. Parquet keeps both, compresses the data, and lets you load a single column out of a ten-million-row file without touching the rest.</p>
-<h2 id="what-you-build"><a class="header" href="#what-you-build">What You Build</a></h2>
-<p>You build <code>io_formats.py</code>, a script that writes a typed DataFrame to CSV, JSONL, and Parquet, reads each back, prints the dtypes before and after each round trip, and confirms what survived.</p>
-<h2 id="the-three-formats"><a class="header" href="#the-three-formats">The Three Formats</a></h2>
-<p>An AI pipeline uses these three formats for different reasons, at different stages.</p>
-<p><strong>CSV</strong> is the interchange default: the eval results table you hand to a reviewer, the split your training harness reads, the dataset someone ships you in a zip file. Every tool reads it. No tool preserves your dtypes.</p>
-<p><strong>JSONL</strong> (JSON Lines) is the corpus format: one JSON object per line, no enclosing array. Your annotation files are JSONL. Your fine-tuning dataset is JSONL. Your retrieval-augmentation source documents are JSONL. The record-per-line layout maps directly onto the made-with-ml <code>datasets/dataset.csv</code> pattern, which treats every row as an independent labeled record.</p>
-<p><strong>Parquet</strong> is the feature store and checkpoint format: columnar, typed, compressed. When your pipeline graduates from a few thousand rows to millions, Parquet is what you reach for because it lets you read one column without deserializing the rest.</p>
-<p>Microsoft Learn’s “Make Data Available in Azure Machine Learning” module shows these same tabular formats (CSV, JSON, Parquet) registered as versioned data assets in a production pipeline (<a href="https://learn.microsoft.com/training/modules/make-data-available-azure-machine-learning/">learn.microsoft.com/training/modules/make-data-available-azure-machine-learning</a>).</p>
-<h2 id="reading-and-writing-csv"><a class="header" href="#reading-and-writing-csv">Reading and Writing CSV</a></h2>
-<p>Start with a typed DataFrame that mirrors an eval results table:</p>
-<pre><code class="language-python">import pandas as pd
-import numpy as np
-
-df = pd.DataFrame({
-    "text":      ["classify this", "another sample", "third record"],
-    "label":     pd.array([1, 0, 1], dtype="int32"),
-    "score":     pd.array([0.91, 0.43, 0.78], dtype="float32"),
-    "timestamp": pd.to_datetime(["2024-01-01", "2024-01-02", "2024-01-03"]),
-})
-
-print(df.dtypes)
-# text                object
-# label                int32
-# score               float32
-# timestamp    datetime64[ns]
-</code></pre>
-<p>Write it and read it back:</p>
-<pre><code class="language-python">df.to_csv("eval.csv", index=False)
-df_csv = pd.read_csv("eval.csv")
-
-print(df_csv.dtypes)
-# text         object
-# label         int64   &lt;-- int32 is gone
-# score        float64  &lt;-- float32 is gone
-# timestamp     object  &lt;-- datetime is gone
-</code></pre>
-<p>The round trip loses all three numeric dtypes and the datetime. CSV carries no schema: it is a text file with commas. When you read it back, pandas infers types from the character sequences it sees, and it guesses conservatively (<code>int64</code>, <code>float64</code>, <code>object</code>). To recover your types, pass <code>dtype</code> and <code>parse_dates</code> explicitly:</p>
-<pre><code class="language-python">df_csv = pd.read_csv(
-    "eval.csv",
-    dtype={"label": "int32", "score": "float32"},
-    parse_dates=["timestamp"],
-)
-
-print(df_csv.dtypes)
-# text                object
-# label                int32
-# score               float32
-# timestamp    datetime64[ns]
-</code></pre>
-<p>The <code>dtype</code> dict maps column names to types. <code>parse_dates</code> accepts a list of column names to coerce from string to <code>datetime64</code>. You own the schema when you read CSV; the file does not carry it for you. Microsoft Learn’s “Explore and Analyze Data with Python” module walks through loading and inspecting tabular data with Pandas this way (<a href="https://learn.microsoft.com/training/modules/explore-analyze-data-with-python/2-explore-data-numpy-pandas">learn.microsoft.com/training/modules/explore-analyze-data-with-python</a>).</p>
-<h2 id="reading-and-writing-jsonl"><a class="header" href="#reading-and-writing-jsonl">Reading and Writing JSONL</a></h2>
-<p>JSONL writes each row as a JSON object on its own line. Pandas calls this <code>orient="records"</code> combined with <code>lines=True</code>:</p>
-<pre><code class="language-python">df.to_json("corpus.jsonl", orient="records", lines=True)
-</code></pre>
-<p>The file looks like this:</p>
-<pre><code>{"text":"classify this","label":1,"score":0.9100000262260437,"timestamp":1704067200000}
-{"text":"another sample","label":0,"score":0.4300000071525574,"timestamp":1704153600000}
-{"text":"third record","label":1,"score":0.7799999713897705,"timestamp":1704240000000}
-</code></pre>
-<p>Two things to notice. First, <code>score</code> has expanded: the <code>float32</code> value <code>0.91</code> cannot be represented exactly in JSON’s floating-point encoding, so pandas serializes it at full <code>float64</code> precision. Second, <code>timestamp</code> is a millisecond epoch integer, not an ISO string; pandas serializes datetimes as integers by default.</p>
-<p>Read it back:</p>
-<pre><code class="language-python">df_jsonl = pd.read_json("corpus.jsonl", lines=True)
-
-print(df_jsonl.dtypes)
-# text         object
-# label         int64   &lt;-- int32 gone
-# score        float64  &lt;-- float32 gone
-# timestamp    datetime64[ns]  &lt;-- this one survives, pandas infers it
-</code></pre>
-<p>JSONL preserves the datetime (because pandas interprets epoch milliseconds as <code>datetime64</code>) but loses numeric subtypes just like CSV does. For a corpus, this is acceptable: the structure survives, and the text is what matters. For a typed feature store, it is not.</p>
-<h2 id="reading-and-writing-parquet"><a class="header" href="#reading-and-writing-parquet">Reading and Writing Parquet</a></h2>
-<p>Parquet encodes the schema alongside the data. Your dtypes do not need to survive inference; they are written into the file’s metadata and restored exactly on read. The engine that makes this work with pandas is <code>pyarrow</code> (<code>pip install pyarrow</code>):</p>
-<pre><code class="language-python">df.to_parquet("features.parquet", engine="pyarrow", index=False)
-df_parquet = pd.read_parquet("features.parquet", engine="pyarrow")
-
-print(df_parquet.dtypes)
-# text                object
-# label                int32   &lt;-- exact
-# score               float32  &lt;-- exact
-# timestamp    datetime64[ns]  &lt;-- exact
-</code></pre>
-<p>All four dtypes survive intact. The file is also smaller: the pandas docs note that Parquet uses columnar compression, which means a column of repeated <code>int32</code> values compresses far more aggressively than the same values encoded as ASCII digits in a CSV row. For a 3-row frame the size difference is negligible; at a million rows it is the difference between a 40 MB file and a 4 MB file.</p>
-<p>Parquet also supports column-subset reads. If your feature store has 200 columns and a downstream model needs only 3, you pull those 3 without deserializing the rest:</p>
-<pre><code class="language-python">subset = pd.read_parquet("features.parquet", columns=["text", "score"])
-print(subset.shape)    # (3, 2)
-print(subset.dtypes)
-# text      object
-# score    float32
-</code></pre>
-<p>CSV has no equivalent. Reading 3 columns from a CSV still parses every byte of every row.</p>
-<h2 id="the-round-trip-discipline"><a class="header" href="#the-round-trip-discipline">The Round-Trip Discipline</a></h2>
-<p>Before you commit a format choice, trace what survives the round trip for your specific dtypes:</p>
+                        <h1 id="module-5-python-idioms-at-interview-speed"><a class="header" href="#module-5-python-idioms-at-interview-speed">Module 5: Python Idioms at Interview Speed</a></h1>
+<h2 id="what-this-module-covers"><a class="header" href="#what-this-module-covers">What This Module Covers</a></h2>
+<p>Modules 1 through 4 made you fast with data. Module 5 makes you fluent in the Python a screen actually tests. The five idioms a take-home or a live round assumes you know cold are comprehensions, generators, decorators, type hints, and dataclasses. None of them are trivia. Each is the difference between code that reads like an engineer wrote it and code that reads like a beginner, and a reviewer judges that in the first ten lines.</p>
+<p>These idioms are not about NumPy or Pandas. They are core Python, and a hiring screen tests them directly: the comprehension a reviewer expects instead of an append loop, the generator that streams a corpus too big for RAM, the decorator that adds timing without touching the function, the type hint that makes a signature reviewable, the dataclass that replaces a fragile dict.</p>
+<h2 id="arc-of-lessons"><a class="header" href="#arc-of-lessons">Arc of Lessons</a></h2>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Format</th><th><code>int32</code></th><th><code>float32</code></th><th><code>datetime64</code></th><th>Column subset read</th></tr>
+<tr><th>Lesson</th><th>Title</th><th>What It Teaches</th></tr>
 </thead>
 <tbody>
-<tr><td>CSV</td><td>No (needs <code>dtype=</code>)</td><td>No (needs <code>dtype=</code>)</td><td>No (needs <code>parse_dates=</code>)</td><td>No</td></tr>
-<tr><td>JSONL</td><td>No</td><td>No</td><td>Yes (epoch ms)</td><td>No</td></tr>
-<tr><td>Parquet</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+<tr><td>1</td><td>Comprehensions and Generators</td><td>Same syntax, opposite memory profile: a comprehension builds the whole sequence; a generator streams it one item at a time and never holds the result</td></tr>
+<tr><td>2</td><td>Decorators</td><td>Wrap behavior onto a function without touching its body; build <code>@timed</code> with <code>functools.wraps</code>, the production version of the manual timing you have done since M1</td></tr>
+<tr><td>3</td><td>Type Hints</td><td>The contract the reader and <code>mypy</code> both read; <code>list[float]</code>, <code>Optional</code>, <code>Callable</code>, <code>Protocol</code>, and what a reviewer scans for first</td></tr>
+<tr><td>4</td><td>Dataclasses</td><td>A typed record with <code>__init__</code>, <code>__repr__</code>, and <code>__eq__</code> for free; replaces the dict-of-fields that <code>measure.py</code> returns</td></tr>
 </tbody>
 </table>
 </div>
-<p>The rule is: use the format that matches what you need to preserve, not the one that is most convenient to produce. Your eval table ships as CSV because every reviewer can open it. Your annotated corpus ships as JSONL because every annotation tool reads it. Your feature store ships as Parquet because memory and speed matter at scale, and nothing downstream should be re-inferring types from bytes.</p>
-<p>Format selection is a memory-and-speed contract with your pipeline, not a file extension you pick at random.</p>
-<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<h2 id="throughline-artifact"><a class="header" href="#throughline-artifact">Throughline Artifact</a></h2>
+<p>Module 5 has no single new artifact. Its idioms are the polish you apply to the artifacts you already built and the one you are about to build. Each lesson demonstrates its idiom by refactoring a piece of your own <code>measure.py</code> or <code>vectorization_report.py</code>: <code>@timed</code> generalizes your hand-written timing, a <code>@dataclass</code> replaces a returned dict, type hints harden the signatures. The exercises stay self-contained (each is a focused, runnable demo of one idiom) so the lessons can teach cleanly without four files refactoring one. The named forward link: these five idioms are the ones Module 6’s <code>wrangle.py</code> is written with from the first line.</p>
+<h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
 <ul>
-<li>CSV serializes data as text and carries no schema; every numeric and datetime dtype must be explicitly declared on <code>read_csv</code> via <code>dtype=</code> and <code>parse_dates=</code>, or pandas infers conservatively and widens types.</li>
-<li>JSONL writes one JSON object per line using <code>orient="records", lines=True</code> and is the standard corpus format; it preserves structure but not numeric subtypes, so <code>int32</code> and <code>float32</code> return as <code>int64</code> and <code>float64</code>.</li>
-<li>Parquet encodes the DataFrame schema in the file’s metadata and restores all dtypes exactly on read, including <code>int32</code>, <code>float32</code>, and <code>datetime64</code>; it is the format you choose once data is big and column-subset reads matter.</li>
-<li>Each format has a natural pipeline role: CSV for eval interchange, JSONL for corpora and annotation, Parquet for feature stores and anything that needs typed round trips at scale.</li>
+<li>Modules 1 through 4, and the <code>measure.py</code> / <code>vectorization_report.py</code> artifacts you built. Module 5 refactors snippets of them to show each idiom in your own code.</li>
+<li>A Python 3.11+ environment. These lessons use the modern builtin-generic syntax (<code>list[float]</code>, <code>X | None</code>); no third-party packages are required (mypy is optional, noted where relevant).</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module3/reading-and-writing-ai-formats/">
-<p><strong>Build It in Claude Code:</strong> Build <code>io_formats.py</code>, a self-contained script that round-trips a typed DataFrame through CSV, JSONL, and Parquet, asserts dtype behavior at each step, and confirms Parquet is smaller than CSV for the same data.</p>
-</div>
-
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module3/series-and-dataframe.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module4/when-not-to-vectorize.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module3/groupby-merge-apply.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module5/comprehensions-and-generators.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -315,11 +221,11 @@ print(subset.dtypes)
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module3/series-and-dataframe.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module4/when-not-to-vectorize.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module3/groupby-merge-apply.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module5/comprehensions-and-generators.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

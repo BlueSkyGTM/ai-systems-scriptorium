@@ -26,6 +26,13 @@ When a learner pastes an exercise into you, they are here to build, not to watch
   current state, and add to it. Never rebuild `measure.py`; import it. This is the artifact-composition
   pattern the M6/M7/M8 portfolio modules use.
 
+  **Module 5 idioms are self-contained demos (no shared throughline file): `exercises/module5/<lesson>/`**
+  M5 (comprehensions-and-generators, decorators, type-hints, dataclasses) teaches the screened Python
+  idioms; each exercise is a standalone script and does **not** extend `measure.py` or
+  `vectorization_report.py` (a deliberate call to avoid four cold workers refactoring one shared file).
+  The lessons demonstrate each idiom by refactoring a snippet of the reader's own artifacts; the idioms
+  themselves are the polish M6's `wrangle.py` is written with.
+
   Later modules have their own throughline artifacts (the M6 wrangling pipeline, the M7 eval engine,
   the M8 exam script). The same rule applies: find the artifact, read it, then continue the build.
 

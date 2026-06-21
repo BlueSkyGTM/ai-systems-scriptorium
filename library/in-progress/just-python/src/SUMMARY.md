@@ -41,3 +41,13 @@
 - [When the Array Wins](module4/when-the-array-wins.md)
 - [The Hidden Cost of apply](module4/the-hidden-cost-of-apply.md)
 - [When Not to Vectorize](module4/when-not-to-vectorize.md)
+
+---
+
+# Module 5: Python Idioms at Interview Speed
+
+- [Overview](module5/00-overview.md)
+- [Comprehensions and Generators](module5/comprehensions-and-generators.md)
+- [Decorators](module5/decorators.md)
+- [Type Hints](module5/type-hints.md)
+- [Dataclasses](module5/dataclasses.md)
