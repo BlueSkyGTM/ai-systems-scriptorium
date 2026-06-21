@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Dtypes and What They Cost - Just Python — Applied Python for AI Engineers</title>
+        <title>Boolean Masks and Fancy Indexing - Just Python — Applied Python for AI Engineers</title>
 
 
         <!-- Custom HTML head -->
@@ -177,75 +177,84 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="dtypes-and-what-they-cost"><a class="header" href="#dtypes-and-what-they-cost">Dtypes and What They Cost</a></h1>
-<p>Every NumPy array has a dtype, and if you did not choose it, NumPy chose for you: probably <code>float64</code>. That default costs twice the memory of <code>float32</code> for no precision gain you will ever see from a model output.</p>
-<h2 id="the-dtype-contract"><a class="header" href="#the-dtype-contract">The dtype Contract</a></h2>
-<p>A dtype is a fixed-size C type. It tells NumPy two things: how many bytes each slot in the buffer occupies, and how to interpret those bytes. Every element in the array shares the same dtype; there is no boxing, no per-element overhead. That uniformity is where the speed comes from.</p>
+                        <h1 id="boolean-masks-and-fancy-indexing"><a class="header" href="#boolean-masks-and-fancy-indexing">Boolean Masks and Fancy Indexing</a></h1>
+<p>Your eval run finished. Now you need the rows that failed: score below threshold, label wrong, confidence suspect. A Python loop over the table would work, but it is slow and clears nothing. Two NumPy operations cut straight to those rows: a boolean mask that selects by condition, and an integer array that gathers by position. Both return a copy.</p>
+<h2 id="the-artifact"><a class="header" href="#the-artifact">The Artifact</a></h2>
+<p>You build <code>filter_eval.py</code>: a script that filters a simulated eval table to its failing rows and retrieves the top-k rows by score.</p>
+<h2 id="build-a-boolean-mask"><a class="header" href="#build-a-boolean-mask">Build a Boolean Mask</a></h2>
+<p>Start with a score column and a threshold:</p>
 <pre><code class="language-python">import numpy as np
 
-scores = np.array([0.91, 0.74, 0.88, 0.62], dtype=np.float64)
-print(scores.dtype)     # float64
-print(scores.itemsize)  # 8  (bytes per element)
-print(scores.nbytes)    # 32 (total bytes)
-</code></pre>
-<p><code>arr.dtype</code> always tells you what you have. <code>arr.itemsize</code> tells you the per-element cost. <code>arr.nbytes</code> tells you the bill.</p>
-<h2 id="the-ai-relevant-types"><a class="header" href="#the-ai-relevant-types">The AI-Relevant Types</a></h2>
-<p>Five dtypes cover almost every AI pipeline:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>dtype</th><th>Bytes</th><th>When you use it</th></tr>
-</thead>
-<tbody>
-<tr><td><code>float64</code></td><td>8</td><td>NumPy default; computation, intermediate results</td></tr>
-<tr><td><code>float32</code></td><td>4</td><td>Model output embeddings; halves memory vs float64</td></tr>
-<tr><td><code>int64</code></td><td>8</td><td>Label arrays, index arrays</td></tr>
-<tr><td><code>int32</code></td><td>4</td><td>Compact labels when the count fits in 32 bits</td></tr>
-<tr><td><code>bool</code></td><td>1</td><td>Mask arrays; boolean indexing</td></tr>
-</tbody>
-</table>
-</div>
-<p>The decision that matters most in practice is <code>float64</code> versus <code>float32</code>. Most embedding models emit <code>float32</code> vectors. Azure AI Search documents this directly: <code>Float32</code> (32-bit floating point) is the default vector field data type for Azure AI Search indexes because “most embedding models emit vectors as <code>Float32</code>,” while choosing <code>Float16</code> “often leads to faster query times and reduced memory footprint” at the cost of some precision. (<a href="https://learn.microsoft.com/rest/api/searchservice/supported-data-types#edm-data-types-for-vector-fields">Microsoft Learn: Supported data types, Azure AI Search</a>)</p>
-<p>Loading those <code>float32</code> embeddings into a <code>float64</code> array doubles your memory silently. At 1,536 dimensions and one million rows, that is the difference between 6 GB and 12 GB.</p>
-<h2 id="astype-versus-view"><a class="header" href="#astype-versus-view">astype Versus view</a></h2>
-<p>Two operations change what dtype label an array carries. Only one of them is safe for type conversion.</p>
-<p><strong><code>astype</code></strong> converts values. It reads each element, converts it to the target type, and writes it into a new buffer. The result is a separate array with correct values.</p>
-<pre><code class="language-python">embeddings_f64 = np.random.rand(1000, 1536)   # float64, 8 bytes/element
-embeddings_f32 = embeddings_f64.astype(np.float32)
+rng = np.random.default_rng(42)
+n = 12
 
-print(embeddings_f64.nbytes)  # 12,288,000
-print(embeddings_f32.nbytes)  #  6,144,000  -- new buffer, half the size
-</code></pre>
-<p><strong><code>view</code></strong> reinterprets bytes. It does not convert values; it reads the same bytes through a different lens. Viewing 8-byte <code>float64</code> slots as 4-byte <code>float32</code> slots does not halve your values: it reads each 8-byte block as two 4-byte floats and returns garbage.</p>
-<pre><code class="language-python">trap = embeddings_f64[0].view(np.float32)
-# trap has 2 * 1536 = 3072 elements, all meaningless
-# it shares the buffer -- no copy occurred, no conversion occurred
-print(np.shares_memory(embeddings_f64, trap))  # True
-</code></pre>
-<p>The trap is real. <code>arr.view(np.float32)</code> will not raise an error; it silently gives you wrong data. Reach for <code>view</code> only when you intend raw byte reinterpretation, which in AI pipelines is almost never.</p>
-<h2 id="the-float32-decision"><a class="header" href="#the-float32-decision">The float32 Decision</a></h2>
-<p>When a model hands you embeddings, read the dtype before assuming:</p>
-<pre><code class="language-python"># Simulate receiving embeddings from a model
-model_output = np.random.rand(512, 1536).astype(np.float32)
+scores  = rng.uniform(0.0, 1.0, n).astype(np.float32)  # shape (12,)
+labels  = rng.integers(0, 2, n)                          # 0 or 1
+preds   = rng.integers(0, 2, n)
 
-# Check what you have
-print(model_output.dtype)   # float32
-print(model_output.nbytes)  # 3,145,728
-
-# If you had loaded into float64 by accident:
-bloated = model_output.astype(np.float64)
-print(bloated.nbytes)       # 6,291,456 -- doubled for nothing
+print("scores:", np.round(scores, 3))
 </code></pre>
-<p>The fix is one line: <code>arr.astype(np.float32)</code>. The cost of not fixing it scales with every row in your corpus.</p>
+<p>A comparison on an array returns a boolean array of the same shape:</p>
+<pre><code class="language-python">low_score = scores &lt; 0.4          # shape (12,), dtype bool
+wrong_label = labels != preds      # shape (12,), dtype bool
+</code></pre>
+<p>Combine conditions with <code>&amp;</code> (element-wise AND) or <code>|</code> (element-wise OR). Wrap each condition in parentheses: Python’s operator precedence treats <code>&amp;</code> and <code>|</code> as bitwise, and without parentheses the comparison operators bind more loosely than you expect.</p>
+<pre><code class="language-python">failing = low_score &amp; wrong_label  # rows that are both low-confidence AND mislabeled
+</code></pre>
+<h2 id="select-rows-by-mask"><a class="header" href="#select-rows-by-mask">Select Rows by Mask</a></h2>
+<p>Build a table where rows are examples and columns are <code>[score, label, pred]</code>:</p>
+<pre><code class="language-python">table = np.column_stack([scores, labels, preds])   # shape (12, 3)
+
+failing_rows = table[failing]                       # shape (k, 3), k = number of True entries
+print(f"failing rows: {failing_rows.shape[0]} of {n}")
+print(failing_rows)
+</code></pre>
+<p><code>table[failing]</code> is boolean indexing: NumPy walks the mask, collects the matching rows, and writes them into a fresh buffer. Unlike M1’s slice-view, the mask result owns its buffer; <code>failing_rows.flags['OWNDATA']</code> is <code>True</code> and <code>np.shares_memory(table, failing_rows)</code> is <code>False</code>. [MS-Learn: “Explore and Analyze Data with Python” covers boolean filtering on NumPy arrays as the standard pattern for subsetting evaluation data in ML pipelines: learn.microsoft.com/training/modules/explore-analyze-data-with-python/]</p>
+<p><code>np.nonzero(failing)</code> gives you the integer indices of the <code>True</code> positions when you need them as a list rather than a mask:</p>
+<pre><code class="language-python">idx = np.nonzero(failing)[0]
+print("failing indices:", idx)
+assert np.array_equal(table[idx], failing_rows)
+</code></pre>
+<h2 id="gather-rows-by-integer-array"><a class="header" href="#gather-rows-by-integer-array">Gather Rows by Integer Array</a></h2>
+<p>Fancy indexing takes an integer array and gathers the rows at those positions, in that order. The order is yours to choose:</p>
+<pre><code class="language-python">specific = np.array([7, 2, 11, 0])
+subset = table[specific]           # shape (4, 3): rows 7, 2, 11, 0 in that exact order
+print("gathered:", subset)
+</code></pre>
+<p>This is a gather: you pick, you reorder, you get a copy. The source table is untouched.</p>
+<h2 id="top-k-via-argsort-and-argpartition"><a class="header" href="#top-k-via-argsort-and-argpartition">Top-k via argsort and argpartition</a></h2>
+<p>To retrieve the top 3 rows by score, sort the score column and take the last three indices:</p>
+<pre><code class="language-python">k = 3
+top_k_idx = np.argsort(scores)[-k:]          # indices of k highest scores, ascending order
+top_k_rows = table[top_k_idx]
+
+print("top-k scores:", scores[top_k_idx])
+</code></pre>
+<p><code>argsort</code> returns all indices sorted; for large tables where you need only k winners, <code>argpartition</code> is faster: it guarantees the k-th element is in its sorted position without sorting the rest:</p>
+<pre><code class="language-python">part_idx = np.argpartition(scores, -k)[-k:]  # k highest, unordered among themselves
+top_k_unordered = table[part_idx]
+print("top-k (partition):", scores[part_idx])
+</code></pre>
+<p>Surfacing the top-scoring predictions for review is the front end of model evaluation; Microsoft Learn documents the precision, recall, and F1 metrics computed over those predictions in its Evaluate Model reference (<a href="https://learn.microsoft.com/azure/machine-learning/component-reference/evaluate-model?view=azureml-api-2#metrics">learn.microsoft.com/azure/machine-learning/component-reference/evaluate-model</a>).</p>
+<p>Both <code>argsort</code> and <code>argpartition</code> return integer arrays; passing them back into <code>table[...]</code> is fancy indexing, so the result is a copy.</p>
+<h2 id="the-copy-confirmation"><a class="header" href="#the-copy-confirmation">The Copy Confirmation</a></h2>
+<p>The rule from M1 holds for both operations: boolean indexing and fancy indexing both trigger advanced indexing, and advanced indexing always copies.</p>
+<pre><code class="language-python">assert failing_rows.flags['OWNDATA'],              "mask result must own its buffer"
+assert not np.shares_memory(table, failing_rows),  "mask result must not share memory"
+assert top_k_rows.flags['OWNDATA'],                "fancy-indexed top-k must own its buffer"
+assert not np.shares_memory(table, top_k_rows),    "fancy-indexed top-k must not share memory"
+</code></pre>
+<p>Run the check once per pipeline: the cost of an unintended copy in a thousand-row loop is a thousand allocations. Knowing which operation copies is not a footnote; it is the memory budget.</p>
+<p>The eval table that looked like a table is now something you can cut with a single expression: mask the failures, gather the top candidates, hand each to the next stage.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>A dtype is a fixed-size C type specifying bytes-per-slot and how those bytes are interpreted; every element in an array shares it, which is why NumPy is fast.</li>
-<li><code>astype</code> converts values into a new buffer; <code>view</code> reinterprets the existing bytes without converting them: using <code>view</code> as a type conversion yields garbage.</li>
-<li>Most embedding models emit <code>float32</code>; loading their output into a <code>float64</code> array doubles memory silently and wastes the budget before any computation begins.</li>
-<li><code>arr.dtype</code>, <code>arr.itemsize</code>, and <code>arr.nbytes</code> are the three numbers to read before operating on any array you did not create yourself.</li>
+<li>A boolean mask built from a comparison (<code>scores &lt; 0.4</code>) selects rows by condition; combine multiple masks with <code>&amp;</code> and <code>|</code>, wrapping each condition in parentheses.</li>
+<li>Fancy indexing with an integer array (<code>table[np.array([7, 2, 11])]</code>) gathers rows by position in any order you specify; this is the primitive behind top-k retrieval.</li>
+<li>Both boolean indexing and fancy indexing trigger NumPy’s advanced indexing, which always returns a copy: <code>arr.flags['OWNDATA']</code> is <code>True</code> and <code>np.shares_memory</code> is <code>False</code>.</li>
+<li><code>argsort</code> gives all indices in sorted order; <code>argpartition</code> gives the k-th partition boundary without a full sort, which is faster when you need only the top or bottom k from a large score column.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module1/dtypes-and-what-they-cost/">
-<p><strong>Build It in Claude Code:</strong> build a dtype audit script that measures the real memory cost of float64 vs float32 embeddings and proves the view trap produces garbage.</p>
+<div class="claude-handoff" data-exercise="exercises/module2/advanced-indexing/">
+<p><strong>Build It in Claude Code:</strong> Build <code>filter_eval.py</code>, a script that masks failing rows from a simulated eval table and retrieves the top-k rows by score, then asserts both results are copies.</p>
 </div>
 
 
@@ -253,11 +262,11 @@ print(bloated.nbytes)       # 6,291,456 -- doubled for nothing
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module1/why-numpy-exists.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module2/broadcasting.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module1/shape-ndim-and-strides.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module2/memory-layout-and-contiguity.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -267,11 +276,11 @@ print(bloated.nbytes)       # 6,291,456 -- doubled for nothing
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module1/why-numpy-exists.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module2/broadcasting.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module1/shape-ndim-and-strides.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module2/memory-layout-and-contiguity.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

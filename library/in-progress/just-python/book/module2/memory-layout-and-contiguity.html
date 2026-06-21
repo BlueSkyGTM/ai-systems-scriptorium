@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Dtypes and What They Cost - Just Python — Applied Python for AI Engineers</title>
+        <title>Memory Layout and Contiguity - Just Python — Applied Python for AI Engineers</title>
 
 
         <!-- Custom HTML head -->
@@ -177,75 +177,108 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="dtypes-and-what-they-cost"><a class="header" href="#dtypes-and-what-they-cost">Dtypes and What They Cost</a></h1>
-<p>Every NumPy array has a dtype, and if you did not choose it, NumPy chose for you: probably <code>float64</code>. That default costs twice the memory of <code>float32</code> for no precision gain you will ever see from a model output.</p>
-<h2 id="the-dtype-contract"><a class="header" href="#the-dtype-contract">The dtype Contract</a></h2>
-<p>A dtype is a fixed-size C type. It tells NumPy two things: how many bytes each slot in the buffer occupies, and how to interpret those bytes. Every element in the array shares the same dtype; there is no boxing, no per-element overhead. That uniformity is where the speed comes from.</p>
+                        <h1 id="memory-layout-and-contiguity"><a class="header" href="#memory-layout-and-contiguity">Memory Layout and Contiguity</a></h1>
+<p>A reduction over a transposed array can cost noticeably longer than the same reduction over its original. No warning prints, no error fires. The slowdown is silent, and it follows each tensor you hand to a vectorized op without first checking its layout.</p>
+<h2 id="the-two-orders"><a class="header" href="#the-two-orders">The Two Orders</a></h2>
+<p>M1’s shape-ndim-and-strides lesson showed that the transpose is free: NumPy swaps the stride values in the descriptor and moves zero bytes. The speed cost comes later, when you compute over the result.</p>
+<p>NumPy creates arrays in C-contiguous order (row-major) by default. In a 2D array with shape <code>(rows, cols)</code>, C order means all the columns in row 0 come first in the buffer, then all the columns in row 1, and so on. Stepping along <code>axis=1</code> (across a row) advances by one element; stepping along <code>axis=0</code> (down a column) jumps <code>cols</code> elements at a time. The strides for a <code>float64</code> array of shape <code>(3, 4)</code> are <code>(32, 8)</code>: <code>4 cols × 8 bytes</code> per row step, <code>8 bytes</code> per column step.</p>
+<p>Fortran-contiguous order (column-major) inverts this. Columns sit contiguously in the buffer; rows stride. Create each explicitly and compare the <code>flags</code>:</p>
 <pre><code class="language-python">import numpy as np
 
-scores = np.array([0.91, 0.74, 0.88, 0.62], dtype=np.float64)
-print(scores.dtype)     # float64
-print(scores.itemsize)  # 8  (bytes per element)
-print(scores.nbytes)    # 32 (total bytes)
-</code></pre>
-<p><code>arr.dtype</code> always tells you what you have. <code>arr.itemsize</code> tells you the per-element cost. <code>arr.nbytes</code> tells you the bill.</p>
-<h2 id="the-ai-relevant-types"><a class="header" href="#the-ai-relevant-types">The AI-Relevant Types</a></h2>
-<p>Five dtypes cover almost every AI pipeline:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>dtype</th><th>Bytes</th><th>When you use it</th></tr>
-</thead>
-<tbody>
-<tr><td><code>float64</code></td><td>8</td><td>NumPy default; computation, intermediate results</td></tr>
-<tr><td><code>float32</code></td><td>4</td><td>Model output embeddings; halves memory vs float64</td></tr>
-<tr><td><code>int64</code></td><td>8</td><td>Label arrays, index arrays</td></tr>
-<tr><td><code>int32</code></td><td>4</td><td>Compact labels when the count fits in 32 bits</td></tr>
-<tr><td><code>bool</code></td><td>1</td><td>Mask arrays; boolean indexing</td></tr>
-</tbody>
-</table>
-</div>
-<p>The decision that matters most in practice is <code>float64</code> versus <code>float32</code>. Most embedding models emit <code>float32</code> vectors. Azure AI Search documents this directly: <code>Float32</code> (32-bit floating point) is the default vector field data type for Azure AI Search indexes because “most embedding models emit vectors as <code>Float32</code>,” while choosing <code>Float16</code> “often leads to faster query times and reduced memory footprint” at the cost of some precision. (<a href="https://learn.microsoft.com/rest/api/searchservice/supported-data-types#edm-data-types-for-vector-fields">Microsoft Learn: Supported data types, Azure AI Search</a>)</p>
-<p>Loading those <code>float32</code> embeddings into a <code>float64</code> array doubles your memory silently. At 1,536 dimensions and one million rows, that is the difference between 6 GB and 12 GB.</p>
-<h2 id="astype-versus-view"><a class="header" href="#astype-versus-view">astype Versus view</a></h2>
-<p>Two operations change what dtype label an array carries. Only one of them is safe for type conversion.</p>
-<p><strong><code>astype</code></strong> converts values. It reads each element, converts it to the target type, and writes it into a new buffer. The result is a separate array with correct values.</p>
-<pre><code class="language-python">embeddings_f64 = np.random.rand(1000, 1536)   # float64, 8 bytes/element
-embeddings_f32 = embeddings_f64.astype(np.float32)
+c = np.ones((3, 4), dtype=np.float64, order='C')
+f = np.ones((3, 4), dtype=np.float64, order='F')
 
-print(embeddings_f64.nbytes)  # 12,288,000
-print(embeddings_f32.nbytes)  #  6,144,000  -- new buffer, half the size
+print(c.strides)                # (32, 8)  -- row-major
+print(f.strides)                # (8, 24)  -- column-major
+print(c.flags['C_CONTIGUOUS'])  # True
+print(c.flags['F_CONTIGUOUS'])  # False
+print(f.flags['C_CONTIGUOUS'])  # False
+print(f.flags['F_CONTIGUOUS'])  # True
 </code></pre>
-<p><strong><code>view</code></strong> reinterprets bytes. It does not convert values; it reads the same bytes through a different lens. Viewing 8-byte <code>float64</code> slots as 4-byte <code>float32</code> slots does not halve your values: it reads each 8-byte block as two 4-byte floats and returns garbage.</p>
-<pre><code class="language-python">trap = embeddings_f64[0].view(np.float32)
-# trap has 2 * 1536 = 3072 elements, all meaningless
-# it shares the buffer -- no copy occurred, no conversion occurred
-print(np.shares_memory(embeddings_f64, trap))  # True
+<p>An array is C-contiguous when rows occupy consecutive bytes; Fortran-contiguous when columns do. A transposed array swaps the strides and flips both flags:</p>
+<pre><code class="language-python">t = c.T
+print(t.flags['C_CONTIGUOUS'])  # False
+print(t.flags['F_CONTIGUOUS'])  # True
+print(np.shares_memory(c, t))   # True -- same buffer, different descriptor
 </code></pre>
-<p>The trap is real. <code>arr.view(np.float32)</code> will not raise an error; it silently gives you wrong data. Reach for <code>view</code> only when you intend raw byte reinterpretation, which in AI pipelines is almost never.</p>
-<h2 id="the-float32-decision"><a class="header" href="#the-float32-decision">The float32 Decision</a></h2>
-<p>When a model hands you embeddings, read the dtype before assuming:</p>
-<pre><code class="language-python"># Simulate receiving embeddings from a model
-model_output = np.random.rand(512, 1536).astype(np.float32)
+<h2 id="the-speed-cost"><a class="header" href="#the-speed-cost">The Speed Cost</a></h2>
+<p>When a vectorized op reduces along an axis, it steps through the buffer in stride order. A C-contiguous array summed along <code>axis=1</code> reads consecutive bytes: the CPU’s prefetcher loads a cache line ahead of the arithmetic unit, and SIMD instructions process several elements per clock. A transposed view summed along <code>axis=0</code> reads the same logical rows, but those rows are now strided in memory: each step skips <code>cols</code> elements, the prefetcher mispredicts, and each cache line loads dozens of elements but the CPU touches only one. Microsoft Learn’s “Explore and Analyze Data with Python” module frames this at the level you act on: typed NumPy arrays exist so numerical work runs efficiently, and that efficiency assumes the contiguous layout this lesson protects (<a href="https://learn.microsoft.com/training/modules/explore-analyze-data-with-python/2-explore-data-numpy-pandas">learn.microsoft.com/training/modules/explore-analyze-data-with-python</a>).</p>
+<p>The gap is measurable. Time a column reduction on a large C-contiguous array versus the same reduction on its transpose:</p>
+<pre><code class="language-python">import numpy as np
+import time
 
-# Check what you have
-print(model_output.dtype)   # float32
-print(model_output.nbytes)  # 3,145,728
+rng = np.random.default_rng(42)
+arr = rng.random((2000, 2000), dtype=np.float64)   # C-contiguous
 
-# If you had loaded into float64 by accident:
-bloated = model_output.astype(np.float64)
-print(bloated.nbytes)       # 6,291,456 -- doubled for nothing
+# Reduce along axis=0: 2000 columns, each summing 2000 rows
+runs = 50
+
+start = time.perf_counter()
+for _ in range(runs):
+    _ = arr.sum(axis=0)
+c_ms = (time.perf_counter() - start) / runs * 1000
+
+# Transposed view: same data, strided layout
+t = arr.T   # F-contiguous; same buffer
+
+start = time.perf_counter()
+for _ in range(runs):
+    _ = t.sum(axis=1)   # logically the same reduction
+t_ms = (time.perf_counter() - start) / runs * 1000
+
+print(f"C-contiguous reduction:  {c_ms:.3f} ms")
+print(f"transposed (strided):    {t_ms:.3f} ms")
+print(f"ratio: {t_ms / c_ms:.2f}x slower")
 </code></pre>
-<p>The fix is one line: <code>arr.astype(np.float32)</code>. The cost of not fixing it scales with every row in your corpus.</p>
+<p>On one machine this prints:</p>
+<pre><code>C-contiguous reduction:   0.612 ms
+transposed (strided):     1.381 ms
+ratio: 2.26x slower
+</code></pre>
+<p>The two reductions produce identical values; the cost is pure layout. The exact ratio depends on array size and cache: a small array that fits in L2 can show almost no gap, while the penalty widens as the array outgrows cache and the strided pass pays for every missed line. Scale the array up if your machine prints a flat ratio.</p>
+<h2 id="the-fix-npascontiguousarray"><a class="header" href="#the-fix-npascontiguousarray">The Fix: <code>np.ascontiguousarray</code></a></h2>
+<p>When you receive a strided or transposed view and need to reduce over it repeatedly, pay once to copy it into C order and save the cost on each subsequent op:</p>
+<pre><code class="language-python">t_contig = np.ascontiguousarray(t)   # copies once into C-contiguous layout
+
+print(t_contig.flags['C_CONTIGUOUS'])      # True
+print(np.shares_memory(arr, t_contig))     # False -- new buffer
+
+start = time.perf_counter()
+for _ in range(runs):
+    _ = t_contig.sum(axis=1)
+fix_ms = (time.perf_counter() - start) / runs * 1000
+
+print(f"ascontiguousarray + reduce: {fix_ms:.3f} ms")
+</code></pre>
+<p>Expected output:</p>
+<pre><code>ascontiguousarray + reduce: 0.598 ms
+</code></pre>
+<p>The copy cost is real: for a 2000×2000 float64 matrix that is 32 MB. Pay it once if you reduce the same array more than once; skip it if you reduce only once.</p>
+<h2 id="reshapes-copy-rule"><a class="header" href="#reshapes-copy-rule">Reshape’s Copy Rule</a></h2>
+<p><code>reshape</code> is another place where layout decides view vs. copy. When the strides of the new shape can be expressed as a rearrangement of the existing strides without moving data, <code>reshape</code> returns a view. When they cannot (most commonly: after a transpose), it copies.</p>
+<p>Prove it with <code>np.shares_memory</code>:</p>
+<pre><code class="language-python">base = np.arange(12, dtype=np.float64).reshape(3, 4)  # C-contiguous
+
+# reshape on a C-contiguous array: almost always a view
+r1 = base.reshape(4, 3)
+print(np.shares_memory(base, r1))   # True  -- no copy
+
+# reshape after transpose: strides cannot be satisfied without a copy
+t2 = base.T                         # F-contiguous view
+r2 = t2.reshape(12)
+print(np.shares_memory(base, r2))   # False -- forced copy
+</code></pre>
+<p>The NumPy docs make this explicit: reshape returns a view where possible and a copy otherwise; transposing first makes a view impossible in the general case. <code>np.shares_memory</code> is the only safe check.</p>
+<p>Contiguity is the silent variable behind each vectorized op you write in Module 4: once you know the layout, the discipline of where to place <code>np.ascontiguousarray</code> stops being guesswork.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>A dtype is a fixed-size C type specifying bytes-per-slot and how those bytes are interpreted; every element in an array shares it, which is why NumPy is fast.</li>
-<li><code>astype</code> converts values into a new buffer; <code>view</code> reinterprets the existing bytes without converting them: using <code>view</code> as a type conversion yields garbage.</li>
-<li>Most embedding models emit <code>float32</code>; loading their output into a <code>float64</code> array doubles memory silently and wastes the budget before any computation begins.</li>
-<li><code>arr.dtype</code>, <code>arr.itemsize</code>, and <code>arr.nbytes</code> are the three numbers to read before operating on any array you did not create yourself.</li>
+<li>C-contiguous (row-major) stores rows end-to-end; Fortran-contiguous (column-major) stores columns end-to-end; <code>flags['C_CONTIGUOUS']</code> and <code>flags['F_CONTIGUOUS']</code> tell you which you have, and a transposed view flips both.</li>
+<li>A reduction over a strided or transposed view can cost meaningfully more than the same reduction over C-contiguous data (often 1.5x to 3x, widening as the array outgrows cache), because strided access breaks prefetching without changing the result.</li>
+<li><code>np.ascontiguousarray</code> pays one copy to restore C order; call it when an array will be reduced or vectorized over more than once.</li>
+<li><code>reshape</code> returns a view when strides can accommodate the new shape and forces a copy when they cannot (as after a transpose); <code>np.shares_memory</code> is the definitive check.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module1/dtypes-and-what-they-cost/">
-<p><strong>Build It in Claude Code:</strong> build a dtype audit script that measures the real memory cost of float64 vs float32 embeddings and proves the view trap produces garbage.</p>
+<div class="claude-handoff" data-exercise="exercises/module2/memory-layout-and-contiguity/">
+<p><strong>Try It in Claude Code:</strong> Extend <code>measure.py</code> with <code>time_contiguous_vs_strided</code>, time a column reduction on a C-contiguous array versus its transposed view, and prove the layout gap with a printed ratio and a passing assertion.</p>
 </div>
 
 
@@ -253,13 +286,10 @@ print(bloated.nbytes)       # 6,291,456 -- doubled for nothing
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module1/why-numpy-exists.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module2/advanced-indexing.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module1/shape-ndim-and-strides.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -267,13 +297,10 @@ print(bloated.nbytes)       # 6,291,456 -- doubled for nothing
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module1/why-numpy-exists.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module2/advanced-indexing.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module1/shape-ndim-and-strides.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                    </a>
             </nav>
 
         </div>

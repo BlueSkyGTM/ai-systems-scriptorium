@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-e61f32c1.js";
+            window.path_to_searchindex_js = "searchindex-ce6eb081.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-d488ab01.js"></script>
+        <script src="toc-99a1f5d2.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -485,6 +485,393 @@ print(np.shares_memory(base, rows))  # False
 </ul>
 <div class="claude-handoff" data-exercise="exercises/module1/shape-ndim-and-strides/">
 <p><strong>Build It in Claude Code:</strong> print the full descriptor of a 2D array, prove the transpose shares memory, mutate a slice and watch the parent change, then confirm fancy indexing returns a copy that does not.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-2-numpy-in-depth"><a class="header" href="#module-2-numpy-in-depth">Module 2: NumPy in Depth</a></h1>
+<h2 id="what-this-module-covers-1"><a class="header" href="#what-this-module-covers-1">What This Module Covers</a></h2>
+<p>Module 1 built the <em>why</em>: the array exists because Python’s boxed containers waste memory bandwidth, and a contiguous typed buffer is the fix. This module builds the <em>how</em>. You drive that buffer with the four operations that make it pay off: vectorized math (ufuncs and reductions), broadcasting, advanced indexing, and the memory layout that decides whether any of them is actually fast.</p>
+<p>This is the NumPy surface a hiring screen tests. A take-home that asks you to score a batch of embeddings, filter an evaluation set, or normalize a feature matrix is asking whether you can replace a Python loop with an array operation and know what it costs. Module 2 is also the rung Module 4 stands on: you cannot reason about when to vectorize until you can vectorize fluently, and you cannot explain a slow reduction until you can read its memory layout.</p>
+<p>The work stays grounded in the Sans Python ecosystem: the embedding rows, query vectors, and evaluation tables you already built are the data you now operate on at speed.</p>
+<h2 id="arc-of-lessons-1"><a class="header" href="#arc-of-lessons-1">Arc of Lessons</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Lesson</th><th>Title</th><th>What It Teaches</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>Vectorized Math and ufuncs</td><td>A ufunc runs one compiled C loop across the whole buffer; reductions collapse an axis. You build batch cosine similarity with <code>sum</code>, <code>argmax</code>, and <code>np.where</code>, no Python loop</td></tr>
+<tr><td>2</td><td>Broadcasting</td><td>The alignment rule that stretches a smaller array across a larger one with no copy; <code>keepdims</code> and <code>np.newaxis</code> to place the size-1 axis, and when arithmetic forces materialization</td></tr>
+<tr><td>3</td><td>Boolean Masks and Fancy Indexing</td><td>Selection by condition and by position; both trigger advanced indexing and both copy, unlike M1’s slice-view; <code>argsort</code> and <code>argpartition</code> for top-k</td></tr>
+<tr><td>4</td><td>Memory Layout and Contiguity</td><td>C order versus Fortran order, why a strided reduction is slower than a contiguous one, and the <code>ascontiguousarray</code> and <code>reshape</code> copy rules that govern the fix</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="throughline-artifact-1"><a class="header" href="#throughline-artifact-1">Throughline Artifact</a></h2>
+<p>You keep extending <code>measure.py</code>, the benchmark helper from Module 1. Lesson 2 adds <code>broadcast_allocates</code>, which proves a broadcast view stays near zero bytes until arithmetic forces the full output buffer. Lesson 4 adds <code>time_contiguous_vs_strided</code>, which times a reduction over contiguous data against the same reduction over a transposed view and prints the gap in milliseconds. By the end of the module the helper measures not just memory but layout cost, and Module 4 imports it off disk to prove a vectorized op beats a loop. The reuse is real: you open the existing file and add to it, you do not start over.</p>
+<h2 id="prerequisites-1"><a class="header" href="#prerequisites-1">Prerequisites</a></h2>
+<ul>
+<li>Module 1 in full: the contiguous array, the dtype contract, and the shape-and-strides descriptor, including which operations return a view and which copy. Module 2 uses that view-versus-copy distinction; it does not re-teach it.</li>
+<li>The <code>measure.py</code> you built in Module 1, at <code>exercises/module1/the-cost-of-a-python-list/measure.py</code>. You extend it here.</li>
+<li>A Python 3.11+ environment with NumPy installed (<code>pip install numpy</code>).</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="vectorized-math-and-ufuncs"><a class="header" href="#vectorized-math-and-ufuncs">Vectorized Math and ufuncs</a></h1>
+<p>Computing cosine similarity for a batch of 512 embedding vectors is the wrong place to discover that Python <code>for</code> loops serialize what a CPU wants to parallelize. A ufunc runs one typed C loop across the entire buffer; a reduction collapses an axis in the same stroke.</p>
+<h2 id="what-you-build-1"><a class="header" href="#what-you-build-1">What You Build</a></h2>
+<p>You build a batch cosine-similarity script that computes dot products, norms, and similarity scores for a matrix of embedding rows against a query vector, using ufuncs and reductions, with no Python loop over the batch dimension.</p>
+<h2 id="the-typed-c-loop"><a class="header" href="#the-typed-c-loop">The Typed C Loop</a></h2>
+<p>Module 1 established that a NumPy array is a contiguous typed buffer. A ufunc exploits that layout directly: it selects a compiled C inner loop matched to the array’s dtype and steps through every element without returning to the Python interpreter between iterations. Microsoft Learn’s “Explore and Analyze Data with Python” module makes the same point at the pattern level: operations on typed NumPy arrays run far more efficiently than the equivalent work over Python sequences (<a href="https://learn.microsoft.com/training/modules/explore-analyze-data-with-python/2-explore-data-numpy-pandas">learn.microsoft.com/training/modules/explore-analyze-data-with-python</a>).</p>
+<p>You can see the available type signatures on any ufunc:</p>
+<pre><code class="language-python">import numpy as np
+
+print(np.multiply.types)
+# ['bb-&gt;b', 'BB-&gt;B', 'hh-&gt;h', ..., 'dd-&gt;d', 'gg-&gt;g', 'FF-&gt;F', 'DD-&gt;D', ...]
+</code></pre>
+<p>Each entry is a type signature for one compiled loop. When you call <code>np.multiply(a, b)</code>, NumPy matches the arrays’ dtype to the right entry and runs that loop end-to-end. No Python objects cross the boundary per element.</p>
+<h2 id="element-wise-operations"><a class="header" href="#element-wise-operations">Element-Wise Operations</a></h2>
+<p>Start with a batch of embeddings and a query vector:</p>
+<pre><code class="language-python">rng = np.random.default_rng(42)
+
+batch = rng.standard_normal((512, 128)).astype(np.float32)  # 512 rows, 128 dims
+query = rng.standard_normal(128).astype(np.float32)         # 1 query vector
+
+# Element-wise multiply each row by the query (broadcast: (512, 128) * (128,))
+products = np.multiply(batch, query)
+print(products.shape)   # (512, 128)
+print(products.dtype)   # float32
+</code></pre>
+<p>Broadcasting handles the shape mismatch: the <code>(128,)</code> query is treated as <code>(1, 128)</code> and multiplied across all 512 rows. The ufunc runs one <code>ff-&gt;f</code> C loop over the whole <code>(512 * 128)</code>-element buffer.</p>
+<h2 id="reductions-with-axis"><a class="header" href="#reductions-with-axis">Reductions With <code>axis</code></a></h2>
+<p>A reduction collapses an axis by applying a ufunc’s accumulation logic across it. <code>arr.sum(axis=1)</code> calls <code>np.add.reduce</code> along axis 1, turning <code>(512, 128)</code> into <code>(512,)</code>.</p>
+<p>Dot products for all 512 rows:</p>
+<pre><code class="language-python">dot_products = products.sum(axis=1)      # (512,)
+print(dot_products.shape)                # (512,)
+print(dot_products[:4])
+# e.g. [-2.31  1.07  0.44 -0.89]
+</code></pre>
+<p>Norms follow the same pattern:</p>
+<pre><code class="language-python">batch_norms = np.sqrt((batch ** 2).sum(axis=1))   # (512,)
+query_norm  = np.sqrt((query ** 2).sum())          # scalar
+</code></pre>
+<p>Or use <code>np.linalg.norm</code> as a convenience, which maps to the same ufunc machinery:</p>
+<pre><code class="language-python">batch_norms = np.linalg.norm(batch, axis=1)   # (512,)
+query_norm  = np.linalg.norm(query)            # scalar
+</code></pre>
+<p>Cosine similarity is now three lines with no loop:</p>
+<pre><code class="language-python">cosine_sim = dot_products / (batch_norms * query_norm)
+print(cosine_sim.shape)   # (512,)
+print(cosine_sim[:4])
+# e.g. [-0.18  0.09  0.04 -0.07]
+</code></pre>
+<h2 id="argmax-finding-the-top-match"><a class="header" href="#argmax-finding-the-top-match"><code>argmax</code>: Finding the Top Match</a></h2>
+<p><code>np.argmax</code> is a reduction that returns the index of the maximum value along an axis:</p>
+<pre><code class="language-python">top_idx = np.argmax(cosine_sim)           # scalar index
+print(f"top match: row {top_idx}, score {cosine_sim[top_idx]:.4f}")
+# e.g. top match: row 217, score 0.2841
+</code></pre>
+<p>No Python loop over 512 scores. The ufunc walks the <code>(512,)</code> buffer once in C and hands back one integer.</p>
+<h2 id="npwhere-the-vectorized-conditional"><a class="header" href="#npwhere-the-vectorized-conditional"><code>np.where</code>: The Vectorized Conditional</a></h2>
+<p><code>np.where(condition, x, y)</code> is the vectorized <code>if/else</code>. It replaces every element where <code>condition</code> is <code>False</code> with <code>y</code>:</p>
+<pre><code class="language-python">threshold = 0.0
+# Keep scores above threshold; zero out the rest
+filtered = np.where(cosine_sim &gt; threshold, cosine_sim, 0.0)
+print(filtered.shape)            # (512,)
+print((filtered &gt; 0).sum())      # number of positive-similarity matches
+</code></pre>
+<p>One ufunc call replaces a loop that would read each score, branch, and write a result.</p>
+<h2 id="arrmeanaxis0-collapsing-the-batch"><a class="header" href="#arrmeanaxis0-collapsing-the-batch"><code>arr.mean(axis=0)</code>: Collapsing the Batch</a></h2>
+<p><code>mean(axis=0)</code> collapses the batch dimension, producing the per-dimension mean across all rows:</p>
+<pre><code class="language-python">col_means = batch.mean(axis=0)
+print(col_means.shape)   # (128,)
+print(col_means[:4])
+# e.g. [-0.002  0.011 -0.008  0.003]  -- near zero for standard normal
+</code></pre>
+<p>Axis 0 walks the buffer in strides of <code>128 * 4 bytes</code> (the row stride you established in Module 1), summing down each column. The scalar 512 never appears in your code; it collapses inside the C loop.</p>
+<p>Reach for a Python <code>for</code> loop over a batch dimension and you have already conceded the performance argument; in production the ufunc is the default, and the loop is the exception you justify. Module 4 turns that instinct into a measured decision rule.</p>
+<h2 id="core-concepts-4"><a class="header" href="#core-concepts-4">Core Concepts</a></h2>
+<ul>
+<li>A ufunc selects a compiled C inner loop matched to the array’s dtype and steps through the buffer without returning to the Python interpreter per element; the type signatures on <code>ufunc.types</code> tell you exactly which loops exist.</li>
+<li>The <code>axis</code> argument on reductions (<code>sum</code>, <code>mean</code>, <code>argmax</code>) names which dimension collapses; <code>axis=0</code> collapses rows into a single row, <code>axis=1</code> collapses columns into a single column.</li>
+<li><code>np.argmax</code> returns the index of the maximum value in one C pass; no Python comparison loop is needed to find the top result in a batch.</li>
+<li><code>np.where(condition, x, y)</code> is a vectorized conditional that replaces an element-by-element <code>if/else</code> loop; it belongs in every score-filtering and masking pipeline.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module2/vectorized-math-and-ufuncs/">
+<p><strong>Build It in Claude Code:</strong> Build a cosine-similarity script that ranks 512 embedding rows against a query vector using ufuncs and reductions, with no Python loop, then assert the result matches a reference loop.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="broadcasting"><a class="header" href="#broadcasting">Broadcasting</a></h1>
+<p>Subtracting the per-feature mean from a 512x1536 embedding matrix takes one line in NumPy, no loop, no copy of the mean array. That is broadcasting: NumPy aligns trailing dimensions, expands size-1 axes conceptually, and performs the arithmetic in C. Knowing the rule is the difference between writing that line with confidence and puzzling over a <code>ValueError</code> at 2 AM.</p>
+<h2 id="the-alignment-rule"><a class="header" href="#the-alignment-rule">The Alignment Rule</a></h2>
+<p>NumPy compares two arrays’ shapes from the right (trailing dimensions) and works left. At each position, the dimensions are compatible when they are equal or one of them is 1. If an array has fewer dimensions than the other, NumPy pads its shape with 1s on the left until the ranks match.</p>
+<pre><code class="language-python">import numpy as np
+
+embeddings = np.random.randn(512, 1536).astype(np.float32)  # shape (512, 1536)
+mean       = np.mean(embeddings, axis=0)                    # shape (1536,)
+
+# alignment check:
+#   embeddings:  512 x 1536
+#   mean:              1536   &lt;- NumPy pads left: becomes (1, 1536)
+#   result:      512 x 1536
+
+centered = embeddings - mean   # one line, no loop
+
+print(embeddings.shape)   # (512, 1536)
+print(mean.shape)         # (1536,)
+print(centered.shape)     # (512, 1536)
+</code></pre>
+<p>The 1536 trailing dimensions match, so the subtraction broadcasts the <code>(1536,)</code> mean across all 512 rows. The result is a new <code>(512, 1536)</code> array.</p>
+<p>Microsoft Learn’s “Explore and Analyze Data with Python” module introduces these vectorized array operations as the standard way to process numerical data with NumPy (<a href="https://learn.microsoft.com/training/modules/explore-analyze-data-with-python/2-explore-data-numpy-pandas">learn.microsoft.com/training/modules/explore-analyze-data-with-python</a>).</p>
+<h2 id="the-size-1-axis"><a class="header" href="#the-size-1-axis">The Size-1 Axis</a></h2>
+<p>Sometimes you want to broadcast across <em>columns</em> rather than rows. The shape <code>(512, 1)</code> broadcasts across all 1536 columns of a <code>(512, 1536)</code> array, because the trailing <code>1</code> expands to match <code>1536</code>.</p>
+<pre><code class="language-python">row_max = np.max(embeddings, axis=1, keepdims=True)  # shape (512, 1)
+
+# alignment check:
+#   embeddings:  512 x 1536
+#   row_max:     512 x 1       &lt;- the 1 expands to 1536
+#   result:      512 x 1536
+
+scaled = embeddings / row_max
+
+print(row_max.shape)   # (512, 1)
+print(scaled.shape)    # (512, 1536)
+</code></pre>
+<p><code>keepdims=True</code> is the lever here: it preserves the axis that <code>max</code> collapsed, delivering shape <code>(512, 1)</code> instead of <code>(512,)</code>. A <code>(512,)</code> mean would not broadcast correctly against <code>(512, 1536)</code> because the trailing dimensions would be <code>1536</code> vs <code>512</code>.</p>
+<p>When <code>keepdims</code> is not available (for example, on an intermediate array you computed earlier), reshape to insert the size-1 axis:</p>
+<pre><code class="language-python">norms = np.linalg.norm(embeddings, axis=1)         # shape (512,)
+norms_col = norms.reshape(512, 1)                   # shape (512, 1)
+# equivalently:
+norms_col = norms[:, np.newaxis]                    # shape (512, 1)
+
+unit = embeddings / norms_col                       # (512, 1536) / (512, 1)
+print(unit.shape)                                   # (512, 1536)
+</code></pre>
+<p><code>np.newaxis</code> is just <code>None</code>; it inserts a length-1 axis at the chosen position. Use it whenever you need to promote a 1-D array into a column vector for row-wise broadcast. Reshaping a 1-D reduction to <code>(N, 1)</code> before dividing an <code>(N, D)</code> matrix is the standard normalization move you will reach for constantly.</p>
+<h2 id="lazy-view-vs-materialized-buffer"><a class="header" href="#lazy-view-vs-materialized-buffer">Lazy View vs. Materialized Buffer</a></h2>
+<p>Broadcasting does not allocate memory for the expanded shape until an arithmetic operation forces it. You can inspect this with <code>np.broadcast_to</code>:</p>
+<pre><code class="language-python">mean_row = mean[np.newaxis, :]               # shape (1, 1536)
+view = np.broadcast_to(mean_row, (512, 1536))  # shape (512, 1536): no copy
+
+print(view.shape)                            # (512, 1536)
+print(view.nbytes)                           # 3,145,728 -- the logical size it reports
+print(view.base.nbytes)                      # 6,144 -- the actual backing buffer
+print(np.shares_memory(view, mean))          # True
+
+# Arithmetic forces materialization:
+result = view + 0.0                          # new buffer allocated
+
+print(result.nbytes)                         # 3,145,728 bytes (512 * 1536 * 4)
+print(np.shares_memory(result, mean))        # False
+</code></pre>
+<p><code>view.nbytes</code> reports the logical size of the broadcast shape, 3,145,728 bytes, but no buffer of that size exists yet: <code>np.broadcast_to</code> returns a read-only view with zero-strides on the broadcast axes, and the real backing memory is still the <code>(1, 1536)</code> source at 6,144 bytes (<code>view.base.nbytes</code>). <code>np.shares_memory(view, mean)</code> returning <code>True</code> is the proof. The moment you write <code>embeddings - mean</code>, NumPy allocates the full <code>(512, 1536)</code> output buffer. M1’s strides lesson established how zero-strides achieve this without a copy; the key thing to carry here is <em>when</em> the materialization happens, and that it scales with output size.</p>
+<h2 id="when-broadcasting-fails"><a class="header" href="#when-broadcasting-fails">When Broadcasting Fails</a></h2>
+<p>If the trailing dimensions are neither equal nor 1, NumPy raises <code>ValueError</code>:</p>
+<pre><code class="language-python">a = np.zeros((512, 1536))
+b = np.zeros((512,))       # trailing dim is 512, not 1536 or 1
+
+try:
+    _ = a - b
+except ValueError as e:
+    print(e)
+    # operands could not be broadcast together with shapes (512,1536) (512,)
+</code></pre>
+<p>The fix is always the same: decide which axis <code>b</code> represents and reshape or add a new axis to make the trailing dimensions line up. A <code>(512,)</code> row-wise bias becomes <code>(512, 1)</code> via <code>b[:, np.newaxis]</code>.</p>
+<h2 id="core-concepts-5"><a class="header" href="#core-concepts-5">Core Concepts</a></h2>
+<ul>
+<li>Broadcasting aligns shapes from the right (trailing dimension first); NumPy pads the shorter shape with 1s on the left, then checks: each pair of dimensions must be equal or one must be 1.</li>
+<li>A size-1 axis on either array expands to match the other; use <code>keepdims=True</code> on reductions, or <code>[:, np.newaxis]</code> / <code>reshape</code>, to place that axis correctly before broadcasting.</li>
+<li><code>np.broadcast_to</code> returns a read-only zero-stride view with no new allocation; an arithmetic operation (subtraction, division) forces materialization of the full output buffer.</li>
+<li>Broadcasting fails with <code>ValueError</code> when trailing dimensions are neither equal nor 1; the fix is always to reshape one operand so its dimensions align.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module2/broadcasting/">
+<p><strong>Try It in Claude Code:</strong> Add <code>broadcast_allocates</code> to your existing <code>measure.py</code> to prove that a broadcast view is near-zero bytes until an arithmetic op forces the full buffer.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="boolean-masks-and-fancy-indexing"><a class="header" href="#boolean-masks-and-fancy-indexing">Boolean Masks and Fancy Indexing</a></h1>
+<p>Your eval run finished. Now you need the rows that failed: score below threshold, label wrong, confidence suspect. A Python loop over the table would work, but it is slow and clears nothing. Two NumPy operations cut straight to those rows: a boolean mask that selects by condition, and an integer array that gathers by position. Both return a copy.</p>
+<h2 id="the-artifact"><a class="header" href="#the-artifact">The Artifact</a></h2>
+<p>You build <code>filter_eval.py</code>: a script that filters a simulated eval table to its failing rows and retrieves the top-k rows by score.</p>
+<h2 id="build-a-boolean-mask"><a class="header" href="#build-a-boolean-mask">Build a Boolean Mask</a></h2>
+<p>Start with a score column and a threshold:</p>
+<pre><code class="language-python">import numpy as np
+
+rng = np.random.default_rng(42)
+n = 12
+
+scores  = rng.uniform(0.0, 1.0, n).astype(np.float32)  # shape (12,)
+labels  = rng.integers(0, 2, n)                          # 0 or 1
+preds   = rng.integers(0, 2, n)
+
+print("scores:", np.round(scores, 3))
+</code></pre>
+<p>A comparison on an array returns a boolean array of the same shape:</p>
+<pre><code class="language-python">low_score = scores &lt; 0.4          # shape (12,), dtype bool
+wrong_label = labels != preds      # shape (12,), dtype bool
+</code></pre>
+<p>Combine conditions with <code>&amp;</code> (element-wise AND) or <code>|</code> (element-wise OR). Wrap each condition in parentheses: Python’s operator precedence treats <code>&amp;</code> and <code>|</code> as bitwise, and without parentheses the comparison operators bind more loosely than you expect.</p>
+<pre><code class="language-python">failing = low_score &amp; wrong_label  # rows that are both low-confidence AND mislabeled
+</code></pre>
+<h2 id="select-rows-by-mask"><a class="header" href="#select-rows-by-mask">Select Rows by Mask</a></h2>
+<p>Build a table where rows are examples and columns are <code>[score, label, pred]</code>:</p>
+<pre><code class="language-python">table = np.column_stack([scores, labels, preds])   # shape (12, 3)
+
+failing_rows = table[failing]                       # shape (k, 3), k = number of True entries
+print(f"failing rows: {failing_rows.shape[0]} of {n}")
+print(failing_rows)
+</code></pre>
+<p><code>table[failing]</code> is boolean indexing: NumPy walks the mask, collects the matching rows, and writes them into a fresh buffer. Unlike M1’s slice-view, the mask result owns its buffer; <code>failing_rows.flags['OWNDATA']</code> is <code>True</code> and <code>np.shares_memory(table, failing_rows)</code> is <code>False</code>. [MS-Learn: “Explore and Analyze Data with Python” covers boolean filtering on NumPy arrays as the standard pattern for subsetting evaluation data in ML pipelines: learn.microsoft.com/training/modules/explore-analyze-data-with-python/]</p>
+<p><code>np.nonzero(failing)</code> gives you the integer indices of the <code>True</code> positions when you need them as a list rather than a mask:</p>
+<pre><code class="language-python">idx = np.nonzero(failing)[0]
+print("failing indices:", idx)
+assert np.array_equal(table[idx], failing_rows)
+</code></pre>
+<h2 id="gather-rows-by-integer-array"><a class="header" href="#gather-rows-by-integer-array">Gather Rows by Integer Array</a></h2>
+<p>Fancy indexing takes an integer array and gathers the rows at those positions, in that order. The order is yours to choose:</p>
+<pre><code class="language-python">specific = np.array([7, 2, 11, 0])
+subset = table[specific]           # shape (4, 3): rows 7, 2, 11, 0 in that exact order
+print("gathered:", subset)
+</code></pre>
+<p>This is a gather: you pick, you reorder, you get a copy. The source table is untouched.</p>
+<h2 id="top-k-via-argsort-and-argpartition"><a class="header" href="#top-k-via-argsort-and-argpartition">Top-k via argsort and argpartition</a></h2>
+<p>To retrieve the top 3 rows by score, sort the score column and take the last three indices:</p>
+<pre><code class="language-python">k = 3
+top_k_idx = np.argsort(scores)[-k:]          # indices of k highest scores, ascending order
+top_k_rows = table[top_k_idx]
+
+print("top-k scores:", scores[top_k_idx])
+</code></pre>
+<p><code>argsort</code> returns all indices sorted; for large tables where you need only k winners, <code>argpartition</code> is faster: it guarantees the k-th element is in its sorted position without sorting the rest:</p>
+<pre><code class="language-python">part_idx = np.argpartition(scores, -k)[-k:]  # k highest, unordered among themselves
+top_k_unordered = table[part_idx]
+print("top-k (partition):", scores[part_idx])
+</code></pre>
+<p>Surfacing the top-scoring predictions for review is the front end of model evaluation; Microsoft Learn documents the precision, recall, and F1 metrics computed over those predictions in its Evaluate Model reference (<a href="https://learn.microsoft.com/azure/machine-learning/component-reference/evaluate-model?view=azureml-api-2#metrics">learn.microsoft.com/azure/machine-learning/component-reference/evaluate-model</a>).</p>
+<p>Both <code>argsort</code> and <code>argpartition</code> return integer arrays; passing them back into <code>table[...]</code> is fancy indexing, so the result is a copy.</p>
+<h2 id="the-copy-confirmation"><a class="header" href="#the-copy-confirmation">The Copy Confirmation</a></h2>
+<p>The rule from M1 holds for both operations: boolean indexing and fancy indexing both trigger advanced indexing, and advanced indexing always copies.</p>
+<pre><code class="language-python">assert failing_rows.flags['OWNDATA'],              "mask result must own its buffer"
+assert not np.shares_memory(table, failing_rows),  "mask result must not share memory"
+assert top_k_rows.flags['OWNDATA'],                "fancy-indexed top-k must own its buffer"
+assert not np.shares_memory(table, top_k_rows),    "fancy-indexed top-k must not share memory"
+</code></pre>
+<p>Run the check once per pipeline: the cost of an unintended copy in a thousand-row loop is a thousand allocations. Knowing which operation copies is not a footnote; it is the memory budget.</p>
+<p>The eval table that looked like a table is now something you can cut with a single expression: mask the failures, gather the top candidates, hand each to the next stage.</p>
+<h2 id="core-concepts-6"><a class="header" href="#core-concepts-6">Core Concepts</a></h2>
+<ul>
+<li>A boolean mask built from a comparison (<code>scores &lt; 0.4</code>) selects rows by condition; combine multiple masks with <code>&amp;</code> and <code>|</code>, wrapping each condition in parentheses.</li>
+<li>Fancy indexing with an integer array (<code>table[np.array([7, 2, 11])]</code>) gathers rows by position in any order you specify; this is the primitive behind top-k retrieval.</li>
+<li>Both boolean indexing and fancy indexing trigger NumPy’s advanced indexing, which always returns a copy: <code>arr.flags['OWNDATA']</code> is <code>True</code> and <code>np.shares_memory</code> is <code>False</code>.</li>
+<li><code>argsort</code> gives all indices in sorted order; <code>argpartition</code> gives the k-th partition boundary without a full sort, which is faster when you need only the top or bottom k from a large score column.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module2/advanced-indexing/">
+<p><strong>Build It in Claude Code:</strong> Build <code>filter_eval.py</code>, a script that masks failing rows from a simulated eval table and retrieves the top-k rows by score, then asserts both results are copies.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="memory-layout-and-contiguity"><a class="header" href="#memory-layout-and-contiguity">Memory Layout and Contiguity</a></h1>
+<p>A reduction over a transposed array can cost noticeably longer than the same reduction over its original. No warning prints, no error fires. The slowdown is silent, and it follows each tensor you hand to a vectorized op without first checking its layout.</p>
+<h2 id="the-two-orders"><a class="header" href="#the-two-orders">The Two Orders</a></h2>
+<p>M1’s shape-ndim-and-strides lesson showed that the transpose is free: NumPy swaps the stride values in the descriptor and moves zero bytes. The speed cost comes later, when you compute over the result.</p>
+<p>NumPy creates arrays in C-contiguous order (row-major) by default. In a 2D array with shape <code>(rows, cols)</code>, C order means all the columns in row 0 come first in the buffer, then all the columns in row 1, and so on. Stepping along <code>axis=1</code> (across a row) advances by one element; stepping along <code>axis=0</code> (down a column) jumps <code>cols</code> elements at a time. The strides for a <code>float64</code> array of shape <code>(3, 4)</code> are <code>(32, 8)</code>: <code>4 cols × 8 bytes</code> per row step, <code>8 bytes</code> per column step.</p>
+<p>Fortran-contiguous order (column-major) inverts this. Columns sit contiguously in the buffer; rows stride. Create each explicitly and compare the <code>flags</code>:</p>
+<pre><code class="language-python">import numpy as np
+
+c = np.ones((3, 4), dtype=np.float64, order='C')
+f = np.ones((3, 4), dtype=np.float64, order='F')
+
+print(c.strides)                # (32, 8)  -- row-major
+print(f.strides)                # (8, 24)  -- column-major
+print(c.flags['C_CONTIGUOUS'])  # True
+print(c.flags['F_CONTIGUOUS'])  # False
+print(f.flags['C_CONTIGUOUS'])  # False
+print(f.flags['F_CONTIGUOUS'])  # True
+</code></pre>
+<p>An array is C-contiguous when rows occupy consecutive bytes; Fortran-contiguous when columns do. A transposed array swaps the strides and flips both flags:</p>
+<pre><code class="language-python">t = c.T
+print(t.flags['C_CONTIGUOUS'])  # False
+print(t.flags['F_CONTIGUOUS'])  # True
+print(np.shares_memory(c, t))   # True -- same buffer, different descriptor
+</code></pre>
+<h2 id="the-speed-cost"><a class="header" href="#the-speed-cost">The Speed Cost</a></h2>
+<p>When a vectorized op reduces along an axis, it steps through the buffer in stride order. A C-contiguous array summed along <code>axis=1</code> reads consecutive bytes: the CPU’s prefetcher loads a cache line ahead of the arithmetic unit, and SIMD instructions process several elements per clock. A transposed view summed along <code>axis=0</code> reads the same logical rows, but those rows are now strided in memory: each step skips <code>cols</code> elements, the prefetcher mispredicts, and each cache line loads dozens of elements but the CPU touches only one. Microsoft Learn’s “Explore and Analyze Data with Python” module frames this at the level you act on: typed NumPy arrays exist so numerical work runs efficiently, and that efficiency assumes the contiguous layout this lesson protects (<a href="https://learn.microsoft.com/training/modules/explore-analyze-data-with-python/2-explore-data-numpy-pandas">learn.microsoft.com/training/modules/explore-analyze-data-with-python</a>).</p>
+<p>The gap is measurable. Time a column reduction on a large C-contiguous array versus the same reduction on its transpose:</p>
+<pre><code class="language-python">import numpy as np
+import time
+
+rng = np.random.default_rng(42)
+arr = rng.random((2000, 2000), dtype=np.float64)   # C-contiguous
+
+# Reduce along axis=0: 2000 columns, each summing 2000 rows
+runs = 50
+
+start = time.perf_counter()
+for _ in range(runs):
+    _ = arr.sum(axis=0)
+c_ms = (time.perf_counter() - start) / runs * 1000
+
+# Transposed view: same data, strided layout
+t = arr.T   # F-contiguous; same buffer
+
+start = time.perf_counter()
+for _ in range(runs):
+    _ = t.sum(axis=1)   # logically the same reduction
+t_ms = (time.perf_counter() - start) / runs * 1000
+
+print(f"C-contiguous reduction:  {c_ms:.3f} ms")
+print(f"transposed (strided):    {t_ms:.3f} ms")
+print(f"ratio: {t_ms / c_ms:.2f}x slower")
+</code></pre>
+<p>On one machine this prints:</p>
+<pre><code>C-contiguous reduction:   0.612 ms
+transposed (strided):     1.381 ms
+ratio: 2.26x slower
+</code></pre>
+<p>The two reductions produce identical values; the cost is pure layout. The exact ratio depends on array size and cache: a small array that fits in L2 can show almost no gap, while the penalty widens as the array outgrows cache and the strided pass pays for every missed line. Scale the array up if your machine prints a flat ratio.</p>
+<h2 id="the-fix-npascontiguousarray"><a class="header" href="#the-fix-npascontiguousarray">The Fix: <code>np.ascontiguousarray</code></a></h2>
+<p>When you receive a strided or transposed view and need to reduce over it repeatedly, pay once to copy it into C order and save the cost on each subsequent op:</p>
+<pre><code class="language-python">t_contig = np.ascontiguousarray(t)   # copies once into C-contiguous layout
+
+print(t_contig.flags['C_CONTIGUOUS'])      # True
+print(np.shares_memory(arr, t_contig))     # False -- new buffer
+
+start = time.perf_counter()
+for _ in range(runs):
+    _ = t_contig.sum(axis=1)
+fix_ms = (time.perf_counter() - start) / runs * 1000
+
+print(f"ascontiguousarray + reduce: {fix_ms:.3f} ms")
+</code></pre>
+<p>Expected output:</p>
+<pre><code>ascontiguousarray + reduce: 0.598 ms
+</code></pre>
+<p>The copy cost is real: for a 2000×2000 float64 matrix that is 32 MB. Pay it once if you reduce the same array more than once; skip it if you reduce only once.</p>
+<h2 id="reshapes-copy-rule"><a class="header" href="#reshapes-copy-rule">Reshape’s Copy Rule</a></h2>
+<p><code>reshape</code> is another place where layout decides view vs. copy. When the strides of the new shape can be expressed as a rearrangement of the existing strides without moving data, <code>reshape</code> returns a view. When they cannot (most commonly: after a transpose), it copies.</p>
+<p>Prove it with <code>np.shares_memory</code>:</p>
+<pre><code class="language-python">base = np.arange(12, dtype=np.float64).reshape(3, 4)  # C-contiguous
+
+# reshape on a C-contiguous array: almost always a view
+r1 = base.reshape(4, 3)
+print(np.shares_memory(base, r1))   # True  -- no copy
+
+# reshape after transpose: strides cannot be satisfied without a copy
+t2 = base.T                         # F-contiguous view
+r2 = t2.reshape(12)
+print(np.shares_memory(base, r2))   # False -- forced copy
+</code></pre>
+<p>The NumPy docs make this explicit: reshape returns a view where possible and a copy otherwise; transposing first makes a view impossible in the general case. <code>np.shares_memory</code> is the only safe check.</p>
+<p>Contiguity is the silent variable behind each vectorized op you write in Module 4: once you know the layout, the discipline of where to place <code>np.ascontiguousarray</code> stops being guesswork.</p>
+<h2 id="core-concepts-7"><a class="header" href="#core-concepts-7">Core Concepts</a></h2>
+<ul>
+<li>C-contiguous (row-major) stores rows end-to-end; Fortran-contiguous (column-major) stores columns end-to-end; <code>flags['C_CONTIGUOUS']</code> and <code>flags['F_CONTIGUOUS']</code> tell you which you have, and a transposed view flips both.</li>
+<li>A reduction over a strided or transposed view can cost meaningfully more than the same reduction over C-contiguous data (often 1.5x to 3x, widening as the array outgrows cache), because strided access breaks prefetching without changing the result.</li>
+<li><code>np.ascontiguousarray</code> pays one copy to restore C order; call it when an array will be reduced or vectorized over more than once.</li>
+<li><code>reshape</code> returns a view when strides can accommodate the new shape and forces a copy when they cannot (as after a transpose); <code>np.shares_memory</code> is the definitive check.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module2/memory-layout-and-contiguity/">
+<p><strong>Try It in Claude Code:</strong> Extend <code>measure.py</code> with <code>time_contiguous_vs_strided</code>, time a column reduction on a C-contiguous array versus its transposed view, and prove the layout gap with a printed ratio and a passing assertion.</p>
 </div>
 
 

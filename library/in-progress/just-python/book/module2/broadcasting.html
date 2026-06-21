@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Dtypes and What They Cost - Just Python — Applied Python for AI Engineers</title>
+        <title>Broadcasting - Just Python — Applied Python for AI Engineers</title>
 
 
         <!-- Custom HTML head -->
@@ -177,75 +177,91 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="dtypes-and-what-they-cost"><a class="header" href="#dtypes-and-what-they-cost">Dtypes and What They Cost</a></h1>
-<p>Every NumPy array has a dtype, and if you did not choose it, NumPy chose for you: probably <code>float64</code>. That default costs twice the memory of <code>float32</code> for no precision gain you will ever see from a model output.</p>
-<h2 id="the-dtype-contract"><a class="header" href="#the-dtype-contract">The dtype Contract</a></h2>
-<p>A dtype is a fixed-size C type. It tells NumPy two things: how many bytes each slot in the buffer occupies, and how to interpret those bytes. Every element in the array shares the same dtype; there is no boxing, no per-element overhead. That uniformity is where the speed comes from.</p>
+                        <h1 id="broadcasting"><a class="header" href="#broadcasting">Broadcasting</a></h1>
+<p>Subtracting the per-feature mean from a 512x1536 embedding matrix takes one line in NumPy, no loop, no copy of the mean array. That is broadcasting: NumPy aligns trailing dimensions, expands size-1 axes conceptually, and performs the arithmetic in C. Knowing the rule is the difference between writing that line with confidence and puzzling over a <code>ValueError</code> at 2 AM.</p>
+<h2 id="the-alignment-rule"><a class="header" href="#the-alignment-rule">The Alignment Rule</a></h2>
+<p>NumPy compares two arrays’ shapes from the right (trailing dimensions) and works left. At each position, the dimensions are compatible when they are equal or one of them is 1. If an array has fewer dimensions than the other, NumPy pads its shape with 1s on the left until the ranks match.</p>
 <pre><code class="language-python">import numpy as np
 
-scores = np.array([0.91, 0.74, 0.88, 0.62], dtype=np.float64)
-print(scores.dtype)     # float64
-print(scores.itemsize)  # 8  (bytes per element)
-print(scores.nbytes)    # 32 (total bytes)
-</code></pre>
-<p><code>arr.dtype</code> always tells you what you have. <code>arr.itemsize</code> tells you the per-element cost. <code>arr.nbytes</code> tells you the bill.</p>
-<h2 id="the-ai-relevant-types"><a class="header" href="#the-ai-relevant-types">The AI-Relevant Types</a></h2>
-<p>Five dtypes cover almost every AI pipeline:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>dtype</th><th>Bytes</th><th>When you use it</th></tr>
-</thead>
-<tbody>
-<tr><td><code>float64</code></td><td>8</td><td>NumPy default; computation, intermediate results</td></tr>
-<tr><td><code>float32</code></td><td>4</td><td>Model output embeddings; halves memory vs float64</td></tr>
-<tr><td><code>int64</code></td><td>8</td><td>Label arrays, index arrays</td></tr>
-<tr><td><code>int32</code></td><td>4</td><td>Compact labels when the count fits in 32 bits</td></tr>
-<tr><td><code>bool</code></td><td>1</td><td>Mask arrays; boolean indexing</td></tr>
-</tbody>
-</table>
-</div>
-<p>The decision that matters most in practice is <code>float64</code> versus <code>float32</code>. Most embedding models emit <code>float32</code> vectors. Azure AI Search documents this directly: <code>Float32</code> (32-bit floating point) is the default vector field data type for Azure AI Search indexes because “most embedding models emit vectors as <code>Float32</code>,” while choosing <code>Float16</code> “often leads to faster query times and reduced memory footprint” at the cost of some precision. (<a href="https://learn.microsoft.com/rest/api/searchservice/supported-data-types#edm-data-types-for-vector-fields">Microsoft Learn: Supported data types, Azure AI Search</a>)</p>
-<p>Loading those <code>float32</code> embeddings into a <code>float64</code> array doubles your memory silently. At 1,536 dimensions and one million rows, that is the difference between 6 GB and 12 GB.</p>
-<h2 id="astype-versus-view"><a class="header" href="#astype-versus-view">astype Versus view</a></h2>
-<p>Two operations change what dtype label an array carries. Only one of them is safe for type conversion.</p>
-<p><strong><code>astype</code></strong> converts values. It reads each element, converts it to the target type, and writes it into a new buffer. The result is a separate array with correct values.</p>
-<pre><code class="language-python">embeddings_f64 = np.random.rand(1000, 1536)   # float64, 8 bytes/element
-embeddings_f32 = embeddings_f64.astype(np.float32)
+embeddings = np.random.randn(512, 1536).astype(np.float32)  # shape (512, 1536)
+mean       = np.mean(embeddings, axis=0)                    # shape (1536,)
 
-print(embeddings_f64.nbytes)  # 12,288,000
-print(embeddings_f32.nbytes)  #  6,144,000  -- new buffer, half the size
-</code></pre>
-<p><strong><code>view</code></strong> reinterprets bytes. It does not convert values; it reads the same bytes through a different lens. Viewing 8-byte <code>float64</code> slots as 4-byte <code>float32</code> slots does not halve your values: it reads each 8-byte block as two 4-byte floats and returns garbage.</p>
-<pre><code class="language-python">trap = embeddings_f64[0].view(np.float32)
-# trap has 2 * 1536 = 3072 elements, all meaningless
-# it shares the buffer -- no copy occurred, no conversion occurred
-print(np.shares_memory(embeddings_f64, trap))  # True
-</code></pre>
-<p>The trap is real. <code>arr.view(np.float32)</code> will not raise an error; it silently gives you wrong data. Reach for <code>view</code> only when you intend raw byte reinterpretation, which in AI pipelines is almost never.</p>
-<h2 id="the-float32-decision"><a class="header" href="#the-float32-decision">The float32 Decision</a></h2>
-<p>When a model hands you embeddings, read the dtype before assuming:</p>
-<pre><code class="language-python"># Simulate receiving embeddings from a model
-model_output = np.random.rand(512, 1536).astype(np.float32)
+# alignment check:
+#   embeddings:  512 x 1536
+#   mean:              1536   &lt;- NumPy pads left: becomes (1, 1536)
+#   result:      512 x 1536
 
-# Check what you have
-print(model_output.dtype)   # float32
-print(model_output.nbytes)  # 3,145,728
+centered = embeddings - mean   # one line, no loop
 
-# If you had loaded into float64 by accident:
-bloated = model_output.astype(np.float64)
-print(bloated.nbytes)       # 6,291,456 -- doubled for nothing
+print(embeddings.shape)   # (512, 1536)
+print(mean.shape)         # (1536,)
+print(centered.shape)     # (512, 1536)
 </code></pre>
-<p>The fix is one line: <code>arr.astype(np.float32)</code>. The cost of not fixing it scales with every row in your corpus.</p>
+<p>The 1536 trailing dimensions match, so the subtraction broadcasts the <code>(1536,)</code> mean across all 512 rows. The result is a new <code>(512, 1536)</code> array.</p>
+<p>Microsoft Learn’s “Explore and Analyze Data with Python” module introduces these vectorized array operations as the standard way to process numerical data with NumPy (<a href="https://learn.microsoft.com/training/modules/explore-analyze-data-with-python/2-explore-data-numpy-pandas">learn.microsoft.com/training/modules/explore-analyze-data-with-python</a>).</p>
+<h2 id="the-size-1-axis"><a class="header" href="#the-size-1-axis">The Size-1 Axis</a></h2>
+<p>Sometimes you want to broadcast across <em>columns</em> rather than rows. The shape <code>(512, 1)</code> broadcasts across all 1536 columns of a <code>(512, 1536)</code> array, because the trailing <code>1</code> expands to match <code>1536</code>.</p>
+<pre><code class="language-python">row_max = np.max(embeddings, axis=1, keepdims=True)  # shape (512, 1)
+
+# alignment check:
+#   embeddings:  512 x 1536
+#   row_max:     512 x 1       &lt;- the 1 expands to 1536
+#   result:      512 x 1536
+
+scaled = embeddings / row_max
+
+print(row_max.shape)   # (512, 1)
+print(scaled.shape)    # (512, 1536)
+</code></pre>
+<p><code>keepdims=True</code> is the lever here: it preserves the axis that <code>max</code> collapsed, delivering shape <code>(512, 1)</code> instead of <code>(512,)</code>. A <code>(512,)</code> mean would not broadcast correctly against <code>(512, 1536)</code> because the trailing dimensions would be <code>1536</code> vs <code>512</code>.</p>
+<p>When <code>keepdims</code> is not available (for example, on an intermediate array you computed earlier), reshape to insert the size-1 axis:</p>
+<pre><code class="language-python">norms = np.linalg.norm(embeddings, axis=1)         # shape (512,)
+norms_col = norms.reshape(512, 1)                   # shape (512, 1)
+# equivalently:
+norms_col = norms[:, np.newaxis]                    # shape (512, 1)
+
+unit = embeddings / norms_col                       # (512, 1536) / (512, 1)
+print(unit.shape)                                   # (512, 1536)
+</code></pre>
+<p><code>np.newaxis</code> is just <code>None</code>; it inserts a length-1 axis at the chosen position. Use it whenever you need to promote a 1-D array into a column vector for row-wise broadcast. Reshaping a 1-D reduction to <code>(N, 1)</code> before dividing an <code>(N, D)</code> matrix is the standard normalization move you will reach for constantly.</p>
+<h2 id="lazy-view-vs-materialized-buffer"><a class="header" href="#lazy-view-vs-materialized-buffer">Lazy View vs. Materialized Buffer</a></h2>
+<p>Broadcasting does not allocate memory for the expanded shape until an arithmetic operation forces it. You can inspect this with <code>np.broadcast_to</code>:</p>
+<pre><code class="language-python">mean_row = mean[np.newaxis, :]               # shape (1, 1536)
+view = np.broadcast_to(mean_row, (512, 1536))  # shape (512, 1536): no copy
+
+print(view.shape)                            # (512, 1536)
+print(view.nbytes)                           # 3,145,728 -- the logical size it reports
+print(view.base.nbytes)                      # 6,144 -- the actual backing buffer
+print(np.shares_memory(view, mean))          # True
+
+# Arithmetic forces materialization:
+result = view + 0.0                          # new buffer allocated
+
+print(result.nbytes)                         # 3,145,728 bytes (512 * 1536 * 4)
+print(np.shares_memory(result, mean))        # False
+</code></pre>
+<p><code>view.nbytes</code> reports the logical size of the broadcast shape, 3,145,728 bytes, but no buffer of that size exists yet: <code>np.broadcast_to</code> returns a read-only view with zero-strides on the broadcast axes, and the real backing memory is still the <code>(1, 1536)</code> source at 6,144 bytes (<code>view.base.nbytes</code>). <code>np.shares_memory(view, mean)</code> returning <code>True</code> is the proof. The moment you write <code>embeddings - mean</code>, NumPy allocates the full <code>(512, 1536)</code> output buffer. M1’s strides lesson established how zero-strides achieve this without a copy; the key thing to carry here is <em>when</em> the materialization happens, and that it scales with output size.</p>
+<h2 id="when-broadcasting-fails"><a class="header" href="#when-broadcasting-fails">When Broadcasting Fails</a></h2>
+<p>If the trailing dimensions are neither equal nor 1, NumPy raises <code>ValueError</code>:</p>
+<pre><code class="language-python">a = np.zeros((512, 1536))
+b = np.zeros((512,))       # trailing dim is 512, not 1536 or 1
+
+try:
+    _ = a - b
+except ValueError as e:
+    print(e)
+    # operands could not be broadcast together with shapes (512,1536) (512,)
+</code></pre>
+<p>The fix is always the same: decide which axis <code>b</code> represents and reshape or add a new axis to make the trailing dimensions line up. A <code>(512,)</code> row-wise bias becomes <code>(512, 1)</code> via <code>b[:, np.newaxis]</code>.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>A dtype is a fixed-size C type specifying bytes-per-slot and how those bytes are interpreted; every element in an array shares it, which is why NumPy is fast.</li>
-<li><code>astype</code> converts values into a new buffer; <code>view</code> reinterprets the existing bytes without converting them: using <code>view</code> as a type conversion yields garbage.</li>
-<li>Most embedding models emit <code>float32</code>; loading their output into a <code>float64</code> array doubles memory silently and wastes the budget before any computation begins.</li>
-<li><code>arr.dtype</code>, <code>arr.itemsize</code>, and <code>arr.nbytes</code> are the three numbers to read before operating on any array you did not create yourself.</li>
+<li>Broadcasting aligns shapes from the right (trailing dimension first); NumPy pads the shorter shape with 1s on the left, then checks: each pair of dimensions must be equal or one must be 1.</li>
+<li>A size-1 axis on either array expands to match the other; use <code>keepdims=True</code> on reductions, or <code>[:, np.newaxis]</code> / <code>reshape</code>, to place that axis correctly before broadcasting.</li>
+<li><code>np.broadcast_to</code> returns a read-only zero-stride view with no new allocation; an arithmetic operation (subtraction, division) forces materialization of the full output buffer.</li>
+<li>Broadcasting fails with <code>ValueError</code> when trailing dimensions are neither equal nor 1; the fix is always to reshape one operand so its dimensions align.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module1/dtypes-and-what-they-cost/">
-<p><strong>Build It in Claude Code:</strong> build a dtype audit script that measures the real memory cost of float64 vs float32 embeddings and proves the view trap produces garbage.</p>
+<div class="claude-handoff" data-exercise="exercises/module2/broadcasting/">
+<p><strong>Try It in Claude Code:</strong> Add <code>broadcast_allocates</code> to your existing <code>measure.py</code> to prove that a broadcast view is near-zero bytes until an arithmetic op forces the full buffer.</p>
 </div>
 
 
@@ -253,11 +269,11 @@ print(bloated.nbytes)       # 6,291,456 -- doubled for nothing
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module1/why-numpy-exists.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module2/vectorized-math-and-ufuncs.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module1/shape-ndim-and-strides.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module2/advanced-indexing.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -267,11 +283,11 @@ print(bloated.nbytes)       # 6,291,456 -- doubled for nothing
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module1/why-numpy-exists.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module2/vectorized-math-and-ufuncs.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module1/shape-ndim-and-strides.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module2/advanced-indexing.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

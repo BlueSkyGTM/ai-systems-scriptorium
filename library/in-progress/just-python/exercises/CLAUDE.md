@@ -9,10 +9,12 @@ When a learner pastes an exercise into you, they are here to build, not to watch
 - Find the module's throughline artifact and read its current state before adding to it. You are
   continuing a build, not starting one.
 
-  **Module 1 throughline: `exercises/module1/measure.py`**
-  This is the reusable benchmark helper the reader builds across the five M1 lessons. It starts as
-  a skeleton in lesson 1 (00-overview / the-cost-of-a-python-list) and grows with each lesson.
-  Before any M1 exercise: open `measure.py`, read what is already there, and understand where in
+  **Module 1 + 2 throughline: `exercises/module1/the-cost-of-a-python-list/measure.py`**
+  This is the reusable benchmark helper the reader builds across the M1 lessons and keeps extending
+  in M2. It starts as a skeleton in M1 lesson 1 (the-cost-of-a-python-list) and grows with each
+  lesson: M1 adds `list_bytes`, `array_bytes`, and `time_sum`; M2 adds `broadcast_allocates` (the
+  broadcasting lesson) and `time_contiguous_vs_strided` (the memory-layout lesson). Before any M1 or
+  M2 exercise that touches it: open `measure.py`, read what is already there, and understand where in
   the build the learner is. Do not re-implement what exists. Do not reset state you did not write.
 
   Later modules have their own throughline artifacts (the M6 wrangling pipeline, the M7 eval engine,
