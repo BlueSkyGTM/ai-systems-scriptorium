@@ -107,6 +107,22 @@ prepositions (of, to, in, on, at, by, for, with, from, …) — except the first
 The conversion that establishes this lives at `build-log/caps-sweep-title.py` (fence-aware, proper-noun- and
 acronym-guarded, caps the first/last of hyphen compounds); re-run after a bulk authoring pass to catch drift.
 
+## 10. Separate the Machine Tokens From the Prose
+
+Prose is for reading; literal machine tokens are for running. They do not share a sentence. A clause the
+reader cannot say aloud, because it is carrying a runnable command, a flag string, a path, or a stack of
+file globs, has stopped being prose. When the technical token is unavoidable, lift it out: state the habit
+or the why in a clean sentence, then put the literal command or config in its own fenced block beneath it.
+
+- [ ] **No runnable command or multi-token literal mid-sentence.** A single identifier inline (`float32`,
+      one function name, one flag) is fine; a full command (`uv pip compile pyproject.toml -o requirements.lock`)
+      or a stacked list of literals (`.venv/`, `*.pt`, `*.pth`, …) goes in a fenced block.
+- [ ] **The numbered "habits" or "steps" list is the worst offender.** A list item that crams a label, a
+      sentence, and a literal command into one line reads as a wall of config. Make the prose the item; hang
+      the literal in a block under it.
+- [ ] **The aloud test (§7.6) is the check.** If you must spell out punctuation or paste a path to read the
+      sentence, the tokens are in the wrong place.
+
 ## What this is not
 
 Not a layout. Not a word count. It is a discipline. A 90-word lesson and a 900-word lesson both pass if both
