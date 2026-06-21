@@ -6,7 +6,7 @@ six How-To steps, plus a perf-and-tuning capstone (M7). See
 
 | Module | Title | Status | Shipped | Notes |
 |--------|-------|--------|---------|-------|
-| M1 | The Build | 📝 Plan drafted | — | BOM rationale, Micro Center ProBuild, stress test, first boot. Seeds `HARDWARE.md` (the capstone repo's first committed file) + `check_hardware.py`. Plan: `m1/PLAN.md`. Awaiting `GATE-LOCK-PLAN`. |
+| M1 | The Build | 🔒 Plan locked | — | BOM rationale, Micro Center ProBuild, stress test, first boot. Seeds `HARDWARE.md` (the capstone repo's first committed file) + `check_hardware.py`. Plan: `m1/PLAN.md`. **`GATE-LOCK-PLAN` cleared 2026-06-21.** No hardware exists ("Cthulhu" is a codename, not a machine); authored from grounded sources (SPEC + aipe + vendor docs), reader fills `HARDWARE.md` from their own build. Ready to author. |
 | M2 | Linux and CUDA | ⬜ Not started | — | Dual-partition plan, distro selection, NVIDIA driver + CUDA toolkit, verification (`nvidia-smi`). MS-Learn returns as a grounding source here (Windows 11 / WSL2 contrast). |
 | M3 | The Model Stack | ⬜ Not started | — | Ollama + Docker, 14B coding model on-card, zero VRAM overflow, OpenAI-compatible API call. First module with live command-output done-whens. |
 | M4 | Unified Memory | ⬜ Not started | — | 32B–70B quantized split across GPU+DDR5; latency baseline (tok/s, TTFT). aipe ore for quantization depth. |
@@ -17,9 +17,11 @@ six How-To steps, plus a perf-and-tuning capstone (M7). See
 ## Provenance
 
 Graduated to `library/in-progress/local-metal` on 2026-06-21 (`GATE-NAME-BOOK` cleared: title
-**Local Metal**, slug `local-metal`; the Cthulhu rig is built and running). This is the
-seventh book and the library's only hardware-live title — the place every other book comes to
-run. Unlike Just Python's code exercises (pytest-checkable scripts), Local Metal's done-whens
-are real command output captured off the live rig (`nvidia-smi`, `ollama`, latency logs) plus
-structured-document validators; the M1 plan settles how the hardware modules meet the STANDARDS
-"machine-checkable done-when" bar.
+**Local Metal**, slug `local-metal`). **No hardware exists** — "Cthulhu" is the codename for the
+reference build (the SPEC's BOM), not a running machine; the book is the curriculum that takes a
+reader from buying the parts to managing a networked local-model host. This is the seventh book
+and the library's only hardware-grounded title — the place every other book eventually comes to
+run. Unlike Just Python's code exercises (pytest-checkable scripts), Local Metal's done-whens are
+structured-document validators plus representative **published** command output (`nvidia-smi`,
+`ollama`, latency logs) the reader reproduces on their own build; the M1 plan settles how the
+hardware modules meet the STANDARDS "machine-checkable done-when" bar without a live rig.

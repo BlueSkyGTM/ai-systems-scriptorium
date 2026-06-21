@@ -184,9 +184,10 @@ this file are machine-parseable. The same pages serve both parties.
 
 ## Name (GATE-NAME-BOOK — Cleared)
 
-**Locked 2026-06-21: the title is _Local Metal_, the slug is `local-metal`.** The rig is built
-and running, so the book graduates with all seven modules authorable and live-verifiable. The
-candidates below are kept as the record of the decision.
+**Locked 2026-06-21: the title is _Local Metal_, the slug is `local-metal`.** "Cthulhu" is the
+codename for the reference build (the SPEC's BOM), not a machine that exists; the book is the
+curriculum that takes a reader from buying the parts to managing a networked local-model host.
+The candidates below are kept as the record of the decision.
 
 | Name | Rationale |
 |------|-----------|

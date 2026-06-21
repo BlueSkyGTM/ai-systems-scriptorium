@@ -1,10 +1,13 @@
 # Module 1 — The Build — Build Plan (GATE-LOCK-PLAN input)
 
-Status: **PLAN DRAFTED — awaiting `GATE-LOCK-PLAN`.** First authoring stage for Local Metal
-(graduated to `library/in-progress/local-metal` 2026-06-21; the Cthulhu rig is built and
-running). M1 turns the blueprint's first module + the Cthulhu SPEC's Step 1 into finished
-mdBook lessons + Claude Code exercises, in the locked Style Contract voice, at the STANDARDS
-difficulty bar, under AUTHOR → VERIFY → BUILD/TEST → SHIP. Do not author until Ray locks.
+Status: **PLAN LOCKED 2026-06-21 (`GATE-LOCK-PLAN` cleared).** First authoring stage for Local
+Metal (graduated to `library/in-progress/local-metal` 2026-06-21). **No hardware exists** —
+"Cthulhu" is the codename for the reference build (the SPEC's BOM), not a machine that is built;
+this book is the curriculum that takes a reader from buying the parts to managing a networked
+local-model host. M1 turns the blueprint's first module + the SPEC's Step 1 into finished mdBook
+lessons + Claude Code exercises, in the locked Style Contract voice, at the STANDARDS difficulty
+bar, under AUTHOR → VERIFY → BUILD/TEST → SHIP. Decisions 1, 3, 4 locked as recommended;
+decision 2 corrected (no live rig — author from grounded sources, reader verifies on their own build).
 
 ## The stage in one line
 
@@ -83,26 +86,35 @@ STANDARDS review gate on every draft before it lands. Workers use the connector/
 while authoring and ground every claim in a real, verified URL — no fabricated citations (the
 Just Python M2/M3 fix).
 
-## Open decisions to pressure-test (lock these with Ray)
+## Locked decisions (GATE-LOCK-PLAN, 2026-06-21)
 
-1. **Hardware done-when.** With no code to pytest, M1's checkable done-when is a
-   structured-document validator (`check_hardware.py` over `HARDWARE.md`). Confirm this is the
-   accepted STANDARDS pattern for the hardware modules (M1–M2), with live command output
-   (`nvidia-smi`, `ollama`, latency logs) becoming the done-when once the stack is up (M3+).
-   Recommendation: **yes** — document validator now, live output later.
-2. **Live-rig access for VERIFY.** The rig is built and running, but it is a separate networked
-   Linux box; the authoring fleet runs on the Windows machine. Decide whether VERIFY may reach
-   Cthulhu (SSH) to capture real readouts for the lessons, or whether Ray pastes the
-   first-boot/stress output and the fleet authors around it. Recommendation: **Ray supplies the
-   M1 readouts** (M1 is a one-time physical event); wire live access starting M3, where
-   repeatable command output matters.
-3. **Granularity.** 5 lessons (proposed) vs. merging lessons 1+2 (cost-wall + part rationale)
-   into one → 4 lessons. Recommendation: **5**; the "why own compute" argument and the "why
-   these parts" argument are distinct and both load-bearing.
-4. **MS-Learn substitution in M1.** Confirm grounding M1 on vendor/NVIDIA + aipe instead of
-   MS-Learn is acceptable for this module (it returns as the default in M2). Recommendation:
-   **yes** — forcing MS-Learn citations onto a consumer-build module is exactly the
-   fabricated-citation risk we fixed in Just Python.
+1. **Hardware done-when — LOCKED.** With no code to pytest, M1's checkable done-when is a
+   structured-document validator (`check_hardware.py` over `HARDWARE.md`); live command output
+   (`nvidia-smi`, `ollama`, latency logs) becomes the done-when once the stack is up (M3+).
+2. **Live-rig access for VERIFY — VOIDED (no hardware exists).** Correction 2026-06-21: there is
+   no built machine; "Cthulhu" was only a codename for the spec. M1 is authored from grounded
+   sources (the SPEC BOM + the aipe ore + vendor/NVIDIA docs), not from live readouts. Any
+   hardware output shown in a lesson (`nvidia-smi`, a stress-test summary, a tok/s figure) must
+   be a **real, published, representative** value for the exact parts, clearly framed as "what
+   you should see" on the reference build — never invented, never presented as captured from a
+   live rig. The done-when stays the `check_hardware.py` document validator: the reader fills
+   `HARDWARE.md` from their own build. If/when a rig is actually built, live verification can be
+   added back then.
+3. **Granularity — LOCKED at 5 lessons.** The "why own compute" argument and the "why these
+   parts" argument are distinct and both load-bearing.
+4. **MS-Learn substitution in M1 — LOCKED.** M1 grounds on vendor/NVIDIA + the aipe ore;
+   MS-Learn returns as the default grounding source in M2 (Linux/CUDA). Forcing MS-Learn
+   citations onto a consumer-build module is exactly the fabricated-citation risk fixed in JP.
+
+## Grounding note (decision 2, corrected)
+
+No machine exists to query, so every hardware-specific number or readout in M1 must trace to a
+real published source (NVIDIA/vendor spec sheets, the aipe ore, Ollama/distro docs) and be
+framed as the expected result on the reference build — not presented as captured from a live
+rig. Representative `nvidia-smi`/stress output is shown as an illustrative example the reader
+reproduces on their own machine. Zero fabricated numbers: this is the same anti-fabrication
+discipline as the MS-Learn citation rule (the Just Python M2/M3 fix), applied to hardware
+output. VERIFY checks that each such figure carries a real source.
 
 On lock: the fleet scaffolds the book + authors M1, VERIFY gates it (voice + claims +
 grounding), BUILD/TEST runs `mdbook build` + `check_hardware.py`, and the stage stops at

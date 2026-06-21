@@ -3,14 +3,18 @@
 The Scriptorium's home production environment (the 7th book) and the place the rest of the
 library comes to run. Progress-agnostic and home-scale: a companion to Sans Python in a
 keep-it-simple spirit, not an enterprise feat. Teaches the Production AI Engineer to build a
-homebrew inference machine (the Cthulhu rig), run a local model stack, and wire Claude Code to
-delegate work to it; the arc runs from the Micro Center parts counter to a networked
-local-model host with a routing layer. It gets more cutting-edge as the other books are ingested.
+homebrew inference machine (the reference build is codenamed Cthulhu in the SPEC), run a local
+model stack, and wire Claude Code to delegate work to it; the arc runs from the Micro Center
+parts counter to a networked local-model host with a routing layer. It gets more cutting-edge as
+the other books are ingested.
 
 **Graduated to in-progress 2026-06-21.** `GATE-NAME-BOOK` cleared (title **Local Metal**, slug
-`local-metal`); the Cthulhu rig is built and running, so all seven modules are authorable and
-live-verifiable. M1 (The Build) plan is drafted and awaiting `GATE-LOCK-PLAN`. See
-`build-log/local-metal/build-progress.md`. Next: lock M1, then author via the pipeline.
+`local-metal`). **No hardware exists yet** — "Cthulhu" is the codename for the reference build
+(the SPEC's BOM), not a machine; this book is the curriculum that takes a reader from buying the
+parts to managing a networked local-model host. It is authored from grounded sources (the SPEC +
+the aipe ore + vendor/NVIDIA + Ollama/distro docs); the reader confirms outputs on their own
+build. M1 (The Build) plan is **locked** (`GATE-LOCK-PLAN` cleared 2026-06-21). See
+`build-log/local-metal/build-progress.md`. Next: author M1 via the pipeline.
 
 ## Ore (primary source + vault depth)
 
