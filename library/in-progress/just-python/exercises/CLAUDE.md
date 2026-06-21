@@ -42,8 +42,17 @@ When a learner pastes an exercise into you, they are here to build, not to watch
   exercise: open `wrangle.py`, read which stages exist, and add the next one to the locked structure; the
   sample corpus is `exercises/module6/sample_corpus.jsonl` (built in the L1 exercise).
 
-  Later modules have their own throughline artifacts (the M7 eval engine, the M8 exam script). The same
-  rule applies: find the artifact, read it, then continue the build.
+  **Module 7 is the second portfolio artifact: `exercises/module7/eval_engine.py`**
+  M7 builds one runnable engine across four lessons (load_predictions -> confusion_counts ->
+  per_class_metrics/to_markdown_table -> run), computing per-class precision/recall/F1 with NumPy (NO
+  sklearn). It composes M2 (boolean masks + reductions) + M3 (read) + M5 (the `ClassMetrics` dataclass).
+  The acceptance gate is `exercises/module7/smoke.py` (pytest: locked per-class metrics on the 10-row
+  `predictions.csv`, the report renders, and a malformed file raises; zero-division returns 0.0, never
+  crashes). It ships `exercises/module7/outputs/skill-evaluation-engine.md`. Before any M7 exercise: open
+  `eval_engine.py`, read which stages exist, add the next to the locked structure.
+
+  Later modules have their own throughline artifacts (the M8 exam script). The same rule applies: find the
+  artifact, read it, then continue the build.
 
 ## How to Coach
 

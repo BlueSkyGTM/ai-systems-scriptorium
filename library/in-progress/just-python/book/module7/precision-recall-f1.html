@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Profile Before You Optimize - Just Python — Applied Python for AI Engineers</title>
+        <title>Precision, Recall, and F1 - Just Python — Applied Python for AI Engineers</title>
 
 
         <!-- Custom HTML head -->
@@ -177,88 +177,103 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="profile-before-you-optimize"><a class="header" href="#profile-before-you-optimize">Profile Before You Optimize</a></h1>
-<p>Engineers who guess wrong about where time goes rewrite the wrong loop. Measuring first costs two minutes; rewriting the wrong function costs a day.</p>
-<h2 id="the-guessing-trap"><a class="header" href="#the-guessing-trap">The Guessing Trap</a></h2>
-<p>Your intuition about what is slow is built from general principles, not from your actual data. You know Python loops are slower than NumPy vectorization, so when a pipeline stalls, you reach for the loop and start rewriting. But the loop is often not the bottleneck. The bottleneck is the I/O call above it, the redundant sort below it, or the object construction no one touches. Guessing replaces the wrong thing.</p>
-<p>The discipline is simple: time it first, change one thing, time it again. No measurement before the change means no proof the change helped.</p>
-<h2 id="what-time_sum-already-gives-you"><a class="header" href="#what-time_sum-already-gives-you">What <code>time_sum</code> Already Gives You</a></h2>
-<p>The <code>measure.py</code> helper you built in Module 1 includes <code>time_sum</code>, a function that runs a callable <code>n</code> times via <code>timeit.timeit</code> and returns the mean elapsed seconds:</p>
-<pre><code class="language-python">import timeit
-
-def time_sum(fn, n: int = 3) -&gt; float:
-    """Return mean wall-clock seconds for fn() over n runs."""
-    total = timeit.timeit(fn, number=n)
-    return total / n
+                        <h1 id="precision-recall-and-f1"><a class="header" href="#precision-recall-and-f1">Precision, Recall, and F1</a></h1>
+<p>An eval job that crashes on a class with no predictions is worse than one that returns 0.0. Three small formulas stand between a blank report and a running pipeline.</p>
+<h2 id="what-you-build"><a class="header" href="#what-you-build">What You Build</a></h2>
+<p>You build <code>ClassMetrics</code>, a frozen dataclass that holds per-class precision, recall, F1, and support, then <code>per_class_metrics</code>, which iterates every class in the dataset and calls <code>confusion_counts</code> to fill one record per class, and <code>to_markdown_table</code>, which renders those records as a Markdown report with a macro-average row.</p>
+<h2 id="the-three-formulas"><a class="header" href="#the-three-formulas">The Three Formulas</a></h2>
+<p><code>confusion_counts</code> (built in L2) returns <code>(tp, fp, fn)</code> for one class. The three derived metrics are:</p>
+<pre><code class="language-python">precision = tp / (tp + fp)   # of every time you predicted this class, how often were you right?
+recall    = tp / (tp + fn)   # of every actual instance, how many did you catch?
+f1        = 2 * precision * recall / (precision + recall)   # harmonic mean of the two
 </code></pre>
-<p><code>timeit.timeit</code> does three things that naive <code>time.time()</code> brackets miss. It disables garbage collection during the run, so GC pauses do not contaminate the measurement. It repeats the call <code>number</code> times and returns the total, which averages out scheduling jitter. And it runs the callable in a clean namespace, so import overhead does not appear in the result. Dividing by <code>n</code> gives you the mean per-call cost.</p>
-<p>Import it directly:</p>
-<pre><code class="language-python">import sys
-import pathlib
+<p>Support is the number of actual instances of the class: <code>support = tp + fn</code>. A class with support 0 never appears in the ground truth; a class with <code>tp + fp == 0</code> was never predicted.</p>
+<p>Azure Machine Learning’s Evaluate Model component uses exactly these definitions: Precision = TP/(TP+FP), Recall = TP/(TP+FN), F1 as the weighted average of the two (<a href="https://learn.microsoft.com/azure/machine-learning/component-reference/evaluate-model">learn.microsoft.com/azure/machine-learning/component-reference/evaluate-model</a>).</p>
+<h2 id="the-classmetrics-dataclass"><a class="header" href="#the-classmetrics-dataclass">The ClassMetrics Dataclass</a></h2>
+<p><code>ClassMetrics</code> is a frozen dataclass (M5 pattern) with one record per class:</p>
+<pre><code class="language-python">from dataclasses import dataclass
 
-# resolve measure.py relative to this file (exercises/module4/vectorization_report.py)
-_measure = pathlib.Path(__file__).resolve().parent.parent / "module1" / "the-cost-of-a-python-list"
-sys.path.insert(0, str(_measure))
-from measure import time_sum
+@dataclass(frozen=True)
+class ClassMetrics:
+    cls:       str
+    precision: float
+    recall:    float
+    f1:        float
+    support:   int
 </code></pre>
-<h2 id="timing-a-loop-vs-a-vectorized-sum"><a class="header" href="#timing-a-loop-vs-a-vectorized-sum">Timing a Loop vs. a Vectorized Sum</a></h2>
-<p>Take a concrete problem: sum 500,000 floats. Two implementations, one measurement each.</p>
-<pre><code class="language-python">import numpy as np
-
-rng = np.random.default_rng(42)
-data = rng.standard_normal(500_000).astype(np.float64)
-floats = data.tolist()
-
-loop_time = time_sum(lambda: sum(floats))
-vec_time  = time_sum(lambda: data.sum())
-
-print(f"loop sum:   {loop_time:.5f} s")
-print(f"vector sum: {vec_time:.5f} s")
-print(f"speedup:    {loop_time / vec_time:.1f}x")
+<p><code>frozen=True</code> keeps the record immutable after construction. Each call to <code>per_class_metrics</code> produces a list of these; nothing downstream can silently mutate a score.</p>
+<h2 id="the-zero-division-rule"><a class="header" href="#the-zero-division-rule">The Zero-Division Rule</a></h2>
+<p>A class that was never predicted gives <code>tp + fp == 0</code>; dividing for precision raises <code>ZeroDivisionError</code>. A class with no actual instances gives <code>tp + fn == 0</code>; dividing for recall does the same. Production eval code never raises on these cases: it returns 0.0 instead.</p>
+<p>The rule, in full:</p>
+<pre><code class="language-python">precision = tp / (tp + fp) if (tp + fp) &gt; 0 else 0.0
+recall    = tp / (tp + fn) if (tp + fn) &gt; 0 else 0.0
+f1        = 2 * precision * recall / (precision + recall) if (precision + recall) &gt; 0 else 0.0
 </code></pre>
-<p>On a typical machine you will see something like:</p>
-<pre><code>loop sum:   0.01823 s
-vector sum: 0.00041 s
-speedup:    44.5x
-</code></pre>
-<p>Those numbers are the evidence. Before you saw them, you might have guessed 5x or 100x; the actual ratio is what drives the decision. That print statement is the proof that the rewrite was worth doing.</p>
-<h2 id="the-three-step-protocol"><a class="header" href="#the-three-step-protocol">The Three-Step Protocol</a></h2>
-<p>Every optimization decision follows the same three steps:</p>
-<ol>
-<li>Time the current code. Record the number.</li>
-<li>Change exactly one thing.</li>
-<li>Time the new code. Compare the numbers.</li>
-</ol>
-<p>“Change exactly one thing” is load-bearing. If you swap both the data structure and the algorithm in the same commit, you cannot tell which change produced the gain. The measurement only holds when the experiment is controlled.</p>
-<p>This is the same discipline the Azure Well-Architected Framework calls out in its Performance Efficiency pillar: instrument code to identify hot paths, then prioritize optimizing those hot paths and nothing else (<a href="https://learn.microsoft.com/azure/well-architected/performance-efficiency/optimize-code-infrastructure">learn.microsoft.com/azure/well-architected/performance-efficiency/optimize-code-infrastructure</a>). The principle scales from a single loop to a distributed inference pipeline.</p>
-<h2 id="reading-the-numbers"><a class="header" href="#reading-the-numbers">Reading the Numbers</a></h2>
-<p>Two failure modes appear when engineers read timings without context.</p>
-<p>The first is the cold-run illusion. The first call to a function may be slower than subsequent calls because of caching, JIT warm-up, or lazy imports. <code>time_sum</code> with <code>n=3</code> exposes this: if the first run is 0.050 s and the next two are 0.004 s each, the mean is 0.019 s but the median is 0.004 s. Run <code>n=5</code> or <code>n=10</code> when you see high variance.</p>
-<p>The second is the wrong denominator. A 44x speedup on a function that runs once at startup saves microseconds. The same speedup on a function called inside a batch loop of 100,000 rows saves seconds per request. Time the function in the context where it runs in production.</p>
-<pre><code class="language-python"># Measure in the actual batch context, not in isolation
-BATCH = 10_000
-batch_data = rng.standard_normal((BATCH, 128)).astype(np.float32)
+<p>This is not a workaround; it is the convention the industry adopted because a metric function that divides by zero takes down the eval job at the exact moment you most need the report. A class that appears nowhere in predictions scores 0.0, the report renders, and the pipeline moves on.</p>
+<h2 id="building-per_class_metrics"><a class="header" href="#building-per_class_metrics">Building per_class_metrics</a></h2>
+<p>Collect the full set of classes from both <code>label</code> and <code>prediction</code> columns, then iterate in sorted order:</p>
+<pre><code class="language-python">import pandas as pd
 
-loop_batch = time_sum(lambda: [batch_data[i].sum() for i in range(BATCH)])
-vec_batch  = time_sum(lambda: batch_data.sum(axis=1))
-
-print(f"loop batch: {loop_batch:.5f} s")
-print(f"vec  batch: {vec_batch:.5f} s")
-print(f"speedup:    {loop_batch / vec_batch:.1f}x")
+def per_class_metrics(df: pd.DataFrame, config) -&gt; list[ClassMetrics]:
+    classes = sorted(
+        set(df[config.label_col].unique()) | set(df[config.pred_col].unique())
+    )
+    results = []
+    for cls in classes:
+        tp, fp, fn = confusion_counts(df, cls, config)
+        precision = tp / (tp + fp) if (tp + fp) &gt; 0 else 0.0
+        recall    = tp / (tp + fn) if (tp + fn) &gt; 0 else 0.0
+        f1        = 2 * precision * recall / (precision + recall) if (precision + recall) &gt; 0 else 0.0
+        support   = tp + fn
+        results.append(ClassMetrics(cls=cls, precision=precision, recall=recall, f1=f1, support=support))
+    return results
 </code></pre>
-<p>The batch context surfaces a far larger absolute gain than the isolated measurement did. The number you optimize against is the one from the real call site.</p>
-<h2 id="what-you-do-not-need-yet"><a class="header" href="#what-you-do-not-need-yet">What You Do Not Need Yet</a></h2>
-<p><code>cProfile</code> and line-by-line profilers are the next tool when <code>timeit</code> tells you a function is slow but you cannot see why. M4 introduces them later. For now, the rule is: if you have not timed it with <code>time_sum</code> or an equivalent, you do not know where the time goes, and you are guessing.</p>
-<p>Knowing the ratio before you rewrite is what separates a productive optimization from a day spent on the wrong problem.</p>
+<p>The union of both columns catches any class that appears in predictions but not ground truth (and vice versa). Sorting makes the output deterministic.</p>
+<h2 id="building-to_markdown_table"><a class="header" href="#building-to_markdown_table">Building to_markdown_table</a></h2>
+<p>The table gets one row per class, then a macro-average row across all classes. Macro-average is the unweighted mean of each metric across classes: it treats a rare class and a common one equally.</p>
+<pre><code class="language-python">def to_markdown_table(metrics: list[ClassMetrics]) -&gt; str:
+    header = "| class | precision | recall | f1 | support |"
+    sep    = "|-------|-----------|--------|----|---------|"
+    rows   = [header, sep]
+    for m in metrics:
+        rows.append(
+            f"| {m.cls} | {m.precision:.3f} | {m.recall:.3f} | {m.f1:.3f} | {m.support} |"
+        )
+    n    = len(metrics)
+    rows.append(
+        f"| **macro avg** | {sum(m.precision for m in metrics)/n:.3f} "
+        f"| {sum(m.recall for m in metrics)/n:.3f} "
+        f"| {sum(m.f1 for m in metrics)/n:.3f} "
+        f"| {sum(m.support for m in metrics)} |"
+    )
+    return "\n".join(rows)
+</code></pre>
+<h2 id="concrete-example"><a class="header" href="#concrete-example">Concrete Example</a></h2>
+<p>On the ten-row sample (<code>exercises/module7/predictions.csv</code>), <code>per_class_metrics</code> returns:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>class</th><th>precision</th><th>recall</th><th>f1</th><th>support</th></tr>
+</thead>
+<tbody>
+<tr><td>bird</td><td>0.667</td><td>1.000</td><td>0.800</td><td>2</td></tr>
+<tr><td>cat</td><td>0.750</td><td>0.750</td><td>0.750</td><td>4</td></tr>
+<tr><td>dog</td><td>0.667</td><td>0.500</td><td>0.571</td><td>4</td></tr>
+<tr><td><strong>macro avg</strong></td><td>0.694</td><td>0.750</td><td>0.707</td><td>10</td></tr>
+</tbody>
+</table>
+</div>
+<p>Bird has perfect recall (both actual birds were predicted bird) but imperfect precision (one non-bird was also called bird). Dog has the lowest F1 because two of its four actual instances were missed. The macro average weights all three classes equally regardless of support.</p>
+<p>The formulas are small. What makes them production-ready is what happens when a denominator goes to zero.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>Guessing where code is slow is wrong more often than right; the only safe starting point is a measurement from <code>timeit</code> or an equivalent timer that averages out jitter and disables GC.</li>
-<li><code>time_sum(fn, n)</code> wraps <code>timeit.timeit</code> to return the mean per-call cost; import it from <code>measure.py</code> and use it before and after every change.</li>
-<li>The three-step protocol is: measure the baseline, change one thing, measure again; changing more than one thing at once makes the result uninterpretable.</li>
-<li>A speedup ratio is only meaningful at the real call site; a 44x gain on a function called once saves nothing if the bottleneck is the outer batch loop.</li>
+<li>Precision = TP/(TP+FP): of every prediction of a class, how many were correct. Recall = TP/(TP+FN): of every actual instance, how many were found. F1 is the harmonic mean of the two.</li>
+<li>Support is the count of actual instances of a class (<code>tp + fn</code>); a class with support 0 was absent from the ground truth, not from the predictions.</li>
+<li>When <code>tp + fp == 0</code> set precision to 0.0; when <code>tp + fn == 0</code> set recall to 0.0; when <code>precision + recall == 0</code> set F1 to 0.0. Never raise <code>ZeroDivisionError</code> in a metric function.</li>
+<li>Macro-average is the unweighted mean of per-class precision, recall, and F1; it treats every class equally regardless of how often it appears.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module4/profile-before-you-optimize/">
-<p><strong>Build It in Claude Code:</strong> Build <code>vectorization_report.py</code>, a script that imports <code>time_sum</code> from <code>measure.py</code> and profiles a plain Python loop against a vectorized sum, printing both timings and the speedup ratio, then asserts the results agree.</p>
+<div class="claude-handoff" data-exercise="exercises/module7/precision-recall-f1/">
+<p><strong>Build It in Claude Code:</strong> Add <code>ClassMetrics</code>, <code>per_class_metrics</code>, and <code>to_markdown_table</code> to the shared <code>eval_engine.py</code>, assert the expected per-class and macro-average metrics against the ten-row sample, and confirm the zero-division path returns 0.0 without crashing.</p>
 </div>
 
 
@@ -266,11 +281,11 @@ print(f"speedup:    {loop_batch / vec_batch:.1f}x")
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module4/00-overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module7/confusion-counts-with-numpy.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module4/when-the-array-wins.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module7/emit-test-and-ship.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -280,11 +295,11 @@ print(f"speedup:    {loop_batch / vec_batch:.1f}x")
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module4/00-overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module7/confusion-counts-with-numpy.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module4/when-the-array-wins.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module7/emit-test-and-ship.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

@@ -61,3 +61,13 @@
 - [Clean and Deduplicate](module6/clean-and-deduplicate.md)
 - [Reshape and Validate](module6/reshape-and-validate.md)
 - [Emit, Test, and Ship](module6/emit-test-and-ship.md)
+
+---
+
+# Module 7: Evaluation Engine
+
+- [Overview](module7/00-overview.md)
+- [Load the Predictions](module7/load-the-predictions.md)
+- [Confusion Counts with NumPy](module7/confusion-counts-with-numpy.md)
+- [Precision, Recall, and F1](module7/precision-recall-f1.md)
+- [Emit, Test, and Ship](module7/emit-test-and-ship.md)

@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Profile Before You Optimize - Just Python — Applied Python for AI Engineers</title>
+        <title>Overview - Just Python — Applied Python for AI Engineers</title>
 
 
         <!-- Custom HTML head -->
@@ -177,100 +177,41 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="profile-before-you-optimize"><a class="header" href="#profile-before-you-optimize">Profile Before You Optimize</a></h1>
-<p>Engineers who guess wrong about where time goes rewrite the wrong loop. Measuring first costs two minutes; rewriting the wrong function costs a day.</p>
-<h2 id="the-guessing-trap"><a class="header" href="#the-guessing-trap">The Guessing Trap</a></h2>
-<p>Your intuition about what is slow is built from general principles, not from your actual data. You know Python loops are slower than NumPy vectorization, so when a pipeline stalls, you reach for the loop and start rewriting. But the loop is often not the bottleneck. The bottleneck is the I/O call above it, the redundant sort below it, or the object construction no one touches. Guessing replaces the wrong thing.</p>
-<p>The discipline is simple: time it first, change one thing, time it again. No measurement before the change means no proof the change helped.</p>
-<h2 id="what-time_sum-already-gives-you"><a class="header" href="#what-time_sum-already-gives-you">What <code>time_sum</code> Already Gives You</a></h2>
-<p>The <code>measure.py</code> helper you built in Module 1 includes <code>time_sum</code>, a function that runs a callable <code>n</code> times via <code>timeit.timeit</code> and returns the mean elapsed seconds:</p>
-<pre><code class="language-python">import timeit
-
-def time_sum(fn, n: int = 3) -&gt; float:
-    """Return mean wall-clock seconds for fn() over n runs."""
-    total = timeit.timeit(fn, number=n)
-    return total / n
-</code></pre>
-<p><code>timeit.timeit</code> does three things that naive <code>time.time()</code> brackets miss. It disables garbage collection during the run, so GC pauses do not contaminate the measurement. It repeats the call <code>number</code> times and returns the total, which averages out scheduling jitter. And it runs the callable in a clean namespace, so import overhead does not appear in the result. Dividing by <code>n</code> gives you the mean per-call cost.</p>
-<p>Import it directly:</p>
-<pre><code class="language-python">import sys
-import pathlib
-
-# resolve measure.py relative to this file (exercises/module4/vectorization_report.py)
-_measure = pathlib.Path(__file__).resolve().parent.parent / "module1" / "the-cost-of-a-python-list"
-sys.path.insert(0, str(_measure))
-from measure import time_sum
-</code></pre>
-<h2 id="timing-a-loop-vs-a-vectorized-sum"><a class="header" href="#timing-a-loop-vs-a-vectorized-sum">Timing a Loop vs. a Vectorized Sum</a></h2>
-<p>Take a concrete problem: sum 500,000 floats. Two implementations, one measurement each.</p>
-<pre><code class="language-python">import numpy as np
-
-rng = np.random.default_rng(42)
-data = rng.standard_normal(500_000).astype(np.float64)
-floats = data.tolist()
-
-loop_time = time_sum(lambda: sum(floats))
-vec_time  = time_sum(lambda: data.sum())
-
-print(f"loop sum:   {loop_time:.5f} s")
-print(f"vector sum: {vec_time:.5f} s")
-print(f"speedup:    {loop_time / vec_time:.1f}x")
-</code></pre>
-<p>On a typical machine you will see something like:</p>
-<pre><code>loop sum:   0.01823 s
-vector sum: 0.00041 s
-speedup:    44.5x
-</code></pre>
-<p>Those numbers are the evidence. Before you saw them, you might have guessed 5x or 100x; the actual ratio is what drives the decision. That print statement is the proof that the rewrite was worth doing.</p>
-<h2 id="the-three-step-protocol"><a class="header" href="#the-three-step-protocol">The Three-Step Protocol</a></h2>
-<p>Every optimization decision follows the same three steps:</p>
-<ol>
-<li>Time the current code. Record the number.</li>
-<li>Change exactly one thing.</li>
-<li>Time the new code. Compare the numbers.</li>
-</ol>
-<p>“Change exactly one thing” is load-bearing. If you swap both the data structure and the algorithm in the same commit, you cannot tell which change produced the gain. The measurement only holds when the experiment is controlled.</p>
-<p>This is the same discipline the Azure Well-Architected Framework calls out in its Performance Efficiency pillar: instrument code to identify hot paths, then prioritize optimizing those hot paths and nothing else (<a href="https://learn.microsoft.com/azure/well-architected/performance-efficiency/optimize-code-infrastructure">learn.microsoft.com/azure/well-architected/performance-efficiency/optimize-code-infrastructure</a>). The principle scales from a single loop to a distributed inference pipeline.</p>
-<h2 id="reading-the-numbers"><a class="header" href="#reading-the-numbers">Reading the Numbers</a></h2>
-<p>Two failure modes appear when engineers read timings without context.</p>
-<p>The first is the cold-run illusion. The first call to a function may be slower than subsequent calls because of caching, JIT warm-up, or lazy imports. <code>time_sum</code> with <code>n=3</code> exposes this: if the first run is 0.050 s and the next two are 0.004 s each, the mean is 0.019 s but the median is 0.004 s. Run <code>n=5</code> or <code>n=10</code> when you see high variance.</p>
-<p>The second is the wrong denominator. A 44x speedup on a function that runs once at startup saves microseconds. The same speedup on a function called inside a batch loop of 100,000 rows saves seconds per request. Time the function in the context where it runs in production.</p>
-<pre><code class="language-python"># Measure in the actual batch context, not in isolation
-BATCH = 10_000
-batch_data = rng.standard_normal((BATCH, 128)).astype(np.float32)
-
-loop_batch = time_sum(lambda: [batch_data[i].sum() for i in range(BATCH)])
-vec_batch  = time_sum(lambda: batch_data.sum(axis=1))
-
-print(f"loop batch: {loop_batch:.5f} s")
-print(f"vec  batch: {vec_batch:.5f} s")
-print(f"speedup:    {loop_batch / vec_batch:.1f}x")
-</code></pre>
-<p>The batch context surfaces a far larger absolute gain than the isolated measurement did. The number you optimize against is the one from the real call site.</p>
-<h2 id="what-you-do-not-need-yet"><a class="header" href="#what-you-do-not-need-yet">What You Do Not Need Yet</a></h2>
-<p><code>cProfile</code> and line-by-line profilers are the next tool when <code>timeit</code> tells you a function is slow but you cannot see why. M4 introduces them later. For now, the rule is: if you have not timed it with <code>time_sum</code> or an equivalent, you do not know where the time goes, and you are guessing.</p>
-<p>Knowing the ratio before you rewrite is what separates a productive optimization from a day spent on the wrong problem.</p>
-<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
-<ul>
-<li>Guessing where code is slow is wrong more often than right; the only safe starting point is a measurement from <code>timeit</code> or an equivalent timer that averages out jitter and disables GC.</li>
-<li><code>time_sum(fn, n)</code> wraps <code>timeit.timeit</code> to return the mean per-call cost; import it from <code>measure.py</code> and use it before and after every change.</li>
-<li>The three-step protocol is: measure the baseline, change one thing, measure again; changing more than one thing at once makes the result uninterpretable.</li>
-<li>A speedup ratio is only meaningful at the real call site; a 44x gain on a function called once saves nothing if the bottleneck is the outer batch loop.</li>
-</ul>
-<div class="claude-handoff" data-exercise="exercises/module4/profile-before-you-optimize/">
-<p><strong>Build It in Claude Code:</strong> Build <code>vectorization_report.py</code>, a script that imports <code>time_sum</code> from <code>measure.py</code> and profiles a plain Python loop against a vectorized sum, printing both timings and the speedup ratio, then asserts the results agree.</p>
+                        <h1 id="module-7-evaluation-engine"><a class="header" href="#module-7-evaluation-engine">Module 7: Evaluation Engine</a></h1>
+<h2 id="what-this-module-covers"><a class="header" href="#what-this-module-covers">What This Module Covers</a></h2>
+<p>Module 6 produced a clean dataset; Module 7 judges a model against one. You build <code>eval_engine.py</code>: it reads a batch-prediction file (<code>id, prediction, label</code>), computes per-class precision, recall, and F1 with NumPy, and writes a Markdown evaluation table. The metric math is written by hand, no sklearn, because the point is to understand precision and recall as counts, not as an import.</p>
+<p>This is the second portfolio artifact, and the second take-home. A single accuracy number hides which class a model fails; the per-class table is what an engineer puts in a model card or a pull request, and computing it from three boolean masks is the Module 2 vectorization lesson applied to a real metric.</p>
+<h2 id="arc-of-lessons"><a class="header" href="#arc-of-lessons">Arc of Lessons</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Lesson</th><th>Title</th><th>Stage of <code>eval_engine.py</code></th><th>Composes</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>Load the Predictions</td><td>Read <code>id</code>/<code>prediction</code>/<code>label</code> into a typed DataFrame; an <code>EvalConfig</code> names the columns</td><td>M3, M5</td></tr>
+<tr><td>2</td><td>Confusion Counts with NumPy</td><td>Per-class TP/FP/FN as three boolean masks and a sum, no sklearn</td><td>M2</td></tr>
+<tr><td>3</td><td>Precision, Recall, and F1</td><td>Counts to P/R/F1 in a <code>ClassMetrics</code> record; safe zero-division</td><td>M2, M5</td></tr>
+<tr><td>4</td><td>Emit, Test, and Ship</td><td>Render the Markdown table, compose <code>run</code>, the <code>pytest</code> gate + skill write-up</td><td>all</td></tr>
+</tbody>
+</table>
 </div>
-
+<h2 id="throughline-artifact"><a class="header" href="#throughline-artifact">Throughline Artifact</a></h2>
+<p><code>eval_engine.py</code> is the portfolio artifact, and it composes the book: M2 (the mask-and-reduce metric math), M3 (the read), M5 (the <code>ClassMetrics</code> dataclass and type hints). It pairs with M6 in the data layer (M6 makes the dataset, M7 evaluates predictions over it), and it links back to the Sans Python M7 evaluation tables. The acceptance gate is <code>smoke.py</code>: it asserts the per-class metrics on a locked ten-row sample, that the report renders, and that a malformed prediction file raises. The skill write-up in <code>outputs/skill-evaluation-engine.md</code> is the portfolio surface. Module 8 chains M6 and M7 under a graded rubric.</p>
+<h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
+<ul>
+<li>Modules 1 through 6, especially M2 (boolean masks and reductions), M3 (Pandas), and M5 (dataclasses, type hints). M7 composes them; it does not re-teach them.</li>
+<li>A Python 3.11+ environment with pandas and numpy. No sklearn (the metric math is by hand) and no pyarrow (the output is Markdown).</li>
+</ul>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module4/00-overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module6/emit-test-and-ship.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module4/when-the-array-wins.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module7/load-the-predictions.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -280,11 +221,11 @@ print(f"speedup:    {loop_batch / vec_batch:.1f}x")
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module4/00-overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module6/emit-test-and-ship.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module4/when-the-array-wins.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module7/load-the-predictions.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

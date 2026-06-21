@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-389c186c.js";
+            window.path_to_searchindex_js = "searchindex-9783b096.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-0a948c87.js"></script>
+        <script src="toc-8f1a7742.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -2609,6 +2609,446 @@ def test_pipeline_negative_case(tmp_path):
 </ul>
 <div class="claude-handoff" data-exercise="exercises/module6/emit-test-and-ship/">
 <p><strong>Build It in Claude Code:</strong> Finish <code>wrangle.py</code> by adding <code>WrangleStats</code>, <code>emit</code>, <code>run</code>, and the <code>if __name__ == "__main__":</code> block; write <code>smoke.py</code> with the happy-path and negative-case tests; and fill out <code>outputs/skill-data-wrangling.md</code>. The gate is green when <code>python wrangle.py</code> exits 0 and <code>pytest smoke.py</code> passes both tests.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-7-evaluation-engine"><a class="header" href="#module-7-evaluation-engine">Module 7: Evaluation Engine</a></h1>
+<h2 id="what-this-module-covers-6"><a class="header" href="#what-this-module-covers-6">What This Module Covers</a></h2>
+<p>Module 6 produced a clean dataset; Module 7 judges a model against one. You build <code>eval_engine.py</code>: it reads a batch-prediction file (<code>id, prediction, label</code>), computes per-class precision, recall, and F1 with NumPy, and writes a Markdown evaluation table. The metric math is written by hand, no sklearn, because the point is to understand precision and recall as counts, not as an import.</p>
+<p>This is the second portfolio artifact, and the second take-home. A single accuracy number hides which class a model fails; the per-class table is what an engineer puts in a model card or a pull request, and computing it from three boolean masks is the Module 2 vectorization lesson applied to a real metric.</p>
+<h2 id="arc-of-lessons-6"><a class="header" href="#arc-of-lessons-6">Arc of Lessons</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Lesson</th><th>Title</th><th>Stage of <code>eval_engine.py</code></th><th>Composes</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>Load the Predictions</td><td>Read <code>id</code>/<code>prediction</code>/<code>label</code> into a typed DataFrame; an <code>EvalConfig</code> names the columns</td><td>M3, M5</td></tr>
+<tr><td>2</td><td>Confusion Counts with NumPy</td><td>Per-class TP/FP/FN as three boolean masks and a sum, no sklearn</td><td>M2</td></tr>
+<tr><td>3</td><td>Precision, Recall, and F1</td><td>Counts to P/R/F1 in a <code>ClassMetrics</code> record; safe zero-division</td><td>M2, M5</td></tr>
+<tr><td>4</td><td>Emit, Test, and Ship</td><td>Render the Markdown table, compose <code>run</code>, the <code>pytest</code> gate + skill write-up</td><td>all</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="throughline-artifact-6"><a class="header" href="#throughline-artifact-6">Throughline Artifact</a></h2>
+<p><code>eval_engine.py</code> is the portfolio artifact, and it composes the book: M2 (the mask-and-reduce metric math), M3 (the read), M5 (the <code>ClassMetrics</code> dataclass and type hints). It pairs with M6 in the data layer (M6 makes the dataset, M7 evaluates predictions over it), and it links back to the Sans Python M7 evaluation tables. The acceptance gate is <code>smoke.py</code>: it asserts the per-class metrics on a locked ten-row sample, that the report renders, and that a malformed prediction file raises. The skill write-up in <code>outputs/skill-evaluation-engine.md</code> is the portfolio surface. Module 8 chains M6 and M7 under a graded rubric.</p>
+<h2 id="prerequisites-6"><a class="header" href="#prerequisites-6">Prerequisites</a></h2>
+<ul>
+<li>Modules 1 through 6, especially M2 (boolean masks and reductions), M3 (Pandas), and M5 (dataclasses, type hints). M7 composes them; it does not re-teach them.</li>
+<li>A Python 3.11+ environment with pandas and numpy. No sklearn (the metric math is by hand) and no pyarrow (the output is Markdown).</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="load-the-predictions"><a class="header" href="#load-the-predictions">Load the Predictions</a></h1>
+<p>Batch inference produces a file. What you do next determines whether your evaluation engine is a one-off script or a reusable tool.</p>
+<h2 id="what-you-build-10"><a class="header" href="#what-you-build-10">What You Build</a></h2>
+<p>You build the <code>load_predictions</code> function and the <code>EvalConfig</code> dataclass: the entry point and the column contract for <code>eval_engine.py</code>, the shared artifact this module assembles across four lessons.</p>
+<h2 id="the-engines-shape"><a class="header" href="#the-engines-shape">The Engine’s Shape</a></h2>
+<p><code>eval_engine.py</code> has four stages. Your work in this lesson is the first; the others are given so you can see how the whole machine fits together.</p>
+<pre><code class="language-python">import pandas as pd
+from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class EvalConfig:
+    input_path: str
+    output_path: str
+    pred_col: str = "prediction"
+    label_col: str = "label"
+
+def load_predictions(path: str, config: EvalConfig) -&gt; pd.DataFrame:   # your stage (L1)
+def confusion_counts(df, cls, config) -&gt; tuple[int,int,int]:           # L2 (given)
+def per_class_metrics(df, config) -&gt; list:                             # L3 (given)
+def to_markdown_table(metrics) -&gt; str:                                 # L3 (given)
+def run(config) -&gt; list:                                               # L4 (given, owns main)
+</code></pre>
+<p>Each later stage receives the DataFrame that <code>load_predictions</code> returns. Nothing past L1 touches the file system.</p>
+<h2 id="the-contract-evalconfig"><a class="header" href="#the-contract-evalconfig">The Contract: <code>EvalConfig</code></a></h2>
+<p>Before writing <code>load_predictions</code>, declare what the engine expects. A frozen dataclass (M5) is the right tool: immutable, repr-able, and loud when you try to mutate it.</p>
+<pre><code class="language-python">@dataclass(frozen=True)
+class EvalConfig:
+    input_path: str
+    output_path: str            # a .md path; the report lives here
+    pred_col: str = "prediction"
+    label_col: str = "label"
+</code></pre>
+<p><code>pred_col</code> and <code>label_col</code> are the load-bearing fields. Every downstream stage reads the prediction and label columns by name through the config object, not by position. Change the column names in <code>EvalConfig</code> and the whole engine adapts without a grep-and-replace.</p>
+<h2 id="reading-the-prediction-file"><a class="header" href="#reading-the-prediction-file">Reading the Prediction File</a></h2>
+<p>The input is a CSV with three columns: <code>id</code>, <code>prediction</code>, and <code>label</code>. One row per prediction. This is the format Azure Machine Learning batch endpoints write when you set <code>output_action: append_row</code> and add a ground-truth column, the pattern documented in the Azure ML batch scoring guide (<a href="https://learn.microsoft.com/azure/machine-learning/how-to-mlflow-batch?view=azureml-api-2#analyze-outputs">learn.microsoft.com/azure/machine-learning/how-to-mlflow-batch</a>).</p>
+<pre><code class="language-python">def load_predictions(path: str, config: EvalConfig) -&gt; pd.DataFrame:
+    df = pd.read_csv(path)
+    assert config.pred_col in df.columns, (
+        f"Prediction column {config.pred_col!r} not found in {list(df.columns)}"
+    )
+    assert config.label_col in df.columns, (
+        f"Label column {config.label_col!r} not found in {list(df.columns)}"
+    )
+    return df
+</code></pre>
+<p><code>pd.read_csv</code> is the M3 tool you already know. The two assertions are the integrity gate: if the file came back without the columns the engine needs, you want a failure here, at the boundary, not a <code>KeyError</code> three stages later when <code>confusion_counts</code> tries to slice the frame.</p>
+<h2 id="a-concrete-run-against-the-sample"><a class="header" href="#a-concrete-run-against-the-sample">A Concrete Run Against the Sample</a></h2>
+<p>The sample file (<code>exercises/module7/predictions.csv</code>) has 10 rows: three classes, a few mismatches, one row per prediction.</p>
+<pre><code class="language-python">config = EvalConfig(
+    input_path="exercises/module7/predictions.csv",
+    output_path="exercises/module7/report.md",
+)
+
+df = load_predictions(config.input_path, config)
+print(df)
+#     id prediction label
+# 0    1        cat   cat
+# 1    2        cat   dog
+# 2    3        dog   dog
+# 3    4       bird  bird
+# 4    5        cat   cat
+# 5    6        dog   cat
+# 6    7       bird  bird
+# 7    8        dog   dog
+# 8    9        cat   cat
+# 9   10       bird   dog
+
+print(df.shape)
+# (10, 3)
+
+print(df.columns.tolist())
+# ['id', 'prediction', 'label']
+</code></pre>
+<p>Ten rows. Three columns. The prediction and label columns are present, named exactly what <code>EvalConfig</code> expects. <code>confusion_counts</code> in L2 will slice these two columns by class; it never touches the raw file.</p>
+<h2 id="why-the-config-object-earns-its-place"><a class="header" href="#why-the-config-object-earns-its-place">Why the Config Object Earns Its Place</a></h2>
+<p>Without <code>EvalConfig</code>, the column names live in the function signature, or worse, hardcoded inside the function body. A dataset where the prediction column is named <code>pred</code> or <code>model_output</code> means a code edit. With <code>EvalConfig</code>, you change one field and the entire engine follows. The frozen dataclass also means the config cannot drift between stages: whatever <code>load_predictions</code> sees, <code>confusion_counts</code> and <code>per_class_metrics</code> see too. An evaluation engine you cannot point at a named config is a script; naming the columns in a config is what makes it an engine.</p>
+<h2 id="core-concepts-24"><a class="header" href="#core-concepts-24">Core Concepts</a></h2>
+<ul>
+<li><code>pd.read_csv</code> reads the prediction file into a DataFrame in one call; the two integrity assertions convert a silent column-mismatch into a load-time failure, the cheapest possible failure.</li>
+<li>A <code>@dataclass(frozen=True)</code> <code>EvalConfig</code> holds <code>pred_col</code> and <code>label_col</code> so every stage reads the same column names from one immutable source; changing the config changes the engine.</li>
+<li>The <code>load_predictions</code> stage’s only job is to deliver the prediction DataFrame with the named columns present; computing metrics belongs to the later stages.</li>
+<li>Column-name indirection through a config object is what separates a reusable eval engine from a script written for one dataset.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module7/load-the-predictions/">
+<p><strong>Build It in Claude Code:</strong> Add <code>EvalConfig</code> and <code>load_predictions</code> to <code>exercises/module7/eval_engine.py</code>, create the <code>predictions.csv</code> fixture, assert the loaded DataFrame has 10 rows and columns <code>id</code>, <code>prediction</code>, and <code>label</code>, and exit 0.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="confusion-counts-with-numpy"><a class="header" href="#confusion-counts-with-numpy">Confusion Counts with NumPy</a></h1>
+<p>The confusion matrix is the foundation of every classification metric, and it is three boolean masks plus a sum. If you have called <code>sklearn.metrics.f1_score</code> without ever writing those masks yourself, you are trusting a number you cannot explain in an interview.</p>
+<h2 id="what-you-build-11"><a class="header" href="#what-you-build-11">What You Build</a></h2>
+<p>You build <code>confusion_counts</code>, the stage in <code>eval_engine.py</code> that takes a DataFrame and a class name and returns <code>(tp, fp, fn)</code> as integers, using NumPy boolean operations and no library metrics.</p>
+<h2 id="the-two-source-arrays"><a class="header" href="#the-two-source-arrays">The Two Source Arrays</a></h2>
+<p>The stage starts by pulling the prediction and label columns from the DataFrame using the config:</p>
+<pre><code class="language-python">pred  = df[config.pred_col].to_numpy()
+label = df[config.label_col].to_numpy()
+</code></pre>
+<p>From these two arrays, two boolean masks fall out of a single comparison each:</p>
+<pre><code class="language-python">predicted_pos = (pred  == cls)   # True where the model said "cls"
+actual_pos    = (label == cls)   # True where the ground truth is "cls"
+</code></pre>
+<p>Every count the confusion matrix cares about is built from these two masks combined.</p>
+<h2 id="three-masks-three-counts"><a class="header" href="#three-masks-three-counts">Three Masks, Three Counts</a></h2>
+<p>Module 2 introduced boolean masks and <code>&amp;</code> on NumPy arrays. Here you use them on a real metric, not a synthetic score column.</p>
+<p>Combine the two source masks to get the three per-class counts:</p>
+<pre><code class="language-python">tp = (predicted_pos  &amp;  actual_pos).sum()    # model said cls AND ground truth is cls
+fp = (predicted_pos  &amp; ~actual_pos).sum()    # model said cls BUT ground truth is not cls
+fn = (~predicted_pos &amp;  actual_pos).sum()    # model missed cls AND ground truth is cls
+</code></pre>
+<p>The parentheses around each condition are not optional. Python’s operator precedence ranks <code>&amp;</code> above <code>==</code>, so without them <code>pred == cls &amp; label == cls</code> parses as <code>pred == (cls &amp; label) == cls</code>, which is wrong and silent. Wrap every condition; it is a one-time cost the M2 lesson already flagged.</p>
+<h2 id="convert-to-int-before-returning"><a class="header" href="#convert-to-int-before-returning">Convert to int Before Returning</a></h2>
+<p>NumPy’s <code>.sum()</code> on a boolean array returns a NumPy scalar (<code>numpy.intp</code>), not a Python <code>int</code>. Return plain Python ints so the tuple is portable and prints cleanly:</p>
+<pre><code class="language-python">return (int(tp), int(fp), int(fn))
+</code></pre>
+<h2 id="the-full-stage"><a class="header" href="#the-full-stage">The Full Stage</a></h2>
+<pre><code class="language-python">def confusion_counts(df: pd.DataFrame, cls: str, config: EvalConfig) -&gt; tuple[int, int, int]:
+    pred  = df[config.pred_col].to_numpy()
+    label = df[config.label_col].to_numpy()
+
+    predicted_pos = (pred  == cls)
+    actual_pos    = (label == cls)
+
+    tp = (predicted_pos  &amp;  actual_pos).sum()
+    fp = (predicted_pos  &amp; ~actual_pos).sum()
+    fn = (~predicted_pos &amp;  actual_pos).sum()
+
+    return (int(tp), int(fp), int(fn))
+</code></pre>
+<p>One function. No loop over rows. No import from sklearn.</p>
+<h2 id="concrete-example-class-cat"><a class="header" href="#concrete-example-class-cat">Concrete Example: Class “cat”</a></h2>
+<p>The locked sample in <code>exercises/module7/predictions.csv</code> has 10 rows. Walk through class “cat”:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>row</th><th>prediction</th><th>label</th><th>predicted_pos</th><th>actual_pos</th><th>TP</th><th>FP</th><th>FN</th></tr>
+</thead>
+<tbody>
+<tr><td>0</td><td>cat</td><td>cat</td><td>T</td><td>T</td><td>1</td><td></td><td></td></tr>
+<tr><td>1</td><td>dog</td><td>cat</td><td>F</td><td>T</td><td></td><td></td><td>1</td></tr>
+<tr><td>2</td><td>cat</td><td>cat</td><td>T</td><td>T</td><td>1</td><td></td><td></td></tr>
+<tr><td>3</td><td>bird</td><td>bird</td><td>F</td><td>F</td><td></td><td></td><td></td></tr>
+<tr><td>4</td><td>cat</td><td>cat</td><td>T</td><td>T</td><td>1</td><td></td><td></td></tr>
+<tr><td>5</td><td>dog</td><td>dog</td><td>F</td><td>F</td><td></td><td></td><td></td></tr>
+<tr><td>6</td><td>cat</td><td>dog</td><td>T</td><td>F</td><td></td><td>1</td><td></td></tr>
+<tr><td>7</td><td>bird</td><td>bird</td><td>F</td><td>F</td><td></td><td></td><td></td></tr>
+<tr><td>8</td><td>dog</td><td>cat</td><td>F</td><td>T</td><td></td><td></td><td>1</td></tr>
+<tr><td>9</td><td>bird</td><td>bird</td><td>F</td><td>F</td><td></td><td></td><td></td></tr>
+</tbody>
+</table>
+</div>
+<p><code>confusion_counts(df, "cat", config)</code> returns <code>(3, 1, 1)</code>. Three masks, no loop.</p>
+<p>Azure AI Language’s evaluation-metrics reference defines these three cells in identical terms for per-class evaluation of custom classifiers: the diagonal value is TP, the row sum excluding the diagonal is FP, and the column sum excluding the diagonal is FN (<a href="https://learn.microsoft.com/azure/ai-services/language-service/custom-text-classification/concepts/evaluation-metrics#confusion-matrix">learn.microsoft.com/azure/ai-services/language-service/custom-text-classification/concepts/evaluation-metrics</a>).</p>
+<h2 id="where-this-fits-in-eval_enginepy"><a class="header" href="#where-this-fits-in-eval_enginepy">Where This Fits in eval_engine.py</a></h2>
+<p><code>confusion_counts</code> is the data layer for the module’s shared artifact. <code>load_predictions</code> (L1, given) loads the CSV into a DataFrame. <code>per_class_metrics</code> (L3, given) calls <code>confusion_counts</code> for each class and derives precision, recall, and F1. <code>to_markdown_table</code> (L3, given) formats the result. <code>run</code> (L4, given) wires all stages together. You build this one stage; the others assume it works.</p>
+<p>The engineer who can write per-class confusion counts from two boolean arrays understands what precision and recall are measuring. The one who only calls <code>f1_score</code> is trusting a wrapper to stay correct when the label set changes, the multiclass averaging shifts, or the column names drift.</p>
+<h2 id="core-concepts-25"><a class="header" href="#core-concepts-25">Core Concepts</a></h2>
+<ul>
+<li>For one class, TP, FP, and FN are three boolean mask combinations of two source arrays; <code>.sum()</code> counts each in a single NumPy pass.</li>
+<li><code>predicted_pos &amp; actual_pos</code> is TP; <code>predicted_pos &amp; ~actual_pos</code> is FP; <code>~predicted_pos &amp; actual_pos</code> is FN. Parentheses on each sub-condition are required because <code>&amp;</code> has higher precedence than <code>==</code>.</li>
+<li>NumPy’s <code>.sum()</code> on a boolean array returns a NumPy scalar; convert to <code>int()</code> before returning so the tuple is portable.</li>
+<li>This is the per-class slice of the confusion matrix, computed by hand: diagonal = TP, row-excluding-diagonal = FP, column-excluding-diagonal = FN.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module7/confusion-counts-with-numpy/">
+<p><strong>Build It in Claude Code:</strong> Add <code>confusion_counts</code> to the shared <code>eval_engine.py</code>, load the sample predictions, assert the per-class counts for cat, dog, and bird, and exit 0.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="precision-recall-and-f1"><a class="header" href="#precision-recall-and-f1">Precision, Recall, and F1</a></h1>
+<p>An eval job that crashes on a class with no predictions is worse than one that returns 0.0. Three small formulas stand between a blank report and a running pipeline.</p>
+<h2 id="what-you-build-12"><a class="header" href="#what-you-build-12">What You Build</a></h2>
+<p>You build <code>ClassMetrics</code>, a frozen dataclass that holds per-class precision, recall, F1, and support, then <code>per_class_metrics</code>, which iterates every class in the dataset and calls <code>confusion_counts</code> to fill one record per class, and <code>to_markdown_table</code>, which renders those records as a Markdown report with a macro-average row.</p>
+<h2 id="the-three-formulas"><a class="header" href="#the-three-formulas">The Three Formulas</a></h2>
+<p><code>confusion_counts</code> (built in L2) returns <code>(tp, fp, fn)</code> for one class. The three derived metrics are:</p>
+<pre><code class="language-python">precision = tp / (tp + fp)   # of every time you predicted this class, how often were you right?
+recall    = tp / (tp + fn)   # of every actual instance, how many did you catch?
+f1        = 2 * precision * recall / (precision + recall)   # harmonic mean of the two
+</code></pre>
+<p>Support is the number of actual instances of the class: <code>support = tp + fn</code>. A class with support 0 never appears in the ground truth; a class with <code>tp + fp == 0</code> was never predicted.</p>
+<p>Azure Machine Learning’s Evaluate Model component uses exactly these definitions: Precision = TP/(TP+FP), Recall = TP/(TP+FN), F1 as the weighted average of the two (<a href="https://learn.microsoft.com/azure/machine-learning/component-reference/evaluate-model">learn.microsoft.com/azure/machine-learning/component-reference/evaluate-model</a>).</p>
+<h2 id="the-classmetrics-dataclass"><a class="header" href="#the-classmetrics-dataclass">The ClassMetrics Dataclass</a></h2>
+<p><code>ClassMetrics</code> is a frozen dataclass (M5 pattern) with one record per class:</p>
+<pre><code class="language-python">from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class ClassMetrics:
+    cls:       str
+    precision: float
+    recall:    float
+    f1:        float
+    support:   int
+</code></pre>
+<p><code>frozen=True</code> keeps the record immutable after construction. Each call to <code>per_class_metrics</code> produces a list of these; nothing downstream can silently mutate a score.</p>
+<h2 id="the-zero-division-rule"><a class="header" href="#the-zero-division-rule">The Zero-Division Rule</a></h2>
+<p>A class that was never predicted gives <code>tp + fp == 0</code>; dividing for precision raises <code>ZeroDivisionError</code>. A class with no actual instances gives <code>tp + fn == 0</code>; dividing for recall does the same. Production eval code never raises on these cases: it returns 0.0 instead.</p>
+<p>The rule, in full:</p>
+<pre><code class="language-python">precision = tp / (tp + fp) if (tp + fp) &gt; 0 else 0.0
+recall    = tp / (tp + fn) if (tp + fn) &gt; 0 else 0.0
+f1        = 2 * precision * recall / (precision + recall) if (precision + recall) &gt; 0 else 0.0
+</code></pre>
+<p>This is not a workaround; it is the convention the industry adopted because a metric function that divides by zero takes down the eval job at the exact moment you most need the report. A class that appears nowhere in predictions scores 0.0, the report renders, and the pipeline moves on.</p>
+<h2 id="building-per_class_metrics"><a class="header" href="#building-per_class_metrics">Building per_class_metrics</a></h2>
+<p>Collect the full set of classes from both <code>label</code> and <code>prediction</code> columns, then iterate in sorted order:</p>
+<pre><code class="language-python">import pandas as pd
+
+def per_class_metrics(df: pd.DataFrame, config) -&gt; list[ClassMetrics]:
+    classes = sorted(
+        set(df[config.label_col].unique()) | set(df[config.pred_col].unique())
+    )
+    results = []
+    for cls in classes:
+        tp, fp, fn = confusion_counts(df, cls, config)
+        precision = tp / (tp + fp) if (tp + fp) &gt; 0 else 0.0
+        recall    = tp / (tp + fn) if (tp + fn) &gt; 0 else 0.0
+        f1        = 2 * precision * recall / (precision + recall) if (precision + recall) &gt; 0 else 0.0
+        support   = tp + fn
+        results.append(ClassMetrics(cls=cls, precision=precision, recall=recall, f1=f1, support=support))
+    return results
+</code></pre>
+<p>The union of both columns catches any class that appears in predictions but not ground truth (and vice versa). Sorting makes the output deterministic.</p>
+<h2 id="building-to_markdown_table"><a class="header" href="#building-to_markdown_table">Building to_markdown_table</a></h2>
+<p>The table gets one row per class, then a macro-average row across all classes. Macro-average is the unweighted mean of each metric across classes: it treats a rare class and a common one equally.</p>
+<pre><code class="language-python">def to_markdown_table(metrics: list[ClassMetrics]) -&gt; str:
+    header = "| class | precision | recall | f1 | support |"
+    sep    = "|-------|-----------|--------|----|---------|"
+    rows   = [header, sep]
+    for m in metrics:
+        rows.append(
+            f"| {m.cls} | {m.precision:.3f} | {m.recall:.3f} | {m.f1:.3f} | {m.support} |"
+        )
+    n    = len(metrics)
+    rows.append(
+        f"| **macro avg** | {sum(m.precision for m in metrics)/n:.3f} "
+        f"| {sum(m.recall for m in metrics)/n:.3f} "
+        f"| {sum(m.f1 for m in metrics)/n:.3f} "
+        f"| {sum(m.support for m in metrics)} |"
+    )
+    return "\n".join(rows)
+</code></pre>
+<h2 id="concrete-example"><a class="header" href="#concrete-example">Concrete Example</a></h2>
+<p>On the ten-row sample (<code>exercises/module7/predictions.csv</code>), <code>per_class_metrics</code> returns:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>class</th><th>precision</th><th>recall</th><th>f1</th><th>support</th></tr>
+</thead>
+<tbody>
+<tr><td>bird</td><td>0.667</td><td>1.000</td><td>0.800</td><td>2</td></tr>
+<tr><td>cat</td><td>0.750</td><td>0.750</td><td>0.750</td><td>4</td></tr>
+<tr><td>dog</td><td>0.667</td><td>0.500</td><td>0.571</td><td>4</td></tr>
+<tr><td><strong>macro avg</strong></td><td>0.694</td><td>0.750</td><td>0.707</td><td>10</td></tr>
+</tbody>
+</table>
+</div>
+<p>Bird has perfect recall (both actual birds were predicted bird) but imperfect precision (one non-bird was also called bird). Dog has the lowest F1 because two of its four actual instances were missed. The macro average weights all three classes equally regardless of support.</p>
+<p>The formulas are small. What makes them production-ready is what happens when a denominator goes to zero.</p>
+<h2 id="core-concepts-26"><a class="header" href="#core-concepts-26">Core Concepts</a></h2>
+<ul>
+<li>Precision = TP/(TP+FP): of every prediction of a class, how many were correct. Recall = TP/(TP+FN): of every actual instance, how many were found. F1 is the harmonic mean of the two.</li>
+<li>Support is the count of actual instances of a class (<code>tp + fn</code>); a class with support 0 was absent from the ground truth, not from the predictions.</li>
+<li>When <code>tp + fp == 0</code> set precision to 0.0; when <code>tp + fn == 0</code> set recall to 0.0; when <code>precision + recall == 0</code> set F1 to 0.0. Never raise <code>ZeroDivisionError</code> in a metric function.</li>
+<li>Macro-average is the unweighted mean of per-class precision, recall, and F1; it treats every class equally regardless of how often it appears.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module7/precision-recall-f1/">
+<p><strong>Build It in Claude Code:</strong> Add <code>ClassMetrics</code>, <code>per_class_metrics</code>, and <code>to_markdown_table</code> to the shared <code>eval_engine.py</code>, assert the expected per-class and macro-average metrics against the ten-row sample, and confirm the zero-division path returns 0.0 without crashing.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="emit-test-and-ship-1"><a class="header" href="#emit-test-and-ship-1">Emit, Test, and Ship</a></h1>
+<p>Accuracy 0.8 is a number that hides things. The class your model never gets right still drags that number up if the other classes are large enough. The evaluation engine is done when <code>run</code> composes the stages into a per-class Markdown report, and a <code>pytest</code> gate proves the numbers, including the case the engine must refuse.</p>
+<h2 id="what-you-build-13"><a class="header" href="#what-you-build-13">What You Build</a></h2>
+<p>You build <code>run</code>, the composer that wires the four stages into a single callable; the <code>if __name__ == "__main__":</code> block that writes the report and exits 0; a <code>smoke.py</code> pytest gate with a happy path and a negative case; and <code>outputs/skill-evaluation-engine.md</code>, the write-up that turns the artifact into a portfolio piece.</p>
+<h2 id="the-run-composer-1"><a class="header" href="#the-run-composer-1">The run Composer</a></h2>
+<p>The earlier lessons gave you the pieces. <code>load_predictions</code> reads the CSV. <code>per_class_metrics</code> slices by class and returns a <code>list[ClassMetrics]</code>. <code>to_markdown_table</code> formats that list as a Markdown table. <code>run</code> chains them in order and writes the report to disk.</p>
+<pre><code class="language-python">def run(config: EvalConfig) -&gt; list[ClassMetrics]:
+    df = load_predictions(config.input_path, config)
+    metrics = per_class_metrics(df, config)
+    report = to_markdown_table(metrics)
+    pathlib.Path(config.output_path).parent.mkdir(parents=True, exist_ok=True)
+    pathlib.Path(config.output_path).write_text(report, encoding="utf-8")
+    return metrics
+</code></pre>
+<p><code>run</code> does not recompute anything the earlier stages own. It loads, computes, formats, writes. The earlier stages are given; <code>run</code> trusts them.</p>
+<p>The return value matters. A function that writes a file and returns nothing forces a caller to re-read the file to inspect the result. Returning <code>list[ClassMetrics]</code> lets <code>smoke.py</code> assert the numbers directly, without touching the filesystem again.</p>
+<h2 id="the-main-block"><a class="header" href="#the-main-block">The main Block</a></h2>
+<p>The <code>if __name__ == "__main__":</code> block wires the engine to a default config and runs it. This is the real entry point: <code>python eval_engine.py</code> should exit 0 and write the report.</p>
+<pre><code class="language-python">if __name__ == "__main__":
+    import pathlib as _pathlib
+
+    _here = _pathlib.Path(__file__).parent
+    default_config = EvalConfig(
+        input_path=str(_here / "predictions.csv"),
+        output_path=str(_here / "outputs" / "evaluation-report.md"),
+    )
+    metrics = run(default_config)
+    for m in metrics:
+        print(f"{m.cls}: P={m.precision:.3f} R={m.recall:.3f} F1={m.f1:.3f} (n={m.support})")
+</code></pre>
+<p>The print loop gives you a human-readable summary in the terminal and confirms the engine ran without opening the output file.</p>
+<h2 id="the-per-class-table-what-goes-in-a-model-card"><a class="header" href="#the-per-class-table-what-goes-in-a-model-card">The Per-Class Table: What Goes in a Model Card</a></h2>
+<p>The report <code>run</code> writes is a Markdown table of per-class precision, recall, F1, and support. That is the artifact a reviewer reads before a PR merges and the first table in any model card that follows responsible AI practice.</p>
+<p>Azure AI Language Services defines class-level evaluation this way: precision measures how many of the predicted classes are correctly labeled; recall measures how many of the actual class instances were found; F1 balances the two (<a href="https://learn.microsoft.com/azure/ai-services/language-service/custom-text-classification/concepts/evaluation-metrics">learn.microsoft.com/azure/ai-services/language-service/custom-text-classification/concepts/evaluation-metrics</a>). The per-class breakdown is the form that surfaces the failing class. A macro-averaged F1 of 0.707 on the sample data masks the fact that <code>dog</code> has an F1 of 0.571: support 4, precision 0.667, recall 0.500. That class is underperforming. Accuracy alone would not tell you which one.</p>
+<p>The table produced by <code>to_markdown_table</code> for the locked sample looks like this:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>class</th><th>precision</th><th>recall</th><th>f1</th><th>support</th></tr>
+</thead>
+<tbody>
+<tr><td>bird</td><td>0.667</td><td>1.000</td><td>0.800</td><td>2</td></tr>
+<tr><td>cat</td><td>0.750</td><td>0.750</td><td>0.750</td><td>4</td></tr>
+<tr><td>dog</td><td>0.667</td><td>0.500</td><td>0.571</td><td>4</td></tr>
+<tr><td><strong>macro avg</strong></td><td><strong>0.694</strong></td><td><strong>0.750</strong></td><td><strong>0.707</strong></td><td><strong>10</strong></td></tr>
+</tbody>
+</table>
+</div>
+<p>That table is what <code>smoke.py</code> asserts. It is also what a teammate reads in a PR before a model ships.</p>
+<h2 id="the-smoke-test-1"><a class="header" href="#the-smoke-test-1">The Smoke Test</a></h2>
+<p>A smoke test answers one question: does the engine produce the right numbers without catching fire? Two test functions cover both directions.</p>
+<p><code>test_engine_happy_path</code> runs the engine on <code>predictions.csv</code> and asserts the locked per-class P/R/F1 to a tolerance of 0.001, confirms the output <code>.md</code> file was written, and confirms it contains the class names.</p>
+<pre><code class="language-python">import pytest
+import pathlib
+import sys
+
+_HERE = pathlib.Path(__file__).parent
+sys.path.insert(0, str(_HERE))
+
+from eval_engine import EvalConfig, run
+
+PRED_PATH = str(_HERE / "predictions.csv")
+
+def test_engine_happy_path(tmp_path):
+    config = EvalConfig(
+        input_path=PRED_PATH,
+        output_path=str(tmp_path / "report.md"),
+    )
+    metrics = run(config)
+
+    by_class = {m.cls: m for m in metrics}
+
+    # cat: P=0.750 R=0.750 F1=0.750 support=4
+    assert abs(by_class["cat"].precision - 0.750) &lt; 0.001
+    assert abs(by_class["cat"].recall    - 0.750) &lt; 0.001
+    assert abs(by_class["cat"].f1        - 0.750) &lt; 0.001
+    assert by_class["cat"].support == 4
+
+    # dog: P=0.667 R=0.500 F1=0.571 support=4
+    assert abs(by_class["dog"].precision - 0.667) &lt; 0.001
+    assert abs(by_class["dog"].recall    - 0.500) &lt; 0.001
+    assert abs(by_class["dog"].f1        - 0.571) &lt; 0.001
+    assert by_class["dog"].support == 4
+
+    # bird: P=0.667 R=1.000 F1=0.800 support=2
+    assert abs(by_class["bird"].precision - 0.667) &lt; 0.001
+    assert abs(by_class["bird"].recall    - 1.000) &lt; 0.001
+    assert abs(by_class["bird"].f1        - 0.800) &lt; 0.001
+    assert by_class["bird"].support == 2
+
+    # output file was written and contains class names
+    report_path = pathlib.Path(config.output_path)
+    assert report_path.exists(), "report .md was not written"
+    report_text = report_path.read_text(encoding="utf-8")
+    for cls in ("cat", "dog", "bird"):
+        assert cls in report_text, f"class '{cls}' missing from report"
+</code></pre>
+<p>The tolerance is 0.001, not an equality check on floats. Floating-point division across different Python versions can produce results like <code>0.6666666666666667</code>; asserting <code>== 0.667</code> fails. Asserting within 0.001 of a three-decimal target is the production pattern.</p>
+<p><code>test_engine_negative_case</code> proves the engine rejects a predictions file that is missing the <code>label</code> column. The engine must raise; the gate must fire.</p>
+<pre><code class="language-python">def test_engine_negative_case(tmp_path):
+    """A predictions file missing the label column must make run raise."""
+    bad_csv = tmp_path / "bad.csv"
+    bad_csv.write_text(
+        "prediction\ncat\ndog\nbird\n",
+        encoding="utf-8",
+    )
+    bad_config = EvalConfig(
+        input_path=str(bad_csv),
+        output_path=str(tmp_path / "report.md"),
+    )
+    with pytest.raises(Exception):
+        run(bad_config)
+</code></pre>
+<p><code>pytest.raises(Exception)</code> rather than a specific subclass: <code>load_predictions</code> is a given, and its exact exception type is an implementation detail you did not write. The test proves the gate fires.</p>
+<h2 id="the-readme-and-the-skill-write-up-1"><a class="header" href="#the-readme-and-the-skill-write-up-1">The README and the Skill Write-Up</a></h2>
+<p>The exercise README frames the business problem before the code. The opening paragraph explains why accuracy hides the failing class and why a per-class report is the artifact that tells the truth. That framing is the STANDARDS Part 2 “README frames the business problem” criterion: it answers “why does this exist” before “what does it do.”</p>
+<p><code>outputs/skill-evaluation-engine.md</code> is the portfolio surface. It documents what the engine does, the business problem it solves, the lineage back to M3’s <code>groupby</code>-based per-class accuracy work, and how to run it. The write-up is not filler; it is the translation layer between a script and a hire.</p>
+<h2 id="the-standards-check-1"><a class="header" href="#the-standards-check-1">The Standards Check</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Criterion</th><th>Where it lives</th></tr>
+</thead>
+<tbody>
+<tr><td>Real entry point</td><td><code>python eval_engine.py</code> runs the engine and exits 0</td></tr>
+<tr><td>README frames the business problem</td><td><code>exercises/module7/emit-test-and-ship/README.md</code> opens with the accuracy-hiding-the-failing-class problem</td></tr>
+<tr><td>Machine-checkable acceptance gate</td><td><code>pytest smoke.py</code> passes both tests; <code>python eval_engine.py</code> exits 0</td></tr>
+<tr><td>The negative case is tested</td><td><code>test_engine_negative_case</code> asserts a malformed predictions file raises</td></tr>
+<tr><td>Versioned, clean layout; no secrets</td><td>report goes to <code>outputs/</code>; no keys; no committed credentials</td></tr>
+<tr><td>Ships a skill artifact</td><td><code>outputs/skill-evaluation-engine.md</code> is a required output</td></tr>
+</tbody>
+</table>
+</div>
+<p>The gate is green when <code>python eval_engine.py</code> exits 0, writes <code>outputs/evaluation-report.md</code>, and <code>pytest smoke.py</code> reports two tests passed.</p>
+<p>The difference between an evaluation script and an evaluation engine is not the code; it is the gate. A script runs on good input. An engine proves it runs on good input and rejects the bad.</p>
+<h2 id="core-concepts-27"><a class="header" href="#core-concepts-27">Core Concepts</a></h2>
+<ul>
+<li><code>run</code> is the composer: it calls <code>load_predictions</code>, <code>per_class_metrics</code>, and <code>to_markdown_table</code> in sequence, writes the report to <code>config.output_path</code>, and returns <code>list[ClassMetrics]</code> so callers can assert the numbers without re-reading the file.</li>
+<li>Per-class precision, recall, and F1 are the table a model card requires; macro-averaged accuracy hides the class the model cannot predict, and that hidden class is the one that fails in production.</li>
+<li>A smoke test earns its name with two functions: the happy path locks the expected numbers; the negative case proves the engine rejects a malformed input, which is what separates a gate from a script.</li>
+<li>Float comparisons in tests use a tolerance (<code>abs(result - expected) &lt; 0.001</code>), not equality; floating-point division across environments is not exact.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module7/emit-test-and-ship/">
+<p><strong>Build It in Claude Code:</strong> Finish <code>exercises/module7/eval_engine.py</code> by adding <code>run</code> and the <code>if __name__ == "__main__":</code> block; write <code>smoke.py</code> with the happy-path and negative-case tests; and fill out <code>outputs/skill-evaluation-engine.md</code>. The gate is green when <code>python eval_engine.py</code> exits 0, writes the Markdown report, and <code>pytest smoke.py</code> passes both tests.</p>
 </div>
 
 
