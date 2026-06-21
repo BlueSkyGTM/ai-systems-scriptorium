@@ -13,9 +13,16 @@ installs the four-step Algorithm and seeds the prep-dossier throughline (`exerci
 the hard cases and grows the validator to v2 in place. M3 "Behavioral Interviews" (overview + 4 lessons +
 4 exercises) is the behavioral example bank: each lesson reasons two worked examples to a STAR-L answer,
 two examples reused toward different signals to demonstrate method-over-memorization; validator grown to
-v3 in place. All authored conductor-direct, reviewed to STYLE + STANDARDS with MS-Learn citations verified
-live, built clean (`mdbook build`), and shipped (`GATE-APPROVE-SHIP`, 2026-06-21). See
-`build-log/answer-engineering/build-progress.md`. Next: Module 4 (technical screens).
+v3 in place. M5 "AI/ML Systems-Design Interviews" (overview + 4 lessons + 4 exercises) is the systems-design example
+bank: SPIDER taught as the domain-specific construct motion, worked designs that reason from production
+constraints (not reference architectures), and a finale with a weak-design audit + a "same prompt,
+different stress" anti-memorization coda; validator grown to v4 in place (`--module 5`). **M5 was authored
+before M4 (Ray-confirmed reorder):** the vault has rich systems-design ore but no live-coding-screen ore,
+so M4 is deferred until its ore is sourced. M5 introduced the Haiku-fetch / Sonnet-author tier. All
+authored conductor-direct, reviewed to STYLE + STANDARDS with MS-Learn citations verified live, built
+clean (`mdbook build`), and shipped (`GATE-APPROVE-SHIP`, 2026-06-21). See
+`build-log/answer-engineering/build-progress.md`. Next: Module 6 (the portfolio-as-resume layer); Module 4
+(technical screens) deferred.
 
 ## Ore (in the vault — not yet distilled)
 
@@ -43,7 +50,7 @@ makes it especially legible to both.
 
 ## Handoff & gates
 
-`GATE-NAME-BOOK` cleared; M1–M3 shipped. For the next module: draft its
-`build-log/answer-engineering/m4/PLAN.md`, stop at `GATE-LOCK-PLAN`, then the fleet authors via
+`GATE-NAME-BOOK` cleared; M1–M3 + M5 shipped (M4 deferred, see above). For the next module: draft its
+`build-log/answer-engineering/m6/PLAN.md`, stop at `GATE-LOCK-PLAN`, then the fleet authors via
 `platform/pipeline/CONTEXT.md`, and stop at `GATE-APPROVE-SHIP` per stage. See
 `platform/HUMAN-GATES.md`.

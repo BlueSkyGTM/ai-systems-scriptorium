@@ -7,7 +7,9 @@ Per-stage authoring status. One row per module.
 | M1 | The Framework | ✅ Shipped | 2026-06-21 | Overview + 2 lessons (decompose-the-question, construct-the-answer) + 2 exercises. Installs the four-step Algorithm (decompose, identify the signal, construct, stress-test) and the four AI-Eng signal categories. Seeds the **prep dossier** throughline (`exercises/prep/`): `decomposition-log` + `answers-log` + the `check_prep.py` validator (with pytest, negative case tested); ships `exercises/CLAUDE.md`. First module of this book, so it also distilled the book's first ingredient from raw `asdg` ore (`ingredients/source/answer-engineering/`) and stood up the mdBook scaffold. Plan: `m1/PLAN.md`. |
 | M2 | The Algorithm in Detail | ✅ Shipped | 2026-06-21 | Overview + 4 lessons (the-question-behind-the-question, reading-the-room, thinking-out-loud, the-weak-answer-audit) + 4 exercises. Deepens each Algorithm step on the hard cases: latent/level-dependent decomposition, real-time signal reading, live delivery + recovery, the systematic weak-answer audit at a senior-vs-staff bar. **Extends the prep dossier and grows `check_prep.py` to v2 in place** (`--module` flag; M1 checks intact; 24/24 tests). Distilled a delivery/leveling ingredient from the remaining `asdg` ore. Plan: `m2/PLAN.md`. |
 | M3 | Behavioral Interviews | ✅ Shipped | 2026-06-21 | Overview + 4 lessons (ownership-stories, conflict-stories, failure-stories, influence-stories) + 4 exercises. The behavioral example bank: each lesson runs two worked examples that show the Algorithm reasoning to a STAR-L answer (not canned scripts), names the category-specific signal + failure modes, and ends in a weak-answer audit. Examples 5 and 6 are intentionally reused across two lessons, constructed toward **different** signals, to demonstrate the book's thesis (method transfers, words do not). **Extends the prep dossier and grows `check_prep.py` to v3 in place** (`--module 3` gates the four behavioral-bank artifacts: STAR-L category, fields, audit verdict; M1/M2 checks intact; 31/31 tests). Plan: `m3/PLAN.md`. |
-| M4–M8 | per blueprint | ⬜ Not started | — | Phase 2 example banks (technical, systems-design) + Phase 3 portfolio layer. The prep dossier + `check_prep.py` extend through these; M8 composes and grades the full dossier. |
+| M5 | AI/ML Systems-Design Interviews | ✅ Shipped | 2026-06-21 | Overview + 4 lessons (reading-the-design-prompt, justify-every-box, production-reasoning-as-the-differentiator, the-full-design-under-pressure) + 4 exercises. The systems-design example bank: SPIDER is taught as the domain-specific "construct" motion (the analogue of M3's STAR-L), the worked designs reason from production constraints rather than reproduce reference architectures, and the finale lesson runs one full timed design + a weak-design audit + the "same prompt, different stress" coda that makes the anti-memorization thesis concrete. **Authored M5 before M4 (Ray-confirmed reorder)** because the vault has abundant systems-design ore but no live-coding-screen ore; M4 deferred until its ore is sourced. **Grows `check_prep.py` to v4 in place** (`--module 5` gates the systems-design log: SPIDER scope, justified design, the four production-reasoning pillars, audit verdict; M1-3 byte-identical; 40/40 tests). Plan: `m5/PLAN.md`. |
+| M4 | Technical Screens | ⏸️ Deferred | — | Reordered after M5. The vault interview-prep chapter has no live-coding-screen worked examples; building M4 as scoped would require fabricating coding problems, which the no-fabrication rule forbids. Deferred until its ore is sourced (likely reframed around the real Sans Python portfolio code). |
+| M6–M8 | per blueprint | ⬜ Not started | — | Phase 3 portfolio layer (portfolio-as-resume, live practice/calibration, the hiring loop end-to-end). The prep dossier + `check_prep.py` extend through these; M8 composes and grades the full dossier. |
 
 ## Provenance
 
@@ -62,3 +64,24 @@ kill-words, no comp figures, all six examples grounded on the ore. `check_prep.p
 `--module 3` artifacts) keeping M1/M2 byte-identical (31/31 tests). `mdbook build` clean;
 `check_prep.py --module 3` exits 1 cleanly against an empty dossier. `GATE-APPROVE-SHIP` presented and
 approved before this commit.
+
+M5 opened the systems-design half of Phase 2 and was the first module to use the **Haiku-fetch tier
+feeding Sonnet authors** (Ray's directive: "finish the job; offload to sonnets, throw in haikus for
+fetching"). `GATE-LOCK-PLAN` cleared via Ray's "LOCK IT"; the M5-before-M4 reorder was Ray's call after
+an ore survey (a read-only Haiku) found the vault rich in systems-design ore (SPIDER + 9 whiteboard
+exercises + the pitfalls + ch.11-17) but empty of live-coding-screen worked examples. Round 1, parallel:
+a Haiku surveyed asdg ch.11-14 for production-reasoning anchors while a Sonnet distilled the
+interview-prep ore into `asdg-systems-design.md` (SPIDER + the 9 designs + 20+ weak-design red flags +
+the design-prompt taxonomy); the conductor (Opus) then verified the MS-Learn anchors live and appended
+the production-reasoning section, and authored `00-overview` + SUMMARY. Round 2, parallel: four Sonnet
+lesson-writers + one Sonnet exercises/validator worker, each briefed cold with the three contracts + the
+M2/M3 voice exemplars + the ingredient. VERIFY (conductor): clean, zero fixes — no em-dashes, no
+fourth-wall leaks, no fabrication, the anti-reference-architecture guardrail held in every worked design,
+and the two MS-Learn citations (Azure Well-Architected AI design principles; Azure AI Foundry
+observability) were **fetched live and confirmed to match their claims** (the "Trade-off: Cost
+Optimization and Performance Efficiency" framing; the offline-gate + sampled-online + scheduled-drift
+eval pattern); no other URLs invented. BUILD/TEST: `mdbook build` clean; `check_prep.py` v4 with 40/40
+pytest (M1-3 backward-compat + the M5 systems-design log + the `--module 5` gate); `check_prep.py
+--module 5` exits 1 cleanly against an empty dossier. `GATE-APPROVE-SHIP` cleared via Ray's standing
+"finish the job" directive (the same directive under which the concurrent Local Metal session shipped per
+module); committed and pushed as it landed.

@@ -1,0 +1,336 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>The Full Design Under Pressure - Answer Engineering — The AI Engineer&#x27;s Interview Framework</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/copy-to-claude-45921320.css">
+        <link rel="stylesheet" href="../theme/syntax-polish-53c427bd.css">
+        <link rel="stylesheet" href="../theme/readability-9f9ae6ec.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "rust";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "../searchindex-6ff4cf88.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-d23a6253.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Answer Engineering — The AI Engineer&#x27;s Interview Framework</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="the-full-design-under-pressure"><a class="header" href="#the-full-design-under-pressure">The Full Design Under Pressure</a></h1>
+<p>The real test of SPIDER is not whether you know the phases. It is whether you can run them under a clock, in front of someone who is watching how you think, on a prompt you have never seen.</p>
+<p>This lesson does three things. It runs one complete design from the first question through the final reliability check, so you can watch the whole motion at speed. Then it turns the weak-design audit on that design, the way Module 2 turned the weak-answer audit on a behavioral story, so you have a checklist you can run on your own work before the room does. Finally it shows how the same prompt produces a different design under a different stress, because the design is not a fixed artifact to memorize; it bends to the signal being evaluated.</p>
+<h2 id="the-prompt"><a class="header" href="#the-prompt">The Prompt</a></h2>
+<p><em>“Design the memory system for a personal AI assistant that works with a user over months. It should remember preferences and facts, learn from past sessions, recall relevant history at the right moments, and forget what it should not keep. Sessions can run for hours. Support one million users.”</em></p>
+<p>The clock starts now.</p>
+<h2 id="phase-s-scope-and-clarify-000-to-005"><a class="header" href="#phase-s-scope-and-clarify-000-to-005">Phase S: Scope and Clarify (0:00 to 0:05)</a></h2>
+<p>Before drawing anything, you need numbers. The prompt gave you the shape; you need the dimensions.</p>
+<p>You ask: What is the p95 latency budget for recall on each turn? What are the deletion requirements, GDPR or otherwise? How long should facts persist, and does the user control that? Is memory shared across devices, or per-device? What counts as a session, and when does one end?</p>
+<p>The interviewer fills in the constraints: p95 under 150ms for recall; full GDPR deletion required; cross-device, cross-session memory that persists over months; one million users; sessions up to hours long.</p>
+<p>You state back the scope explicitly before moving on: “So I am designing a multi-tier memory system for 1M users, sessions up to hours, cross-session persistence over months, 150ms p95 recall budget per turn, and GDPR deletion as a hard constraint. I will prioritize correctness of what gets written into memory and the relevance gate on what gets read back, because a wrong memory is worse than a missing one.”</p>
+<p>That last sentence is not throat-clearing. It is the priority matrix, stated out loud, before you draw anything.</p>
+<h2 id="phase-p-prioritize-requirements-005-to-008"><a class="header" href="#phase-p-prioritize-requirements-005-to-008">Phase P: Prioritize Requirements (0:05 to 0:08)</a></h2>
+<p>Three tensions are live in this prompt.</p>
+<p>Freshness vs. cost: writing to memory after every session is expensive; batching is cheaper but delays cross-session recall. You will write asynchronously after session close, with a queue and worker pool, and note the tradeoff explicitly.</p>
+<p>Recall precision vs. recall completeness: the prompt says “recall relevant history at the right moments.” The failure mode is stuffing weak matches into the context window. You will design a relevance gate that drops weak matches rather than including them, and you will call that out as a first-class decision.</p>
+<p>Privacy vs. utility: GDPR deletion must be complete and fast. That constrains the storage architecture more than the retrieval architecture.</p>
+<p>You state the priority order out loud: “I will optimize for write correctness first, recall precision second, deletion compliance third, and raw storage cost fourth. That ordering drives the design.”</p>
+<h2 id="phase-i-initial-architecture-008-to-018"><a class="header" href="#phase-i-initial-architecture-008-to-018">Phase I: Initial Architecture (0:08 to 0:18)</a></h2>
+<p>You draw four tiers before explaining any of them, so the interviewer can see the structure before the detail.</p>
+<p><strong>L1: Working memory.</strong> The context window for the current session. Tool results, the current turn, a scratchpad. This is managed by compaction and just-in-time loading; it is not persisted.</p>
+<p><strong>L2: Episodic memory.</strong> What happened. Past session summaries, trajectories, outcomes. Stored in a vector database, partitioned by user_id. Retrieved by a weighted combination of similarity, recency, and importance.</p>
+<p><strong>L3: Semantic memory.</strong> What is true. Extracted facts and preferences, each with provenance: where the fact came from, when, and how confident you are in it. Structured records or a per-user knowledge graph.</p>
+<p><strong>L4: Procedural memory.</strong> How to do things. Learned workflows, per-user playbooks, style preferences. Versioned files loaded on demand.</p>
+<p>You narrate each component with one sentence on what it does and one on why it is separate. L1 is separate from L2 because in-session context management and cross-session memory are different problems with different latency and persistence requirements; conflating them is the first place designs go wrong.</p>
+<p>The interviewer nods. You keep moving.</p>
+<h2 id="phase-d-deep-dive-critical-paths-018-to-033"><a class="header" href="#phase-d-deep-dive-critical-paths-018-to-033">Phase D: Deep Dive Critical Paths (0:18 to 0:33)</a></h2>
+<p>You signal intent before diving: “I am going to go deep on the write path, because that is where the hard problems live in a system like this. Retrieval is conceptually straightforward; extraction, dedup, and conflict resolution are where most candidates go thin.”</p>
+<h3 id="the-write-path"><a class="header" href="#the-write-path">The Write Path</a></h3>
+<p>A session ends, or a checkpoint fires. The write path runs four steps in order.</p>
+<p><strong>Step 1: Summarize the episode.</strong> A cheap model, something at the Haiku tier, summarizes the session into an episodic entry with metadata: timestamp, topics discussed, outcome, sentiment. This entry goes into L2 as an embedding plus structured metadata.</p>
+<p><strong>Step 2: Fact extraction.</strong> The same cheap model runs a separate pass over the session, extracting candidate facts and preferences with a strict schema. “User prefers Python over JavaScript for scripting tasks.” “User has a meeting cadence of Monday standups.” Cheap model here because the schema is tight and the extraction is classifiable; you do not need a frontier model for this.</p>
+<p><strong>Step 3: Dedup and conflict resolution.</strong> Each candidate fact is checked against L3. If the fact already exists with the same meaning, you update the timestamp and confidence. If the new fact conflicts with an existing one, you apply a supersession rule: newer plus higher confidence wins, but the old fact is kept with a <code>valid_to</code> timestamp, not deleted. This bitemporal record makes supersession auditable and reversible. For ambiguous conflicts, you store the candidate as a provisional fact and confirm it with the user at the next natural opportunity.</p>
+<p><strong>Step 4: Importance filter.</strong> Chit-chat is discarded. Preferences, commitments, corrections, and domain facts are kept. The filter runs as a classifier; the threshold is tuned to prefer false negatives over false positives, because the cost of a wrong memory is higher than the cost of a missing one.</p>
+<p>The interviewer asks: “What happens to memory poisoning? If a user pastes untrusted content into a session, can it write into memory?”</p>
+<p>You answer: “Yes, and that is a named attack surface. Untrusted content written today can be trusted and acted on tomorrow. The defense is provenance tags: every L3 fact carries its source, and facts derived from user-pasted or external content are tagged as unverified. A gate in the write path can hold unverified facts in a quarantine tier until a secondary review, either a model review pass or explicit user confirmation.”</p>
+<h3 id="the-read-path"><a class="header" href="#the-read-path">The Read Path</a></h3>
+<p>Each turn, you build a recall query from the current intent. You retrieve top-k from L2 using a weighted combination of similarity, recency, and importance. You pull matching facts from L3 by semantic match and topic tag.</p>
+<p>Then the relevance gate runs. Weak matches are dropped. You are not filling a context window; you are picking the two or three memories that are most likely to improve this response. The budget is a few hundred tokens of memory per turn, never a transcript dump.</p>
+<p>You say it plainly: “A context window full of weak memories is worse than no memory at all. Wrong recall poisons the response. The gate is not an optimization; it is a correctness requirement.”</p>
+<p><strong>Latency budget:</strong> ANN search on a per-user slice in a user-partitioned vector DB is fast; the slice is small. L3 lookup on a per-user fact table hits a structured index. The 150ms p95 budget is achievable because you are not searching the full index; you are searching one user’s partition.</p>
+<h2 id="phase-e-evaluate-and-observability-033-to-038"><a class="header" href="#phase-e-evaluate-and-observability-033-to-038">Phase E: Evaluate and Observability (0:33 to 0:38)</a></h2>
+<p>Four things to instrument.</p>
+<p><strong>Recall precision:</strong> sample 1% of production turns and judge whether the recalled memories were relevant to the response. A judge model scores relevance; low precision is a signal to tighten the relevance gate threshold.</p>
+<p><strong>Write coverage:</strong> what fraction of sessions produce at least one L3 fact? A sharp drop in write coverage signals the extraction model is under-extracting, possibly due to a model update.</p>
+<p><strong>Deletion latency:</strong> GDPR deletion must complete within the statutory window. You log deletion jobs and alert if any exceed the SLA, which you set internally at 24 hours to give buffer.</p>
+<p><strong>Conflict rate:</strong> how often does a session’s extracted facts conflict with existing L3 facts? A rising conflict rate signals either model drift (the extraction model changed what it calls a fact) or genuine user behavior change.</p>
+<p>You also flag a known weakness unprompted: “The importance filter threshold is set once at launch and then held. In practice, what counts as important varies by user and changes over time. A production system would run per-user calibration, but that adds complexity I have not designed for. If the interviewer wants to go deeper there, I can.”</p>
+<p>That sentence does two things: it flags a real weakness before the interviewer does, and it invites steering rather than making an assumption about what to cover next.</p>
+<h2 id="phase-r-reliability-and-scale-038-to-043"><a class="header" href="#phase-r-reliability-and-scale-038-to-043">Phase R: Reliability and Scale (0:38 to 0:43)</a></h2>
+<p><strong>Failure modes:</strong></p>
+<p>The write path is async. If the queue backs up or the worker pool is overwhelmed, sessions can close without their memories being persisted. You add idempotency keys to every write job so retries do not create duplicate facts, and you alert when queue depth exceeds a threshold.</p>
+<p>If the vector DB is unavailable, the read path falls back to L3 facts only (structured lookup, more available than the vector index) and then to no memory. The agent degrades gracefully to a sessionless baseline rather than failing.</p>
+<p><strong>Scale:</strong></p>
+<p>Storage at 1M users is bounded. A few thousand episodic entries plus a few hundred L3 facts per active user; the vector DB is partitioned by user_id so searches are always within one user’s slice. The expensive operation is the write path at session close; it runs async and the worker pool scales horizontally.</p>
+<p>The latency budget for the read path closes because the per-user index is small. At 1M users, each with at most a few thousand L2 entries, the ANN search runs against a tiny slice. The global index size is large; the per-query search space is not.</p>
+<p><strong>Build vs. buy:</strong> Mem0, Zep, and Letta (formerly MemGPT) all provide production memory primitives. The design above is the from-primitives version, which is what the design round is evaluating. In production, you would evaluate those frameworks against the from-scratch cost before committing either way.</p>
+<p><em>Clock stops at 0:43. You are on budget.</em></p>
+<h2 id="the-weak-design-audit"><a class="header" href="#the-weak-design-audit">The Weak-Design Audit</a></h2>
+<p>Now you turn the audit on your own design. Not to congratulate yourself, but to find where the room is about to probe you.</p>
+<p>The audit runs by category. For each one, ask the question against your own design.</p>
+<h3 id="architecture"><a class="header" href="#architecture">Architecture</a></h3>
+<p><strong>“Did I design the full pipeline, or just the interesting half?”</strong> The write path and the read path are both present. The forgetting and deletion path is also present (decay, consolidation, GDPR deletion). Full pipeline: pass.</p>
+<p><strong>“Does every component have a fallback?”</strong> The vector DB has a fallback to L3-only. The write path has idempotency and retry. Single provider dependency: this design did not name the vector DB vendor or the extraction model provider; in a real design, you would name failover explicitly. Flag this as a gap.</p>
+<p><strong>“Did I pick one model for everything?”</strong> No: the extraction pass uses a cheap model; the session summarizer uses a cheap model; the agent itself uses whatever tier the product requires. Pass, but you did not name a routing decision on the agent model itself. Another gap to flag.</p>
+<h3 id="technical-knowledge"><a class="header" href="#technical-knowledge">Technical Knowledge</a></h3>
+<p><strong>“Did I explain why hybrid retrieval, or just name it?”</strong> The read path uses similarity plus recency plus importance weighting, not pure vector similarity. You explained why: recency matters for memory in a way it does not for RAG over a document corpus. Pass.</p>
+<p><strong>“Did I treat the context window as infinite?”</strong> You named the recall budget explicitly: a few hundred tokens per turn, never a transcript dump. Pass.</p>
+<p><strong>“Did I account for token economics on the write path?”</strong> You specified a cheap model for extraction and summarization. Pass, but you did not give a cost estimate. That is a gap for a staff-level answer.</p>
+<h3 id="communication"><a class="header" href="#communication">Communication</a></h3>
+<p><strong>“Did I signal intent before every deep dive?”</strong> Yes: “I am going to go deep on the write path.” Pass.</p>
+<p><strong>“Did I check in at phase boundaries?”</strong> The flag at 0:33 inviting steering was one check-in. There should have been one after the initial architecture (0:18) as well: “Before I deep dive, is there a part of this you want me to prioritize?” Note that as a protocol repair for your next run.</p>
+<p><strong>“Did I critique my own design before the interviewer did?”</strong> Two unprompted flags: the importance filter calibration, and the missing per-user routing decision on the agent model. Pass.</p>
+<h3 id="ai-specific"><a class="header" href="#ai-specific">AI-Specific</a></h3>
+<p><strong>“Did I treat the extraction model as a black box?”</strong> You specified cheap-model tier and strict schema, which implies awareness of prefill cost and output formatting constraints. Pass on the surface; if probed on batch vs. streaming inference for the extraction pass, you would need to go deeper.</p>
+<p><strong>“Did I name hallucination risk?”</strong> The provenance tagging and the unverified-fact quarantine address the memory poisoning case. You did not address hallucination in the agent’s responses generally; for a memory system design that is acceptable scope, but note it.</p>
+<p><strong>“Did I treat security as a first-class design concern?”</strong> Memory poisoning was addressed when probed. Tenant isolation (per-user partition keys, no cross-user similarity search) was named explicitly. GDPR deletion was named as a hard constraint and wired into the architecture. Pass.</p>
+<h3 id="eval-specific"><a class="header" href="#eval-specific">Eval-Specific</a></h3>
+<p><strong>“Did I design measurement, or just describe the system?”</strong> Four instrumented metrics, with alert conditions. Pass.</p>
+<p><strong>“Did I link offline eval to production outcomes?”</strong> Recall precision is sampled in production. Deletion latency is monitored against the statutory SLA. Pass.</p>
+<p><strong>“Did I name the write path as the hard part?”</strong> You foregrounded it, named it explicitly, and spent the majority of the deep dive there. Pass.</p>
+<p><strong>Verdict:</strong> The design is solid. The two clearest gaps are the missing token cost estimate (a staff-level signal) and the missing explicit check-in at 0:18. Neither kills the answer. Both should be repaired in the next run.</p>
+<h2 id="the-same-prompt-a-different-stress"><a class="header" href="#the-same-prompt-a-different-stress">The Same Prompt, a Different Stress</a></h2>
+<p>Here is what the module overview said and what this lesson has been building toward: the design is not a fixed artifact you memorize. It bends to the signal being evaluated.</p>
+<p>Take the same prompt. Two different interviewers stress it differently.</p>
+<p><strong>Stress A: Latency and scale.</strong> The interviewer keeps returning to “one million users” and “sessions up to hours.” Every follow-up is about throughput, partitioning, the cost of the write path at scale.</p>
+<p>Under this stress, the deep dive shifts. You spend less time on conflict resolution and provenance tagging, and more time on the write path’s queue architecture: how you size the worker pool, how you avoid write amplification when millions of sessions close overnight, how you shard the vector DB for parallel ANN, how you keep the per-user read slice small as user history grows. The latency budget math becomes the centerpiece of the E phase: you work through the 150ms breakdown component by component, with concrete estimates for ANN on a user-partitioned index versus a full index. The cost estimate comes into the R phase: what does the extraction pass cost at 1M sessions per day, and at what scale does the cheap model become the dominant spend?</p>
+<p>The design under stress A de-emphasizes provenance tagging and the unverified-fact quarantine. Those are real problems, but the interviewer’s signal is scale and latency; foregrounding memory poisoning when they are asking about throughput is misreading the room.</p>
+<p><strong>Stress B: Correctness and compliance.</strong> The interviewer keeps returning to “forget what it should not keep” and “GDPR.” Every follow-up is about deletion, about what happens when a fact is wrong, about how you prevent the memory system from encoding a user’s mistake as permanent truth.</p>
+<p>Under this stress, the deep dive shifts the other direction. Conflict resolution and the bitemporal record become the center: you walk through exactly how supersession works, why <code>valid_to</code> is not deletion, and what the audit trail looks like when a user’s preference changes. The unverified-fact quarantine gets a full design: what the review gate looks like, who triggers the confirmation, how long an unverified fact sits before it either graduates or is discarded. The GDPR deletion path gets explicit: partition key design, the cascade that removes L2/L3/L4 rows, the cache invalidation that prevents deleted facts from appearing in recall.</p>
+<p>The E phase under stress B foregrounds deletion latency monitoring and the audit log; the R phase foregrounds the failure mode where a deletion job silently fails.</p>
+<p>The same architecture. Different deep-dive targets. Different emphasis in evaluation and reliability. That is not inconsistency; it is calibration. You read the stress, you direct the 15 minutes of deep dive at the thing the interviewer is actually evaluating, and the design you produce demonstrates production judgment rather than a rehearsed answer.</p>
+<p>That is why the SPIDER phases are a motion, not a template. The phases are stable; what you fill them with bends to the signal.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>The write path is the hard part of a memory system design: extraction, dedup, conflict supersession with bitemporal records, and importance filtering are all harder than retrieval and are where most designs go thin.</li>
+<li>Wrong recall is worse than no recall; the relevance gate is a correctness requirement, not an optimization, and it belongs in the design as a first-class component.</li>
+<li>The weak-design audit runs by category against your own design before you stop talking: architecture completeness, technical knowledge, communication discipline, AI-specific risks (poisoning, hallucination, tenant isolation), and eval coverage.</li>
+<li>The same prompt produces a different design under a different stress; the phases of SPIDER are stable, but the deep-dive target and the priority ordering bend to the signal being evaluated.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module5/the-full-design-under-pressure/">
+<p><strong>Try It in Claude Code:</strong> run the full SPIDER motion on your systems-design-log design under a 45-minute timer, then turn the weak-design audit on your own design and record the verdict: which red flags it risks, and the one change you made after the audit.</p>
+</div>
+
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../module5/production-reasoning-as-the-differentiator.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../module5/production-reasoning-as-the-differentiator.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/copy-to-claude-c257122c.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

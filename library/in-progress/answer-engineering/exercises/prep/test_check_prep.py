@@ -957,3 +957,308 @@ class TestModule3Flag:
 
         result = check_prep.main()
         assert result == 0, f"Expected exit 0 with --module 3 and all artifacts; got {result}"
+
+    def test_module3_passes_without_systems_design_log(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module 3 must exit 0 even when systems-design-log.md is absent (backward compat)."""
+        self._patch_m1_m2(tmp_path, monkeypatch)
+
+        bank = tmp_path / "behavioral-bank.md"
+        bank.write_text(make_behavioral_bank_complete(), encoding="utf-8")
+        monkeypatch.setattr(check_prep, "BEHAVIORAL_BANK", bank)
+        # systems-design-log.md is absent; --module 3 must not require it.
+        monkeypatch.setattr(check_prep, "SYSTEMS_DESIGN_LOG", tmp_path / "systems-design-log.md")
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "3"])
+
+        result = check_prep.main()
+        assert result == 0, (
+            f"Expected exit 0 with --module 3 when systems-design-log.md is absent; got {result}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Fixture builders: M5 systems design log
+# ---------------------------------------------------------------------------
+
+
+def make_systems_design_log_complete() -> str:
+    """
+    Return a systems-design-log.md that passes all M5 checks: one Design entry
+    with all eight required fields filled in and free of placeholder text.
+    """
+    return """# Systems Design Log
+
+## Design 1
+
+**Prompt:** Walk me through the architecture of a production RAG system.
+
+**Scope:** Internal knowledge base for a 10,000-employee company; 2M documents from SharePoint
+and Confluence; p95 latency target of 3 seconds; soft accuracy bar; no strict compliance
+requirement; peak load of 2,000 queries per hour from approximately 5% of employees. Priority
+order: latency first, then retrieval quality, then cost.
+
+**Design:** (1) Connector layer: delta-sync agents per source (SharePoint Graph API, Confluence
+webhooks) -- required to keep the index fresh without full re-index on every update, which
+would be cost-prohibitive at 2M documents. (2) Chunking and embedding service: structure-aware
+chunking at 300-500 tokens with header prepended; multilingual embedding model -- justified
+because the corpus contains project codenames and acronyms that require BM25 to retrieve
+correctly. (3) Vector store: Pinecone with metadata filtering for access control -- chosen over
+a relational DB because ANN search at 2M documents requires sub-100ms query latency that a
+B-tree index cannot provide. (4) Hybrid retrieval: BM25 + vector search fused with RRF, then
+cross-encoder rerank on top 50 -- the RRF fusion step is what raises retrieval hit rate from
+70% to 90%+; pure vector search misses exact-match tokens in codenames. (5) Generation with
+citation enforcement: if retrieval returns nothing, return "not found" rather than letting the
+model improvise. (6) Eval and monitoring layer: offline golden set + 2% production sampling.
+
+**Cost:** Routing: cheap embedding model (text-embedding-3-small at $0.02/1M tokens) for all
+queries; frontier LLM (Claude Sonnet 4.6) only for generation. Caching: semantic cache on the
+query embedding (cosine > 0.95) targeting 30% hit rate, which eliminates 30% of generation
+calls entirely. Dominant cost driver: LLM generation tokens (output tokens cost 3x input
+tokens). Named tradeoff: semantic caching reduces cost but adds 50ms per cache miss to check
+the cache, which slightly degrades the p95 latency budget -- acceptable given the 3-second
+target but would not be acceptable at a 500ms target.
+
+**Latency:** P95 target: 3,000ms. Budget: permission resolution 50ms (cached with 5-min TTL),
+embedding 100ms, vector search 100ms, reranking 150ms, LLM generation 1,500ms (streaming so
+perceived latency is under 1s), overhead 100ms -- total 2,000ms with buffer. Named tradeoff:
+the cross-encoder rerank step adds 150ms but is required to reach the 90%+ retrieval hit rate.
+Removing it saves 150ms but drops retrieval quality to 70%, which increases the rate of
+"not found" responses and forces users to reformulate queries -- a worse user outcome than the
+extra latency.
+
+**Reliability:** Primary failure modes: (1) LLM provider outage -- fallback to a second
+provider (GPT-5.5) via circuit breaker after 3 failures; (2) retrieval returning nothing --
+return "not found in our docs" rather than hallucinating; (3) data pipeline lag -- accept
+up to 24h staleness for daily sync; add webhook-based invalidation for wikis as a named
+upgrade. Degradation ladder: Full (hybrid retrieval + frontier LLM) to Reduced (BM25 only +
+cheaper model) to Minimal (serve from cache only) to Offline (static FAQ page). Named
+tradeoff: multi-provider failover increases latency on the fallback path by ~500ms due to cold
+start; this is acceptable because the fallback only fires during an outage.
+
+**Evaluation:** Offline: 200-case golden set drawn from real employee questions, stratified by
+intent cluster; metrics: Precision@5, Recall@5, faithfulness (RAGAS), citation accuracy;
+LLM-as-judge (Claude Haiku 4.5 with rubric) calibrated monthly against human-graded slice;
+CI gate blocks deploy if any metric regresses more than 2pp. Online: sample 2% of production
+traffic for judge scoring; trend query reformulation rate, citation click-through, and
+thumbs-down rate; alert if reformulation rate rises 15% week-over-week (signals silent
+retrieval degradation); monthly human review of 100 sampled traces to keep the judge calibrated.
+
+**Audit verdict:** Pitfalls risked: Pitfall 1 (skipping the data pipeline) was explicitly
+addressed by naming the connector layer and delta-sync strategy in the Design field. Pitfall 3
+(ignoring the evaluation layer) was addressed by including eval in the Design field and
+building out the Evaluation section. Pitfall 19 (ignoring hallucination risk) was addressed by
+the citation enforcement and "not found" fallback. The one pitfall left thin: Pitfall 20
+(security as an afterthought) -- access control is mentioned via metadata filtering but prompt
+injection defense and audit logging are not named. The one change with five more minutes: add
+explicit permission filtering at retrieval time (not post-retrieval application-code filtering,
+which is the named wrong pattern from asdg-03 Pitfall 4) and add an audit log on all retrieval
+queries.
+"""
+
+
+def make_systems_design_log_incomplete() -> str:
+    """
+    Return a systems-design-log.md that fails: one entry with placeholder text in all fields.
+    """
+    return """# Systems Design Log
+
+## Design 1
+
+**Prompt:** <fill in: the design question you chose>
+
+**Scope:** <fill in: requirements, scale, constraints, priorities>
+
+**Design:** <fill in: components with justifications>
+
+**Cost:** <fill in: cost reasoning>
+
+**Latency:** <fill in: latency reasoning>
+
+**Reliability:** <fill in: reliability reasoning>
+
+**Evaluation:** <fill in: evaluation reasoning>
+
+**Audit verdict:** <fill in: weak-design red flags and one change>
+"""
+
+
+def make_systems_design_log_missing_field() -> str:
+    """
+    Return a systems-design-log.md that fails because the Latency field is absent.
+    """
+    return """# Systems Design Log
+
+## Design 1
+
+**Prompt:** Walk me through the architecture of a production RAG system.
+
+**Scope:** 2M documents, p95 under 3s, 2K queries/hour peak, latency-first priority.
+
+**Design:** Vector store, hybrid retrieval, generation with citation enforcement.
+
+**Cost:** Semantic cache at 0.95 cosine threshold; dominant cost is output tokens.
+
+**Reliability:** Multi-provider failover; not-found fallback; 24h staleness accepted.
+
+**Evaluation:** 200-case golden set; 2% production sampling; reformulation rate alert.
+
+**Audit verdict:** Pitfall 1 addressed via connector layer; Pitfall 19 via not-found fallback.
+One change: add retrieval-time permission filtering explicitly.
+"""
+
+
+# ---------------------------------------------------------------------------
+# Tests: systems-design-log.md (M5)
+# ---------------------------------------------------------------------------
+
+
+class TestSystemsDesignLog:
+    def test_complete_log_passes(self, tmp_path: Path) -> None:
+        """A fully completed systems design log must pass M5 validation."""
+        log = tmp_path / "systems-design-log.md"
+        log.write_text(make_systems_design_log_complete(), encoding="utf-8")
+
+        passed, messages = check_prep.validate_systems_design_log(log)
+
+        assert passed, f"Expected pass; got messages:\n" + "\n".join(messages)
+
+    def test_incomplete_log_fails(self, tmp_path: Path) -> None:
+        """A systems design log with placeholder text must fail."""
+        log = tmp_path / "systems-design-log.md"
+        log.write_text(make_systems_design_log_incomplete(), encoding="utf-8")
+
+        passed, messages = check_prep.validate_systems_design_log(log)
+
+        assert not passed, "Expected fail; validator incorrectly returned pass."
+        combined = "\n".join(messages)
+        assert "FAIL" in combined, f"Expected FAIL in messages; got:\n{combined}"
+
+    def test_missing_log_fails(self, tmp_path: Path) -> None:
+        """An absent systems design log must return fail with a not-started message."""
+        missing = tmp_path / "systems-design-log.md"
+
+        passed, messages = check_prep.validate_systems_design_log(missing)
+
+        assert not passed
+        combined = "\n".join(messages)
+        assert "NOT STARTED" in combined or "does not exist" in combined
+
+    def test_missing_field_fails(self, tmp_path: Path) -> None:
+        """A log with a missing required field must fail."""
+        log = tmp_path / "systems-design-log.md"
+        log.write_text(make_systems_design_log_missing_field(), encoding="utf-8")
+
+        passed, messages = check_prep.validate_systems_design_log(log)
+
+        assert not passed, "Expected fail when a required field is absent."
+        combined = "\n".join(messages)
+        assert "FAIL" in combined, f"Expected FAIL in messages; got:\n{combined}"
+        assert "Latency" in combined, (
+            f"Expected the missing 'Latency' field to be named; got:\n{combined}"
+        )
+
+    def test_fewer_than_one_entry_fails(self, tmp_path: Path) -> None:
+        """A file with no Design entries must fail."""
+        log = tmp_path / "systems-design-log.md"
+        log.write_text("# Systems Design Log\n\nNo entries here.\n", encoding="utf-8")
+
+        passed, messages = check_prep.validate_systems_design_log(log)
+
+        assert not passed, "Expected fail when no entries are present."
+        combined = "\n".join(messages)
+        assert "FAIL" in combined, f"Expected FAIL in messages; got:\n{combined}"
+
+
+# ---------------------------------------------------------------------------
+# Tests: --module 5 flag behavior (M5)
+# ---------------------------------------------------------------------------
+
+
+class TestModule5Flag:
+    def _patch_all_through_m3(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Helper: patch all M1, M2, and M3 paths with complete content."""
+        decomp = tmp_path / "decomposition-log.md"
+        answers = tmp_path / "answers-log.md"
+        signal_map = tmp_path / "signal-map.md"
+        practice = tmp_path / "practice-log.md"
+        audit = tmp_path / "audit-log.md"
+        bank = tmp_path / "behavioral-bank.md"
+
+        decomp.write_text(make_decomp_log_with_hard_cases(), encoding="utf-8")
+        answers.write_text(make_answers_log_complete(), encoding="utf-8")
+        signal_map.write_text(make_signal_map_complete(), encoding="utf-8")
+        practice.write_text(make_practice_log_complete(), encoding="utf-8")
+        audit.write_text(make_audit_log_complete(), encoding="utf-8")
+        bank.write_text(make_behavioral_bank_complete(), encoding="utf-8")
+
+        monkeypatch.setattr(check_prep, "DECOMP_LOG", decomp)
+        monkeypatch.setattr(check_prep, "ANSWERS_LOG", answers)
+        monkeypatch.setattr(check_prep, "SIGNAL_MAP", signal_map)
+        monkeypatch.setattr(check_prep, "PRACTICE_LOG", practice)
+        monkeypatch.setattr(check_prep, "AUDIT_LOG", audit)
+        monkeypatch.setattr(check_prep, "BEHAVIORAL_BANK", bank)
+
+    def test_module5_fails_without_systems_design_log(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module 5 must exit 1 when systems-design-log.md is absent, even if M1+M2+M3 complete."""
+        self._patch_all_through_m3(tmp_path, monkeypatch)
+        monkeypatch.setattr(check_prep, "SYSTEMS_DESIGN_LOG", tmp_path / "systems-design-log.md")
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "5"])
+
+        result = check_prep.main()
+        assert result == 1, (
+            f"Expected exit 1 with --module 5 and no systems-design-log; got {result}"
+        )
+
+    def test_module5_fails_when_m3_missing(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module 5 must exit 1 when M3 (behavioral-bank.md) is absent, even if M5 log present."""
+        # Patch M1 and M2 complete, but leave behavioral-bank.md absent.
+        decomp = tmp_path / "decomposition-log.md"
+        answers = tmp_path / "answers-log.md"
+        signal_map = tmp_path / "signal-map.md"
+        practice = tmp_path / "practice-log.md"
+        audit = tmp_path / "audit-log.md"
+        sd_log = tmp_path / "systems-design-log.md"
+
+        decomp.write_text(make_decomp_log_with_hard_cases(), encoding="utf-8")
+        answers.write_text(make_answers_log_complete(), encoding="utf-8")
+        signal_map.write_text(make_signal_map_complete(), encoding="utf-8")
+        practice.write_text(make_practice_log_complete(), encoding="utf-8")
+        audit.write_text(make_audit_log_complete(), encoding="utf-8")
+        sd_log.write_text(make_systems_design_log_complete(), encoding="utf-8")
+
+        monkeypatch.setattr(check_prep, "DECOMP_LOG", decomp)
+        monkeypatch.setattr(check_prep, "ANSWERS_LOG", answers)
+        monkeypatch.setattr(check_prep, "SIGNAL_MAP", signal_map)
+        monkeypatch.setattr(check_prep, "PRACTICE_LOG", practice)
+        monkeypatch.setattr(check_prep, "AUDIT_LOG", audit)
+        monkeypatch.setattr(check_prep, "BEHAVIORAL_BANK", tmp_path / "behavioral-bank.md")
+        monkeypatch.setattr(check_prep, "SYSTEMS_DESIGN_LOG", sd_log)
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "5"])
+
+        result = check_prep.main()
+        assert result == 1, (
+            f"Expected exit 1 with --module 5 when behavioral-bank.md absent; got {result}"
+        )
+
+    def test_module5_passes_with_all_artifacts(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module 5 must exit 0 when all M1, M2, M3, and M5 artifacts are complete."""
+        self._patch_all_through_m3(tmp_path, monkeypatch)
+
+        sd_log = tmp_path / "systems-design-log.md"
+        sd_log.write_text(make_systems_design_log_complete(), encoding="utf-8")
+        monkeypatch.setattr(check_prep, "SYSTEMS_DESIGN_LOG", sd_log)
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "5"])
+
+        result = check_prep.main()
+        assert result == 0, f"Expected exit 0 with --module 5 and all artifacts; got {result}"
