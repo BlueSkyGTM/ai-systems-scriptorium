@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Local Metal - Local Metal — Build and Network Your Own AI Inference Server</title>
+        <title>Choosing and Installing Linux - Local Metal — Build and Network Your Own AI Inference Server</title>
 
 
         <!-- Custom HTML head -->
@@ -12,36 +12,36 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon-de23e50b.svg">
-        <link rel="shortcut icon" href="favicon-8114d1fc.png">
-        <link rel="stylesheet" href="css/variables-8adf115d.css">
-        <link rel="stylesheet" href="css/general-0392ca55.css">
-        <link rel="stylesheet" href="css/chrome-fc474251.css">
-        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="theme/copy-to-claude-45921320.css">
-        <link rel="stylesheet" href="theme/syntax-polish-53c427bd.css">
-        <link rel="stylesheet" href="theme/readability-9f9ae6ec.css">
+        <link rel="stylesheet" href="../theme/copy-to-claude-45921320.css">
+        <link rel="stylesheet" href="../theme/syntax-polish-53c427bd.css">
+        <link rel="stylesheet" href="../theme/readability-9f9ae6ec.css">
 
 
         <!-- Provide site root and default themes to javascript -->
         <script>
-            const path_to_root = "";
+            const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-3933fadd.js";
+            window.path_to_searchindex_js = "../searchindex-3933fadd.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-cfe292f9.js"></script>
+        <script src="../toc-cfe292f9.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -108,7 +108,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
             </noscript>
             <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -143,7 +143,7 @@
                     <h1 class="menu-title">Local Metal — Build and Network Your Own AI Inference Server</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
                         </a>
 
@@ -177,49 +177,59 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
-<p>Every engineer who builds with frontier models meets the same wall. The prototype works, the demo
-lands, usage grows, and the invoice grows with it. Tokens are cheap until they are a budget line.
-Context windows overflow, retries stack, and a background agent that runs all day turns metered
-inference into rent. The frontier API is the right tool for the hard ten percent of your work. The
-other ninety percent does not need it, and paying frontier prices for it is a choice, not a law.</p>
-<p>Local Metal is the other choice. You buy a machine, you put it on your desk, and you host the models
-that handle the routine work yourself. The marginal cost of a token it serves is the electricity to
-compute it. This book runs the whole arc: from the Micro Center parts counter to a networked
-inference host your other machines, and Claude Code, can delegate to. You select the hardware,
-assemble it, install Linux and CUDA, fit a coding model entirely in GPU memory, split a larger model
-across the GPU and system RAM, design the routing layer that decides what stays local and what goes
-to the frontier, and wire it into your daily tooling. You finish owning a slice of compute and the
-judgment to use it.</p>
-<h2 id="this-is-home-scale-on-purpose"><a class="header" href="#this-is-home-scale-on-purpose">This Is Home-Scale, on Purpose</a></h2>
-<p>This is not a datacenter book. There is no Kubernetes, no multi-GPU cluster, no rack. It is one
-machine you can build in an afternoon and run next to your monitor, and the whole design holds that
-line: a small-form-factor box, a single consumer GPU, a model stack you can reason about end to end.
-Local Metal is the companion to Sans Python, not a capstone above it. Sans Python taught you to build
-AI systems on hosted compute; this teaches the same engineer to own the compute. You do not need to
-finish the rest of the library to start here. You can build the rig early and host your first model
-the day it boots; what grows over time is how hard you push it.</p>
-<h2 id="what-you-build"><a class="header" href="#what-you-build">What You Build</a></h2>
-<p>The portfolio artifact is concrete and demonstrable: a working, networked local-model inference
-server with a routing layer, integrated into Claude Code as a delegation target. Along the way you
-commit the build itself to a repository, starting with <code>HARDWARE.md</code>, the record of the machine you
-chose and why. By the last module you can point a hiring manager at a repository and say the most
-literal thing an AI engineer can say: I built the inference server my tooling delegates to.</p>
-<h2 id="how-to-read-this"><a class="header" href="#how-to-read-this">How to Read This</a></h2>
-<p>Each lesson ends in an exercise you run in Claude Code, with this repository open. The lesson holds
-the why; the exercise is where you build. The command outputs printed in these pages are the results
-you should expect on the reference build; treat them as the target and confirm them against your own
-machine. You do not need the hardware in hand to start reading, but the book is written to be
-finished with a real one humming under your desk.</p>
-<p>Turn the page. Module 1 starts at the parts counter, because nothing else is possible until the
-machine exists.</p>
+                        <h1 id="choosing-and-installing-linux"><a class="header" href="#choosing-and-installing-linux">Choosing and Installing Linux</a></h1>
+<p>The distro you choose is the ground the rest of this build stands on. Get it wrong and you will spend your evenings fighting kernel modules instead of running models.</p>
+<h2 id="the-criteria-that-actually-matter"><a class="header" href="#the-criteria-that-actually-matter">The Criteria That Actually Matter</a></h2>
+<p>Most distro debates are about preference. For an inference host, four criteria cut through the noise.</p>
+<p><strong>LTS kernel stability.</strong> NVIDIA drivers bind to specific kernel interfaces; a kernel upgrade that breaks the driver binding takes your GPU with it. A Long-Term Support release pins the kernel to a stable series and receives targeted security backports without gratuitous version jumps.</p>
+<p><strong>CUDA documentation depth.</strong> NVIDIA’s official install guides, Stack Overflow answers, and GitHub issues all cluster around a handful of distros. The thinner the community, the fewer solved problems you can find when something goes sideways at midnight.</p>
+<p><strong>Community size.</strong> You will hit an unfamiliar error during setup. The question is whether someone else already solved it and posted the fix.</p>
+<p><strong>Package freshness.</strong> A base system that ships recent versions of Python, Docker, and system libraries means less time backporting or adding third-party repos.</p>
+<p>Ubuntu 24.04 LTS (Noble Numbat) scores well on all four. It ships kernel 6.8 at release, carries the deepest NVIDIA and CUDA install documentation of any Linux distribution, and has by far the largest community. Pop!_OS, made by System76, bundles NVIDIA drivers out of the box and is worth a look if you want the NVIDIA setup handled for you; Ubuntu is the book’s default because the documentation and community are simply larger.</p>
+<h2 id="writing-the-usb"><a class="header" href="#writing-the-usb">Writing the USB</a></h2>
+<p>Download the Ubuntu 24.04 LTS ISO from <a href="https://ubuntu.com/download/desktop">ubuntu.com/download/desktop</a>. Then write it to a USB drive using balenaEtcher: open Etcher, select the ISO, select the drive, and click Flash. This is not a file copy; Etcher writes a bootable image that overwrites everything on the drive.</p>
+<pre><code>Tool: balenaEtcher (https://etcher.balena.io)
+Input: ubuntu-24.04.x-desktop-amd64.iso
+Target: USB drive (8 GB minimum, all data will be erased)
+</code></pre>
+<h2 id="the-install-path"><a class="header" href="#the-install-path">The Install Path</a></h2>
+<p>Shut the machine down, plug in the USB, and power on. Hold F12 at the POST screen to open the boot menu; select the USB. The Ubuntu live environment loads.</p>
+<p>Choose <strong>Try or Install Ubuntu</strong>, then <strong>Install Ubuntu</strong>. When the installer reaches the disk setup screen, choose <strong>Install Ubuntu alongside another operating system</strong>. This is the dual-boot path. A slider lets you drag the partition boundary; set it so Ubuntu gets roughly half the 2 TB drive. On the reference build the drive was split in Module 1’s plan, so the Linux partition is already the right size: point the installer at that free space.</p>
+<p>The partition step is the one place to slow down. The installer writes to whatever you tell it. Confirm the target device is the NVMe drive and the Windows partition is untouched before continuing.</p>
+<pre><code>Installer screen: "Disk setup"
+Choose: Install Ubuntu alongside another operating system
+Partition: select the unallocated space reserved in lesson 1
+</code></pre>
+<h2 id="first-boot"><a class="header" href="#first-boot">First Boot</a></h2>
+<p>After install the machine reboots into GRUB, the bootloader that now manages both partitions. Select Ubuntu. You land at the login screen; create your credentials if you have not done so yet. At the terminal, confirm the kernel:</p>
+<pre><code class="language-bash">uname -r
+</code></pre>
+<p>On a fresh Ubuntu 24.04 LTS install this returns the 6.8 kernel (the exact patch level varies with point releases and HWE updates). You also have the package manager and nothing else; no GPU driver, no CUDA toolkit. Those come next.</p>
+<pre><code class="language-bash">lsb_release -a
+</code></pre>
+<p>Both commands print the software baseline you will record in the exercise. That is all this lesson sets up. Driver install is lesson 3.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>LTS kernel stability, CUDA documentation depth, community size, and package freshness are the four selection criteria for an inference-host distro; taste is not one of them.</li>
+<li>Ubuntu 24.04 LTS is the book’s default because it scores well on all four criteria; Pop!_OS is the NVIDIA-batteries-included alternative.</li>
+<li>The dual-boot installer path is “Install Ubuntu alongside another operating system”; the critical step is confirming the target partition before writing.</li>
+<li>After first boot, <code>uname -r</code> and <code>lsb_release -a</code> give you the kernel and distro version that will go into <code>SETUP.md</code>.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module2/choosing-and-installing-linux/">
+<p><strong>Build It in Claude Code</strong>: Create <code>SETUP.md</code> with the <code>## Operating System</code> section filled in, then build <code>check_setup.py</code> v1 that validates every field is present and no placeholder remains.</p>
+</div>
+
+<!-- SOURCES: https://ubuntu.com/tutorials/install-ubuntu-desktop | https://documentation.ubuntu.com/release-notes/24.04/ | https://canonical.com/blog/canonical-releases-ubuntu-24-04-noble-numbat | https://learn.microsoft.com/windows/wsl/install | https://learn.microsoft.com/windows/wsl/setup/environment -->
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../module2/the-dual-partition-plan.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
 
-                            <a rel="next prefetch" href="module1/00-overview.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module2/nvidia-drivers-and-cuda.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -229,8 +239,11 @@ machine exists.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../module2/the-dual-partition-plan.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
 
-                    <a rel="next prefetch" href="module1/00-overview.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module2/nvidia-drivers-and-cuda.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
@@ -250,16 +263,16 @@ machine exists.</p>
         </script>
 
 
-        <script src="elasticlunr-ef4e11c1.min.js"></script>
-        <script src="mark-09e88c2c.min.js"></script>
-        <script src="searcher-09f2665d.js"></script>
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
 
-        <script src="clipboard-1626706a.min.js"></script>
-        <script src="highlight-abc7f01d.js"></script>
-        <script src="book-c22b7243.js"></script>
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="theme/copy-to-claude-51c37bc3.js"></script>
+        <script src="../theme/copy-to-claude-51c37bc3.js"></script>
 
 
 

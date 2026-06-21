@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-9c42ac3b.js";
+            window.path_to_searchindex_js = "searchindex-3933fadd.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-0df41b0e.js"></script>
+        <script src="toc-cfe292f9.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -467,6 +467,339 @@ machine-checkable done-when for the module.</li>
 </div>
 
 <!-- SOURCES: https://docs.nvidia.com/deploy/nvidia-smi/index.html | https://gist.github.com/fordnox/538b48ac956341728573786a80e08859 | https://www.amd.com/en/products/processors/desktops/ryzen/7000-series/amd-ryzen-7-7700x.html | https://technical.city/en/video/GeForce-RTX-4060-Ti-16-GB -->
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-2-linux-and-cuda"><a class="header" href="#module-2-linux-and-cuda">Module 2: Linux and CUDA</a></h1>
+<p>The machine from Module 1 powers on and passes its stress test, but it is not yet a place a model
+can run. It has no operating system you would serve from, no GPU driver, and no CUDA toolkit. This
+module installs all three and proves they work together.</p>
+<p>The instinct is to install whatever is easiest and move on. That instinct is how people end up with
+a half-working CUDA stack that breaks on the next kernel update and a weekend lost to driver errors.
+Local Metal treats the base layer as something you set up once, deliberately, so every module above
+it never has to fight its own environment.</p>
+<p>The plan is a dual boot. Windows stays for gaming and firmware updates; a Linux partition becomes
+the inference workhorse. You will see why the bare Linux partition beats WSL2 for a serving host,
+choose a distribution on real criteria rather than taste, install the NVIDIA driver and CUDA toolkit
+the way that survives updates, and finish by proving the GPU answers to code with <code>nvidia-smi</code> and a
+minimal CUDA check.</p>
+<p>The reference build runs Ubuntu LTS, the distribution with the deepest CUDA documentation and the
+largest community to search when something breaks. Your choice can differ; the reasoning should not.</p>
+<p>You leave this module with a second file in the portfolio repository: <code>SETUP.md</code>, the software
+baseline that records the distro, the driver, the CUDA version, and the verification readout that
+proves the stack is live. The metal was documented in Module 1; now the runtime is too.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-dual-partition-plan"><a class="header" href="#the-dual-partition-plan">The Dual-Partition Plan</a></h1>
+<p>You have a 2TB NVMe and two jobs for it: gaming on Windows, inference on Linux. How you split
+that drive determines whether your model server is a production host or an experiment that breaks
+the moment Windows decides to restart.</p>
+<h2 id="why-two-partitions-not-one"><a class="header" href="#why-two-partitions-not-one">Why Two Partitions, Not One</a></h2>
+<p>The tempting path is WSL2: install a Linux distribution inside Windows, point CUDA at the GPU,
+and call it done. Microsoft’s own documentation is honest about the trade-off. The WSL2 FAQ
+states that WSL “has been designed and built to use with inner loop development workflows” and
+lists the production differences that follow from that design: the utility VM shuts down
+automatically when no file handles are open, GPU access routes through a <code>/dev/dxg</code> device
+rather than talking to the hardware directly, and the networking stack uses virtualized
+components that assign the Linux instance a different IP address from the host (<a href="https://learn.microsoft.com/windows/wsl/faq#can-i-use-wsl-for-production-scenarios">learn.microsoft.com/windows/wsl/faq</a>).</p>
+<p>For a coding session or a quick experiment, none of that matters. For a 24/7 model server you
+SSH into and leave running, all three matter:</p>
+<ul>
+<li>Auto-shutdown means a server that disappears when you close your terminal session.</li>
+<li>The <code>/dev/dxg</code> translation layer sits between CUDA and the GPU; it works, but it is not the
+direct kernel driver path that production NVIDIA tooling expects.</li>
+<li>A virtualized network address complicates any client that needs to reach the host by IP.</li>
+</ul>
+<p>A bare Linux partition sidesteps all three. The kernel owns the hardware directly. The NVIDIA
+driver loads against the real PCIe device. The machine has one IP address. When you SSH in and
+launch Ollama, it runs until you stop it.</p>
+<p>Windows stays for the jobs it is genuinely better at: firmware updates, BIOS flashes, and
+gaming. NVIDIA still releases the display driver for Windows; flashing the GPU BIOS from Linux
+is possible but unnecessary when the other partition already handles it. The dual-boot split
+is not a compromise; it is the correct tool assignment.</p>
+<h2 id="splitting-the-2tb-drive"><a class="header" href="#splitting-the-2tb-drive">Splitting the 2TB Drive</a></h2>
+<p>The Crucial T500 (or Inland Performance Plus) ships as a single 2TB partition. You will shrink
+the Windows partition during Linux installation and allocate the freed space to Linux. The
+exact split depends on three numbers you control:</p>
+<ul>
+<li><strong>Windows reserve:</strong> enough for the OS, games, and a driver cache. 500GB is a reasonable
+starting floor for a gaming partition; more if you keep large game libraries on-disk.</li>
+<li><strong>Linux system + swap:</strong> the OS, the CUDA toolkit, Docker images, and running processes.
+50–80GB covers this comfortably on Ubuntu 24.04 LTS.</li>
+<li><strong>Model storage:</strong> the remainder goes to model weights. A 14B model at Q4 quantization runs
+roughly 8–9GB of VRAM but stores as a ~9GB file on disk. A 32B Q4 model is around 18–20GB.
+Plan for the models you want to keep loaded plus a working buffer.</li>
+</ul>
+<p>The goal is a Linux partition large enough that the model budget fits with room to spare. The
+exercise below makes this concrete: you encode your numbers as constants and let the script
+confirm the math before you touch the partitioner.</p>
+<h2 id="wsl2-is-still-the-right-answer-sometimes"><a class="header" href="#wsl2-is-still-the-right-answer-sometimes">WSL2 Is Still the Right Answer Sometimes</a></h2>
+<p>WSL2 is not wrong; it is wrong for this use case. For local development against a remote model
+server, for Windows-native tools that need a Linux environment for a build step, for
+experimenting with a new framework before you commit disk space to it: WSL2 is fast, easy, and
+the correct choice. Microsoft’s GPU acceleration guide for WSL2 covers CUDA, Docker, and
+PyTorch all running in a WSL2 instance with an NVIDIA card, and it works (<a href="https://learn.microsoft.com/windows/wsl/tutorials/gpu-compute">learn.microsoft.com/windows/wsl/tutorials/gpu-compute</a>).</p>
+<p>The line is serving. If the Linux environment needs to stay up, answer requests autonomously,
+and run without a Windows session keeping it alive, a bare partition is the correct substrate.
+WSL2’s auto-shutdown is a feature for development workflows; it is a defect for a serving host.</p>
+<h2 id="core-concepts-4"><a class="header" href="#core-concepts-4">Core Concepts</a></h2>
+<ul>
+<li>A bare Linux partition gives the NVIDIA driver direct PCIe access, a stable IP address, and
+no auto-shutdown: the three properties a 24/7 model server requires that WSL2’s design does
+not provide.</li>
+<li>WSL2’s FAQ explicitly frames it as an inner-loop development tool; its GPU path routes through
+<code>/dev/dxg</code> and its network stack uses a virtualized IP, both deliberate trade-offs for ease
+of setup over production reliability.</li>
+<li>The NVMe split is a deliberate budget: Windows reserve + Linux system + model storage +
+safety margin; encoding it as checked constants before partitioning prevents regret later.</li>
+<li>WSL2 is correct for development and experimentation; the bare partition is correct for
+serving, because serving requires uptime the WSL VM lifecycle was not designed to guarantee.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module2/the-dual-partition-plan/">
+<p><strong>Build It in Claude Code</strong>: Write <code>partition_plan.py</code> that encodes your drive budget as constants, computes the Linux partition size, asserts the model storage fits with a safety margin, and prints the Windows/Linux split.</p>
+</div>
+
+<!-- SOURCES: https://learn.microsoft.com/windows/wsl/faq#can-i-use-wsl-for-production-scenarios | https://learn.microsoft.com/windows/wsl/tutorials/gpu-compute | https://learn.microsoft.com/windows/ai/directml/gpu-cuda-in-wsl -->
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="choosing-and-installing-linux"><a class="header" href="#choosing-and-installing-linux">Choosing and Installing Linux</a></h1>
+<p>The distro you choose is the ground the rest of this build stands on. Get it wrong and you will spend your evenings fighting kernel modules instead of running models.</p>
+<h2 id="the-criteria-that-actually-matter"><a class="header" href="#the-criteria-that-actually-matter">The Criteria That Actually Matter</a></h2>
+<p>Most distro debates are about preference. For an inference host, four criteria cut through the noise.</p>
+<p><strong>LTS kernel stability.</strong> NVIDIA drivers bind to specific kernel interfaces; a kernel upgrade that breaks the driver binding takes your GPU with it. A Long-Term Support release pins the kernel to a stable series and receives targeted security backports without gratuitous version jumps.</p>
+<p><strong>CUDA documentation depth.</strong> NVIDIA’s official install guides, Stack Overflow answers, and GitHub issues all cluster around a handful of distros. The thinner the community, the fewer solved problems you can find when something goes sideways at midnight.</p>
+<p><strong>Community size.</strong> You will hit an unfamiliar error during setup. The question is whether someone else already solved it and posted the fix.</p>
+<p><strong>Package freshness.</strong> A base system that ships recent versions of Python, Docker, and system libraries means less time backporting or adding third-party repos.</p>
+<p>Ubuntu 24.04 LTS (Noble Numbat) scores well on all four. It ships kernel 6.8 at release, carries the deepest NVIDIA and CUDA install documentation of any Linux distribution, and has by far the largest community. Pop!_OS, made by System76, bundles NVIDIA drivers out of the box and is worth a look if you want the NVIDIA setup handled for you; Ubuntu is the book’s default because the documentation and community are simply larger.</p>
+<h2 id="writing-the-usb"><a class="header" href="#writing-the-usb">Writing the USB</a></h2>
+<p>Download the Ubuntu 24.04 LTS ISO from <a href="https://ubuntu.com/download/desktop">ubuntu.com/download/desktop</a>. Then write it to a USB drive using balenaEtcher: open Etcher, select the ISO, select the drive, and click Flash. This is not a file copy; Etcher writes a bootable image that overwrites everything on the drive.</p>
+<pre><code>Tool: balenaEtcher (https://etcher.balena.io)
+Input: ubuntu-24.04.x-desktop-amd64.iso
+Target: USB drive (8 GB minimum, all data will be erased)
+</code></pre>
+<h2 id="the-install-path"><a class="header" href="#the-install-path">The Install Path</a></h2>
+<p>Shut the machine down, plug in the USB, and power on. Hold F12 at the POST screen to open the boot menu; select the USB. The Ubuntu live environment loads.</p>
+<p>Choose <strong>Try or Install Ubuntu</strong>, then <strong>Install Ubuntu</strong>. When the installer reaches the disk setup screen, choose <strong>Install Ubuntu alongside another operating system</strong>. This is the dual-boot path. A slider lets you drag the partition boundary; set it so Ubuntu gets roughly half the 2 TB drive. On the reference build the drive was split in Module 1’s plan, so the Linux partition is already the right size: point the installer at that free space.</p>
+<p>The partition step is the one place to slow down. The installer writes to whatever you tell it. Confirm the target device is the NVMe drive and the Windows partition is untouched before continuing.</p>
+<pre><code>Installer screen: "Disk setup"
+Choose: Install Ubuntu alongside another operating system
+Partition: select the unallocated space reserved in lesson 1
+</code></pre>
+<h2 id="first-boot"><a class="header" href="#first-boot">First Boot</a></h2>
+<p>After install the machine reboots into GRUB, the bootloader that now manages both partitions. Select Ubuntu. You land at the login screen; create your credentials if you have not done so yet. At the terminal, confirm the kernel:</p>
+<pre><code class="language-bash">uname -r
+</code></pre>
+<p>On a fresh Ubuntu 24.04 LTS install this returns the 6.8 kernel (the exact patch level varies with point releases and HWE updates). You also have the package manager and nothing else; no GPU driver, no CUDA toolkit. Those come next.</p>
+<pre><code class="language-bash">lsb_release -a
+</code></pre>
+<p>Both commands print the software baseline you will record in the exercise. That is all this lesson sets up. Driver install is lesson 3.</p>
+<h2 id="core-concepts-5"><a class="header" href="#core-concepts-5">Core Concepts</a></h2>
+<ul>
+<li>LTS kernel stability, CUDA documentation depth, community size, and package freshness are the four selection criteria for an inference-host distro; taste is not one of them.</li>
+<li>Ubuntu 24.04 LTS is the book’s default because it scores well on all four criteria; Pop!_OS is the NVIDIA-batteries-included alternative.</li>
+<li>The dual-boot installer path is “Install Ubuntu alongside another operating system”; the critical step is confirming the target partition before writing.</li>
+<li>After first boot, <code>uname -r</code> and <code>lsb_release -a</code> give you the kernel and distro version that will go into <code>SETUP.md</code>.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module2/choosing-and-installing-linux/">
+<p><strong>Build It in Claude Code</strong>: Create <code>SETUP.md</code> with the <code>## Operating System</code> section filled in, then build <code>check_setup.py</code> v1 that validates every field is present and no placeholder remains.</p>
+</div>
+
+<!-- SOURCES: https://ubuntu.com/tutorials/install-ubuntu-desktop | https://documentation.ubuntu.com/release-notes/24.04/ | https://canonical.com/blog/canonical-releases-ubuntu-24-04-noble-numbat | https://learn.microsoft.com/windows/wsl/install | https://learn.microsoft.com/windows/wsl/setup/environment -->
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="nvidia-drivers-and-cuda"><a class="header" href="#nvidia-drivers-and-cuda">NVIDIA Drivers and CUDA</a></h1>
+<p>A freshly installed Ubuntu system sees the RTX 4060 Ti as an unknown PCI device. Two packages fix
+that: the NVIDIA driver, which gives the kernel a module that speaks to the GPU, and the CUDA
+toolkit, which gives your code a path to run on it. Install them in the wrong order, or reach for
+the wrong version, and the stack breaks in ways that are quiet until you try to run a model.</p>
+<h2 id="why-the-apt-path-beats-the-runfile"><a class="header" href="#why-the-apt-path-beats-the-runfile">Why the apt Path Beats the Runfile</a></h2>
+<p>NVIDIA ships two installer formats. The <code>.run</code> file bundles driver and toolkit together, compiles
+kernel modules from source on your machine, and drops everything under <code>/usr/local/cuda</code>. That
+sounds clean. The problem surfaces on the next kernel update: the compiled module no longer matches
+the new kernel headers, DKMS either rebuilds it or silently fails, and <code>nvidia-smi</code> returns an
+error instead of a version string.</p>
+<p>The apt path installs pre-built, signed kernel modules from NVIDIA’s own repository. When a new
+kernel lands, the package manager rebuilds the modules via DKMS against the new headers and signs
+them. The driver stays current without you touching it.</p>
+<p>Reach for the <code>.run</code> installer only when the apt repository does not yet carry a driver branch you
+specifically need, or when a corporate environment blocks external apt sources. In those cases,
+accept that you own the module maintenance yourself.</p>
+<h2 id="the-version-matrix"><a class="header" href="#the-version-matrix">The Version Matrix</a></h2>
+<p>CUDA is not a single thing: it is a toolkit version layered on top of a driver version, and the
+driver sets a ceiling on which toolkit versions the machine can run. NVIDIA publishes the
+constraint explicitly in the release notes.</p>
+<p>The numbers that matter for the reference build:</p>
+<ul>
+<li>CUDA 12.x requires a driver at or above <strong>525</strong></li>
+<li>CUDA 13.x requires a driver at or above <strong>580</strong></li>
+</ul>
+<p>Ubuntu 24.04’s default repositories carry driver branch 535 or 550. Both support CUDA 12 cleanly.
+When you install a pinned toolkit version later (PyTorch and Ollama each express a minimum CUDA
+requirement), check the release notes before upgrading the driver. Upgrading the toolkit without
+checking the driver floor is the most common way to break a working stack.</p>
+<h2 id="install-the-driver"><a class="header" href="#install-the-driver">Install the Driver</a></h2>
+<p>Add NVIDIA’s package repository, then let <code>ubuntu-drivers</code> pick the recommended signed driver for
+your hardware.</p>
+<pre><code class="language-bash">sudo ubuntu-drivers install
+</code></pre>
+<p>If you want to pin a specific branch, query what is available first.</p>
+<pre><code class="language-bash">sudo ubuntu-drivers list
+</code></pre>
+<p>The output lists branches by number (535, 550, and so on). To install a specific branch:</p>
+<pre><code class="language-bash">sudo ubuntu-drivers install nvidia:550
+</code></pre>
+<p>Ubuntu’s <code>ubuntu-drivers</code> tool is the right choice when Secure Boot is enabled: it installs
+pre-built, pre-signed modules. The kernel will load a signed module without complaint. An unsigned
+module compiled from a <code>.run</code> installer will be blocked at boot, and <code>nvidia-smi</code> will return
+nothing. If your BIOS has Secure Boot on and you installed via <code>.run</code>, this silence is the symptom.</p>
+<h2 id="add-the-cuda-toolkit-repository"><a class="header" href="#add-the-cuda-toolkit-repository">Add the CUDA Toolkit Repository</a></h2>
+<p>The driver is now on the machine. The toolkit lives in a separate NVIDIA repository. Add it with
+the CUDA keyring package.</p>
+<pre><code class="language-bash">wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+sudo dpkg -i cuda-keyring_1.1-1_all.deb
+sudo apt update
+</code></pre>
+<p>With the repository live, install the toolkit. <code>cuda-toolkit</code> pulls the compiler, libraries, and
+headers for the current release; it does not pull a second copy of the driver.</p>
+<pre><code class="language-bash">sudo apt install cuda-toolkit
+</code></pre>
+<p>After installation, wire the toolkit binaries into your PATH and LD_LIBRARY_PATH. Add these lines
+to your <code>~/.bashrc</code> (adjust the version number to match what installed):</p>
+<pre><code class="language-bash">export PATH=/usr/local/cuda/bin${PATH:+:${PATH}}
+export LD_LIBRARY_PATH=/usr/local/cuda/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+</code></pre>
+<p>Then reload:</p>
+<pre><code class="language-bash">source ~/.bashrc
+</code></pre>
+<h2 id="confirm-the-versions"><a class="header" href="#confirm-the-versions">Confirm the Versions</a></h2>
+<p>After a reboot, two commands confirm the stack is coherent: <code>nvidia-smi</code> for the driver, <code>nvcc --version</code> for the toolkit.</p>
+<pre><code class="language-bash">nvidia-smi
+nvcc --version
+</code></pre>
+<p>The driver version shown in <code>nvidia-smi</code> must be at or above the minimum the toolkit requires.
+If <code>nvcc --version</code> reports CUDA 12.x and <code>nvidia-smi</code> reports a driver below 525, the toolkit
+will fail at link time. Fix the driver first, then recheck.</p>
+<p>The next lesson proves the GPU is reachable from code. This one stops at the version check because
+the right question at this stage is not “can I run a model?” but “is the version matrix satisfied?”
+Getting that right once is what keeps every module above it from fighting its own environment.</p>
+<h2 id="core-concepts-6"><a class="header" href="#core-concepts-6">Core Concepts</a></h2>
+<ul>
+<li>The apt-based CUDA repository installs pre-built, signed kernel modules that survive kernel
+updates automatically; the <code>.run</code> installer compiles modules on your machine and breaks on the
+next kernel upgrade unless you manage DKMS yourself.</li>
+<li>Every CUDA toolkit version requires a minimum NVIDIA driver version: CUDA 12.x needs driver
+<blockquote>
+<p>= 525, CUDA 13.x needs driver &gt;= 580; installing the toolkit without checking the floor is
+how a working stack breaks.</p>
+</blockquote>
+</li>
+<li>Secure Boot blocks unsigned kernel modules silently: <code>ubuntu-drivers</code> installs signed drivers
+that load cleanly; a <code>.run</code>-compiled module will not load and <code>nvidia-smi</code> will return nothing.</li>
+<li><code>ubuntu-drivers install</code> picks the recommended signed driver; <code>cuda-toolkit</code> installs the
+toolkit from NVIDIA’s own apt repository; these two commands do not conflict.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module2/nvidia-drivers-and-cuda/">
+<p><strong>Build It in Claude Code</strong>: Open <code>exercises/module2/choosing-and-installing-linux/SETUP.md</code> and add the <code>## GPU Driver and CUDA</code> section, then extend <code>check_setup.py</code> with a <code>check_gpu_driver_and_cuda</code> function that validates all three fields are present and non-empty.</p>
+</div>
+
+<!-- SOURCES: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/ | https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html | https://docs.nvidia.com/datacenter/tesla/driver-installation-guide/latest/ubuntu.html | https://ubuntu.com/server/docs/how-to/graphics/install-nvidia-drivers/ | https://packetrealm.io/posts/nvidia-driver-secureboot/ -->
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="verify-the-gpu-is-visible"><a class="header" href="#verify-the-gpu-is-visible">Verify the GPU Is Visible</a></h1>
+<p>A driver that installed is not a driver that works. The only proof is code reaching the GPU and
+returning a result, so that is what this lesson runs.</p>
+<h2 id="what-the-stack-looks-like-right-now"><a class="header" href="#what-the-stack-looks-like-right-now">What the Stack Looks Like Right Now</a></h2>
+<p>After Lesson 3, the NVIDIA driver and CUDA toolkit are on disk. Three things sit between your
+Python code and the GPU’s compute units: the kernel module (the driver talks to the PCIe device),
+the CUDA runtime library (it translates CUDA calls into driver calls), and <code>nvidia-smi</code>, the
+management interface that can query all three. A gap at any layer is silent until code hits it.
+You check from the top down.</p>
+<h2 id="step-1-read-the-driver-table"><a class="header" href="#step-1-read-the-driver-table">Step 1: Read the Driver Table</a></h2>
+<p>Run <code>nvidia-smi</code> with no flags. What you should see on the reference build (Ubuntu 24.04 LTS,
+NVIDIA driver 550.90.12, CUDA 12.4):</p>
+<pre><code>+-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 550.90.12              Driver Version: 550.90.12      CUDA Version: 12.4     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|=========================================+========================+======================|
+|   0  NVIDIA GeForce RTX 4060 Ti     Off |   00000000:08:00.0 Off |                  N/A |
+|  0%   45C    P0             32W / 165W  |     582MiB / 16380MiB  |      0%      Default |
++-----------------------------------------------------------------------------------------+
+</code></pre>
+<p>Three numbers confirm the stack is intact:</p>
+<ul>
+<li><strong>Driver Version:</strong> the version the kernel module loaded; yours should match what <code>apt</code> installed.</li>
+<li><strong>CUDA Version:</strong> the highest CUDA version the driver supports; this is a capability ceiling,
+not the toolkit version.</li>
+<li><strong>16380MiB:</strong> the RTX 4060 Ti 16GB reporting its usable VRAM. A driver reservation accounts for
+the gap from 16,384 MiB. If you see 8192 MiB, you have the 8 GB variant.</li>
+</ul>
+<p>If <code>nvidia-smi</code> is not found, the NVIDIA kernel module did not load. Reboot, then check the
+kernel log:</p>
+<pre><code class="language-bash">dmesg | grep nvidia
+</code></pre>
+<p>If <code>nvidia-smi</code> runs but reports no devices, check the PCIe seating before chasing software.</p>
+<h2 id="step-2-confirm-the-compiler-sees-a-toolkit"><a class="header" href="#step-2-confirm-the-compiler-sees-a-toolkit">Step 2: Confirm the Compiler Sees a Toolkit</a></h2>
+<p>The driver version and the CUDA version in <code>nvidia-smi</code> do not tell you the toolkit version on
+disk. Check it directly:</p>
+<pre><code class="language-bash">nvcc --version
+</code></pre>
+<p>What you should see (CUDA 12.4 installed via the apt CUDA repo):</p>
+<pre><code>nvcc: NVIDIA (R) Cuda compiler driver
+Copyright (c) 2005-2024 NVIDIA Corporation
+Built on Tue_Feb_27_16:19:38_PST_2024
+Cuda compilation tools, release 12.4, V12.4.99
+Build cuda_12.4.r12.4/compiler.35049299_0
+</code></pre>
+<p>The release number here must sit at or below the CUDA Version ceiling <code>nvidia-smi</code> reported.
+If <code>nvcc: command not found</code>, the toolkit installed but its <code>bin/</code> directory is not on your
+<code>PATH</code>. Add it:</p>
+<pre><code class="language-bash">export PATH=/usr/local/cuda/bin:$PATH
+</code></pre>
+<p>Put that line in <code>~/.bashrc</code> so it persists across reboots. Then re-run <code>nvcc --version</code>.</p>
+<h2 id="step-3-run-devicequery"><a class="header" href="#step-3-run-devicequery">Step 3: Run deviceQuery</a></h2>
+<p><code>nvidia-smi</code> proves the driver. <code>nvcc --version</code> proves the compiler. Neither proves that code
+can cross the kernel boundary and actually schedule work on the GPU. The CUDA Samples
+<code>deviceQuery</code> binary does that (<a href="https://github.com/NVIDIA/cuda-samples">github.com/NVIDIA/cuda-samples</a>).</p>
+<p>Clone the samples, check out the branch that matches your toolkit version, and build the one
+sample you need:</p>
+<pre><code class="language-bash">git clone https://github.com/NVIDIA/cuda-samples.git
+cd cuda-samples
+git checkout v12.4
+cd Samples/1_Utilities/deviceQuery
+make
+./deviceQuery
+</code></pre>
+<p>The last line of a passing run reads:</p>
+<pre><code>Result = PASS
+</code></pre>
+<p>Before it, you will see the GPU name, the compute capability (8.9 for the Ada Lovelace generation
+the RTX 4060 Ti belongs to), the total and free VRAM, the SM count, and the CUDA runtime version.
+<code>Result = PASS</code> means your code can reach the GPU. That is the end-to-end proof.</p>
+<p>A <code>Result = FAIL</code> almost always means one of two things: the driver and toolkit versions are
+mismatched (check the compatibility matrix at
+<a href="https://docs.nvidia.com/cuda/cuda-installation-guide-linux/">docs.nvidia.com/cuda/cuda-installation-guide-linux</a>),
+or the process does not have permission to open the device node. Run <code>ls -l /dev/nvidia*</code> and
+confirm your user is in the <code>video</code> group.</p>
+<h2 id="record-the-readout"><a class="header" href="#record-the-readout">Record the Readout</a></h2>
+<p>Copy the <code>nvidia-smi</code> output into <code>SETUP.md</code> under <code>## Verification</code>. This is the
+machine-checkable done-when for Module 2: a complete software baseline that any future module
+(and any hiring manager) can read to confirm the runtime is real. The validator <code>check_setup.py</code>
+exits 0 only when the section is present, the fields are filled, and the pasted output contains
+both <code>CUDA Version</code> and <code>NVIDIA</code>.</p>
+<p>Every later module in Local Metal assumes this record exists. You are not just confirming the
+driver today; you are closing the only gate that keeps the rest of the book honest.</p>
+<h2 id="core-concepts-7"><a class="header" href="#core-concepts-7">Core Concepts</a></h2>
+<ul>
+<li><code>nvidia-smi</code> reports the driver version and the CUDA ceiling the driver supports; it does not
+tell you whether the CUDA toolkit is installed or whether code can schedule GPU work.</li>
+<li><code>nvcc --version</code> confirms the toolkit version on disk; the release number must sit at or below
+the CUDA ceiling <code>nvidia-smi</code> reports.</li>
+<li><code>deviceQuery</code>’s <code>Result = PASS</code> is the end-to-end proof: a real CUDA kernel crossed the PCIe
+boundary and returned a result, confirming driver, toolkit, and hardware are wired together.</li>
+<li>A software baseline is a portfolio artifact only when it is complete: driver version, CUDA
+version, and the captured <code>nvidia-smi</code> readout all in one file <code>check_setup.py</code> can verify.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module2/verify-the-gpu-is-visible/">
+<p><strong>Build It in Claude Code</strong>: Open <code>exercises/module2/choosing-and-installing-linux/SETUP.md</code>, add the <code>## Verification</code> section with your GPU detected status, CUDA version, and pasted <code>nvidia-smi</code> output, then finalize <code>check_setup.py</code> so it exits 0 only when all three sections are complete and the captured output contains both <code>CUDA Version</code> and <code>NVIDIA</code>.</p>
+</div>
+
+<!-- SOURCES: https://docs.nvidia.com/deploy/nvidia-smi/index.html | https://docs.nvidia.com/cuda/cuda-installation-guide-linux/ | https://github.com/NVIDIA/cuda-samples | https://xcat-docs.readthedocs.io/en/stable/advanced/gpu/nvidia/verify_cuda_install.html -->
 
                     </main>
 

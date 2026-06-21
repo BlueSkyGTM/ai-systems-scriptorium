@@ -13,9 +13,10 @@ the other books are ingested.
 (the SPEC's BOM), not a machine; this book is the curriculum that takes a reader from buying the
 parts to managing a networked local-model host. It is authored from grounded sources (the SPEC +
 the aipe ore + vendor/NVIDIA + Ollama/distro docs); the reader confirms outputs on their own
-build. **Module 1 (The Build) shipped 2026-06-21** (`GATE-APPROVE-SHIP` cleared: 5 lessons + 4
-exercises; the `HARDWARE.md` + `check_hardware.py` throughline + `breakeven.py`). See
-`build-log/local-metal/build-progress.md`. Next: M2 (Linux and CUDA) via the pipeline.
+build. **Modules 1-2 shipped 2026-06-21** (`GATE-APPROVE-SHIP`): M1 "The Build" (`HARDWARE.md` +
+`check_hardware.py` + `breakeven.py`) and M2 "Linux and CUDA" (`SETUP.md` + `check_setup.py` +
+`partition_plan.py`). See `build-log/local-metal/build-progress.md`. Next: M3 (The Model Stack) via
+the pipeline.
 
 ## Ore (primary source + vault depth)
 

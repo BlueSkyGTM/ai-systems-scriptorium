@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Local Metal - Local Metal — Build and Network Your Own AI Inference Server</title>
+        <title>NVIDIA Drivers and CUDA - Local Metal — Build and Network Your Own AI Inference Server</title>
 
 
         <!-- Custom HTML head -->
@@ -12,36 +12,36 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon-de23e50b.svg">
-        <link rel="shortcut icon" href="favicon-8114d1fc.png">
-        <link rel="stylesheet" href="css/variables-8adf115d.css">
-        <link rel="stylesheet" href="css/general-0392ca55.css">
-        <link rel="stylesheet" href="css/chrome-fc474251.css">
-        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="theme/copy-to-claude-45921320.css">
-        <link rel="stylesheet" href="theme/syntax-polish-53c427bd.css">
-        <link rel="stylesheet" href="theme/readability-9f9ae6ec.css">
+        <link rel="stylesheet" href="../theme/copy-to-claude-45921320.css">
+        <link rel="stylesheet" href="../theme/syntax-polish-53c427bd.css">
+        <link rel="stylesheet" href="../theme/readability-9f9ae6ec.css">
 
 
         <!-- Provide site root and default themes to javascript -->
         <script>
-            const path_to_root = "";
+            const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-3933fadd.js";
+            window.path_to_searchindex_js = "../searchindex-3933fadd.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-cfe292f9.js"></script>
+        <script src="../toc-cfe292f9.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -108,7 +108,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
             </noscript>
             <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -143,7 +143,7 @@
                     <h1 class="menu-title">Local Metal — Build and Network Your Own AI Inference Server</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
                         </a>
 
@@ -177,49 +177,112 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
-<p>Every engineer who builds with frontier models meets the same wall. The prototype works, the demo
-lands, usage grows, and the invoice grows with it. Tokens are cheap until they are a budget line.
-Context windows overflow, retries stack, and a background agent that runs all day turns metered
-inference into rent. The frontier API is the right tool for the hard ten percent of your work. The
-other ninety percent does not need it, and paying frontier prices for it is a choice, not a law.</p>
-<p>Local Metal is the other choice. You buy a machine, you put it on your desk, and you host the models
-that handle the routine work yourself. The marginal cost of a token it serves is the electricity to
-compute it. This book runs the whole arc: from the Micro Center parts counter to a networked
-inference host your other machines, and Claude Code, can delegate to. You select the hardware,
-assemble it, install Linux and CUDA, fit a coding model entirely in GPU memory, split a larger model
-across the GPU and system RAM, design the routing layer that decides what stays local and what goes
-to the frontier, and wire it into your daily tooling. You finish owning a slice of compute and the
-judgment to use it.</p>
-<h2 id="this-is-home-scale-on-purpose"><a class="header" href="#this-is-home-scale-on-purpose">This Is Home-Scale, on Purpose</a></h2>
-<p>This is not a datacenter book. There is no Kubernetes, no multi-GPU cluster, no rack. It is one
-machine you can build in an afternoon and run next to your monitor, and the whole design holds that
-line: a small-form-factor box, a single consumer GPU, a model stack you can reason about end to end.
-Local Metal is the companion to Sans Python, not a capstone above it. Sans Python taught you to build
-AI systems on hosted compute; this teaches the same engineer to own the compute. You do not need to
-finish the rest of the library to start here. You can build the rig early and host your first model
-the day it boots; what grows over time is how hard you push it.</p>
-<h2 id="what-you-build"><a class="header" href="#what-you-build">What You Build</a></h2>
-<p>The portfolio artifact is concrete and demonstrable: a working, networked local-model inference
-server with a routing layer, integrated into Claude Code as a delegation target. Along the way you
-commit the build itself to a repository, starting with <code>HARDWARE.md</code>, the record of the machine you
-chose and why. By the last module you can point a hiring manager at a repository and say the most
-literal thing an AI engineer can say: I built the inference server my tooling delegates to.</p>
-<h2 id="how-to-read-this"><a class="header" href="#how-to-read-this">How to Read This</a></h2>
-<p>Each lesson ends in an exercise you run in Claude Code, with this repository open. The lesson holds
-the why; the exercise is where you build. The command outputs printed in these pages are the results
-you should expect on the reference build; treat them as the target and confirm them against your own
-machine. You do not need the hardware in hand to start reading, but the book is written to be
-finished with a real one humming under your desk.</p>
-<p>Turn the page. Module 1 starts at the parts counter, because nothing else is possible until the
-machine exists.</p>
+                        <h1 id="nvidia-drivers-and-cuda"><a class="header" href="#nvidia-drivers-and-cuda">NVIDIA Drivers and CUDA</a></h1>
+<p>A freshly installed Ubuntu system sees the RTX 4060 Ti as an unknown PCI device. Two packages fix
+that: the NVIDIA driver, which gives the kernel a module that speaks to the GPU, and the CUDA
+toolkit, which gives your code a path to run on it. Install them in the wrong order, or reach for
+the wrong version, and the stack breaks in ways that are quiet until you try to run a model.</p>
+<h2 id="why-the-apt-path-beats-the-runfile"><a class="header" href="#why-the-apt-path-beats-the-runfile">Why the apt Path Beats the Runfile</a></h2>
+<p>NVIDIA ships two installer formats. The <code>.run</code> file bundles driver and toolkit together, compiles
+kernel modules from source on your machine, and drops everything under <code>/usr/local/cuda</code>. That
+sounds clean. The problem surfaces on the next kernel update: the compiled module no longer matches
+the new kernel headers, DKMS either rebuilds it or silently fails, and <code>nvidia-smi</code> returns an
+error instead of a version string.</p>
+<p>The apt path installs pre-built, signed kernel modules from NVIDIA’s own repository. When a new
+kernel lands, the package manager rebuilds the modules via DKMS against the new headers and signs
+them. The driver stays current without you touching it.</p>
+<p>Reach for the <code>.run</code> installer only when the apt repository does not yet carry a driver branch you
+specifically need, or when a corporate environment blocks external apt sources. In those cases,
+accept that you own the module maintenance yourself.</p>
+<h2 id="the-version-matrix"><a class="header" href="#the-version-matrix">The Version Matrix</a></h2>
+<p>CUDA is not a single thing: it is a toolkit version layered on top of a driver version, and the
+driver sets a ceiling on which toolkit versions the machine can run. NVIDIA publishes the
+constraint explicitly in the release notes.</p>
+<p>The numbers that matter for the reference build:</p>
+<ul>
+<li>CUDA 12.x requires a driver at or above <strong>525</strong></li>
+<li>CUDA 13.x requires a driver at or above <strong>580</strong></li>
+</ul>
+<p>Ubuntu 24.04’s default repositories carry driver branch 535 or 550. Both support CUDA 12 cleanly.
+When you install a pinned toolkit version later (PyTorch and Ollama each express a minimum CUDA
+requirement), check the release notes before upgrading the driver. Upgrading the toolkit without
+checking the driver floor is the most common way to break a working stack.</p>
+<h2 id="install-the-driver"><a class="header" href="#install-the-driver">Install the Driver</a></h2>
+<p>Add NVIDIA’s package repository, then let <code>ubuntu-drivers</code> pick the recommended signed driver for
+your hardware.</p>
+<pre><code class="language-bash">sudo ubuntu-drivers install
+</code></pre>
+<p>If you want to pin a specific branch, query what is available first.</p>
+<pre><code class="language-bash">sudo ubuntu-drivers list
+</code></pre>
+<p>The output lists branches by number (535, 550, and so on). To install a specific branch:</p>
+<pre><code class="language-bash">sudo ubuntu-drivers install nvidia:550
+</code></pre>
+<p>Ubuntu’s <code>ubuntu-drivers</code> tool is the right choice when Secure Boot is enabled: it installs
+pre-built, pre-signed modules. The kernel will load a signed module without complaint. An unsigned
+module compiled from a <code>.run</code> installer will be blocked at boot, and <code>nvidia-smi</code> will return
+nothing. If your BIOS has Secure Boot on and you installed via <code>.run</code>, this silence is the symptom.</p>
+<h2 id="add-the-cuda-toolkit-repository"><a class="header" href="#add-the-cuda-toolkit-repository">Add the CUDA Toolkit Repository</a></h2>
+<p>The driver is now on the machine. The toolkit lives in a separate NVIDIA repository. Add it with
+the CUDA keyring package.</p>
+<pre><code class="language-bash">wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+sudo dpkg -i cuda-keyring_1.1-1_all.deb
+sudo apt update
+</code></pre>
+<p>With the repository live, install the toolkit. <code>cuda-toolkit</code> pulls the compiler, libraries, and
+headers for the current release; it does not pull a second copy of the driver.</p>
+<pre><code class="language-bash">sudo apt install cuda-toolkit
+</code></pre>
+<p>After installation, wire the toolkit binaries into your PATH and LD_LIBRARY_PATH. Add these lines
+to your <code>~/.bashrc</code> (adjust the version number to match what installed):</p>
+<pre><code class="language-bash">export PATH=/usr/local/cuda/bin${PATH:+:${PATH}}
+export LD_LIBRARY_PATH=/usr/local/cuda/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+</code></pre>
+<p>Then reload:</p>
+<pre><code class="language-bash">source ~/.bashrc
+</code></pre>
+<h2 id="confirm-the-versions"><a class="header" href="#confirm-the-versions">Confirm the Versions</a></h2>
+<p>After a reboot, two commands confirm the stack is coherent: <code>nvidia-smi</code> for the driver, <code>nvcc --version</code> for the toolkit.</p>
+<pre><code class="language-bash">nvidia-smi
+nvcc --version
+</code></pre>
+<p>The driver version shown in <code>nvidia-smi</code> must be at or above the minimum the toolkit requires.
+If <code>nvcc --version</code> reports CUDA 12.x and <code>nvidia-smi</code> reports a driver below 525, the toolkit
+will fail at link time. Fix the driver first, then recheck.</p>
+<p>The next lesson proves the GPU is reachable from code. This one stops at the version check because
+the right question at this stage is not “can I run a model?” but “is the version matrix satisfied?”
+Getting that right once is what keeps every module above it from fighting its own environment.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>The apt-based CUDA repository installs pre-built, signed kernel modules that survive kernel
+updates automatically; the <code>.run</code> installer compiles modules on your machine and breaks on the
+next kernel upgrade unless you manage DKMS yourself.</li>
+<li>Every CUDA toolkit version requires a minimum NVIDIA driver version: CUDA 12.x needs driver
+<blockquote>
+<p>= 525, CUDA 13.x needs driver &gt;= 580; installing the toolkit without checking the floor is
+how a working stack breaks.</p>
+</blockquote>
+</li>
+<li>Secure Boot blocks unsigned kernel modules silently: <code>ubuntu-drivers</code> installs signed drivers
+that load cleanly; a <code>.run</code>-compiled module will not load and <code>nvidia-smi</code> will return nothing.</li>
+<li><code>ubuntu-drivers install</code> picks the recommended signed driver; <code>cuda-toolkit</code> installs the
+toolkit from NVIDIA’s own apt repository; these two commands do not conflict.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module2/nvidia-drivers-and-cuda/">
+<p><strong>Build It in Claude Code</strong>: Open <code>exercises/module2/choosing-and-installing-linux/SETUP.md</code> and add the <code>## GPU Driver and CUDA</code> section, then extend <code>check_setup.py</code> with a <code>check_gpu_driver_and_cuda</code> function that validates all three fields are present and non-empty.</p>
+</div>
+
+<!-- SOURCES: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/ | https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html | https://docs.nvidia.com/datacenter/tesla/driver-installation-guide/latest/ubuntu.html | https://ubuntu.com/server/docs/how-to/graphics/install-nvidia-drivers/ | https://packetrealm.io/posts/nvidia-driver-secureboot/ -->
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../module2/choosing-and-installing-linux.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
 
-                            <a rel="next prefetch" href="module1/00-overview.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module2/verify-the-gpu-is-visible.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -229,8 +292,11 @@ machine exists.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../module2/choosing-and-installing-linux.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
 
-                    <a rel="next prefetch" href="module1/00-overview.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module2/verify-the-gpu-is-visible.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
@@ -250,16 +316,16 @@ machine exists.</p>
         </script>
 
 
-        <script src="elasticlunr-ef4e11c1.min.js"></script>
-        <script src="mark-09e88c2c.min.js"></script>
-        <script src="searcher-09f2665d.js"></script>
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
 
-        <script src="clipboard-1626706a.min.js"></script>
-        <script src="highlight-abc7f01d.js"></script>
-        <script src="book-c22b7243.js"></script>
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="theme/copy-to-claude-51c37bc3.js"></script>
+        <script src="../theme/copy-to-claude-51c37bc3.js"></script>
 
 
 
