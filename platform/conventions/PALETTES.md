@@ -34,7 +34,7 @@ unchanged. The light / Rust theme keeps near-black text on warm paper.
 
 ## Retired: The Per-Book Signature Table (Historical)
 
-The lineup once planned a distinct accent per book (goldenrod for Only Python, indigo for Machine Math,
+The lineup once planned a distinct accent per book (goldenrod for Just Python, indigo for Machine Math,
 teal for Data Currents, crimson for Weights and Measures, pine for Anatomy of an Answer, steel blue for
 Local Metal). That approach is retired per the decision above; the colors are recorded here only as
 history, not as instructions. Do not implement them.

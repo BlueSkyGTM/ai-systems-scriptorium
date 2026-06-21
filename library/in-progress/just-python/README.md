@@ -1,4 +1,4 @@
-# Only Python: Blueprint
+# Just Python: Blueprint
 
 ## Positioning
 
@@ -11,7 +11,7 @@ The payoff is focus. The cost is a gap that 94% of AI-Engineer job postings clos
 screen includes a take-home data exercise or a live NumPy/Pandas question, Sans Python
 does not prepare you for it. That is the gap this book fills.
 
-Only Python is the direct sequel. It branches from Sans Python, inherits its purposes,
+Just Python is the direct sequel. It branches from Sans Python, inherits its purposes,
 and then makes Python the subject. It covers the applied Python an AI Engineer is actually
 screened on: numerical computing with NumPy, tabular data with Pandas, vectorization
 patterns, and the Python idioms that appear in AI/ML codebases. Everything is grounded
@@ -28,11 +28,11 @@ https://learn.microsoft.com/training/modules/explore-analyze-data-with-python/]
 ## Thesis
 
 The name is the argument. Sans Python said: learn the field without Python as the
-subject. Only Python says: now make it the subject, but only the Python that connects
+subject. Just Python says: now make it the subject, but only the Python that connects
 to what you just learned.
 
 The bet is that Python is a vast black box, and it only makes sense to drill it once
-you know what it is for. Sans Python establishes the for. Only Python delivers the
+you know what it is for. Sans Python establishes the for. Just Python delivers the
 drill: arrays, DataFrames, vectorized ops, the data-wrangling idioms that underlie every
 AI/ML pipeline a reader will encounter in the job market. Born from belief, not just
 need.
@@ -60,7 +60,7 @@ need.
 ### Deliberately Out
 
 - **PyTorch and model training**: that is Machine Learning (rows 2/3 of the gap report),
-  not this book. Only Python stops at the data layer.
+  not this book. Just Python stops at the data layer.
 - **Matplotlib/Seaborn visualization**: literacy is noted where NumPy/Pandas produce
   arrays for plotting, but building charts is not a focus of the 94% screen.
 - **Classic ML algorithms**: no scikit-learn pipelines, no model evaluation loops. The
@@ -163,13 +163,13 @@ supplemental context.
 
 ## Name (GATE-NAME-BOOK — Cleared)
 
-**Locked 2026-06-20: the title is _Only Python_, the slug is `only-python`.** The candidates below are
+**Locked 2026-06-20: the title is _Just Python_, the slug is `just-python`.** The candidates below are
 kept as the record of the decision.
 
 | Name | Rationale |
 |------|-----------|
-| **Only Python** (lead candidate) | Deliberate play on "Sans Python": first you learned the field without Python as the subject; now you focus only on it. The echo is the argument. Memorable, positioned, self-explanatory to anyone who read the first book. |
+| **Just Python** (lead candidate) | Deliberate play on "Sans Python": first you learned the field without Python as the subject; now you focus only on it. The echo is the argument. Memorable, positioned, self-explanatory to anyone who read the first book. |
 | **Applied Python for AI Engineers** | Descriptive and SEO-clear for standalone readers who did not read Sans Python. Trades resonance for discoverability. |
 | **Python, Properly** | Captures the "finally drill it correctly" feeling; signals opinion and confidence. Less explicit about AI-engineering scope. |
 
-Decision: **Only Python**. The book has graduated to `library/in-progress/only-python`.
+Decision: **Just Python**. The book has graduated to `library/in-progress/just-python`.

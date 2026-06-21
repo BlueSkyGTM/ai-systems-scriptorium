@@ -1,7 +1,7 @@
 # Module 1 — Python as a Data Engine — Build Plan (GATE-LOCK-PLAN input)
 
-Status: **PLAN DRAFTED — awaiting `GATE-LOCK-PLAN`.** First authoring stage for Only Python
-(graduated to `library/in-progress/only-python` 2026-06-20). M1 turns the blueprint's first module
+Status: **PLAN DRAFTED — awaiting `GATE-LOCK-PLAN`.** First authoring stage for Just Python
+(graduated to `library/in-progress/just-python` 2026-06-20). M1 turns the blueprint's first module
 into finished mdBook lessons + Claude Code exercises, in the locked Style Contract voice, at the
 STANDARDS difficulty bar, under AUTHOR → VERIFY → BUILD/TEST → SHIP. Do not author until Ray locks.
 

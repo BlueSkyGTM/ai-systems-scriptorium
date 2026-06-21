@@ -16,7 +16,7 @@ because each book upgrades the home environment:
 | Book | What it adds to the home rig |
 |---|---|
 | Sans Python | the AI systems worth hosting in the first place |
-| Only Python | the applied Python that wires the rig's tooling together |
+| Just Python | the applied Python that wires the rig's tooling together |
 | Machine Math | sharper judgment about what the models are doing on the metal |
 | Weights and Measures | a model you fine-tuned and can now host yourself |
 | Data Currents | a data pipeline that feeds the local models |

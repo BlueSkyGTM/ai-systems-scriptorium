@@ -1,17 +1,17 @@
-# CONTEXT — Only Python (IN PROGRESS)
+# CONTEXT — Just Python (IN PROGRESS)
 
 The direct sequel to Sans Python. Where Sans Python teaches AI engineering without making
-Python the subject, Only Python makes it the subject: the applied Python an AI Engineer
+Python the subject, Just Python makes it the subject: the applied Python an AI Engineer
 is screened on but the core book never drills. NumPy arrays, Pandas DataFrames,
 vectorization discipline, and the Python idioms that appear in every AI/ML codebase.
 Fills row 1 of `build-log/sans-python/antilibrary-gap-report.md` — the **94%-of-postings
 "Python" screen**, the single largest gap the first book left by design.
 
 Post-Sans-Python, pre-Machine-Learning. The name plays off the first book deliberately:
-first you learned the field *Sans Python*; now you focus *Only Python*.
+first you learned the field *Sans Python*; now you focus *Just Python*.
 
-**Graduated to in-progress 2026-06-20.** `GATE-NAME-BOOK` is cleared: the title is **Only Python**, the
-slug is `only-python`. A Chapter 1 preview is drafted in `draft/`. Next: process the named ore into
+**Graduated to in-progress 2026-06-20.** `GATE-NAME-BOOK` is cleared: the title is **Just Python**, the
+slug is `just-python`. A Chapter 1 preview is drafted in `draft/`. Next: process the named ore into
 `ingredients`, draft the stage `PLAN.md`, and stop at `GATE-LOCK-PLAN` before the fleet authors.
 
 ## Ore (in the vault — not yet distilled)
