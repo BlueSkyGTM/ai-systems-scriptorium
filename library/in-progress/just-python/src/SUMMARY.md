@@ -51,3 +51,13 @@
 - [Decorators](module5/decorators.md)
 - [Type Hints](module5/type-hints.md)
 - [Dataclasses](module5/dataclasses.md)
+
+---
+
+# Module 6: Data Wrangling Artifact
+
+- [Overview](module6/00-overview.md)
+- [Ingest the Corpus](module6/ingest-the-corpus.md)
+- [Clean and Deduplicate](module6/clean-and-deduplicate.md)
+- [Reshape and Validate](module6/reshape-and-validate.md)
+- [Emit, Test, and Ship](module6/emit-test-and-ship.md)

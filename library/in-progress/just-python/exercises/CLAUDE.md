@@ -33,8 +33,17 @@ When a learner pastes an exercise into you, they are here to build, not to watch
   The lessons demonstrate each idiom by refactoring a snippet of the reader's own artifacts; the idioms
   themselves are the polish M6's `wrangle.py` is written with.
 
-  Later modules have their own throughline artifacts (the M6 wrangling pipeline, the M7 eval engine,
-  the M8 exam script). The same rule applies: find the artifact, read it, then continue the build.
+  **Module 6 is the first portfolio artifact: `exercises/module6/wrangle.py`**
+  M6 builds one runnable pipeline across four lessons (ingest -> clean -> reshape_and_validate -> emit),
+  composed by `run()` returning a `WrangleStats` dataclass. It composes M3 (Pandas) + M5 (idioms); it
+  does not import `measure.py`. The acceptance gate is `exercises/module6/smoke.py` (pytest: row
+  accounting + Parquet round-trip with `pandas.api.types` predicate dtype checks + a negative case that a
+  malformed corpus raises). It ships `exercises/module6/outputs/skill-data-wrangling.md`. Before any M6
+  exercise: open `wrangle.py`, read which stages exist, and add the next one to the locked structure; the
+  sample corpus is `exercises/module6/sample_corpus.jsonl` (built in the L1 exercise).
+
+  Later modules have their own throughline artifacts (the M7 eval engine, the M8 exam script). The same
+  rule applies: find the artifact, read it, then continue the build.
 
 ## How to Coach
 

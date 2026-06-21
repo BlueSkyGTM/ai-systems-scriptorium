@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-986954d7.js";
+            window.path_to_searchindex_js = "searchindex-389c186c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-3357fa62.js"></script>
+        <script src="toc-0a948c87.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -2127,6 +2127,488 @@ print(f"speedup: {result.speedup:.2f}x")  # not result["speedup"]
 </ul>
 <div class="claude-handoff" data-exercise="exercises/module5/dataclasses/">
 <p><strong>Build It in Claude Code:</strong> Define a <code>BenchmarkResult</code> dataclass with typed fields and a mutable default, construct instances, and assert that the auto-generated <code>__eq__</code>, <code>__repr__</code>, and <code>field(default_factory=...)</code> all behave correctly. Run the script and confirm it exits 0.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-6-data-wrangling-artifact"><a class="header" href="#module-6-data-wrangling-artifact">Module 6: Data Wrangling Artifact</a></h1>
+<h2 id="what-this-module-covers-5"><a class="header" href="#what-this-module-covers-5">What This Module Covers</a></h2>
+<p>Modules 1 through 5 taught the pieces. Module 6 is the first time you ship one production artifact that uses all of them: <code>wrangle.py</code>, a data-cleaning pipeline that turns a raw JSONL corpus into a validated, typed Parquet dataset. This is the Composition phase of the book, and the artifact is the take-home a hiring manager actually runs.</p>
+<p>Unlike the earlier modules, M6 is not a set of independent lessons. It is one pipeline built in four stages, each lesson adding the next, ending in a green test gate. The artifact is held to the strong-project bar: a real entry point, a README that frames the business problem first, a <code>pytest</code> smoke gate that proves it (including a deliberate failure case), and a skill write-up that turns the script into a portfolio piece.</p>
+<h2 id="arc-of-lessons-5"><a class="header" href="#arc-of-lessons-5">Arc of Lessons</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Lesson</th><th>Title</th><th>Stage of <code>wrangle.py</code></th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>Ingest the Corpus</td><td>Read raw JSONL into a typed DataFrame; a frozen <code>@dataclass</code> config holds the contract</td></tr>
+<tr><td>2</td><td>Clean and Deduplicate</td><td>Dedup on the key, drop null-text rows, fill null scores, normalize text with the <code>.str</code> accessor</td></tr>
+<tr><td>3</td><td>Reshape and Validate</td><td>Select to the schema and assert it: required columns, no null leakage, correct dtypes; a violation raises at the gate</td></tr>
+<tr><td>4</td><td>Emit, Test, and Ship</td><td>Write Parquet, compose the stages in <code>run</code>, then the <code>pytest</code> smoke gate and the skill write-up</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="throughline-artifact-5"><a class="header" href="#throughline-artifact-5">Throughline Artifact</a></h2>
+<p><code>wrangle.py</code> is the portfolio artifact, and the first one that <strong>composes</strong> everything before it: M3’s Pandas I/O and cleaning, M5’s idioms (a frozen <code>@dataclass</code> config, a <code>WrangleStats</code> record, type hints, the vectorized <code>.str</code> accessor), following made-with-ml’s real <code>data.py</code> shape. The acceptance gate is <code>smoke.py</code>: it asserts the row accounting (8 in, 6 out, 1 duplicate and 1 null dropped), that the Parquet round-trips with the right types (checked with <code>pandas.api.types</code> predicates so a round-trip’s <code>str</code> dtype passes), and that a malformed corpus raises at the validation gate. The skill write-up in <code>outputs/skill-data-wrangling.md</code> is the portfolio surface. The data this pipeline produces is what Module 7’s evaluation engine consumes.</p>
+<h2 id="prerequisites-5"><a class="header" href="#prerequisites-5">Prerequisites</a></h2>
+<ul>
+<li>Modules 1 through 5, especially M3 (Pandas) and M5 (idioms: dataclasses, type hints, the <code>.str</code> accessor). M6 composes them; it does not re-teach them.</li>
+<li>A Python 3.11+ environment with pandas, numpy, and pyarrow (<code>pip install pandas numpy pyarrow</code>). pyarrow is required for the Parquet output; <code>emit</code> fails with a clear install hint if it is absent.</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="ingest-the-corpus"><a class="header" href="#ingest-the-corpus">Ingest the Corpus</a></h1>
+<p>A bare <code>pd.read_json</code> call buried in a script is a liability: no declared dtypes, no named contract, no seam where the pipeline can be tested in isolation. The first stage of a production wrangler reads the raw corpus into a typed DataFrame and publishes its input/output contract in a frozen dataclass so the whole pipeline knows what it agreed to.</p>
+<h2 id="what-you-build-7"><a class="header" href="#what-you-build-7">What You Build</a></h2>
+<p>You build the <code>ingest</code> function and the <code>WrangleConfig</code> dataclass: the entry point and the contract for <code>wrangle.py</code>, the shared artifact this module assembles across four lessons.</p>
+<h2 id="the-pipelines-shape"><a class="header" href="#the-pipelines-shape">The Pipeline’s Shape</a></h2>
+<p><code>wrangle.py</code> has four stages that compose in sequence. Your work in this lesson is the first stage; the others are given.</p>
+<pre><code class="language-python">def ingest(path: str) -&gt; pd.DataFrame:          # this lesson
+def clean(df: pd.DataFrame) -&gt; pd.DataFrame:    # L2
+def reshape_and_validate(df, config) -&gt; pd.DataFrame:  # L3
+def emit(df, path) -&gt; None:                     # L4 (owns run + main)
+</code></pre>
+<p>Each stage takes what the prior stage returns. <code>ingest</code> is the only one that touches the file system; every later stage works on a DataFrame in memory.</p>
+<h2 id="the-contract-wrangleconfig"><a class="header" href="#the-contract-wrangleconfig">The Contract: <code>WrangleConfig</code></a></h2>
+<p>Before writing <code>ingest</code>, declare what the pipeline expects and produces. A frozen dataclass (M5) is the right tool: it is immutable, it has a repr, and it fails loudly if you pass it something wrong.</p>
+<pre><code class="language-python">from dataclasses import dataclass
+import pandas as pd
+
+@dataclass(frozen=True)
+class WrangleConfig:
+    input_path: str
+    output_path: str
+    required_cols: tuple[str, ...] = ("id", "text", "label")
+    dedup_key: str = "id"
+</code></pre>
+<p><code>frozen=True</code> makes the config immutable after construction. Pass a <code>WrangleConfig</code> to <code>run</code> and every stage downstream shares the same source of truth, with no way to accidentally mutate it mid-pipeline. The <code>required_cols</code> tuple names the columns every downstream stage can count on; <code>dedup_key</code> tells the dedup stage which column to use.</p>
+<h2 id="reading-jsonl-with-declared-dtypes"><a class="header" href="#reading-jsonl-with-declared-dtypes">Reading JSONL with Declared Dtypes</a></h2>
+<p>The raw corpus is JSONL: one JSON object per line, the format you met in M3. <code>pd.read_json</code> with <code>lines=True</code> reads it into a DataFrame. The key move here is not the read itself but what you hand <code>dtype</code> on the way in.</p>
+<pre><code class="language-python">DTYPE_MAP = {
+    "id":    "int64",
+    "text":  "object",
+    "label": "object",
+    "score": "float64",
+}
+
+def ingest(path: str) -&gt; pd.DataFrame:
+    df = pd.read_json(path, lines=True, dtype=DTYPE_MAP)
+    return df
+</code></pre>
+<p>Declaring dtypes on load does two things. First, it removes inference: pandas does not guess <code>id</code> is an int or <code>score</code> is a float; you said so, and any row that cannot coerce will surface immediately. Second, it documents the schema at the point of entry. The rest of the pipeline inherits this contract without re-reading the file.</p>
+<p>Microsoft Fabric’s production guidance for reading data into pandas DataFrames follows the same principle: declare the format and the path explicitly, then let the DataFrame carry the typed result forward (<a href="https://learn.microsoft.com/fabric/data-science/read-write-pandas">learn.microsoft.com/fabric/data-science/read-write-pandas</a>).</p>
+<h2 id="a-concrete-run-against-the-sample-corpus"><a class="header" href="#a-concrete-run-against-the-sample-corpus">A Concrete Run Against the Sample Corpus</a></h2>
+<p>The sample corpus (<code>exercises/module6/sample_corpus.jsonl</code>) has 8 records: one duplicate id, one null <code>text</code>, one null <code>score</code>, and mixed-case text. <code>ingest</code> reads all 8 without dropping anything; cleaning is L2’s job.</p>
+<pre><code class="language-python">config = WrangleConfig(
+    input_path="exercises/module6/sample_corpus.jsonl",
+    output_path="exercises/module6/output.jsonl",
+)
+
+df = ingest(config.input_path)
+print(df)
+#    id                text label  score
+# 0   1     Great Product   pos    0.90
+# 1   2        Terrible    neg    0.20
+# 2   2        Terrible    neg    0.20
+# 3   3       Works FINE   pos     NaN
+# 4   4            None    neu    0.50
+# 5   5  Another  BAD  one  neg    0.15
+# 6   6           Solid    pos    0.70
+# 7   7              ok    neu    0.40
+
+print(df.dtypes)
+# id       int64
+# text    object
+# label   object
+# score  float64
+# dtype: object
+
+print(df.shape)
+# (8, 4)
+</code></pre>
+<p>Eight rows, four columns, dtypes as declared. The duplicate (id 2) is present; the null <code>text</code> on row 4 and the null <code>score</code> on row 3 are present. Nothing is hidden or dropped. That is the contract of <code>ingest</code>: deliver the raw corpus faithfully so the cleaning stage can make explicit decisions about each defect.</p>
+<h2 id="why-a-typed-ingest-stage-beats-an-ad-hoc-read"><a class="header" href="#why-a-typed-ingest-stage-beats-an-ad-hoc-read">Why a Typed Ingest Stage Beats an Ad-Hoc Read</a></h2>
+<p>A bare <code>pd.read_json("corpus.jsonl", lines=True)</code> works until it does not: an <code>id</code> that pandas infers as <code>float64</code> because one row has a null, a <code>score</code> that silently widens, a dtype mismatch that surfaces three stages later. Declaring dtypes at the boundary converts a runtime surprise into an entry-time failure, the cheapest possible failure. The frozen dataclass makes the input/output paths explicit rather than scattered across a script. Together they turn a fragile read into a stage a hiring manager can point to and say: this is where data enters the system, and this is what it guarantees.</p>
+<h2 id="core-concepts-20"><a class="header" href="#core-concepts-20">Core Concepts</a></h2>
+<ul>
+<li><code>pd.read_json(path, lines=True, dtype=...)</code> reads a JSONL corpus into a typed DataFrame in one call; declaring <code>dtype</code> on load converts inference errors into entry-time failures instead of silent downstream surprises.</li>
+<li>A <code>@dataclass(frozen=True)</code> config holds the pipeline’s input/output contract in an immutable, repr-able object; every stage downstream reads from it without being able to mutate it.</li>
+<li>The <code>ingest</code> stage’s contract is to deliver the raw corpus faithfully with declared dtypes, not to clean it; cleaning belongs to the next stage so each decision is explicit and testable.</li>
+<li>A typed ingest stage is the seam where a pipeline can be tested in isolation: swap the path in <code>WrangleConfig</code>, call <code>ingest</code>, assert shape and dtypes.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module6/ingest-the-corpus/">
+<p><strong>Build It in Claude Code:</strong> Add the <code>ingest</code> function and <code>WrangleConfig</code> dataclass to <code>exercises/module6/wrangle.py</code>, create the sample corpus fixture, assert the loaded DataFrame has 8 rows and the correct dtypes, and exit 0.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="clean-and-deduplicate"><a class="header" href="#clean-and-deduplicate">Clean and Deduplicate</a></h1>
+<p>A duplicate that reaches an embedding model and a null that reaches a metric share the same
+property: neither announces itself. The <code>clean</code> stage is the one place in <code>wrangle.py</code> where you
+decide what the model is allowed to see.</p>
+<h2 id="what-you-build-8"><a class="header" href="#what-you-build-8">What You Build</a></h2>
+<p>You build the <code>clean</code> function that slots into the shared <code>wrangle.py</code> pipeline. It takes the
+DataFrame that <code>ingest</code> loaded, removes noise in a fixed order, and returns a frame the rest of the
+pipeline can trust.</p>
+<h2 id="the-pipelines-shape-1"><a class="header" href="#the-pipelines-shape-1">The Pipeline’s Shape</a></h2>
+<p><code>wrangle.py</code> composes four stages in sequence. <code>ingest</code> (L1) loads raw JSONL into a typed
+DataFrame. <code>clean</code> (this lesson) scrubs it. <code>reshape_and_validate</code> (L3) enforces schema rules.
+<code>emit</code> (L4) writes the result. You build <code>clean</code>; the other three are given.</p>
+<p>The corpus the pipeline receives looks like this before cleaning:</p>
+<pre><code>   id  text                  label   score
+0   1  "Great Product "      pos     0.90
+1   2  "terrible service"    neg     0.20
+2   2  "terrible service"    neg     0.20   ← duplicate id
+3   3  "Works Fine"          pos     NaN    ← missing score
+4   4  None                  neu     0.50   ← missing text
+5   5  " Another product "   neg     0.15
+6   6  "FAST delivery"       pos     0.80
+7   7  "slow response  "     neg     0.60
+</code></pre>
+<p>Eight rows in, six rows out. The two that fall: the duplicate on <code>id=2</code>, and the null-text on <code>id=4</code>.</p>
+<h2 id="the-four-steps-in-order"><a class="header" href="#the-four-steps-in-order">The Four Steps, in Order</a></h2>
+<p>The function signature is fixed for the smoke gate downstream:</p>
+<pre><code class="language-python">def clean(df: pd.DataFrame) -&gt; pd.DataFrame:
+</code></pre>
+<p><strong>Step 1: Drop duplicates on the key.</strong></p>
+<pre><code class="language-python">df = df.drop_duplicates(subset=["id"])
+</code></pre>
+<p>Before dedup the corpus has eight rows. After, it has seven. The duplicate on <code>id=2</code> is gone; the
+first occurrence stays.</p>
+<p>Why first? When both copies carry identical data, it does not matter. In real pipelines duplicates
+differ by timestamp or score, so you pass <code>keep="first"</code> or <code>keep="last"</code> explicitly and comment
+why. Here the two copies are identical, so first is fine.</p>
+<p><strong>Step 2: Drop rows where the required text is null.</strong></p>
+<pre><code class="language-python">df = df.dropna(subset=["text"])
+</code></pre>
+<p>Seven rows become six. The row for <code>id=4</code> is gone. You cannot impute a null text column without
+inventing signal the model will learn; dropping is the only honest choice. M3 covered this decision
+in detail. The point here is ordering: if you filled score nulls before dropping text nulls, you
+would compute a mean over a row you are about to delete. Dedup before dropna, dropna before fillna.</p>
+<p><strong>Step 3: Fill missing numeric scores with the column mean.</strong></p>
+<pre><code class="language-python">df["score"] = df["score"].fillna(df["score"].mean())
+</code></pre>
+<p>Before this line, <code>id=3</code> carries a null score. After it, that cell holds the mean of the five
+non-null scores in the surviving frame. The mean is computed from the already-cleaned rows, so the
+deleted duplicate and the null-text row do not influence it.</p>
+<p><code>fillna</code> accepts a scalar, a per-column dict, or a fill strategy. Column mean is the standard
+sentinel for a continuous quality score with no structural reason to be missing.</p>
+<p><strong>Step 4: Normalize the text column with the <code>.str</code> accessor.</strong></p>
+<pre><code class="language-python">df["text"] = df["text"].str.strip().str.lower()
+</code></pre>
+<p>You covered the <code>.str</code> accessor in M5: vectorized string operations over a Series, no Python loop,
+no <code>apply</code>. Here <code>strip</code> removes leading and trailing whitespace, <code>lower</code> lowercases every
+character. Both run across all six surviving rows in one pass.</p>
+<p>“Great Product “ becomes “great product”. “FAST delivery” becomes “fast delivery”. The tokenizer
+that receives this corpus sees one representation per concept, not two.</p>
+<p>Microsoft’s data-preparation guidance calls this the clean-and-normalize step and flags it as the
+required first stage before chunking or embedding: even basic normalization significantly improves
+embedding quality because models are sensitive to noise (<a href="https://learn.microsoft.com/azure/horizondb/ai/ai-data-preparation">Prepare Data for AI App and Agent
+Development for Azure HorizonDB</a>).
+The same principle applies at every scale.</p>
+<p><strong>The complete function:</strong></p>
+<pre><code class="language-python">def clean(df: pd.DataFrame) -&gt; pd.DataFrame:
+    df = df.drop_duplicates(subset=["id"])          # dedup on key
+    df = df.dropna(subset=["text"])                 # drop unrecoverable nulls
+    df["score"] = df["score"].fillna(df["score"].mean())  # fill numeric sentinel
+    df["text"] = df["text"].str.strip().str.lower() # normalize text
+    return df
+</code></pre>
+<h2 id="why-the-order-is-load-bearing"><a class="header" href="#why-the-order-is-load-bearing">Why the Order Is Load-Bearing</a></h2>
+<p>Reverse steps 1 and 3 and the mean shifts: you compute it over eight rows instead of seven, and the
+duplicate contributes twice. Reverse steps 2 and 3 and the mean includes the about-to-be-deleted
+null-text row’s score. The gate downstream is deterministic because this order is locked. Change it
+and the assertions break.</p>
+<h2 id="seam-line"><a class="header" href="#seam-line">Seam Line</a></h2>
+<p>Every metric your pipeline computes is only as clean as the rows that reached it; the <code>clean</code> stage
+is not a preprocessing chore but a commitment about what counts as data.</p>
+<h2 id="core-concepts-21"><a class="header" href="#core-concepts-21">Core Concepts</a></h2>
+<ul>
+<li>Dedup before dropna before fillna: the order is not arbitrary. Each step removes or imputes from
+the frame the next step sees, so reversing the order shifts the results.</li>
+<li>Drop null text, do not fill it. Imputing a text column fabricates training signal; the model
+learns from the fiction you inserted.</li>
+<li>Fill null numeric scores with the column mean computed over surviving rows only, so deleted
+duplicates and null-text rows do not skew the sentinel.</li>
+<li><code>.str.strip().str.lower()</code> is the vectorized normalization idiom from M5. It runs once over the
+whole column; <code>apply(lambda x: x.lower())</code> runs once per row and is the slower pattern.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module6/clean-and-deduplicate/">
+<p><strong>Build It in Claude Code:</strong> Add the <code>clean</code> stage to the shared <code>wrangle.py</code> and run it against
+the sample corpus, asserting the before/after counts and null state. Open the repo and run the
+exercise for this lesson.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="reshape-and-validate"><a class="header" href="#reshape-and-validate">Reshape and Validate</a></h1>
+<p>“The pipeline ran” is not a guarantee. It is just evidence that no Python exception fired. A training set with the wrong columns, the wrong dtypes, or a null hiding in the <code>text</code> field can pass silently through <code>ingest</code> and <code>clean</code> and arrive at the model intact. The model does not complain; it just learns the wrong thing.</p>
+<h2 id="the-artifact-3"><a class="header" href="#the-artifact-3">The Artifact</a></h2>
+<p>You build <code>reshape_and_validate</code>, the third stage in <code>wrangle.py</code>. It selects and orders columns to match the target schema, then asserts three things before returning: every required column is present, no required column contains a null, and the dtypes are right. If any assertion fails, it raises a <code>ValueError</code> with a message precise enough to act on. That is the gate.</p>
+<h2 id="why-a-gate-not-a-hope"><a class="header" href="#why-a-gate-not-a-hope">Why a Gate, Not a Hope</a></h2>
+<p>The <code>clean</code> stage (L2) handles duplication, null text, and score filling. After <code>clean</code>, the data is better, but not contractually correct. There is no guarantee that all required columns exist, that column order matches what the downstream writer expects, or that dtypes have not drifted from an upstream schema change.</p>
+<p>The difference between a gate and a hope is who bears the cost of failure. A hope means the model run costs you three hours before a <code>KeyError</code> or a silent NaN propagates into the loss. A gate means <code>reshape_and_validate</code> raises in the first second.</p>
+<p>Azure Databricks documents this as schema enforcement: “schema enforcement ensures that data written to a table adheres to a predefined schema,” and NOT NULL constraints prevent null values from propagating downstream at all (<a href="https://learn.microsoft.com/azure/databricks/transform/validate">learn.microsoft.com/azure/databricks/transform/validate</a>). The same logic applies in a Python pipeline: the stage that writes Parquet is not the place to discover the schema is wrong.</p>
+<h2 id="select-and-order-first"><a class="header" href="#select-and-order-first">Select and Order First</a></h2>
+<p>Reshaping is simpler than it looks. From the cleaned frame, select <code>config.required_cols</code> in the declared order, then append <code>score</code>. Column order is a contract: the Parquet writer in L4 depends on it.</p>
+<pre><code class="language-python">from dataclasses import dataclass
+from typing import Tuple
+import pandas as pd
+
+@dataclass(frozen=True)
+class WrangleConfig:
+    input_path: str
+    output_path: str
+    required_cols: Tuple[str, ...] = ("id", "text", "label")
+    dedup_key: str = "id"
+</code></pre>
+<p>The <code>required_cols</code> tuple is fixed in <code>WrangleConfig</code>. Select by it:</p>
+<pre><code class="language-python">def reshape_and_validate(df: pd.DataFrame, config: WrangleConfig) -&gt; pd.DataFrame:
+    cols = list(config.required_cols) + ["score"]
+    df = df[cols]
+    ...
+</code></pre>
+<p>If any column in <code>cols</code> is absent, pandas raises a <code>KeyError</code>. That is not a clear message. The next step is your explicit check.</p>
+<h2 id="assert-the-schema"><a class="header" href="#assert-the-schema">Assert the Schema</a></h2>
+<p>Three checks, in order. The first catches missing columns before the later checks can reference them. The second catches null leakage in required columns. The third catches silent dtype drift.</p>
+<pre><code class="language-python">def reshape_and_validate(df: pd.DataFrame, config: WrangleConfig) -&gt; pd.DataFrame:
+    cols = list(config.required_cols) + ["score"]
+
+    # 1. Required columns present
+    missing = [c for c in config.required_cols if c not in df.columns]
+    if missing:
+        raise ValueError(f"Missing required columns: {missing}")
+
+    df = df[cols]
+
+    # 2. No nulls in required columns
+    null_counts = df[list(config.required_cols)].isna().sum()
+    bad = null_counts[null_counts &gt; 0]
+    if not bad.empty:
+        raise ValueError(f"Null values in required columns: {bad.to_dict()}")
+
+    # 3. Dtypes correct. Use pandas.api.types predicates, not strict string
+    #    equality: a Parquet round-trip can return text as the newer `str`
+    #    dtype instead of `object`, and is_string_dtype accepts both.
+    import pandas.api.types as pat
+    checks = {"id": pat.is_integer_dtype, "text": pat.is_string_dtype,
+              "label": pat.is_string_dtype, "score": pat.is_float_dtype}
+    for col, ok in checks.items():
+        if col in df.columns and not ok(df[col]):
+            raise ValueError(f"Column '{col}' has dtype {df[col].dtype}, failed {ok.__name__}")
+
+    return df
+</code></pre>
+<p>Each <code>ValueError</code> names the exact column and the exact problem. A reviewer reading the traceback knows what to fix without opening the data.</p>
+<h2 id="the-passing-case"><a class="header" href="#the-passing-case">The Passing Case</a></h2>
+<p>Start with the same six-row sample the earlier stages use:</p>
+<pre><code class="language-python">import pandas as pd
+import numpy as np
+
+sample = pd.DataFrame({
+    "id":    [1, 2, 3, 4, 5, 6],
+    "text":  ["good", "bad", "ok", "great", "poor", "fine"],
+    "label": ["pos", "neg", "pos", "pos", "neg", "pos"],
+    "score": [0.9, 0.2, 0.6, 0.85, 0.3, 0.75],
+})
+
+config = WrangleConfig(input_path="in.jsonl", output_path="out.parquet")
+validated = reshape_and_validate(sample, config)
+print(validated.dtypes)
+print(validated.shape)   # (6, 4)
+</code></pre>
+<p>The frame passes: required columns present, no nulls, dtypes match. <code>reshape_and_validate</code> returns it in the declared column order, ready for <code>emit</code>.</p>
+<h2 id="the-raising-case"><a class="header" href="#the-raising-case">The Raising Case</a></h2>
+<p>Remove a column before calling the gate and it raises immediately:</p>
+<pre><code class="language-python">bad_frame = sample.drop(columns=["text"])
+
+try:
+    reshape_and_validate(bad_frame, config)
+except ValueError as e:
+    print(f"[CAUGHT] {e}")
+# [CAUGHT] Missing required columns: ['text']
+</code></pre>
+<p>Or inject a null into a required column after cleaning:</p>
+<pre><code class="language-python">null_frame = sample.copy()
+null_frame.loc[2, "label"] = None
+
+try:
+    reshape_and_validate(null_frame, config)
+except ValueError as e:
+    print(f"[CAUGHT] {e}")
+# [CAUGHT] Null values in required columns: {'label': 1}
+</code></pre>
+<p>The gate catches both. The model never sees either frame.</p>
+<h2 id="placing-this-in-the-pipeline"><a class="header" href="#placing-this-in-the-pipeline">Placing This in the Pipeline</a></h2>
+<p><code>reshape_and_validate</code> sits between <code>clean</code> and <code>emit</code>. In <code>run</code>:</p>
+<pre><code class="language-python">def run(config: WrangleConfig) -&gt; None:
+    df = ingest(config.input_path)    # L1 (given)
+    df = clean(df)                    # L2 (given)
+    df = reshape_and_validate(df, config)  # L3 (this stage)
+    emit(df, config.output_path)      # L4 (given)
+</code></pre>
+<p>The Parquet file <code>emit</code> writes is trustworthy because this gate ran. Without it, you are shipping an assertion-free artifact: “the pipeline ran” again, and nothing more.</p>
+<p>The gate is what makes the Parquet file a promise instead of a guess. Skip it and you are trusting every upstream change to be benign; add it and a broken input breaks loudly, exactly here, before it costs anything.</p>
+<h2 id="core-concepts-22"><a class="header" href="#core-concepts-22">Core Concepts</a></h2>
+<ul>
+<li>Reshaping to a target schema means selecting and ordering columns by a declared list; the list lives in the config, not hardcoded in the stage.</li>
+<li>A validation gate asserts the schema as a contract: required columns present, no nulls in required columns, dtypes correct. A violated assertion raises with a precise message.</li>
+<li>The gate belongs in the pipeline, not in a reviewer’s head. “The pipeline ran” proves nothing without it.</li>
+<li>Raising <code>ValueError</code> with a column name and count is the minimum useful error: it names what is wrong so the next person can fix it without opening the data.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module6/reshape-and-validate/">
+<p><strong>Build It in Claude Code:</strong> Add <code>reshape_and_validate</code> to <code>exercises/module6/wrangle.py</code>, run it on <code>clean(ingest(sample))</code>, and assert both the passing case and the raising case behave correctly. One <code>python</code> command, exit 0.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="emit-test-and-ship"><a class="header" href="#emit-test-and-ship">Emit, Test, and Ship</a></h1>
+<p>The artifact is done when the gate is green. You have three stages: <code>ingest</code> loads the corpus, <code>clean</code> strips nulls and normalizes text, <code>reshape_and_validate</code> enforces the schema contract. This lesson adds the final two pieces: <code>emit</code> writes the validated frame to typed Parquet, and <code>run</code> composes the four stages into a single callable that returns a <code>WrangleStats</code> record. Then you prove the whole thing works with a <code>pytest</code> smoke test that catches both the happy path and the deliberate failure, and you write the skill file that turns the artifact into a portfolio piece.</p>
+<h2 id="what-you-build-9"><a class="header" href="#what-you-build-9">What You Build</a></h2>
+<p>You build the <code>emit</code> function and the <code>run</code> composer for <code>wrangle.py</code>, a <code>smoke.py</code> pytest gate that asserts row counts, dtypes, and the negative case, and <code>outputs/skill-data-wrangling.md</code>, the write-up that explains what you shipped and why it matters.</p>
+<h2 id="the-emit-stage"><a class="header" href="#the-emit-stage">The emit Stage</a></h2>
+<p><code>emit</code> writes the validated DataFrame to Parquet. The pattern is one line: <code>df.to_parquet(path, engine="pyarrow", index=False)</code>. The reason to call it out as a named stage is the same reason the earlier stages are named: each stage does one thing, takes a clear input, and is independently testable.</p>
+<pre><code class="language-python">def emit(df: pd.DataFrame, path: str) -&gt; None:
+    """Write a validated DataFrame to Parquet.
+
+    Requires pyarrow. The caller is responsible for calling
+    reshape_and_validate before emit; emit writes what it receives.
+    """
+    try:
+        df.to_parquet(path, engine="pyarrow", index=False)
+    except ImportError:
+        # pyarrow is optional at import time; fail loudly here, not silently
+        raise RuntimeError(
+            "emit requires pyarrow: pip install pyarrow"
+        ) from None
+</code></pre>
+<p>The guard matters. M3 taught that Parquet depends on <code>pyarrow</code>, which is not in the standard library. The import error from <code>to_parquet</code> is clear enough on its own, but wrapping it in a <code>RuntimeError</code> with the install hint means the pipeline fails at the emit stage, not at a cryptic internal pandas call. That is the difference between a crash and a message.</p>
+<p>Microsoft Fabric’s pandas integration page shows this exact pattern: <code>df.to_parquet("/LAKEHOUSE_PATH/Files/FILENAME.parquet")</code> followed by <code>pd.read_parquet(...)</code> for round-trip validation, used in production Lakehouse pipelines (<a href="https://learn.microsoft.com/fabric/data-science/read-write-pandas#reading-and-writing-various-file-formats">learn.microsoft.com/fabric/data-science/read-write-pandas</a>). The local artifact uses the same API surface.</p>
+<h2 id="the-wranglestats-dataclass"><a class="header" href="#the-wranglestats-dataclass">The WrangleStats Dataclass</a></h2>
+<p><code>run</code> needs to return something a caller can inspect and assert against. A dict would work, but M5 established the pattern: when the fields are named and fixed, use a dataclass.</p>
+<pre><code class="language-python">from dataclasses import dataclass
+
+@dataclass
+class WrangleStats:
+    rows_in: int
+    rows_out: int
+    dropped_dupes: int
+    dropped_nulls: int
+</code></pre>
+<p>No <code>frozen=True</code> here: stats are a report, not a config. The four fields map one-to-one to what the pipeline can measure:</p>
+<ul>
+<li><code>rows_in</code>: the count after <code>ingest</code>, before anything else.</li>
+<li><code>dropped_nulls</code>: rows removed by <code>clean</code> (8 rows in, 7 after null drop for the sample).</li>
+<li><code>dropped_dupes</code>: rows removed by <code>clean</code>’s dedup pass (7 to 6 on the sample).</li>
+<li><code>rows_out</code>: the count that reaches <code>emit</code>.</li>
+</ul>
+<p>The smoke test asserts these four numbers exactly. When a field is wrong, the failure message names the field, not a key string.</p>
+<h2 id="the-run-composer"><a class="header" href="#the-run-composer">The run Composer</a></h2>
+<p><code>run</code> wires the four stages in order and collects the stats as it goes.</p>
+<pre><code class="language-python">def run(config: WrangleConfig) -&gt; WrangleStats:
+    df_raw = ingest(config.input_path)
+    rows_in = len(df_raw)
+
+    df_clean = clean(df_raw)
+    # derive dropped counts by diffing row counts
+    dropped_nulls = rows_in - len(df_clean) - ???
+</code></pre>
+<p>The counting requires care. <code>clean</code> drops nulls first, then deduplicates. To get <code>dropped_nulls</code> and <code>dropped_dupes</code> separately, track the intermediate length:</p>
+<pre><code class="language-python">def run(config: WrangleConfig) -&gt; WrangleStats:
+    df_raw = ingest(config.input_path)
+    rows_in = len(df_raw)
+
+    df_clean = clean(df_raw)
+    # clean drops nulls first, then deduplicates; compute each delta
+    after_null_drop = rows_in - df_clean.pipe(
+        lambda df: df  # placeholder; see exercise
+    )
+    # ...
+</code></pre>
+<p>The exercise asks you to work out the counting logic. The key constraint: <code>clean</code> is a given and you cannot change its implementation. You must derive the two deltas from the row counts available before and after <code>clean</code>, and from the dedup key. One approach is to track null rows before calling <code>clean</code>; another is to compute deduplication from the raw frame directly. Either is correct as long as <code>smoke.py</code> asserts the numbers.</p>
+<p>A complete reference signature:</p>
+<pre><code class="language-python">def run(config: WrangleConfig) -&gt; WrangleStats:
+    df_raw   = ingest(config.input_path)
+    rows_in  = len(df_raw)
+    df_clean = clean(df_raw)
+    df_valid = reshape_and_validate(df_clean, config)
+    emit(df_valid, config.output_path)
+    # stats derivation: your job in the exercise
+    return WrangleStats(
+        rows_in=rows_in,
+        rows_out=len(df_valid),
+        dropped_dupes=...,
+        dropped_nulls=...,
+    )
+</code></pre>
+<h2 id="the-smoke-test"><a class="header" href="#the-smoke-test">The Smoke Test</a></h2>
+<p>A “smoke test” answers one question: does the pipeline produce the right output without catching fire? It is not an exhaustive test suite. It is the minimum gate that makes “done” mean something.</p>
+<p><code>smoke.py</code> has two test functions. <code>test_pipeline_happy_path</code> runs the full pipeline on the sample corpus and asserts:</p>
+<ul>
+<li><code>stats.rows_in == 8</code></li>
+<li><code>stats.rows_out == 6</code></li>
+<li><code>stats.dropped_dupes == 1</code></li>
+<li><code>stats.dropped_nulls == 1</code></li>
+<li>No nulls in the required columns of the output Parquet</li>
+<li>The Parquet file exists and round-trips, checked with <code>pandas.api.types</code> predicates (<code>id</code> an integer, <code>text</code> and <code>label</code> strings, <code>score</code> a float) so a round-trip’s <code>str</code> dtype does not fail the gate</li>
+</ul>
+<p><code>test_pipeline_negative_case</code> provides a corpus that is missing the <code>label</code> column and asserts that <code>run</code> raises. The pipeline’s whole job is to reject data that violates the contract; a test that only checks the happy path does not prove the pipeline does its job.</p>
+<pre><code class="language-python">import pytest
+import pandas as pd
+import pathlib
+
+def test_pipeline_negative_case(tmp_path):
+    """A corpus missing a required column must make reshape_and_validate raise."""
+    import sys
+    sys.path.insert(0, str(pathlib.Path(__file__).parent))
+    from wrangle import WrangleConfig, run
+
+    # write a JSONL corpus with no 'label' column
+    bad_corpus = tmp_path / "bad.jsonl"
+    bad_corpus.write_text(
+        '{"id": 1, "text": "hello"}\n'
+        '{"id": 2, "text": "world"}\n',
+        encoding="utf-8",
+    )
+    bad_config = WrangleConfig(
+        input_path=str(bad_corpus),
+        output_path=str(tmp_path / "out.parquet"),
+    )
+    with pytest.raises(Exception):
+        run(bad_config)
+</code></pre>
+<p>The assertion is <code>pytest.raises(Exception)</code>, not a specific exception type, because <code>reshape_and_validate</code> is a given: its exact exception class is an implementation detail of a stage you did not write. The test proves the gate fires, not which Python class it uses.</p>
+<h2 id="the-readme-and-the-skill-write-up"><a class="header" href="#the-readme-and-the-skill-write-up">The README and the Skill Write-Up</a></h2>
+<p>Every strong project frames the business problem before the code. The exercise README you write starts with this:</p>
+<blockquote>
+<p>Data wrangling is the most common source of silent model failures. A corpus that enters training with duplicate records inflates accuracy metrics. One with null labels trains on noise. This artifact builds a production wrangling pipeline that rejects both problems at the gate, and ships the validated corpus as typed Parquet that downstream steps can load without re-inferring types.</p>
+</blockquote>
+<p>That is the STANDARDS Part 2 “README frames the business problem” criterion. It answers “why does this exist” before it answers “what does it do.”</p>
+<p><code>outputs/skill-data-wrangling.md</code> is the portfolio surface. It documents what the artifact does, the business problem it solves, the skills it demonstrates, and how to run it. A hiring manager reading a GitHub repo will read the README first and the skill write-up second; the code is third. The write-up is not optional and it is not filler: it is the translation layer between a script and a hire.</p>
+<h2 id="the-standards-check"><a class="header" href="#the-standards-check">The Standards Check</a></h2>
+<p>Every build lesson in this book is held to the Part 2 rubric. Here is where each criterion lands in this artifact:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Criterion</th><th>Where it lives</th></tr>
+</thead>
+<tbody>
+<tr><td>Real entry point</td><td><code>python wrangle.py</code> runs the pipeline and exits 0</td></tr>
+<tr><td>README frames the business problem</td><td><code>exercises/module6/emit-test-and-ship/README.md</code> leads with the duplicate/null failure mode</td></tr>
+<tr><td>Machine-checkable acceptance gate</td><td><code>pytest smoke.py</code> passes; two assertions cover happy path and negative case</td></tr>
+<tr><td>The negative case is tested</td><td><code>test_pipeline_negative_case</code> asserts a malformed corpus raises</td></tr>
+<tr><td>Versioned, clean layout; no secrets</td><td>Parquet goes to <code>outputs/</code>; no keys; <code>.gitignore</code> optional</td></tr>
+<tr><td>Ships a skill artifact</td><td><code>outputs/skill-data-wrangling.md</code> is a required output</td></tr>
+</tbody>
+</table>
+</div>
+<p>The gate is green when <code>python wrangle.py</code> exits 0 and <code>pytest smoke.py</code> reports two tests passed.</p>
+<p>Shipping a smoke-tested artifact with a typed output and a negative case is not about following a checklist. It is what separates a data script from a data pipeline: the script does something useful; the pipeline proves it did.</p>
+<h2 id="core-concepts-23"><a class="header" href="#core-concepts-23">Core Concepts</a></h2>
+<ul>
+<li><code>emit</code> writes a validated DataFrame to Parquet using <code>df.to_parquet(path, engine="pyarrow", index=False)</code>; it is the final stage in a chain where each earlier stage earns the trust this one cashes.</li>
+<li><code>WrangleStats</code> is a <code>@dataclass</code> (not a dict) because the four row-count fields are named, fixed, and asserted by name in the smoke test; a dict key typo fails at runtime, an attribute typo fails before you run.</li>
+<li>A smoke test earns its name by covering both paths: the happy path proves the output is correct; the negative case proves the gate rejects what it should, and that is what a hiring manager evaluates.</li>
+<li>The skill write-up in <code>outputs/skill-data-wrangling.md</code> is the translation between a script and a portfolio piece; the README’s first sentence is the business problem, not the file name.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module6/emit-test-and-ship/">
+<p><strong>Build It in Claude Code:</strong> Finish <code>wrangle.py</code> by adding <code>WrangleStats</code>, <code>emit</code>, <code>run</code>, and the <code>if __name__ == "__main__":</code> block; write <code>smoke.py</code> with the happy-path and negative-case tests; and fill out <code>outputs/skill-data-wrangling.md</code>. The gate is green when <code>python wrangle.py</code> exits 0 and <code>pytest smoke.py</code> passes both tests.</p>
 </div>
 
 

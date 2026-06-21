@@ -177,43 +177,41 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="module-4-vectorization-discipline"><a class="header" href="#module-4-vectorization-discipline">Module 4: Vectorization Discipline</a></h1>
+                        <h1 id="module-6-data-wrangling-artifact"><a class="header" href="#module-6-data-wrangling-artifact">Module 6: Data Wrangling Artifact</a></h1>
 <h2 id="what-this-module-covers"><a class="header" href="#what-this-module-covers">What This Module Covers</a></h2>
-<p>Module 1 built the cost model, Module 2 the NumPy operations, Module 3 the Pandas layer. Module 4 is the judgment that ties them together. You already know how to vectorize; this module teaches when to, when not to, and how to prove the call with numbers. The discipline is not “vectorize everything.” It is profile first, measure the three costs (speed, memory, readability), then decide and justify.</p>
-<p>This is the difference between an engineer who rewrites the wrong loop on a hunch and one who measures, changes one thing, and measures again. A take-home that hands you a slow pipeline is testing exactly this: can you find the real bottleneck, quantify the fix, and recognize the case where the clever one-liner is the wrong answer.</p>
-<p>The work stays grounded in the AI-engineering call site: the batch job that times out, the <code>apply</code> that never scales, the broadcast that runs out of memory on a real corpus.</p>
+<p>Modules 1 through 5 taught the pieces. Module 6 is the first time you ship one production artifact that uses all of them: <code>wrangle.py</code>, a data-cleaning pipeline that turns a raw JSONL corpus into a validated, typed Parquet dataset. This is the Composition phase of the book, and the artifact is the take-home a hiring manager actually runs.</p>
+<p>Unlike the earlier modules, M6 is not a set of independent lessons. It is one pipeline built in four stages, each lesson adding the next, ending in a green test gate. The artifact is held to the strong-project bar: a real entry point, a README that frames the business problem first, a <code>pytest</code> smoke gate that proves it (including a deliberate failure case), and a skill write-up that turns the script into a portfolio piece.</p>
 <h2 id="arc-of-lessons"><a class="header" href="#arc-of-lessons">Arc of Lessons</a></h2>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Lesson</th><th>Title</th><th>What It Teaches</th></tr>
+<tr><th>Lesson</th><th>Title</th><th>Stage of <code>wrangle.py</code></th></tr>
 </thead>
 <tbody>
-<tr><td>1</td><td>Profile Before You Optimize</td><td>Measure before you rewrite; reach for <code>measure.py</code>’s <code>time_sum</code>, because the bottleneck is rarely where you guess</td></tr>
-<tr><td>2</td><td>When the Array Wins</td><td>The loop-to-C-loop speedup, measured, and how it grows with N up to the cache limit; the crossover where a small loop can win</td></tr>
-<tr><td>3</td><td>The Hidden Cost of apply</td><td>Put a number on the <code>apply(axis=1)</code> tax M3 named, watch it widen with scale, and map the few cases where <code>apply</code> is genuinely unavoidable</td></tr>
-<tr><td>4</td><td>When Not to Vectorize</td><td>The broadcast that blows the memory budget, the one-liner that costs readability, and chunking as the third option; the decision rule that closes the module</td></tr>
+<tr><td>1</td><td>Ingest the Corpus</td><td>Read raw JSONL into a typed DataFrame; a frozen <code>@dataclass</code> config holds the contract</td></tr>
+<tr><td>2</td><td>Clean and Deduplicate</td><td>Dedup on the key, drop null-text rows, fill null scores, normalize text with the <code>.str</code> accessor</td></tr>
+<tr><td>3</td><td>Reshape and Validate</td><td>Select to the schema and assert it: required columns, no null leakage, correct dtypes; a violation raises at the gate</td></tr>
+<tr><td>4</td><td>Emit, Test, and Ship</td><td>Write Parquet, compose the stages in <code>run</code>, then the <code>pytest</code> smoke gate and the skill write-up</td></tr>
 </tbody>
 </table>
 </div>
 <h2 id="throughline-artifact"><a class="header" href="#throughline-artifact">Throughline Artifact</a></h2>
-<p>Module 4 is where the artifact chain pays off. Modules 1 through 3 each <em>added</em> one function to <code>measure.py</code>. Module 4 builds a new artifact, <code>vectorization_report.py</code> (at <code>exercises/module4/</code>), that <strong>imports <code>measure.py</code> off disk and composes its functions</strong>: it calls <code>time_sum</code> to profile a loop against a vectorized version, reuses <code>broadcast_allocates</code> to check whether the vectorized path blows the memory budget, and emits a “vectorize / keep the loop / chunk it” recommendation with the numbers behind it. The reuse is real composition, not a rewrite: the report imports the prior artifact and calls it. This is the same pattern the portfolio modules (M6, M7, M8) use, practiced here for the first time.</p>
+<p><code>wrangle.py</code> is the portfolio artifact, and the first one that <strong>composes</strong> everything before it: M3’s Pandas I/O and cleaning, M5’s idioms (a frozen <code>@dataclass</code> config, a <code>WrangleStats</code> record, type hints, the vectorized <code>.str</code> accessor), following made-with-ml’s real <code>data.py</code> shape. The acceptance gate is <code>smoke.py</code>: it asserts the row accounting (8 in, 6 out, 1 duplicate and 1 null dropped), that the Parquet round-trips with the right types (checked with <code>pandas.api.types</code> predicates so a round-trip’s <code>str</code> dtype passes), and that a malformed corpus raises at the validation gate. The skill write-up in <code>outputs/skill-data-wrangling.md</code> is the portfolio surface. The data this pipeline produces is what Module 7’s evaluation engine consumes.</p>
 <h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
 <ul>
-<li>Modules 1 through 3: the cost model, the NumPy operations, and the Pandas layer, including M3’s finding that <code>apply(axis=1)</code> is a disguised per-row loop. Module 4 quantifies and decides; it does not re-teach the mechanics.</li>
-<li>The <code>measure.py</code> you have built across M1 through M3, at <code>exercises/module1/the-cost-of-a-python-list/measure.py</code>. Module 4 imports <code>time_sum</code> and <code>broadcast_allocates</code> from it.</li>
-<li>A Python 3.11+ environment with NumPy and pandas installed (<code>pip install numpy pandas</code>).</li>
+<li>Modules 1 through 5, especially M3 (Pandas) and M5 (idioms: dataclasses, type hints, the <code>.str</code> accessor). M6 composes them; it does not re-teach them.</li>
+<li>A Python 3.11+ environment with pandas, numpy, and pyarrow (<code>pip install pandas numpy pyarrow</code>). pyarrow is required for the Parquet output; <code>emit</code> fails with a clear install hint if it is absent.</li>
 </ul>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module3/cleaning-and-missing-data.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module5/dataclasses.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module4/profile-before-you-optimize.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module6/ingest-the-corpus.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -223,11 +221,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module3/cleaning-and-missing-data.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module5/dataclasses.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module4/profile-before-you-optimize.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module6/ingest-the-corpus.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

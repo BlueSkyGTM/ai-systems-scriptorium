@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Overview - Just Python — Applied Python for AI Engineers</title>
+        <title>Reshape and Validate - Just Python — Applied Python for AI Engineers</title>
 
 
         <!-- Custom HTML head -->
@@ -177,43 +177,135 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="module-4-vectorization-discipline"><a class="header" href="#module-4-vectorization-discipline">Module 4: Vectorization Discipline</a></h1>
-<h2 id="what-this-module-covers"><a class="header" href="#what-this-module-covers">What This Module Covers</a></h2>
-<p>Module 1 built the cost model, Module 2 the NumPy operations, Module 3 the Pandas layer. Module 4 is the judgment that ties them together. You already know how to vectorize; this module teaches when to, when not to, and how to prove the call with numbers. The discipline is not “vectorize everything.” It is profile first, measure the three costs (speed, memory, readability), then decide and justify.</p>
-<p>This is the difference between an engineer who rewrites the wrong loop on a hunch and one who measures, changes one thing, and measures again. A take-home that hands you a slow pipeline is testing exactly this: can you find the real bottleneck, quantify the fix, and recognize the case where the clever one-liner is the wrong answer.</p>
-<p>The work stays grounded in the AI-engineering call site: the batch job that times out, the <code>apply</code> that never scales, the broadcast that runs out of memory on a real corpus.</p>
-<h2 id="arc-of-lessons"><a class="header" href="#arc-of-lessons">Arc of Lessons</a></h2>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Lesson</th><th>Title</th><th>What It Teaches</th></tr>
-</thead>
-<tbody>
-<tr><td>1</td><td>Profile Before You Optimize</td><td>Measure before you rewrite; reach for <code>measure.py</code>’s <code>time_sum</code>, because the bottleneck is rarely where you guess</td></tr>
-<tr><td>2</td><td>When the Array Wins</td><td>The loop-to-C-loop speedup, measured, and how it grows with N up to the cache limit; the crossover where a small loop can win</td></tr>
-<tr><td>3</td><td>The Hidden Cost of apply</td><td>Put a number on the <code>apply(axis=1)</code> tax M3 named, watch it widen with scale, and map the few cases where <code>apply</code> is genuinely unavoidable</td></tr>
-<tr><td>4</td><td>When Not to Vectorize</td><td>The broadcast that blows the memory budget, the one-liner that costs readability, and chunking as the third option; the decision rule that closes the module</td></tr>
-</tbody>
-</table>
-</div>
-<h2 id="throughline-artifact"><a class="header" href="#throughline-artifact">Throughline Artifact</a></h2>
-<p>Module 4 is where the artifact chain pays off. Modules 1 through 3 each <em>added</em> one function to <code>measure.py</code>. Module 4 builds a new artifact, <code>vectorization_report.py</code> (at <code>exercises/module4/</code>), that <strong>imports <code>measure.py</code> off disk and composes its functions</strong>: it calls <code>time_sum</code> to profile a loop against a vectorized version, reuses <code>broadcast_allocates</code> to check whether the vectorized path blows the memory budget, and emits a “vectorize / keep the loop / chunk it” recommendation with the numbers behind it. The reuse is real composition, not a rewrite: the report imports the prior artifact and calls it. This is the same pattern the portfolio modules (M6, M7, M8) use, practiced here for the first time.</p>
-<h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
+                        <h1 id="reshape-and-validate"><a class="header" href="#reshape-and-validate">Reshape and Validate</a></h1>
+<p>“The pipeline ran” is not a guarantee. It is just evidence that no Python exception fired. A training set with the wrong columns, the wrong dtypes, or a null hiding in the <code>text</code> field can pass silently through <code>ingest</code> and <code>clean</code> and arrive at the model intact. The model does not complain; it just learns the wrong thing.</p>
+<h2 id="the-artifact"><a class="header" href="#the-artifact">The Artifact</a></h2>
+<p>You build <code>reshape_and_validate</code>, the third stage in <code>wrangle.py</code>. It selects and orders columns to match the target schema, then asserts three things before returning: every required column is present, no required column contains a null, and the dtypes are right. If any assertion fails, it raises a <code>ValueError</code> with a message precise enough to act on. That is the gate.</p>
+<h2 id="why-a-gate-not-a-hope"><a class="header" href="#why-a-gate-not-a-hope">Why a Gate, Not a Hope</a></h2>
+<p>The <code>clean</code> stage (L2) handles duplication, null text, and score filling. After <code>clean</code>, the data is better, but not contractually correct. There is no guarantee that all required columns exist, that column order matches what the downstream writer expects, or that dtypes have not drifted from an upstream schema change.</p>
+<p>The difference between a gate and a hope is who bears the cost of failure. A hope means the model run costs you three hours before a <code>KeyError</code> or a silent NaN propagates into the loss. A gate means <code>reshape_and_validate</code> raises in the first second.</p>
+<p>Azure Databricks documents this as schema enforcement: “schema enforcement ensures that data written to a table adheres to a predefined schema,” and NOT NULL constraints prevent null values from propagating downstream at all (<a href="https://learn.microsoft.com/azure/databricks/transform/validate">learn.microsoft.com/azure/databricks/transform/validate</a>). The same logic applies in a Python pipeline: the stage that writes Parquet is not the place to discover the schema is wrong.</p>
+<h2 id="select-and-order-first"><a class="header" href="#select-and-order-first">Select and Order First</a></h2>
+<p>Reshaping is simpler than it looks. From the cleaned frame, select <code>config.required_cols</code> in the declared order, then append <code>score</code>. Column order is a contract: the Parquet writer in L4 depends on it.</p>
+<pre><code class="language-python">from dataclasses import dataclass
+from typing import Tuple
+import pandas as pd
+
+@dataclass(frozen=True)
+class WrangleConfig:
+    input_path: str
+    output_path: str
+    required_cols: Tuple[str, ...] = ("id", "text", "label")
+    dedup_key: str = "id"
+</code></pre>
+<p>The <code>required_cols</code> tuple is fixed in <code>WrangleConfig</code>. Select by it:</p>
+<pre><code class="language-python">def reshape_and_validate(df: pd.DataFrame, config: WrangleConfig) -&gt; pd.DataFrame:
+    cols = list(config.required_cols) + ["score"]
+    df = df[cols]
+    ...
+</code></pre>
+<p>If any column in <code>cols</code> is absent, pandas raises a <code>KeyError</code>. That is not a clear message. The next step is your explicit check.</p>
+<h2 id="assert-the-schema"><a class="header" href="#assert-the-schema">Assert the Schema</a></h2>
+<p>Three checks, in order. The first catches missing columns before the later checks can reference them. The second catches null leakage in required columns. The third catches silent dtype drift.</p>
+<pre><code class="language-python">def reshape_and_validate(df: pd.DataFrame, config: WrangleConfig) -&gt; pd.DataFrame:
+    cols = list(config.required_cols) + ["score"]
+
+    # 1. Required columns present
+    missing = [c for c in config.required_cols if c not in df.columns]
+    if missing:
+        raise ValueError(f"Missing required columns: {missing}")
+
+    df = df[cols]
+
+    # 2. No nulls in required columns
+    null_counts = df[list(config.required_cols)].isna().sum()
+    bad = null_counts[null_counts &gt; 0]
+    if not bad.empty:
+        raise ValueError(f"Null values in required columns: {bad.to_dict()}")
+
+    # 3. Dtypes correct. Use pandas.api.types predicates, not strict string
+    #    equality: a Parquet round-trip can return text as the newer `str`
+    #    dtype instead of `object`, and is_string_dtype accepts both.
+    import pandas.api.types as pat
+    checks = {"id": pat.is_integer_dtype, "text": pat.is_string_dtype,
+              "label": pat.is_string_dtype, "score": pat.is_float_dtype}
+    for col, ok in checks.items():
+        if col in df.columns and not ok(df[col]):
+            raise ValueError(f"Column '{col}' has dtype {df[col].dtype}, failed {ok.__name__}")
+
+    return df
+</code></pre>
+<p>Each <code>ValueError</code> names the exact column and the exact problem. A reviewer reading the traceback knows what to fix without opening the data.</p>
+<h2 id="the-passing-case"><a class="header" href="#the-passing-case">The Passing Case</a></h2>
+<p>Start with the same six-row sample the earlier stages use:</p>
+<pre><code class="language-python">import pandas as pd
+import numpy as np
+
+sample = pd.DataFrame({
+    "id":    [1, 2, 3, 4, 5, 6],
+    "text":  ["good", "bad", "ok", "great", "poor", "fine"],
+    "label": ["pos", "neg", "pos", "pos", "neg", "pos"],
+    "score": [0.9, 0.2, 0.6, 0.85, 0.3, 0.75],
+})
+
+config = WrangleConfig(input_path="in.jsonl", output_path="out.parquet")
+validated = reshape_and_validate(sample, config)
+print(validated.dtypes)
+print(validated.shape)   # (6, 4)
+</code></pre>
+<p>The frame passes: required columns present, no nulls, dtypes match. <code>reshape_and_validate</code> returns it in the declared column order, ready for <code>emit</code>.</p>
+<h2 id="the-raising-case"><a class="header" href="#the-raising-case">The Raising Case</a></h2>
+<p>Remove a column before calling the gate and it raises immediately:</p>
+<pre><code class="language-python">bad_frame = sample.drop(columns=["text"])
+
+try:
+    reshape_and_validate(bad_frame, config)
+except ValueError as e:
+    print(f"[CAUGHT] {e}")
+# [CAUGHT] Missing required columns: ['text']
+</code></pre>
+<p>Or inject a null into a required column after cleaning:</p>
+<pre><code class="language-python">null_frame = sample.copy()
+null_frame.loc[2, "label"] = None
+
+try:
+    reshape_and_validate(null_frame, config)
+except ValueError as e:
+    print(f"[CAUGHT] {e}")
+# [CAUGHT] Null values in required columns: {'label': 1}
+</code></pre>
+<p>The gate catches both. The model never sees either frame.</p>
+<h2 id="placing-this-in-the-pipeline"><a class="header" href="#placing-this-in-the-pipeline">Placing This in the Pipeline</a></h2>
+<p><code>reshape_and_validate</code> sits between <code>clean</code> and <code>emit</code>. In <code>run</code>:</p>
+<pre><code class="language-python">def run(config: WrangleConfig) -&gt; None:
+    df = ingest(config.input_path)    # L1 (given)
+    df = clean(df)                    # L2 (given)
+    df = reshape_and_validate(df, config)  # L3 (this stage)
+    emit(df, config.output_path)      # L4 (given)
+</code></pre>
+<p>The Parquet file <code>emit</code> writes is trustworthy because this gate ran. Without it, you are shipping an assertion-free artifact: “the pipeline ran” again, and nothing more.</p>
+<p>The gate is what makes the Parquet file a promise instead of a guess. Skip it and you are trusting every upstream change to be benign; add it and a broken input breaks loudly, exactly here, before it costs anything.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>Modules 1 through 3: the cost model, the NumPy operations, and the Pandas layer, including M3’s finding that <code>apply(axis=1)</code> is a disguised per-row loop. Module 4 quantifies and decides; it does not re-teach the mechanics.</li>
-<li>The <code>measure.py</code> you have built across M1 through M3, at <code>exercises/module1/the-cost-of-a-python-list/measure.py</code>. Module 4 imports <code>time_sum</code> and <code>broadcast_allocates</code> from it.</li>
-<li>A Python 3.11+ environment with NumPy and pandas installed (<code>pip install numpy pandas</code>).</li>
+<li>Reshaping to a target schema means selecting and ordering columns by a declared list; the list lives in the config, not hardcoded in the stage.</li>
+<li>A validation gate asserts the schema as a contract: required columns present, no nulls in required columns, dtypes correct. A violated assertion raises with a precise message.</li>
+<li>The gate belongs in the pipeline, not in a reviewer’s head. “The pipeline ran” proves nothing without it.</li>
+<li>Raising <code>ValueError</code> with a column name and count is the minimum useful error: it names what is wrong so the next person can fix it without opening the data.</li>
 </ul>
+<div class="claude-handoff" data-exercise="exercises/module6/reshape-and-validate/">
+<p><strong>Build It in Claude Code:</strong> Add <code>reshape_and_validate</code> to <code>exercises/module6/wrangle.py</code>, run it on <code>clean(ingest(sample))</code>, and assert both the passing case and the raising case behave correctly. One <code>python</code> command, exit 0.</p>
+</div>
+
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module3/cleaning-and-missing-data.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module6/clean-and-deduplicate.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module4/profile-before-you-optimize.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module6/emit-test-and-ship.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -223,11 +315,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module3/cleaning-and-missing-data.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module6/clean-and-deduplicate.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module4/profile-before-you-optimize.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module6/emit-test-and-ship.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

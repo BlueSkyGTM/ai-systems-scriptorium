@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Overview - Just Python — Applied Python for AI Engineers</title>
+        <title>Clean and Deduplicate - Just Python — Applied Python for AI Engineers</title>
 
 
         <!-- Custom HTML head -->
@@ -177,43 +177,113 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="module-4-vectorization-discipline"><a class="header" href="#module-4-vectorization-discipline">Module 4: Vectorization Discipline</a></h1>
-<h2 id="what-this-module-covers"><a class="header" href="#what-this-module-covers">What This Module Covers</a></h2>
-<p>Module 1 built the cost model, Module 2 the NumPy operations, Module 3 the Pandas layer. Module 4 is the judgment that ties them together. You already know how to vectorize; this module teaches when to, when not to, and how to prove the call with numbers. The discipline is not “vectorize everything.” It is profile first, measure the three costs (speed, memory, readability), then decide and justify.</p>
-<p>This is the difference between an engineer who rewrites the wrong loop on a hunch and one who measures, changes one thing, and measures again. A take-home that hands you a slow pipeline is testing exactly this: can you find the real bottleneck, quantify the fix, and recognize the case where the clever one-liner is the wrong answer.</p>
-<p>The work stays grounded in the AI-engineering call site: the batch job that times out, the <code>apply</code> that never scales, the broadcast that runs out of memory on a real corpus.</p>
-<h2 id="arc-of-lessons"><a class="header" href="#arc-of-lessons">Arc of Lessons</a></h2>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Lesson</th><th>Title</th><th>What It Teaches</th></tr>
-</thead>
-<tbody>
-<tr><td>1</td><td>Profile Before You Optimize</td><td>Measure before you rewrite; reach for <code>measure.py</code>’s <code>time_sum</code>, because the bottleneck is rarely where you guess</td></tr>
-<tr><td>2</td><td>When the Array Wins</td><td>The loop-to-C-loop speedup, measured, and how it grows with N up to the cache limit; the crossover where a small loop can win</td></tr>
-<tr><td>3</td><td>The Hidden Cost of apply</td><td>Put a number on the <code>apply(axis=1)</code> tax M3 named, watch it widen with scale, and map the few cases where <code>apply</code> is genuinely unavoidable</td></tr>
-<tr><td>4</td><td>When Not to Vectorize</td><td>The broadcast that blows the memory budget, the one-liner that costs readability, and chunking as the third option; the decision rule that closes the module</td></tr>
-</tbody>
-</table>
-</div>
-<h2 id="throughline-artifact"><a class="header" href="#throughline-artifact">Throughline Artifact</a></h2>
-<p>Module 4 is where the artifact chain pays off. Modules 1 through 3 each <em>added</em> one function to <code>measure.py</code>. Module 4 builds a new artifact, <code>vectorization_report.py</code> (at <code>exercises/module4/</code>), that <strong>imports <code>measure.py</code> off disk and composes its functions</strong>: it calls <code>time_sum</code> to profile a loop against a vectorized version, reuses <code>broadcast_allocates</code> to check whether the vectorized path blows the memory budget, and emits a “vectorize / keep the loop / chunk it” recommendation with the numbers behind it. The reuse is real composition, not a rewrite: the report imports the prior artifact and calls it. This is the same pattern the portfolio modules (M6, M7, M8) use, practiced here for the first time.</p>
-<h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
+                        <h1 id="clean-and-deduplicate"><a class="header" href="#clean-and-deduplicate">Clean and Deduplicate</a></h1>
+<p>A duplicate that reaches an embedding model and a null that reaches a metric share the same
+property: neither announces itself. The <code>clean</code> stage is the one place in <code>wrangle.py</code> where you
+decide what the model is allowed to see.</p>
+<h2 id="what-you-build"><a class="header" href="#what-you-build">What You Build</a></h2>
+<p>You build the <code>clean</code> function that slots into the shared <code>wrangle.py</code> pipeline. It takes the
+DataFrame that <code>ingest</code> loaded, removes noise in a fixed order, and returns a frame the rest of the
+pipeline can trust.</p>
+<h2 id="the-pipelines-shape"><a class="header" href="#the-pipelines-shape">The Pipeline’s Shape</a></h2>
+<p><code>wrangle.py</code> composes four stages in sequence. <code>ingest</code> (L1) loads raw JSONL into a typed
+DataFrame. <code>clean</code> (this lesson) scrubs it. <code>reshape_and_validate</code> (L3) enforces schema rules.
+<code>emit</code> (L4) writes the result. You build <code>clean</code>; the other three are given.</p>
+<p>The corpus the pipeline receives looks like this before cleaning:</p>
+<pre><code>   id  text                  label   score
+0   1  "Great Product "      pos     0.90
+1   2  "terrible service"    neg     0.20
+2   2  "terrible service"    neg     0.20   ← duplicate id
+3   3  "Works Fine"          pos     NaN    ← missing score
+4   4  None                  neu     0.50   ← missing text
+5   5  " Another product "   neg     0.15
+6   6  "FAST delivery"       pos     0.80
+7   7  "slow response  "     neg     0.60
+</code></pre>
+<p>Eight rows in, six rows out. The two that fall: the duplicate on <code>id=2</code>, and the null-text on <code>id=4</code>.</p>
+<h2 id="the-four-steps-in-order"><a class="header" href="#the-four-steps-in-order">The Four Steps, in Order</a></h2>
+<p>The function signature is fixed for the smoke gate downstream:</p>
+<pre><code class="language-python">def clean(df: pd.DataFrame) -&gt; pd.DataFrame:
+</code></pre>
+<p><strong>Step 1: Drop duplicates on the key.</strong></p>
+<pre><code class="language-python">df = df.drop_duplicates(subset=["id"])
+</code></pre>
+<p>Before dedup the corpus has eight rows. After, it has seven. The duplicate on <code>id=2</code> is gone; the
+first occurrence stays.</p>
+<p>Why first? When both copies carry identical data, it does not matter. In real pipelines duplicates
+differ by timestamp or score, so you pass <code>keep="first"</code> or <code>keep="last"</code> explicitly and comment
+why. Here the two copies are identical, so first is fine.</p>
+<p><strong>Step 2: Drop rows where the required text is null.</strong></p>
+<pre><code class="language-python">df = df.dropna(subset=["text"])
+</code></pre>
+<p>Seven rows become six. The row for <code>id=4</code> is gone. You cannot impute a null text column without
+inventing signal the model will learn; dropping is the only honest choice. M3 covered this decision
+in detail. The point here is ordering: if you filled score nulls before dropping text nulls, you
+would compute a mean over a row you are about to delete. Dedup before dropna, dropna before fillna.</p>
+<p><strong>Step 3: Fill missing numeric scores with the column mean.</strong></p>
+<pre><code class="language-python">df["score"] = df["score"].fillna(df["score"].mean())
+</code></pre>
+<p>Before this line, <code>id=3</code> carries a null score. After it, that cell holds the mean of the five
+non-null scores in the surviving frame. The mean is computed from the already-cleaned rows, so the
+deleted duplicate and the null-text row do not influence it.</p>
+<p><code>fillna</code> accepts a scalar, a per-column dict, or a fill strategy. Column mean is the standard
+sentinel for a continuous quality score with no structural reason to be missing.</p>
+<p><strong>Step 4: Normalize the text column with the <code>.str</code> accessor.</strong></p>
+<pre><code class="language-python">df["text"] = df["text"].str.strip().str.lower()
+</code></pre>
+<p>You covered the <code>.str</code> accessor in M5: vectorized string operations over a Series, no Python loop,
+no <code>apply</code>. Here <code>strip</code> removes leading and trailing whitespace, <code>lower</code> lowercases every
+character. Both run across all six surviving rows in one pass.</p>
+<p>“Great Product “ becomes “great product”. “FAST delivery” becomes “fast delivery”. The tokenizer
+that receives this corpus sees one representation per concept, not two.</p>
+<p>Microsoft’s data-preparation guidance calls this the clean-and-normalize step and flags it as the
+required first stage before chunking or embedding: even basic normalization significantly improves
+embedding quality because models are sensitive to noise (<a href="https://learn.microsoft.com/azure/horizondb/ai/ai-data-preparation">Prepare Data for AI App and Agent
+Development for Azure HorizonDB</a>).
+The same principle applies at every scale.</p>
+<p><strong>The complete function:</strong></p>
+<pre><code class="language-python">def clean(df: pd.DataFrame) -&gt; pd.DataFrame:
+    df = df.drop_duplicates(subset=["id"])          # dedup on key
+    df = df.dropna(subset=["text"])                 # drop unrecoverable nulls
+    df["score"] = df["score"].fillna(df["score"].mean())  # fill numeric sentinel
+    df["text"] = df["text"].str.strip().str.lower() # normalize text
+    return df
+</code></pre>
+<h2 id="why-the-order-is-load-bearing"><a class="header" href="#why-the-order-is-load-bearing">Why the Order Is Load-Bearing</a></h2>
+<p>Reverse steps 1 and 3 and the mean shifts: you compute it over eight rows instead of seven, and the
+duplicate contributes twice. Reverse steps 2 and 3 and the mean includes the about-to-be-deleted
+null-text row’s score. The gate downstream is deterministic because this order is locked. Change it
+and the assertions break.</p>
+<h2 id="seam-line"><a class="header" href="#seam-line">Seam Line</a></h2>
+<p>Every metric your pipeline computes is only as clean as the rows that reached it; the <code>clean</code> stage
+is not a preprocessing chore but a commitment about what counts as data.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>Modules 1 through 3: the cost model, the NumPy operations, and the Pandas layer, including M3’s finding that <code>apply(axis=1)</code> is a disguised per-row loop. Module 4 quantifies and decides; it does not re-teach the mechanics.</li>
-<li>The <code>measure.py</code> you have built across M1 through M3, at <code>exercises/module1/the-cost-of-a-python-list/measure.py</code>. Module 4 imports <code>time_sum</code> and <code>broadcast_allocates</code> from it.</li>
-<li>A Python 3.11+ environment with NumPy and pandas installed (<code>pip install numpy pandas</code>).</li>
+<li>Dedup before dropna before fillna: the order is not arbitrary. Each step removes or imputes from
+the frame the next step sees, so reversing the order shifts the results.</li>
+<li>Drop null text, do not fill it. Imputing a text column fabricates training signal; the model
+learns from the fiction you inserted.</li>
+<li>Fill null numeric scores with the column mean computed over surviving rows only, so deleted
+duplicates and null-text rows do not skew the sentinel.</li>
+<li><code>.str.strip().str.lower()</code> is the vectorized normalization idiom from M5. It runs once over the
+whole column; <code>apply(lambda x: x.lower())</code> runs once per row and is the slower pattern.</li>
 </ul>
+<div class="claude-handoff" data-exercise="exercises/module6/clean-and-deduplicate/">
+<p><strong>Build It in Claude Code:</strong> Add the <code>clean</code> stage to the shared <code>wrangle.py</code> and run it against
+the sample corpus, asserting the before/after counts and null state. Open the repo and run the
+exercise for this lesson.</p>
+</div>
+
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module3/cleaning-and-missing-data.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module6/ingest-the-corpus.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module4/profile-before-you-optimize.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module6/reshape-and-validate.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -223,11 +293,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module3/cleaning-and-missing-data.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module6/ingest-the-corpus.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module4/profile-before-you-optimize.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module6/reshape-and-validate.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

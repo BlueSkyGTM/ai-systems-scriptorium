@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Overview - Just Python — Applied Python for AI Engineers</title>
+        <title>Emit, Test, and Ship - Just Python — Applied Python for AI Engineers</title>
 
 
         <!-- Custom HTML head -->
@@ -177,45 +177,168 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="module-4-vectorization-discipline"><a class="header" href="#module-4-vectorization-discipline">Module 4: Vectorization Discipline</a></h1>
-<h2 id="what-this-module-covers"><a class="header" href="#what-this-module-covers">What This Module Covers</a></h2>
-<p>Module 1 built the cost model, Module 2 the NumPy operations, Module 3 the Pandas layer. Module 4 is the judgment that ties them together. You already know how to vectorize; this module teaches when to, when not to, and how to prove the call with numbers. The discipline is not “vectorize everything.” It is profile first, measure the three costs (speed, memory, readability), then decide and justify.</p>
-<p>This is the difference between an engineer who rewrites the wrong loop on a hunch and one who measures, changes one thing, and measures again. A take-home that hands you a slow pipeline is testing exactly this: can you find the real bottleneck, quantify the fix, and recognize the case where the clever one-liner is the wrong answer.</p>
-<p>The work stays grounded in the AI-engineering call site: the batch job that times out, the <code>apply</code> that never scales, the broadcast that runs out of memory on a real corpus.</p>
-<h2 id="arc-of-lessons"><a class="header" href="#arc-of-lessons">Arc of Lessons</a></h2>
+                        <h1 id="emit-test-and-ship"><a class="header" href="#emit-test-and-ship">Emit, Test, and Ship</a></h1>
+<p>The artifact is done when the gate is green. You have three stages: <code>ingest</code> loads the corpus, <code>clean</code> strips nulls and normalizes text, <code>reshape_and_validate</code> enforces the schema contract. This lesson adds the final two pieces: <code>emit</code> writes the validated frame to typed Parquet, and <code>run</code> composes the four stages into a single callable that returns a <code>WrangleStats</code> record. Then you prove the whole thing works with a <code>pytest</code> smoke test that catches both the happy path and the deliberate failure, and you write the skill file that turns the artifact into a portfolio piece.</p>
+<h2 id="what-you-build"><a class="header" href="#what-you-build">What You Build</a></h2>
+<p>You build the <code>emit</code> function and the <code>run</code> composer for <code>wrangle.py</code>, a <code>smoke.py</code> pytest gate that asserts row counts, dtypes, and the negative case, and <code>outputs/skill-data-wrangling.md</code>, the write-up that explains what you shipped and why it matters.</p>
+<h2 id="the-emit-stage"><a class="header" href="#the-emit-stage">The emit Stage</a></h2>
+<p><code>emit</code> writes the validated DataFrame to Parquet. The pattern is one line: <code>df.to_parquet(path, engine="pyarrow", index=False)</code>. The reason to call it out as a named stage is the same reason the earlier stages are named: each stage does one thing, takes a clear input, and is independently testable.</p>
+<pre><code class="language-python">def emit(df: pd.DataFrame, path: str) -&gt; None:
+    """Write a validated DataFrame to Parquet.
+
+    Requires pyarrow. The caller is responsible for calling
+    reshape_and_validate before emit; emit writes what it receives.
+    """
+    try:
+        df.to_parquet(path, engine="pyarrow", index=False)
+    except ImportError:
+        # pyarrow is optional at import time; fail loudly here, not silently
+        raise RuntimeError(
+            "emit requires pyarrow: pip install pyarrow"
+        ) from None
+</code></pre>
+<p>The guard matters. M3 taught that Parquet depends on <code>pyarrow</code>, which is not in the standard library. The import error from <code>to_parquet</code> is clear enough on its own, but wrapping it in a <code>RuntimeError</code> with the install hint means the pipeline fails at the emit stage, not at a cryptic internal pandas call. That is the difference between a crash and a message.</p>
+<p>Microsoft Fabric’s pandas integration page shows this exact pattern: <code>df.to_parquet("/LAKEHOUSE_PATH/Files/FILENAME.parquet")</code> followed by <code>pd.read_parquet(...)</code> for round-trip validation, used in production Lakehouse pipelines (<a href="https://learn.microsoft.com/fabric/data-science/read-write-pandas#reading-and-writing-various-file-formats">learn.microsoft.com/fabric/data-science/read-write-pandas</a>). The local artifact uses the same API surface.</p>
+<h2 id="the-wranglestats-dataclass"><a class="header" href="#the-wranglestats-dataclass">The WrangleStats Dataclass</a></h2>
+<p><code>run</code> needs to return something a caller can inspect and assert against. A dict would work, but M5 established the pattern: when the fields are named and fixed, use a dataclass.</p>
+<pre><code class="language-python">from dataclasses import dataclass
+
+@dataclass
+class WrangleStats:
+    rows_in: int
+    rows_out: int
+    dropped_dupes: int
+    dropped_nulls: int
+</code></pre>
+<p>No <code>frozen=True</code> here: stats are a report, not a config. The four fields map one-to-one to what the pipeline can measure:</p>
+<ul>
+<li><code>rows_in</code>: the count after <code>ingest</code>, before anything else.</li>
+<li><code>dropped_nulls</code>: rows removed by <code>clean</code> (8 rows in, 7 after null drop for the sample).</li>
+<li><code>dropped_dupes</code>: rows removed by <code>clean</code>’s dedup pass (7 to 6 on the sample).</li>
+<li><code>rows_out</code>: the count that reaches <code>emit</code>.</li>
+</ul>
+<p>The smoke test asserts these four numbers exactly. When a field is wrong, the failure message names the field, not a key string.</p>
+<h2 id="the-run-composer"><a class="header" href="#the-run-composer">The run Composer</a></h2>
+<p><code>run</code> wires the four stages in order and collects the stats as it goes.</p>
+<pre><code class="language-python">def run(config: WrangleConfig) -&gt; WrangleStats:
+    df_raw = ingest(config.input_path)
+    rows_in = len(df_raw)
+
+    df_clean = clean(df_raw)
+    # derive dropped counts by diffing row counts
+    dropped_nulls = rows_in - len(df_clean) - ???
+</code></pre>
+<p>The counting requires care. <code>clean</code> drops nulls first, then deduplicates. To get <code>dropped_nulls</code> and <code>dropped_dupes</code> separately, track the intermediate length:</p>
+<pre><code class="language-python">def run(config: WrangleConfig) -&gt; WrangleStats:
+    df_raw = ingest(config.input_path)
+    rows_in = len(df_raw)
+
+    df_clean = clean(df_raw)
+    # clean drops nulls first, then deduplicates; compute each delta
+    after_null_drop = rows_in - df_clean.pipe(
+        lambda df: df  # placeholder; see exercise
+    )
+    # ...
+</code></pre>
+<p>The exercise asks you to work out the counting logic. The key constraint: <code>clean</code> is a given and you cannot change its implementation. You must derive the two deltas from the row counts available before and after <code>clean</code>, and from the dedup key. One approach is to track null rows before calling <code>clean</code>; another is to compute deduplication from the raw frame directly. Either is correct as long as <code>smoke.py</code> asserts the numbers.</p>
+<p>A complete reference signature:</p>
+<pre><code class="language-python">def run(config: WrangleConfig) -&gt; WrangleStats:
+    df_raw   = ingest(config.input_path)
+    rows_in  = len(df_raw)
+    df_clean = clean(df_raw)
+    df_valid = reshape_and_validate(df_clean, config)
+    emit(df_valid, config.output_path)
+    # stats derivation: your job in the exercise
+    return WrangleStats(
+        rows_in=rows_in,
+        rows_out=len(df_valid),
+        dropped_dupes=...,
+        dropped_nulls=...,
+    )
+</code></pre>
+<h2 id="the-smoke-test"><a class="header" href="#the-smoke-test">The Smoke Test</a></h2>
+<p>A “smoke test” answers one question: does the pipeline produce the right output without catching fire? It is not an exhaustive test suite. It is the minimum gate that makes “done” mean something.</p>
+<p><code>smoke.py</code> has two test functions. <code>test_pipeline_happy_path</code> runs the full pipeline on the sample corpus and asserts:</p>
+<ul>
+<li><code>stats.rows_in == 8</code></li>
+<li><code>stats.rows_out == 6</code></li>
+<li><code>stats.dropped_dupes == 1</code></li>
+<li><code>stats.dropped_nulls == 1</code></li>
+<li>No nulls in the required columns of the output Parquet</li>
+<li>The Parquet file exists and round-trips, checked with <code>pandas.api.types</code> predicates (<code>id</code> an integer, <code>text</code> and <code>label</code> strings, <code>score</code> a float) so a round-trip’s <code>str</code> dtype does not fail the gate</li>
+</ul>
+<p><code>test_pipeline_negative_case</code> provides a corpus that is missing the <code>label</code> column and asserts that <code>run</code> raises. The pipeline’s whole job is to reject data that violates the contract; a test that only checks the happy path does not prove the pipeline does its job.</p>
+<pre><code class="language-python">import pytest
+import pandas as pd
+import pathlib
+
+def test_pipeline_negative_case(tmp_path):
+    """A corpus missing a required column must make reshape_and_validate raise."""
+    import sys
+    sys.path.insert(0, str(pathlib.Path(__file__).parent))
+    from wrangle import WrangleConfig, run
+
+    # write a JSONL corpus with no 'label' column
+    bad_corpus = tmp_path / "bad.jsonl"
+    bad_corpus.write_text(
+        '{"id": 1, "text": "hello"}\n'
+        '{"id": 2, "text": "world"}\n',
+        encoding="utf-8",
+    )
+    bad_config = WrangleConfig(
+        input_path=str(bad_corpus),
+        output_path=str(tmp_path / "out.parquet"),
+    )
+    with pytest.raises(Exception):
+        run(bad_config)
+</code></pre>
+<p>The assertion is <code>pytest.raises(Exception)</code>, not a specific exception type, because <code>reshape_and_validate</code> is a given: its exact exception class is an implementation detail of a stage you did not write. The test proves the gate fires, not which Python class it uses.</p>
+<h2 id="the-readme-and-the-skill-write-up"><a class="header" href="#the-readme-and-the-skill-write-up">The README and the Skill Write-Up</a></h2>
+<p>Every strong project frames the business problem before the code. The exercise README you write starts with this:</p>
+<blockquote>
+<p>Data wrangling is the most common source of silent model failures. A corpus that enters training with duplicate records inflates accuracy metrics. One with null labels trains on noise. This artifact builds a production wrangling pipeline that rejects both problems at the gate, and ships the validated corpus as typed Parquet that downstream steps can load without re-inferring types.</p>
+</blockquote>
+<p>That is the STANDARDS Part 2 “README frames the business problem” criterion. It answers “why does this exist” before it answers “what does it do.”</p>
+<p><code>outputs/skill-data-wrangling.md</code> is the portfolio surface. It documents what the artifact does, the business problem it solves, the skills it demonstrates, and how to run it. A hiring manager reading a GitHub repo will read the README first and the skill write-up second; the code is third. The write-up is not optional and it is not filler: it is the translation layer between a script and a hire.</p>
+<h2 id="the-standards-check"><a class="header" href="#the-standards-check">The Standards Check</a></h2>
+<p>Every build lesson in this book is held to the Part 2 rubric. Here is where each criterion lands in this artifact:</p>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Lesson</th><th>Title</th><th>What It Teaches</th></tr>
+<tr><th>Criterion</th><th>Where it lives</th></tr>
 </thead>
 <tbody>
-<tr><td>1</td><td>Profile Before You Optimize</td><td>Measure before you rewrite; reach for <code>measure.py</code>’s <code>time_sum</code>, because the bottleneck is rarely where you guess</td></tr>
-<tr><td>2</td><td>When the Array Wins</td><td>The loop-to-C-loop speedup, measured, and how it grows with N up to the cache limit; the crossover where a small loop can win</td></tr>
-<tr><td>3</td><td>The Hidden Cost of apply</td><td>Put a number on the <code>apply(axis=1)</code> tax M3 named, watch it widen with scale, and map the few cases where <code>apply</code> is genuinely unavoidable</td></tr>
-<tr><td>4</td><td>When Not to Vectorize</td><td>The broadcast that blows the memory budget, the one-liner that costs readability, and chunking as the third option; the decision rule that closes the module</td></tr>
+<tr><td>Real entry point</td><td><code>python wrangle.py</code> runs the pipeline and exits 0</td></tr>
+<tr><td>README frames the business problem</td><td><code>exercises/module6/emit-test-and-ship/README.md</code> leads with the duplicate/null failure mode</td></tr>
+<tr><td>Machine-checkable acceptance gate</td><td><code>pytest smoke.py</code> passes; two assertions cover happy path and negative case</td></tr>
+<tr><td>The negative case is tested</td><td><code>test_pipeline_negative_case</code> asserts a malformed corpus raises</td></tr>
+<tr><td>Versioned, clean layout; no secrets</td><td>Parquet goes to <code>outputs/</code>; no keys; <code>.gitignore</code> optional</td></tr>
+<tr><td>Ships a skill artifact</td><td><code>outputs/skill-data-wrangling.md</code> is a required output</td></tr>
 </tbody>
 </table>
 </div>
-<h2 id="throughline-artifact"><a class="header" href="#throughline-artifact">Throughline Artifact</a></h2>
-<p>Module 4 is where the artifact chain pays off. Modules 1 through 3 each <em>added</em> one function to <code>measure.py</code>. Module 4 builds a new artifact, <code>vectorization_report.py</code> (at <code>exercises/module4/</code>), that <strong>imports <code>measure.py</code> off disk and composes its functions</strong>: it calls <code>time_sum</code> to profile a loop against a vectorized version, reuses <code>broadcast_allocates</code> to check whether the vectorized path blows the memory budget, and emits a “vectorize / keep the loop / chunk it” recommendation with the numbers behind it. The reuse is real composition, not a rewrite: the report imports the prior artifact and calls it. This is the same pattern the portfolio modules (M6, M7, M8) use, practiced here for the first time.</p>
-<h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
+<p>The gate is green when <code>python wrangle.py</code> exits 0 and <code>pytest smoke.py</code> reports two tests passed.</p>
+<p>Shipping a smoke-tested artifact with a typed output and a negative case is not about following a checklist. It is what separates a data script from a data pipeline: the script does something useful; the pipeline proves it did.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>Modules 1 through 3: the cost model, the NumPy operations, and the Pandas layer, including M3’s finding that <code>apply(axis=1)</code> is a disguised per-row loop. Module 4 quantifies and decides; it does not re-teach the mechanics.</li>
-<li>The <code>measure.py</code> you have built across M1 through M3, at <code>exercises/module1/the-cost-of-a-python-list/measure.py</code>. Module 4 imports <code>time_sum</code> and <code>broadcast_allocates</code> from it.</li>
-<li>A Python 3.11+ environment with NumPy and pandas installed (<code>pip install numpy pandas</code>).</li>
+<li><code>emit</code> writes a validated DataFrame to Parquet using <code>df.to_parquet(path, engine="pyarrow", index=False)</code>; it is the final stage in a chain where each earlier stage earns the trust this one cashes.</li>
+<li><code>WrangleStats</code> is a <code>@dataclass</code> (not a dict) because the four row-count fields are named, fixed, and asserted by name in the smoke test; a dict key typo fails at runtime, an attribute typo fails before you run.</li>
+<li>A smoke test earns its name by covering both paths: the happy path proves the output is correct; the negative case proves the gate rejects what it should, and that is what a hiring manager evaluates.</li>
+<li>The skill write-up in <code>outputs/skill-data-wrangling.md</code> is the translation between a script and a portfolio piece; the README’s first sentence is the business problem, not the file name.</li>
 </ul>
+<div class="claude-handoff" data-exercise="exercises/module6/emit-test-and-ship/">
+<p><strong>Build It in Claude Code:</strong> Finish <code>wrangle.py</code> by adding <code>WrangleStats</code>, <code>emit</code>, <code>run</code>, and the <code>if __name__ == "__main__":</code> block; write <code>smoke.py</code> with the happy-path and negative-case tests; and fill out <code>outputs/skill-data-wrangling.md</code>. The gate is green when <code>python wrangle.py</code> exits 0 and <code>pytest smoke.py</code> passes both tests.</p>
+</div>
+
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module3/cleaning-and-missing-data.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module6/reshape-and-validate.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module4/profile-before-you-optimize.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -223,13 +346,10 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module3/cleaning-and-missing-data.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module6/reshape-and-validate.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module4/profile-before-you-optimize.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                    </a>
             </nav>
 
         </div>
