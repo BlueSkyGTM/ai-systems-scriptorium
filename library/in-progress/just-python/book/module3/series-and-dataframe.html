@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Dtypes and What They Cost - Just Python — Applied Python for AI Engineers</title>
+        <title>Series and DataFrame - Just Python — Applied Python for AI Engineers</title>
 
 
         <!-- Custom HTML head -->
@@ -177,75 +177,118 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="dtypes-and-what-they-cost"><a class="header" href="#dtypes-and-what-they-cost">Dtypes and What They Cost</a></h1>
-<p>Every NumPy array has a dtype, and if you did not choose it, NumPy chose for you: probably <code>float64</code>. That default costs twice the memory of <code>float32</code> for no precision gain you will ever see from a model output.</p>
-<h2 id="the-dtype-contract"><a class="header" href="#the-dtype-contract">The dtype Contract</a></h2>
-<p>A dtype is a fixed-size C type. It tells NumPy two things: how many bytes each slot in the buffer occupies, and how to interpret those bytes. Every element in the array shares the same dtype; there is no boxing, no per-element overhead. That uniformity is where the speed comes from.</p>
-<pre><code class="language-python">import numpy as np
+                        <h1 id="series-and-dataframe"><a class="header" href="#series-and-dataframe">Series and DataFrame</a></h1>
+<p>A DataFrame column is a NumPy-backed Series. That one fact closes the loop on everything M1 and M2 taught: the memory model is the same, the vectorized column operations are the same, and the dtype tax on a string column is exactly what M1 predicted for boxed Python objects.</p>
+<h2 id="the-two-structures"><a class="header" href="#the-two-structures">The Two Structures</a></h2>
+<p>A <code>Series</code> is a one-dimensional labeled array: a single typed buffer (the values) paired with an index (the row labels). Build one from a list and you get a <code>RangeIndex</code> for free:</p>
+<pre><code class="language-python">import pandas as pd
+import numpy as np
 
-scores = np.array([0.91, 0.74, 0.88, 0.62], dtype=np.float64)
-print(scores.dtype)     # float64
-print(scores.itemsize)  # 8  (bytes per element)
-print(scores.nbytes)    # 32 (total bytes)
-</code></pre>
-<p><code>arr.dtype</code> always tells you what you have. <code>arr.itemsize</code> tells you the per-element cost. <code>arr.nbytes</code> tells you the bill.</p>
-<h2 id="the-ai-relevant-types"><a class="header" href="#the-ai-relevant-types">The AI-Relevant Types</a></h2>
-<p>Five dtypes cover almost every AI pipeline:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>dtype</th><th>Bytes</th><th>When you use it</th></tr>
-</thead>
-<tbody>
-<tr><td><code>float64</code></td><td>8</td><td>NumPy default; computation, intermediate results</td></tr>
-<tr><td><code>float32</code></td><td>4</td><td>Model output embeddings; halves memory vs float64</td></tr>
-<tr><td><code>int64</code></td><td>8</td><td>Label arrays, index arrays</td></tr>
-<tr><td><code>int32</code></td><td>4</td><td>Compact labels when the count fits in 32 bits</td></tr>
-<tr><td><code>bool</code></td><td>1</td><td>Mask arrays; boolean indexing</td></tr>
-</tbody>
-</table>
-</div>
-<p>The decision that matters most in practice is <code>float64</code> versus <code>float32</code>. Most embedding models emit <code>float32</code> vectors. Azure AI Search documents this directly: <code>Float32</code> (32-bit floating point) is the default vector field data type for Azure AI Search indexes because “most embedding models emit vectors as <code>Float32</code>,” while choosing <code>Float16</code> “often leads to faster query times and reduced memory footprint” at the cost of some precision. (<a href="https://learn.microsoft.com/rest/api/searchservice/supported-data-types#edm-data-types-for-vector-fields">Microsoft Learn: Supported data types, Azure AI Search</a>)</p>
-<p>Loading those <code>float32</code> embeddings into a <code>float64</code> array doubles your memory silently. At 1,536 dimensions and one million rows, that is the difference between 6 GB and 12 GB.</p>
-<h2 id="astype-versus-view"><a class="header" href="#astype-versus-view">astype Versus view</a></h2>
-<p>Two operations change what dtype label an array carries. Only one of them is safe for type conversion.</p>
-<p><strong><code>astype</code></strong> converts values. It reads each element, converts it to the target type, and writes it into a new buffer. The result is a separate array with correct values.</p>
-<pre><code class="language-python">embeddings_f64 = np.random.rand(1000, 1536)   # float64, 8 bytes/element
-embeddings_f32 = embeddings_f64.astype(np.float32)
+scores = pd.Series([0.91, 0.87, 0.94, 0.73], name="f1")
+print(scores)
+# 0    0.91
+# 1    0.87
+# 2    0.94
+# 3    0.73
+# Name: f1, dtype: float64
 
-print(embeddings_f64.nbytes)  # 12,288,000
-print(embeddings_f32.nbytes)  #  6,144,000  -- new buffer, half the size
+print(scores.dtype)    # float64
+print(scores.nbytes)   # 32  (4 values × 8 bytes each)
 </code></pre>
-<p><strong><code>view</code></strong> reinterprets bytes. It does not convert values; it reads the same bytes through a different lens. Viewing 8-byte <code>float64</code> slots as 4-byte <code>float32</code> slots does not halve your values: it reads each 8-byte block as two 4-byte floats and returns garbage.</p>
-<pre><code class="language-python">trap = embeddings_f64[0].view(np.float32)
-# trap has 2 * 1536 = 3072 elements, all meaningless
-# it shares the buffer -- no copy occurred, no conversion occurred
-print(np.shares_memory(embeddings_f64, trap))  # True
+<p><code>scores.nbytes</code> reports the backing buffer directly, the same as <code>ndarray.nbytes</code>. The M2 vectorized operations apply to a Series column-by-column for the same reason: each column is a contiguous typed buffer, and NumPy ufuncs operate on it without a Python loop.</p>
+<p>A <code>DataFrame</code> is a dict of Series objects sharing one index. The columns can carry different dtypes; the index is the common row spine.</p>
+<pre><code class="language-python">df = pd.DataFrame({
+    "model":  ["gpt-4o",  "claude-3", "llama-3",  "mistral"],
+    "f1":     [0.91,      0.87,       0.94,        0.73],
+    "tokens": [4096,      8192,       8192,        32768],
+    "open":   [False,     False,      True,         True],
+})
+print(df)
+#      model    f1  tokens   open
+# 0    gpt-4o  0.91    4096  False
+# 1  claude-3  0.87    8192  False
+# 2   llama-3  0.94    8192   True
+# 3   mistral  0.73   32768   True
 </code></pre>
-<p>The trap is real. <code>arr.view(np.float32)</code> will not raise an error; it silently gives you wrong data. Reach for <code>view</code> only when you intend raw byte reinterpretation, which in AI pipelines is almost never.</p>
-<h2 id="the-float32-decision"><a class="header" href="#the-float32-decision">The float32 Decision</a></h2>
-<p>When a model hands you embeddings, read the dtype before assuming:</p>
-<pre><code class="language-python"># Simulate receiving embeddings from a model
-model_output = np.random.rand(512, 1536).astype(np.float32)
+<h2 id="inspecting-dtypes-and-layout"><a class="header" href="#inspecting-dtypes-and-layout">Inspecting dtypes and Layout</a></h2>
+<p><code>df.dtypes</code> returns a Series mapping column name to dtype:</p>
+<pre><code class="language-python">print(df.dtypes)
+# model      object
+# f1        float64
+# tokens      int64
+# open         bool
+# dtype: object
+</code></pre>
+<p>Three columns hold contiguous NumPy buffers (<code>float64</code>, <code>int64</code>, <code>bool</code>). The <code>model</code> column shows <code>object</code>. That is the dtype from M1’s “every value is a box” lesson: each entry is a Python <code>str</code> object on the heap, and the column stores 8-byte pointers to those objects, not the characters themselves.</p>
+<p><code>df.info()</code> confirms the layout and reports a memory estimate in one call:</p>
+<pre><code class="language-python">df.info()
+# &lt;class 'pandas.core.frame.DataFrame'&gt;
+# RangeIndex: 4 entries, 0 to 3
+# Data columns (total 4 columns):
+#  #   Column  Non-Null Count  Dtype
+# ---  ------  --------------  -----
+#  0   model   4 non-null      object
+#  1   f1      4 non-null      float64
+#  2   tokens  4 non-null      int64
+#  3   open    4 non-null      bool
+# dtypes: bool(1), float64(1), int64(1), object(1)
+# memory usage: 196.0+ bytes
+</code></pre>
+<p>The <code>+</code> on the memory figure is the tell: pandas knows the <code>object</code> column’s real cost is not yet counted. Pass <code>deep=True</code> to follow the pointers.</p>
+<h2 id="measuring-the-object-dtype-tax"><a class="header" href="#measuring-the-object-dtype-tax">Measuring the Object-dtype Tax</a></h2>
+<p><code>df.memory_usage(deep=True)</code> returns a Series of byte counts per column, including the index:</p>
+<pre><code class="language-python">usage = df.memory_usage(deep=True)
+print(usage)
+# Index      132
+# model      224
+# f1          32
+# tokens      32
+# open         4
+# dtype: int64
 
-# Check what you have
-print(model_output.dtype)   # float32
-print(model_output.nbytes)  # 3,145,728
-
-# If you had loaded into float64 by accident:
-bloated = model_output.astype(np.float64)
-print(bloated.nbytes)       # 6,291,456 -- doubled for nothing
+print(f"total: {usage.sum():,} bytes")
+# total: 424 bytes
 </code></pre>
-<p>The fix is one line: <code>arr.astype(np.float32)</code>. The cost of not fixing it scales with every row in your corpus.</p>
+<p>The <code>model</code> column costs 224 bytes for four short strings (your pandas version may print a slightly different figure for the object column), against 32 bytes for the numeric columns holding the same four rows. That is M1’s object overhead in column form: four Python <code>str</code> objects, each individually heap-allocated, each carrying a type pointer and reference count, their addresses stored in the object-dtype column.</p>
+<p>Compare directly to the equivalent numeric ndarray to see the ratio:</p>
+<pre><code class="language-python">numeric_col = np.array([0.91, 0.87, 0.94, 0.73], dtype=np.float64)
+print(f"numeric ndarray:  {numeric_col.nbytes:&gt;6} bytes")  # 32 bytes
+print(f"object column:    {usage['model']:&gt;6} bytes")       # 224 bytes
+</code></pre>
+<p>The string column is roughly 7x heavier per row. At production scale, a model-name column on a million-row eval table is not a footnote: it is tens of megabytes of pointer overhead on top of the character data itself.</p>
+<p>Microsoft Learn’s “Explore and Analyze Data with Python” module introduces the DataFrame as the core structure for exploring tabular data with Pandas (<a href="https://learn.microsoft.com/training/modules/explore-analyze-data-with-python/2-explore-data-numpy-pandas">learn.microsoft.com/training/modules/explore-analyze-data-with-python</a>).</p>
+<h2 id="when-the-column-is-tight"><a class="header" href="#when-the-column-is-tight">When the Column Is Tight</a></h2>
+<p>The numeric columns pay no object tax. <code>df["f1"]</code> is a <code>float64</code> Series backed by a 32-byte buffer; <code>df["tokens"]</code> is an <code>int64</code> Series backed by the same. M2’s broadcasting applies per-column without any pointer-chasing:</p>
+<pre><code class="language-python"># Normalize f1 scores to [0, 1] range, vectorized, no loop
+min_f1 = df["f1"].min()
+max_f1 = df["f1"].max()
+df["f1_norm"] = (df["f1"] - min_f1) / (max_f1 - min_f1)
+print(df[["model", "f1", "f1_norm"]])
+#      model    f1   f1_norm
+# 0    gpt-4o  0.91  0.857143
+# 1  claude-3  0.87  0.666667
+# 2   llama-3  0.94  1.000000
+# 3   mistral  0.73  0.000000
+</code></pre>
+<p>The arithmetic runs on the <code>float64</code> buffer directly. No Python objects enter the loop.</p>
+<h2 id="the-shared-index"><a class="header" href="#the-shared-index">The Shared Index</a></h2>
+<p>Every Series in a DataFrame shares the same index object. When you select a column, you get back a Series whose index is the DataFrame’s row index. When you assign a new column from a computation, pandas aligns it to that same index automatically. The alignment guarantee is what lets you mix columns freely without tracking row position by hand.</p>
+<pre><code class="language-python"># Selecting a column returns a Series; its index matches the DataFrame's
+col = df["f1"]
+print(type(col))           # &lt;class 'pandas.core.series.Series'&gt;
+print(col.index.tolist())  # [0, 1, 2, 3]
+</code></pre>
+<p>The shared index is what separates a DataFrame from a raw dict of arrays. It is also what makes joins, groupbys, and reindexing safe: pandas uses the labels, not integer position, to align data.</p>
+<p>Every eval table you will build in production is a DataFrame: columns for model names (object dtype), columns for metric scores (float64), columns for flags (bool). Knowing before you load which columns carry the object-dtype tax is what keeps that table from silently doubling your memory budget.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>A dtype is a fixed-size C type specifying bytes-per-slot and how those bytes are interpreted; every element in an array shares it, which is why NumPy is fast.</li>
-<li><code>astype</code> converts values into a new buffer; <code>view</code> reinterprets the existing bytes without converting them: using <code>view</code> as a type conversion yields garbage.</li>
-<li>Most embedding models emit <code>float32</code>; loading their output into a <code>float64</code> array doubles memory silently and wastes the budget before any computation begins.</li>
-<li><code>arr.dtype</code>, <code>arr.itemsize</code>, and <code>arr.nbytes</code> are the three numbers to read before operating on any array you did not create yourself.</li>
+<li>A DataFrame is a dict of NumPy-backed Series sharing one index; each column carries its own dtype, so a numeric column is a tight contiguous buffer while an object/string column stores Python-object pointers and pays M1’s full per-element heap overhead.</li>
+<li><code>df.dtypes</code> reveals the dtype per column; <code>df.info()</code> confirms shape and prints a memory estimate, flagging the object column cost with a <code>+</code>; <code>df.memory_usage(deep=True)</code> follows the pointers and returns the true byte count per column.</li>
+<li>A numeric Series column is a contiguous <code>ndarray</code> buffer; M2’s vectorized column operations apply directly and run without a Python loop.</li>
+<li>The object dtype is the string column’s cost signal: an <code>object</code>-dtype column on a large eval table can outweigh all the numeric columns combined because each entry is a separately allocated, reference-counted Python object.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module1/dtypes-and-what-they-cost/">
-<p><strong>Build It in Claude Code:</strong> build a dtype audit script that measures the real memory cost of float64 vs float32 embeddings and proves the view trap produces garbage.</p>
+<div class="claude-handoff" data-exercise="exercises/module3/series-and-dataframe/">
+<p><strong>Inspect It in Claude Code:</strong> Extend <code>measure.py</code> with <code>frame_bytes</code>, a function that measures the true memory cost of a DataFrame, compares a numeric column to its equivalent ndarray, and proves the object-dtype overhead against a string column.</p>
 </div>
 
 
@@ -253,11 +296,11 @@ print(bloated.nbytes)       # 6,291,456 -- doubled for nothing
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module1/why-numpy-exists.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module3/00-overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module1/shape-ndim-and-strides.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module3/reading-and-writing-ai-formats.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -267,11 +310,11 @@ print(bloated.nbytes)       # 6,291,456 -- doubled for nothing
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module1/why-numpy-exists.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module3/00-overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module1/shape-ndim-and-strides.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module3/reading-and-writing-ai-formats.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

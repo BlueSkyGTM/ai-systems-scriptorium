@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Dtypes and What They Cost - Just Python — Applied Python for AI Engineers</title>
+        <title>Cleaning and Missing Data - Just Python — Applied Python for AI Engineers</title>
 
 
         <!-- Custom HTML head -->
@@ -177,75 +177,129 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="dtypes-and-what-they-cost"><a class="header" href="#dtypes-and-what-they-cost">Dtypes and What They Cost</a></h1>
-<p>Every NumPy array has a dtype, and if you did not choose it, NumPy chose for you: probably <code>float64</code>. That default costs twice the memory of <code>float32</code> for no precision gain you will ever see from a model output.</p>
-<h2 id="the-dtype-contract"><a class="header" href="#the-dtype-contract">The dtype Contract</a></h2>
-<p>A dtype is a fixed-size C type. It tells NumPy two things: how many bytes each slot in the buffer occupies, and how to interpret those bytes. Every element in the array shares the same dtype; there is no boxing, no per-element overhead. That uniformity is where the speed comes from.</p>
-<pre><code class="language-python">import numpy as np
+                        <h1 id="cleaning-and-missing-data"><a class="header" href="#cleaning-and-missing-data">Cleaning and Missing Data</a></h1>
+<p>The gap between a raw scrape and a training set is not a formatting problem. It is a modeling decision: every row you leave in reaches the model, and every NaN that survives to a metric silently corrupts your numbers.</p>
+<h2 id="the-artifact"><a class="header" href="#the-artifact">The Artifact</a></h2>
+<p>You build <code>clean_corpus.py</code>: a script that takes a messy DataFrame of raw text examples, deduplicates it, handles missing values, reshapes an eval summary table, and normalizes the text column, then asserts the output is clean.</p>
+<h2 id="drop-duplicates-first"><a class="header" href="#drop-duplicates-first">Drop Duplicates First</a></h2>
+<p>Duplicate rows in a training set inflate apparent class frequency. Duplicates in an eval set let the same example vote twice. Catch them before anything else.</p>
+<pre><code class="language-python">import pandas as pd
+import numpy as np
 
-scores = np.array([0.91, 0.74, 0.88, 0.62], dtype=np.float64)
-print(scores.dtype)     # float64
-print(scores.itemsize)  # 8  (bytes per element)
-print(scores.nbytes)    # 32 (total bytes)
-</code></pre>
-<p><code>arr.dtype</code> always tells you what you have. <code>arr.itemsize</code> tells you the per-element cost. <code>arr.nbytes</code> tells you the bill.</p>
-<h2 id="the-ai-relevant-types"><a class="header" href="#the-ai-relevant-types">The AI-Relevant Types</a></h2>
-<p>Five dtypes cover almost every AI pipeline:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>dtype</th><th>Bytes</th><th>When you use it</th></tr>
-</thead>
-<tbody>
-<tr><td><code>float64</code></td><td>8</td><td>NumPy default; computation, intermediate results</td></tr>
-<tr><td><code>float32</code></td><td>4</td><td>Model output embeddings; halves memory vs float64</td></tr>
-<tr><td><code>int64</code></td><td>8</td><td>Label arrays, index arrays</td></tr>
-<tr><td><code>int32</code></td><td>4</td><td>Compact labels when the count fits in 32 bits</td></tr>
-<tr><td><code>bool</code></td><td>1</td><td>Mask arrays; boolean indexing</td></tr>
-</tbody>
-</table>
-</div>
-<p>The decision that matters most in practice is <code>float64</code> versus <code>float32</code>. Most embedding models emit <code>float32</code> vectors. Azure AI Search documents this directly: <code>Float32</code> (32-bit floating point) is the default vector field data type for Azure AI Search indexes because “most embedding models emit vectors as <code>Float32</code>,” while choosing <code>Float16</code> “often leads to faster query times and reduced memory footprint” at the cost of some precision. (<a href="https://learn.microsoft.com/rest/api/searchservice/supported-data-types#edm-data-types-for-vector-fields">Microsoft Learn: Supported data types, Azure AI Search</a>)</p>
-<p>Loading those <code>float32</code> embeddings into a <code>float64</code> array doubles your memory silently. At 1,536 dimensions and one million rows, that is the difference between 6 GB and 12 GB.</p>
-<h2 id="astype-versus-view"><a class="header" href="#astype-versus-view">astype Versus view</a></h2>
-<p>Two operations change what dtype label an array carries. Only one of them is safe for type conversion.</p>
-<p><strong><code>astype</code></strong> converts values. It reads each element, converts it to the target type, and writes it into a new buffer. The result is a separate array with correct values.</p>
-<pre><code class="language-python">embeddings_f64 = np.random.rand(1000, 1536)   # float64, 8 bytes/element
-embeddings_f32 = embeddings_f64.astype(np.float32)
+raw = pd.DataFrame({
+    "id":    [1, 2, 2, 3, 4, 4],
+    "label": ["positive", "negative", "negative", "positive", "neutral", "neutral"],
+    "text":  ["Great product", "Terrible", "Terrible", "Works fine", None, "Ok product"],
+})
 
-print(embeddings_f64.nbytes)  # 12,288,000
-print(embeddings_f32.nbytes)  #  6,144,000  -- new buffer, half the size
+print("Before dedup:", raw.shape)          # (6, 3)
+print(raw.duplicated().sum(), "duplicates")  # 2
 </code></pre>
-<p><strong><code>view</code></strong> reinterprets bytes. It does not convert values; it reads the same bytes through a different lens. Viewing 8-byte <code>float64</code> slots as 4-byte <code>float32</code> slots does not halve your values: it reads each 8-byte block as two 4-byte floats and returns garbage.</p>
-<pre><code class="language-python">trap = embeddings_f64[0].view(np.float32)
-# trap has 2 * 1536 = 3072 elements, all meaningless
-# it shares the buffer -- no copy occurred, no conversion occurred
-print(np.shares_memory(embeddings_f64, trap))  # True
+<p><code>duplicated()</code> returns a boolean Series: <code>True</code> for every row that is a repeat of an earlier one. The default keeps the first occurrence.</p>
+<pre><code class="language-python">clean = raw.drop_duplicates()
+print("After dedup:", clean.shape)         # (4, 3)
 </code></pre>
-<p>The trap is real. <code>arr.view(np.float32)</code> will not raise an error; it silently gives you wrong data. Reach for <code>view</code> only when you intend raw byte reinterpretation, which in AI pipelines is almost never.</p>
-<h2 id="the-float32-decision"><a class="header" href="#the-float32-decision">The float32 Decision</a></h2>
-<p>When a model hands you embeddings, read the dtype before assuming:</p>
-<pre><code class="language-python"># Simulate receiving embeddings from a model
-model_output = np.random.rand(512, 1536).astype(np.float32)
+<p>If you need to drop on a subset of columns (same <code>id</code> counts as duplicate regardless of text), pass <code>subset</code>:</p>
+<pre><code class="language-python">clean = raw.drop_duplicates(subset=["id"])
+</code></pre>
+<p>The choice of <code>keep</code> (<code>"first"</code>, <code>"last"</code>, or <code>False</code> to drop all copies) is a data decision, not a default. State it in a comment so the next person reading the pipeline knows why.</p>
+<h2 id="handle-missing-values"><a class="header" href="#handle-missing-values">Handle Missing Values</a></h2>
+<p>After dedup, audit the nulls:</p>
+<pre><code class="language-python">print(clean.isna().sum())
+# id       0
+# label    0
+# text     1
+</code></pre>
+<p>Now comes the decision. <code>dropna</code> removes rows with any null; <code>fillna</code> replaces them. They are not equivalent, and the right answer depends on the data:</p>
+<ul>
+<li>Drop when the null column is the target or when imputing would fabricate signal. A text column with <code>None</code> cannot be imputed without inventing content; drop the row.</li>
+<li>Fill when a numeric feature is missing at random and a sensible default (zero, column mean) exists without introducing bias.</li>
+</ul>
+<p>For a text corpus, drop:</p>
+<pre><code class="language-python">clean = clean.dropna(subset=["text"])
+print("After dropna:", clean.shape)        # (3, 3)
+assert clean["text"].isna().sum() == 0
+</code></pre>
+<p>For a numeric score column with a known sentinel, fill:</p>
+<pre><code class="language-python">scores = pd.Series([0.9, np.nan, 0.7, np.nan, 0.85])
+filled = scores.fillna(scores.mean())
+print(filled)
+</code></pre>
+<p><code>fillna</code> accepts a scalar, a dict keyed by column name, or a forward/backward fill strategy (<code>ffill</code>, <code>bfill</code>). The strategy matters: forward-filling a time-ordered label column is reasonable; forward-filling a shuffled corpus is not. Microsoft Learn’s “Explore and Analyze Data with Python” module covers detecting and handling missing values in real-world tabular data (<a href="https://learn.microsoft.com/training/modules/explore-analyze-data-with-python/6-examine-real-world-data">learn.microsoft.com/training/modules/explore-analyze-data-with-python</a>).</p>
+<h2 id="reshape-an-eval-table"><a class="header" href="#reshape-an-eval-table">Reshape an Eval Table</a></h2>
+<p>Eval results often arrive wide: one column per metric, one row per model. To compare models across metrics with groupby or plotting, you need long format. <code>melt</code> converts wide to long.</p>
+<p>Start with a wide eval summary:</p>
+<pre><code class="language-python">eval_wide = pd.DataFrame({
+    "model":     ["bert-base", "distilbert"],
+    "precision": [0.82, 0.79],
+    "recall":    [0.78, 0.81],
+    "f1":        [0.80, 0.80],
+})
+print(eval_wide)
+#        model  precision  recall    f1
+# 0  bert-base       0.82    0.78  0.80
+# 1  distilbert      0.79    0.81  0.80
+</code></pre>
+<p>Melt it so every row is one (model, metric, value) triple:</p>
+<pre><code class="language-python">eval_long = eval_wide.melt(
+    id_vars=["model"],
+    var_name="metric",
+    value_name="score",
+)
+print(eval_long)
+#         model     metric  score
+# 0   bert-base  precision   0.82
+# 1  distilbert  precision   0.79
+# 2   bert-base     recall   0.78
+# 3  distilbert     recall   0.81
+# 4   bert-base         f1   0.80
+# 5  distilbert         f1   0.80
+</code></pre>
+<p>To go the other direction, from long to wide, use <code>pivot</code>:</p>
+<pre><code class="language-python">back_wide = eval_long.pivot(index="model", columns="metric", values="score")
+back_wide.columns.name = None      # drop the "metric" label on the column axis
+back_wide = back_wide.reset_index()
+print(back_wide)
+</code></pre>
+<p><code>pivot</code> requires unique (index, column) pairs; if your data has duplicates per cell, use <code>pivot_table</code> and supply an <code>aggfunc</code> (e.g., <code>"mean"</code>) to resolve them.</p>
+<p>The long format is what groupby, seaborn, and most metric reporters expect. Knowing when to melt and when to pivot is the difference between clean downstream code and a wall of <code>.iloc</code> calls.</p>
+<h2 id="normalize-text-columns"><a class="header" href="#normalize-text-columns">Normalize Text Columns</a></h2>
+<p>The <code>.str</code> accessor gives you vectorized string methods on a Series, the same way M2’s broadcasting gave you vectorized arithmetic on an array. No Python loop. No <code>apply(lambda x: x.lower())</code>.</p>
+<pre><code class="language-python">df = pd.DataFrame({
+    "text": ["  Great Product! ", "TERRIBLE service.", "works FINE ", None]
+})
 
-# Check what you have
-print(model_output.dtype)   # float32
-print(model_output.nbytes)  # 3,145,728
+df["text_clean"] = (
+    df["text"]
+    .str.strip()           # remove leading/trailing whitespace
+    .str.lower()           # lowercase everything
+    .str.replace(r"[!?.,]", "", regex=True)   # strip punctuation
+    .str.replace(r"\s+", " ", regex=True)     # collapse multiple spaces
+    .str.strip()           # strip again after regex replacements
+)
 
-# If you had loaded into float64 by accident:
-bloated = model_output.astype(np.float64)
-print(bloated.nbytes)       # 6,291,456 -- doubled for nothing
+print(df[["text", "text_clean"]])
+#                 text          text_clean
+# 0   Great Product!    great product
+# 1  TERRIBLE service.  terrible service
+# 2        works FINE   works fine
+# 3               None          None
 </code></pre>
-<p>The fix is one line: <code>arr.astype(np.float32)</code>. The cost of not fixing it scales with every row in your corpus.</p>
+<p>The <code>.str</code> accessor skips <code>NaN</code> automatically and returns <code>NaN</code> in those positions. That means text cleaning does not require a prior <code>dropna</code>; the null propagates cleanly and you handle it separately. This is the <code>clean_text</code> step in the made-with-ml <code>data.py</code> pipeline: strip, lowercase, replace punctuation, collapse whitespace, one vectorized chain.</p>
+<p>For regex-heavy normalization, chain <code>.str.replace()</code> calls with explicit <code>regex=True</code>. The default in pandas 2.0 requires you to state your intent; pass <code>regex=False</code> for literal string replacement to avoid ambiguity.</p>
+<pre><code class="language-python"># Confirm text is normalized: no uppercase letters remain
+assert df["text_clean"].dropna().str.match(r"^[^A-Z]*$").all()
+</code></pre>
+<p>The output of these four steps is what the tokenizer receives. A capital letter that survives lowercase normalization, a duplicate that survives dedup, or a NaN that survives dropna is not a minor impurity. It is training signal the model will learn.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>A dtype is a fixed-size C type specifying bytes-per-slot and how those bytes are interpreted; every element in an array shares it, which is why NumPy is fast.</li>
-<li><code>astype</code> converts values into a new buffer; <code>view</code> reinterprets the existing bytes without converting them: using <code>view</code> as a type conversion yields garbage.</li>
-<li>Most embedding models emit <code>float32</code>; loading their output into a <code>float64</code> array doubles memory silently and wastes the budget before any computation begins.</li>
-<li><code>arr.dtype</code>, <code>arr.itemsize</code>, and <code>arr.nbytes</code> are the three numbers to read before operating on any array you did not create yourself.</li>
+<li><code>duplicated()</code> flags repeat rows; <code>drop_duplicates()</code> removes them. The <code>keep</code> argument is a data decision: state it explicitly.</li>
+<li>Dropping vs. filling missing values is a modeling decision, not a default: drop when imputing would fabricate signal (a null text column); fill when a sensible sentinel exists (a missing numeric score).</li>
+<li><code>melt</code> converts wide to long (one metric per row); <code>pivot</code> converts long to wide (one metric per column). Long format is what groupby and plotting APIs expect.</li>
+<li>The <code>.str</code> accessor applies vectorized string methods to a Series without a Python loop, skips <code>NaN</code> automatically, and chains: <code>str.strip().str.lower().str.replace(...)</code>.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module1/dtypes-and-what-they-cost/">
-<p><strong>Build It in Claude Code:</strong> build a dtype audit script that measures the real memory cost of float64 vs float32 embeddings and proves the view trap produces garbage.</p>
+<div class="claude-handoff" data-exercise="exercises/module3/cleaning-and-missing-data/">
+<p><strong>Build It in Claude Code:</strong> Build <code>clean_corpus.py</code>, a script that deduplicates, handles missing values, and normalizes a messy text DataFrame, then asserts the output is clean in one <code>python</code> command.</p>
 </div>
 
 
@@ -253,13 +307,10 @@ print(bloated.nbytes)       # 6,291,456 -- doubled for nothing
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module1/why-numpy-exists.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module3/groupby-merge-apply.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module1/shape-ndim-and-strides.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -267,13 +318,10 @@ print(bloated.nbytes)       # 6,291,456 -- doubled for nothing
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module1/why-numpy-exists.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module3/groupby-merge-apply.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module1/shape-ndim-and-strides.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                    </a>
             </nav>
 
         </div>

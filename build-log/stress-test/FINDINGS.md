@@ -3,16 +3,17 @@
 Running verdict log for the experiment defined in the root `HANDOFF.md` and this folder's `README.md`.
 Verdict scale: `HOLDS` / `PARTIAL` / `MOSTLY-BUILT-IN`. Do not flatter the method.
 
-## Verdict so far: PARTIAL, leaning HOLDS on the parts the structure actually owns (3 data points)
+## Verdict so far: PARTIAL, leaning HOLDS on the parts the structure owns (4 data points; one finding now REPRODUCED)
 
-Three findings. Orientation (01) was the easy case. The M2 plan (02) showed structure earning credit on
-consistency + context-economy. The M2 authoring stage (03) is the decisive one, and it produced the single
-strongest piece of evidence in the test: **the author/verify split caught fabricated authority that a
-single-pass baseline would have shipped.** The honest shape of the verdict is now clear and stable across
-data points: **lesson content quality ≈ Claude's built-in capability; the catches, the cross-worker
-consistency, and the context-economy ≈ the structure.** The structure is not ceremony, but it is also not
-what writes the prose. One sub-claim weakened: the handler tier was mild overhead this round (no concurrent
-gate to justify it).
+Four findings across two shipped modules. Orientation (01) was the easy case; the M2 plan (02) showed
+structure earning credit on consistency + context-economy; M2 authoring (03) produced the strongest single
+piece of evidence (the author/verify split caught fabricated authority); **M3 authoring (04) REPRODUCED that
+catch** (cold workers fabricated MS-Learn authority again; the staged VERIFY caught it again, 2-for-2) and
+**settled the handler-tier question via an A/B** (conductor-direct matched the handler run, so the handler is
+optional for a single small cluster). The verdict is stable: **lesson content quality ≈ Claude's built-in
+capability; the catches, the cross-worker consistency, and the context-economy ≈ the structure.** The
+structure is not ceremony; it is also not what writes the prose. The one piece of architecture the test has
+now actively improved: the handler tier rule (see Finding 04).
 
 ---
 
@@ -145,3 +146,51 @@ keep or prove to be ceremony. That evidence does not exist yet.
   throughline path (contract cross-check). Plus the L4 over-claimed fixed timing ratio (2.26x stated as if
   guaranteed; real hardware showed ~1.02x) — corrected to hardware-dependent framing. That last one is a
   conductor-review catch a careful baseline reviewer could also make; credited to the method only weakly.
+
+---
+
+## Finding 04 — Just Python M3 authoring + the orchestration A/B (stopped at GATE-APPROVE-SHIP)
+
+- **Stage touched:** Full M3 build "Pandas for AI Pipelines" (overview + 4 lessons + 4 exercises). Ore:
+  `vault/pandas-docs` (reference-grade) + made-with-ml `data.py` applied. Run **conductor-direct: 4 Sonnet
+  workers, NO handler tier** (the locked A/B). Conductor ran the review gate, VERIFY against the live
+  connector, BUILD/TEST (mdbook clean + all 4 exercise gates pass), folded shared state. Stopped at the gate.
+- **Cold-proceed?** **YES.** Plan → dispatch → verify → build straight from structure; the only human touches
+  were `GATE-LOCK-PLAN` and (pending) `GATE-APPROVE-SHIP`.
+- **Structure did (two results, one reproduced + one new):**
+  - **REPRODUCED: the author/verify split caught fabricated authority again (2-for-2).** Cold workers again
+    invented MS-Learn citations no real page backs — L2 cited a "Work with Data in Azure Machine Learning"
+    module that does not exist (the real one is **"Make Data Available in Azure Machine Learning"**, and it is
+    about datastores, not format tradeoffs); L3 invented "the standard pattern in Azure ML evaluation
+    pipelines." Querying the live connector grounded each lesson to one real, verified URL and dropped the
+    over-specific claims. **This is no longer a one-off (M2) — it is a systematic crack that cold parallel
+    authoring opens and that the staged VERIFY reliably closes.** That reproduction is the strongest form the
+    structure-vs-baseline argument has taken: a single-pass baseline ships fabricated authority *consistently*,
+    and the pipeline catches it *consistently*.
+  - **NEW: running BUILD/TEST (not trusting self-reports) caught two quality bugs.** L1 hardcoded byte
+    numbers (`249`/`449`) that are wrong for the current pandas (`224`/`424`) and falsely labeled them
+    "platform-stable" (the object-column figure is version-dependent); the conductor's reference run surfaced
+    the real numbers and softened the claim. L4's final lesson assert referenced the wrong variable
+    (`clean["text"]`, unnormalized) instead of `df["text_clean"]` — it would have failed if run. Both are
+    the kind of plausible-looking error a reader trusts; executing the gate caught them.
+- **The A/B result (the headline for ORCHESTRATION):** **conductor-direct (no handler) produced the same
+  quality as M2's handler run.** The handler's only demonstrated value in M2 was a first-pass review that
+  caught one worker error; here the conductor's own review gate caught the equivalent issues (the L1 numbers,
+  the L4 assert) directly. **Conclusion: for a single cluster of ≤4 workers with no concurrent gate to
+  service, the handler tier is optional overhead.** `platform/ORCHESTRATION.md`'s "3+ workers → handler" rule
+  should be relaxed to "use a handler when there are concurrent gates to service OR multiple parallel
+  clusters," not purely by worker count. This is the test actively improving the architecture, not just
+  grading it. (Recommend updating ORCHESTRATION.md — flagged to Ray at the gate, not done unilaterally.)
+- **Baseline would have done:** the prose, again. **Content quality ≈ built-in.** Pandas curriculum is
+  canonical; the workers wrote it well.
+- **Strain / overhead:** removing the handler **reduced** overhead with no quality loss. The conductor did
+  more direct management (4 briefs + review), but that is the non-delegated taste layer the method requires
+  regardless of tier.
+- **Context economy:** lean. Conductor never read a line of `pandas-docs` (the workers did, on bounded
+  slices); never touched the vault bulk. The conductor's context stayed on contracts + review + the 8
+  module3 files.
+- **Drift caught:** fabricated MS-Learn citations (VERIFY, the reproduced catch), stale + falsely-"stable"
+  byte numbers (BUILD/TEST run), wrong-variable assert (BUILD/TEST run), one em-dash in a handoff CTA
+  (sweep). The honest correction from the plan stage also landed: M3 did **not** exercise the
+  `ingredients/dossiers` distillation machinery — `pandas-docs` was reference-grade, so JP M1–M3 have all
+  bypassed distillation. That machinery remains untested by this book.

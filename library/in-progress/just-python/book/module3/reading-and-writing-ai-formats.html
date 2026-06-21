@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Dtypes and What They Cost - Just Python — Applied Python for AI Engineers</title>
+        <title>Reading and Writing AI Formats - Just Python — Applied Python for AI Engineers</title>
 
 
         <!-- Custom HTML head -->
@@ -177,75 +177,123 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="dtypes-and-what-they-cost"><a class="header" href="#dtypes-and-what-they-cost">Dtypes and What They Cost</a></h1>
-<p>Every NumPy array has a dtype, and if you did not choose it, NumPy chose for you: probably <code>float64</code>. That default costs twice the memory of <code>float32</code> for no precision gain you will ever see from a model output.</p>
-<h2 id="the-dtype-contract"><a class="header" href="#the-dtype-contract">The dtype Contract</a></h2>
-<p>A dtype is a fixed-size C type. It tells NumPy two things: how many bytes each slot in the buffer occupies, and how to interpret those bytes. Every element in the array shares the same dtype; there is no boxing, no per-element overhead. That uniformity is where the speed comes from.</p>
-<pre><code class="language-python">import numpy as np
+                        <h1 id="reading-and-writing-ai-formats"><a class="header" href="#reading-and-writing-ai-formats">Reading and Writing AI Formats</a></h1>
+<p>Every AI pipeline moves data through exactly three formats, and the one you reach for by default determines how much time you spend debugging dtype surprises at 2 AM. CSV loses type information the moment you write it. JSONL preserves structure but not column types. Parquet keeps both, compresses the data, and lets you load a single column out of a ten-million-row file without touching the rest.</p>
+<h2 id="what-you-build"><a class="header" href="#what-you-build">What You Build</a></h2>
+<p>You build <code>io_formats.py</code>, a script that writes a typed DataFrame to CSV, JSONL, and Parquet, reads each back, prints the dtypes before and after each round trip, and confirms what survived.</p>
+<h2 id="the-three-formats"><a class="header" href="#the-three-formats">The Three Formats</a></h2>
+<p>An AI pipeline uses these three formats for different reasons, at different stages.</p>
+<p><strong>CSV</strong> is the interchange default: the eval results table you hand to a reviewer, the split your training harness reads, the dataset someone ships you in a zip file. Every tool reads it. No tool preserves your dtypes.</p>
+<p><strong>JSONL</strong> (JSON Lines) is the corpus format: one JSON object per line, no enclosing array. Your annotation files are JSONL. Your fine-tuning dataset is JSONL. Your retrieval-augmentation source documents are JSONL. The record-per-line layout maps directly onto the made-with-ml <code>datasets/dataset.csv</code> pattern, which treats every row as an independent labeled record.</p>
+<p><strong>Parquet</strong> is the feature store and checkpoint format: columnar, typed, compressed. When your pipeline graduates from a few thousand rows to millions, Parquet is what you reach for because it lets you read one column without deserializing the rest.</p>
+<p>Microsoft Learn’s “Make Data Available in Azure Machine Learning” module shows these same tabular formats (CSV, JSON, Parquet) registered as versioned data assets in a production pipeline (<a href="https://learn.microsoft.com/training/modules/make-data-available-azure-machine-learning/">learn.microsoft.com/training/modules/make-data-available-azure-machine-learning</a>).</p>
+<h2 id="reading-and-writing-csv"><a class="header" href="#reading-and-writing-csv">Reading and Writing CSV</a></h2>
+<p>Start with a typed DataFrame that mirrors an eval results table:</p>
+<pre><code class="language-python">import pandas as pd
+import numpy as np
 
-scores = np.array([0.91, 0.74, 0.88, 0.62], dtype=np.float64)
-print(scores.dtype)     # float64
-print(scores.itemsize)  # 8  (bytes per element)
-print(scores.nbytes)    # 32 (total bytes)
+df = pd.DataFrame({
+    "text":      ["classify this", "another sample", "third record"],
+    "label":     pd.array([1, 0, 1], dtype="int32"),
+    "score":     pd.array([0.91, 0.43, 0.78], dtype="float32"),
+    "timestamp": pd.to_datetime(["2024-01-01", "2024-01-02", "2024-01-03"]),
+})
+
+print(df.dtypes)
+# text                object
+# label                int32
+# score               float32
+# timestamp    datetime64[ns]
 </code></pre>
-<p><code>arr.dtype</code> always tells you what you have. <code>arr.itemsize</code> tells you the per-element cost. <code>arr.nbytes</code> tells you the bill.</p>
-<h2 id="the-ai-relevant-types"><a class="header" href="#the-ai-relevant-types">The AI-Relevant Types</a></h2>
-<p>Five dtypes cover almost every AI pipeline:</p>
+<p>Write it and read it back:</p>
+<pre><code class="language-python">df.to_csv("eval.csv", index=False)
+df_csv = pd.read_csv("eval.csv")
+
+print(df_csv.dtypes)
+# text         object
+# label         int64   &lt;-- int32 is gone
+# score        float64  &lt;-- float32 is gone
+# timestamp     object  &lt;-- datetime is gone
+</code></pre>
+<p>The round trip loses all three numeric dtypes and the datetime. CSV carries no schema: it is a text file with commas. When you read it back, pandas infers types from the character sequences it sees, and it guesses conservatively (<code>int64</code>, <code>float64</code>, <code>object</code>). To recover your types, pass <code>dtype</code> and <code>parse_dates</code> explicitly:</p>
+<pre><code class="language-python">df_csv = pd.read_csv(
+    "eval.csv",
+    dtype={"label": "int32", "score": "float32"},
+    parse_dates=["timestamp"],
+)
+
+print(df_csv.dtypes)
+# text                object
+# label                int32
+# score               float32
+# timestamp    datetime64[ns]
+</code></pre>
+<p>The <code>dtype</code> dict maps column names to types. <code>parse_dates</code> accepts a list of column names to coerce from string to <code>datetime64</code>. You own the schema when you read CSV; the file does not carry it for you. Microsoft Learn’s “Explore and Analyze Data with Python” module walks through loading and inspecting tabular data with Pandas this way (<a href="https://learn.microsoft.com/training/modules/explore-analyze-data-with-python/2-explore-data-numpy-pandas">learn.microsoft.com/training/modules/explore-analyze-data-with-python</a>).</p>
+<h2 id="reading-and-writing-jsonl"><a class="header" href="#reading-and-writing-jsonl">Reading and Writing JSONL</a></h2>
+<p>JSONL writes each row as a JSON object on its own line. Pandas calls this <code>orient="records"</code> combined with <code>lines=True</code>:</p>
+<pre><code class="language-python">df.to_json("corpus.jsonl", orient="records", lines=True)
+</code></pre>
+<p>The file looks like this:</p>
+<pre><code>{"text":"classify this","label":1,"score":0.9100000262260437,"timestamp":1704067200000}
+{"text":"another sample","label":0,"score":0.4300000071525574,"timestamp":1704153600000}
+{"text":"third record","label":1,"score":0.7799999713897705,"timestamp":1704240000000}
+</code></pre>
+<p>Two things to notice. First, <code>score</code> has expanded: the <code>float32</code> value <code>0.91</code> cannot be represented exactly in JSON’s floating-point encoding, so pandas serializes it at full <code>float64</code> precision. Second, <code>timestamp</code> is a millisecond epoch integer, not an ISO string; pandas serializes datetimes as integers by default.</p>
+<p>Read it back:</p>
+<pre><code class="language-python">df_jsonl = pd.read_json("corpus.jsonl", lines=True)
+
+print(df_jsonl.dtypes)
+# text         object
+# label         int64   &lt;-- int32 gone
+# score        float64  &lt;-- float32 gone
+# timestamp    datetime64[ns]  &lt;-- this one survives, pandas infers it
+</code></pre>
+<p>JSONL preserves the datetime (because pandas interprets epoch milliseconds as <code>datetime64</code>) but loses numeric subtypes just like CSV does. For a corpus, this is acceptable: the structure survives, and the text is what matters. For a typed feature store, it is not.</p>
+<h2 id="reading-and-writing-parquet"><a class="header" href="#reading-and-writing-parquet">Reading and Writing Parquet</a></h2>
+<p>Parquet encodes the schema alongside the data. Your dtypes do not need to survive inference; they are written into the file’s metadata and restored exactly on read. The engine that makes this work with pandas is <code>pyarrow</code> (<code>pip install pyarrow</code>):</p>
+<pre><code class="language-python">df.to_parquet("features.parquet", engine="pyarrow", index=False)
+df_parquet = pd.read_parquet("features.parquet", engine="pyarrow")
+
+print(df_parquet.dtypes)
+# text                object
+# label                int32   &lt;-- exact
+# score               float32  &lt;-- exact
+# timestamp    datetime64[ns]  &lt;-- exact
+</code></pre>
+<p>All four dtypes survive intact. The file is also smaller: the pandas docs note that Parquet uses columnar compression, which means a column of repeated <code>int32</code> values compresses far more aggressively than the same values encoded as ASCII digits in a CSV row. For a 3-row frame the size difference is negligible; at a million rows it is the difference between a 40 MB file and a 4 MB file.</p>
+<p>Parquet also supports column-subset reads. If your feature store has 200 columns and a downstream model needs only 3, you pull those 3 without deserializing the rest:</p>
+<pre><code class="language-python">subset = pd.read_parquet("features.parquet", columns=["text", "score"])
+print(subset.shape)    # (3, 2)
+print(subset.dtypes)
+# text      object
+# score    float32
+</code></pre>
+<p>CSV has no equivalent. Reading 3 columns from a CSV still parses every byte of every row.</p>
+<h2 id="the-round-trip-discipline"><a class="header" href="#the-round-trip-discipline">The Round-Trip Discipline</a></h2>
+<p>Before you commit a format choice, trace what survives the round trip for your specific dtypes:</p>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>dtype</th><th>Bytes</th><th>When you use it</th></tr>
+<tr><th>Format</th><th><code>int32</code></th><th><code>float32</code></th><th><code>datetime64</code></th><th>Column subset read</th></tr>
 </thead>
 <tbody>
-<tr><td><code>float64</code></td><td>8</td><td>NumPy default; computation, intermediate results</td></tr>
-<tr><td><code>float32</code></td><td>4</td><td>Model output embeddings; halves memory vs float64</td></tr>
-<tr><td><code>int64</code></td><td>8</td><td>Label arrays, index arrays</td></tr>
-<tr><td><code>int32</code></td><td>4</td><td>Compact labels when the count fits in 32 bits</td></tr>
-<tr><td><code>bool</code></td><td>1</td><td>Mask arrays; boolean indexing</td></tr>
+<tr><td>CSV</td><td>No (needs <code>dtype=</code>)</td><td>No (needs <code>dtype=</code>)</td><td>No (needs <code>parse_dates=</code>)</td><td>No</td></tr>
+<tr><td>JSONL</td><td>No</td><td>No</td><td>Yes (epoch ms)</td><td>No</td></tr>
+<tr><td>Parquet</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
 </tbody>
 </table>
 </div>
-<p>The decision that matters most in practice is <code>float64</code> versus <code>float32</code>. Most embedding models emit <code>float32</code> vectors. Azure AI Search documents this directly: <code>Float32</code> (32-bit floating point) is the default vector field data type for Azure AI Search indexes because “most embedding models emit vectors as <code>Float32</code>,” while choosing <code>Float16</code> “often leads to faster query times and reduced memory footprint” at the cost of some precision. (<a href="https://learn.microsoft.com/rest/api/searchservice/supported-data-types#edm-data-types-for-vector-fields">Microsoft Learn: Supported data types, Azure AI Search</a>)</p>
-<p>Loading those <code>float32</code> embeddings into a <code>float64</code> array doubles your memory silently. At 1,536 dimensions and one million rows, that is the difference between 6 GB and 12 GB.</p>
-<h2 id="astype-versus-view"><a class="header" href="#astype-versus-view">astype Versus view</a></h2>
-<p>Two operations change what dtype label an array carries. Only one of them is safe for type conversion.</p>
-<p><strong><code>astype</code></strong> converts values. It reads each element, converts it to the target type, and writes it into a new buffer. The result is a separate array with correct values.</p>
-<pre><code class="language-python">embeddings_f64 = np.random.rand(1000, 1536)   # float64, 8 bytes/element
-embeddings_f32 = embeddings_f64.astype(np.float32)
-
-print(embeddings_f64.nbytes)  # 12,288,000
-print(embeddings_f32.nbytes)  #  6,144,000  -- new buffer, half the size
-</code></pre>
-<p><strong><code>view</code></strong> reinterprets bytes. It does not convert values; it reads the same bytes through a different lens. Viewing 8-byte <code>float64</code> slots as 4-byte <code>float32</code> slots does not halve your values: it reads each 8-byte block as two 4-byte floats and returns garbage.</p>
-<pre><code class="language-python">trap = embeddings_f64[0].view(np.float32)
-# trap has 2 * 1536 = 3072 elements, all meaningless
-# it shares the buffer -- no copy occurred, no conversion occurred
-print(np.shares_memory(embeddings_f64, trap))  # True
-</code></pre>
-<p>The trap is real. <code>arr.view(np.float32)</code> will not raise an error; it silently gives you wrong data. Reach for <code>view</code> only when you intend raw byte reinterpretation, which in AI pipelines is almost never.</p>
-<h2 id="the-float32-decision"><a class="header" href="#the-float32-decision">The float32 Decision</a></h2>
-<p>When a model hands you embeddings, read the dtype before assuming:</p>
-<pre><code class="language-python"># Simulate receiving embeddings from a model
-model_output = np.random.rand(512, 1536).astype(np.float32)
-
-# Check what you have
-print(model_output.dtype)   # float32
-print(model_output.nbytes)  # 3,145,728
-
-# If you had loaded into float64 by accident:
-bloated = model_output.astype(np.float64)
-print(bloated.nbytes)       # 6,291,456 -- doubled for nothing
-</code></pre>
-<p>The fix is one line: <code>arr.astype(np.float32)</code>. The cost of not fixing it scales with every row in your corpus.</p>
+<p>The rule is: use the format that matches what you need to preserve, not the one that is most convenient to produce. Your eval table ships as CSV because every reviewer can open it. Your annotated corpus ships as JSONL because every annotation tool reads it. Your feature store ships as Parquet because memory and speed matter at scale, and nothing downstream should be re-inferring types from bytes.</p>
+<p>Format selection is a memory-and-speed contract with your pipeline, not a file extension you pick at random.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>A dtype is a fixed-size C type specifying bytes-per-slot and how those bytes are interpreted; every element in an array shares it, which is why NumPy is fast.</li>
-<li><code>astype</code> converts values into a new buffer; <code>view</code> reinterprets the existing bytes without converting them: using <code>view</code> as a type conversion yields garbage.</li>
-<li>Most embedding models emit <code>float32</code>; loading their output into a <code>float64</code> array doubles memory silently and wastes the budget before any computation begins.</li>
-<li><code>arr.dtype</code>, <code>arr.itemsize</code>, and <code>arr.nbytes</code> are the three numbers to read before operating on any array you did not create yourself.</li>
+<li>CSV serializes data as text and carries no schema; every numeric and datetime dtype must be explicitly declared on <code>read_csv</code> via <code>dtype=</code> and <code>parse_dates=</code>, or pandas infers conservatively and widens types.</li>
+<li>JSONL writes one JSON object per line using <code>orient="records", lines=True</code> and is the standard corpus format; it preserves structure but not numeric subtypes, so <code>int32</code> and <code>float32</code> return as <code>int64</code> and <code>float64</code>.</li>
+<li>Parquet encodes the DataFrame schema in the file’s metadata and restores all dtypes exactly on read, including <code>int32</code>, <code>float32</code>, and <code>datetime64</code>; it is the format you choose once data is big and column-subset reads matter.</li>
+<li>Each format has a natural pipeline role: CSV for eval interchange, JSONL for corpora and annotation, Parquet for feature stores and anything that needs typed round trips at scale.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module1/dtypes-and-what-they-cost/">
-<p><strong>Build It in Claude Code:</strong> build a dtype audit script that measures the real memory cost of float64 vs float32 embeddings and proves the view trap produces garbage.</p>
+<div class="claude-handoff" data-exercise="exercises/module3/reading-and-writing-ai-formats/">
+<p><strong>Build It in Claude Code:</strong> Build <code>io_formats.py</code>, a self-contained script that round-trips a typed DataFrame through CSV, JSONL, and Parquet, asserts dtype behavior at each step, and confirms Parquet is smaller than CSV for the same data.</p>
 </div>
 
 
@@ -253,11 +301,11 @@ print(bloated.nbytes)       # 6,291,456 -- doubled for nothing
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module1/why-numpy-exists.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module3/series-and-dataframe.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module1/shape-ndim-and-strides.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module3/groupby-merge-apply.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -267,11 +315,11 @@ print(bloated.nbytes)       # 6,291,456 -- doubled for nothing
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module1/why-numpy-exists.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module3/series-and-dataframe.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module1/shape-ndim-and-strides.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module3/groupby-merge-apply.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

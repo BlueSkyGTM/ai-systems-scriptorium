@@ -42,6 +42,26 @@ Per-book log for the experiment in the root `HANDOFF.md`. Full reasoning + the c
 (authoring), via a catch a human eye skims past and a baseline ships. It did **not** write the prose — that
 is built-in. One tier (handler) was overhead. See `FINDINGS.md` for the rolled-up verdict.
 
-**Next informative test:** M3 (Pandas) — a different ore vein (`made-with-ml`, needs a real
-vault→ingredients distillation pass, unlike M1/M2's reference-grade numpy-docs). That pass is where the
-ingredients/dossier machinery either earns its keep or proves to be ceremony. Not yet run.
+## Track 1 (cont.): Just Python M3 "Pandas for AI Pipelines" — shipped 2026-06-21
+
+- **Stage:** Full M3 build, **conductor-direct (no handler tier — the orchestration A/B)**. 4 Sonnet workers
+  managed directly; conductor review + VERIFY + BUILD/TEST. Pushed on ship.
+- **Cold-proceed?** Y.
+- **Reproduced result:** VERIFY caught fabricated MS-Learn authority **again** (L2 invented an Azure-ML
+  module; L3 invented an "Azure-ML evaluation pattern"). 2-for-2 with M2 — cold parallel authoring fabricates
+  authority systematically; the staged VERIFY closes it systematically. The strongest structure-vs-baseline
+  signal, now reproduced rather than a one-off.
+- **The A/B result:** conductor-direct matched the handler run on quality. Handler tier = optional overhead
+  for a single ≤4-worker cluster with no concurrent gate. `ORCHESTRATION.md` updated (handler when concurrent
+  gates or multiple clusters, not by worker count). The test improving the architecture, not just grading it.
+- **BUILD/TEST caught what self-reports missed:** L1's hardcoded `frame_bytes` numbers were wrong for current
+  pandas (249→224) and falsely "platform-stable"; L4's final assert referenced the wrong variable. Running
+  the gate, not trusting the report, caught both.
+- **Honest correction:** the distillation machinery stayed **unexercised** — `pandas-docs` is reference-grade,
+  so JP M1–M3 all bypassed `ingredients/dossiers`. Truly stressing distillation needs a code-ore book.
+- **Content ≈ built-in; catches + cross-worker consistency + context-economy ≈ structure** (unchanged).
+
+**Next informative test:** either **JP M4 (Vectorization Discipline)** — the first module to *reuse*
+`measure.py`'s M2/M3 extensions off disk, which finally tests the artifact-chaining claim for real — or a
+**second book cold-start** (the "multiple books" HOLDS criterion). The `ingredients/dossiers` distillation
+machinery still wants a code-ore book to be exercised at all.

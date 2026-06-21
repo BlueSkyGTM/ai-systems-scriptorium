@@ -21,3 +21,13 @@
 - [Broadcasting](module2/broadcasting.md)
 - [Boolean Masks and Fancy Indexing](module2/advanced-indexing.md)
 - [Memory Layout and Contiguity](module2/memory-layout-and-contiguity.md)
+
+---
+
+# Module 3: Pandas for AI Pipelines
+
+- [Overview](module3/00-overview.md)
+- [Series and DataFrame](module3/series-and-dataframe.md)
+- [Reading and Writing AI Formats](module3/reading-and-writing-ai-formats.md)
+- [Groupby, Merge, and Apply](module3/groupby-merge-apply.md)
+- [Cleaning and Missing Data](module3/cleaning-and-missing-data.md)

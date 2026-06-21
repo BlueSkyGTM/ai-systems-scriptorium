@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-ce6eb081.js";
+            window.path_to_searchindex_js = "searchindex-e73de605.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-99a1f5d2.js"></script>
+        <script src="toc-833e6087.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -872,6 +872,490 @@ print(np.shares_memory(base, r2))   # False -- forced copy
 </ul>
 <div class="claude-handoff" data-exercise="exercises/module2/memory-layout-and-contiguity/">
 <p><strong>Try It in Claude Code:</strong> Extend <code>measure.py</code> with <code>time_contiguous_vs_strided</code>, time a column reduction on a C-contiguous array versus its transposed view, and prove the layout gap with a printed ratio and a passing assertion.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-3-pandas-for-ai-pipelines"><a class="header" href="#module-3-pandas-for-ai-pipelines">Module 3: Pandas for AI Pipelines</a></h1>
+<h2 id="what-this-module-covers-2"><a class="header" href="#what-this-module-covers-2">What This Module Covers</a></h2>
+<p>Module 2 drove the raw NumPy buffer: ufuncs, broadcasting, indexing, layout. Module 3 puts a labeled, heterogeneous table on top of that buffer, the DataFrame, and the operations that turn raw rows into a training or evaluation set. A DataFrame column is a NumPy-backed Series, so everything M1 and M2 taught about memory and vectorization carries straight in; what is new is the labeled structure and the four data-prep moves built on it.</p>
+<p>This is the Pandas surface a hiring screen tests. A take-home that hands you a messy CSV, a corpus of JSONL, or a predictions file to score is asking whether you can load it with the right dtypes, join it, group it, and clean it without dropping to a Python loop. Module 3 is also where the book’s data layer begins: the load and clean patterns you write here are the ones the Module 6 wrangling artifact reuses off disk.</p>
+<p>The work stays grounded in the Sans Python ecosystem and the made-with-ml data pipeline: the eval tables, corpora, and prediction outputs you already know are the data you now wrangle at speed.</p>
+<h2 id="arc-of-lessons-2"><a class="header" href="#arc-of-lessons-2">Arc of Lessons</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Lesson</th><th>Title</th><th>What It Teaches</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>Series and DataFrame</td><td>The DataFrame as a dict of NumPy-backed Series sharing one index; per-column dtypes, and the object-dtype string tax M1 predicted, measured with <code>memory_usage(deep=True)</code></td></tr>
+<tr><td>2</td><td>Reading and Writing AI Formats</td><td>CSV (eval interchange), JSONL (corpora), Parquet (typed, columnar, at scale); controlling dtypes on load and knowing what survives each round trip</td></tr>
+<tr><td>3</td><td>Groupby, Merge, and Apply</td><td>Split-apply-combine with <code>groupby</code> + agg, <code>merge</code> to join predictions to labels, and why <code>apply</code> is a disguised loop you vectorize away</td></tr>
+<tr><td>4</td><td>Cleaning and Missing Data</td><td>Dedup, handle <code>NaN</code> (drop vs fill), reshape with melt/pivot, and clean text with the vectorized <code>.str</code> accessor; the operations that make raw rows a dataset</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="throughline-artifact-2"><a class="header" href="#throughline-artifact-2">Throughline Artifact</a></h2>
+<p>You extend <code>measure.py</code> once more. Lesson 1 adds <code>frame_bytes</code>, which reports a DataFrame’s true memory with <code>memory_usage(deep=True)</code> and compares it to the equivalent contiguous ndarray, making the object-dtype string overhead (M1’s boxed-object model, now in Pandas) measurable. The load, join, and clean patterns in Lessons 2 through 4 are the data-prep moves the Module 6 wrangling pipeline imports and extends. The reuse is real: you open the existing file and add to it, you do not start over.</p>
+<h2 id="prerequisites-2"><a class="header" href="#prerequisites-2">Prerequisites</a></h2>
+<ul>
+<li>Module 1 (the object model, dtypes, the contiguous buffer) and Module 2 (vectorized column operations). Module 3 builds on both: a numeric column is a NumPy buffer, and <code>apply</code> is the Python loop M2 taught you to avoid. It does not re-teach them.</li>
+<li>The <code>measure.py</code> you have been building, at <code>exercises/module1/the-cost-of-a-python-list/measure.py</code>. You extend it here.</li>
+<li>A Python 3.11+ environment with pandas and NumPy installed (<code>pip install pandas numpy</code>); <code>pyarrow</code> for the Parquet lesson (<code>pip install pyarrow</code>).</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="series-and-dataframe"><a class="header" href="#series-and-dataframe">Series and DataFrame</a></h1>
+<p>A DataFrame column is a NumPy-backed Series. That one fact closes the loop on everything M1 and M2 taught: the memory model is the same, the vectorized column operations are the same, and the dtype tax on a string column is exactly what M1 predicted for boxed Python objects.</p>
+<h2 id="the-two-structures"><a class="header" href="#the-two-structures">The Two Structures</a></h2>
+<p>A <code>Series</code> is a one-dimensional labeled array: a single typed buffer (the values) paired with an index (the row labels). Build one from a list and you get a <code>RangeIndex</code> for free:</p>
+<pre><code class="language-python">import pandas as pd
+import numpy as np
+
+scores = pd.Series([0.91, 0.87, 0.94, 0.73], name="f1")
+print(scores)
+# 0    0.91
+# 1    0.87
+# 2    0.94
+# 3    0.73
+# Name: f1, dtype: float64
+
+print(scores.dtype)    # float64
+print(scores.nbytes)   # 32  (4 values × 8 bytes each)
+</code></pre>
+<p><code>scores.nbytes</code> reports the backing buffer directly, the same as <code>ndarray.nbytes</code>. The M2 vectorized operations apply to a Series column-by-column for the same reason: each column is a contiguous typed buffer, and NumPy ufuncs operate on it without a Python loop.</p>
+<p>A <code>DataFrame</code> is a dict of Series objects sharing one index. The columns can carry different dtypes; the index is the common row spine.</p>
+<pre><code class="language-python">df = pd.DataFrame({
+    "model":  ["gpt-4o",  "claude-3", "llama-3",  "mistral"],
+    "f1":     [0.91,      0.87,       0.94,        0.73],
+    "tokens": [4096,      8192,       8192,        32768],
+    "open":   [False,     False,      True,         True],
+})
+print(df)
+#      model    f1  tokens   open
+# 0    gpt-4o  0.91    4096  False
+# 1  claude-3  0.87    8192  False
+# 2   llama-3  0.94    8192   True
+# 3   mistral  0.73   32768   True
+</code></pre>
+<h2 id="inspecting-dtypes-and-layout"><a class="header" href="#inspecting-dtypes-and-layout">Inspecting dtypes and Layout</a></h2>
+<p><code>df.dtypes</code> returns a Series mapping column name to dtype:</p>
+<pre><code class="language-python">print(df.dtypes)
+# model      object
+# f1        float64
+# tokens      int64
+# open         bool
+# dtype: object
+</code></pre>
+<p>Three columns hold contiguous NumPy buffers (<code>float64</code>, <code>int64</code>, <code>bool</code>). The <code>model</code> column shows <code>object</code>. That is the dtype from M1’s “every value is a box” lesson: each entry is a Python <code>str</code> object on the heap, and the column stores 8-byte pointers to those objects, not the characters themselves.</p>
+<p><code>df.info()</code> confirms the layout and reports a memory estimate in one call:</p>
+<pre><code class="language-python">df.info()
+# &lt;class 'pandas.core.frame.DataFrame'&gt;
+# RangeIndex: 4 entries, 0 to 3
+# Data columns (total 4 columns):
+#  #   Column  Non-Null Count  Dtype
+# ---  ------  --------------  -----
+#  0   model   4 non-null      object
+#  1   f1      4 non-null      float64
+#  2   tokens  4 non-null      int64
+#  3   open    4 non-null      bool
+# dtypes: bool(1), float64(1), int64(1), object(1)
+# memory usage: 196.0+ bytes
+</code></pre>
+<p>The <code>+</code> on the memory figure is the tell: pandas knows the <code>object</code> column’s real cost is not yet counted. Pass <code>deep=True</code> to follow the pointers.</p>
+<h2 id="measuring-the-object-dtype-tax"><a class="header" href="#measuring-the-object-dtype-tax">Measuring the Object-dtype Tax</a></h2>
+<p><code>df.memory_usage(deep=True)</code> returns a Series of byte counts per column, including the index:</p>
+<pre><code class="language-python">usage = df.memory_usage(deep=True)
+print(usage)
+# Index      132
+# model      224
+# f1          32
+# tokens      32
+# open         4
+# dtype: int64
+
+print(f"total: {usage.sum():,} bytes")
+# total: 424 bytes
+</code></pre>
+<p>The <code>model</code> column costs 224 bytes for four short strings (your pandas version may print a slightly different figure for the object column), against 32 bytes for the numeric columns holding the same four rows. That is M1’s object overhead in column form: four Python <code>str</code> objects, each individually heap-allocated, each carrying a type pointer and reference count, their addresses stored in the object-dtype column.</p>
+<p>Compare directly to the equivalent numeric ndarray to see the ratio:</p>
+<pre><code class="language-python">numeric_col = np.array([0.91, 0.87, 0.94, 0.73], dtype=np.float64)
+print(f"numeric ndarray:  {numeric_col.nbytes:&gt;6} bytes")  # 32 bytes
+print(f"object column:    {usage['model']:&gt;6} bytes")       # 224 bytes
+</code></pre>
+<p>The string column is roughly 7x heavier per row. At production scale, a model-name column on a million-row eval table is not a footnote: it is tens of megabytes of pointer overhead on top of the character data itself.</p>
+<p>Microsoft Learn’s “Explore and Analyze Data with Python” module introduces the DataFrame as the core structure for exploring tabular data with Pandas (<a href="https://learn.microsoft.com/training/modules/explore-analyze-data-with-python/2-explore-data-numpy-pandas">learn.microsoft.com/training/modules/explore-analyze-data-with-python</a>).</p>
+<h2 id="when-the-column-is-tight"><a class="header" href="#when-the-column-is-tight">When the Column Is Tight</a></h2>
+<p>The numeric columns pay no object tax. <code>df["f1"]</code> is a <code>float64</code> Series backed by a 32-byte buffer; <code>df["tokens"]</code> is an <code>int64</code> Series backed by the same. M2’s broadcasting applies per-column without any pointer-chasing:</p>
+<pre><code class="language-python"># Normalize f1 scores to [0, 1] range, vectorized, no loop
+min_f1 = df["f1"].min()
+max_f1 = df["f1"].max()
+df["f1_norm"] = (df["f1"] - min_f1) / (max_f1 - min_f1)
+print(df[["model", "f1", "f1_norm"]])
+#      model    f1   f1_norm
+# 0    gpt-4o  0.91  0.857143
+# 1  claude-3  0.87  0.666667
+# 2   llama-3  0.94  1.000000
+# 3   mistral  0.73  0.000000
+</code></pre>
+<p>The arithmetic runs on the <code>float64</code> buffer directly. No Python objects enter the loop.</p>
+<h2 id="the-shared-index"><a class="header" href="#the-shared-index">The Shared Index</a></h2>
+<p>Every Series in a DataFrame shares the same index object. When you select a column, you get back a Series whose index is the DataFrame’s row index. When you assign a new column from a computation, pandas aligns it to that same index automatically. The alignment guarantee is what lets you mix columns freely without tracking row position by hand.</p>
+<pre><code class="language-python"># Selecting a column returns a Series; its index matches the DataFrame's
+col = df["f1"]
+print(type(col))           # &lt;class 'pandas.core.series.Series'&gt;
+print(col.index.tolist())  # [0, 1, 2, 3]
+</code></pre>
+<p>The shared index is what separates a DataFrame from a raw dict of arrays. It is also what makes joins, groupbys, and reindexing safe: pandas uses the labels, not integer position, to align data.</p>
+<p>Every eval table you will build in production is a DataFrame: columns for model names (object dtype), columns for metric scores (float64), columns for flags (bool). Knowing before you load which columns carry the object-dtype tax is what keeps that table from silently doubling your memory budget.</p>
+<h2 id="core-concepts-8"><a class="header" href="#core-concepts-8">Core Concepts</a></h2>
+<ul>
+<li>A DataFrame is a dict of NumPy-backed Series sharing one index; each column carries its own dtype, so a numeric column is a tight contiguous buffer while an object/string column stores Python-object pointers and pays M1’s full per-element heap overhead.</li>
+<li><code>df.dtypes</code> reveals the dtype per column; <code>df.info()</code> confirms shape and prints a memory estimate, flagging the object column cost with a <code>+</code>; <code>df.memory_usage(deep=True)</code> follows the pointers and returns the true byte count per column.</li>
+<li>A numeric Series column is a contiguous <code>ndarray</code> buffer; M2’s vectorized column operations apply directly and run without a Python loop.</li>
+<li>The object dtype is the string column’s cost signal: an <code>object</code>-dtype column on a large eval table can outweigh all the numeric columns combined because each entry is a separately allocated, reference-counted Python object.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module3/series-and-dataframe/">
+<p><strong>Inspect It in Claude Code:</strong> Extend <code>measure.py</code> with <code>frame_bytes</code>, a function that measures the true memory cost of a DataFrame, compares a numeric column to its equivalent ndarray, and proves the object-dtype overhead against a string column.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="reading-and-writing-ai-formats"><a class="header" href="#reading-and-writing-ai-formats">Reading and Writing AI Formats</a></h1>
+<p>Every AI pipeline moves data through exactly three formats, and the one you reach for by default determines how much time you spend debugging dtype surprises at 2 AM. CSV loses type information the moment you write it. JSONL preserves structure but not column types. Parquet keeps both, compresses the data, and lets you load a single column out of a ten-million-row file without touching the rest.</p>
+<h2 id="what-you-build-2"><a class="header" href="#what-you-build-2">What You Build</a></h2>
+<p>You build <code>io_formats.py</code>, a script that writes a typed DataFrame to CSV, JSONL, and Parquet, reads each back, prints the dtypes before and after each round trip, and confirms what survived.</p>
+<h2 id="the-three-formats"><a class="header" href="#the-three-formats">The Three Formats</a></h2>
+<p>An AI pipeline uses these three formats for different reasons, at different stages.</p>
+<p><strong>CSV</strong> is the interchange default: the eval results table you hand to a reviewer, the split your training harness reads, the dataset someone ships you in a zip file. Every tool reads it. No tool preserves your dtypes.</p>
+<p><strong>JSONL</strong> (JSON Lines) is the corpus format: one JSON object per line, no enclosing array. Your annotation files are JSONL. Your fine-tuning dataset is JSONL. Your retrieval-augmentation source documents are JSONL. The record-per-line layout maps directly onto the made-with-ml <code>datasets/dataset.csv</code> pattern, which treats every row as an independent labeled record.</p>
+<p><strong>Parquet</strong> is the feature store and checkpoint format: columnar, typed, compressed. When your pipeline graduates from a few thousand rows to millions, Parquet is what you reach for because it lets you read one column without deserializing the rest.</p>
+<p>Microsoft Learn’s “Make Data Available in Azure Machine Learning” module shows these same tabular formats (CSV, JSON, Parquet) registered as versioned data assets in a production pipeline (<a href="https://learn.microsoft.com/training/modules/make-data-available-azure-machine-learning/">learn.microsoft.com/training/modules/make-data-available-azure-machine-learning</a>).</p>
+<h2 id="reading-and-writing-csv"><a class="header" href="#reading-and-writing-csv">Reading and Writing CSV</a></h2>
+<p>Start with a typed DataFrame that mirrors an eval results table:</p>
+<pre><code class="language-python">import pandas as pd
+import numpy as np
+
+df = pd.DataFrame({
+    "text":      ["classify this", "another sample", "third record"],
+    "label":     pd.array([1, 0, 1], dtype="int32"),
+    "score":     pd.array([0.91, 0.43, 0.78], dtype="float32"),
+    "timestamp": pd.to_datetime(["2024-01-01", "2024-01-02", "2024-01-03"]),
+})
+
+print(df.dtypes)
+# text                object
+# label                int32
+# score               float32
+# timestamp    datetime64[ns]
+</code></pre>
+<p>Write it and read it back:</p>
+<pre><code class="language-python">df.to_csv("eval.csv", index=False)
+df_csv = pd.read_csv("eval.csv")
+
+print(df_csv.dtypes)
+# text         object
+# label         int64   &lt;-- int32 is gone
+# score        float64  &lt;-- float32 is gone
+# timestamp     object  &lt;-- datetime is gone
+</code></pre>
+<p>The round trip loses all three numeric dtypes and the datetime. CSV carries no schema: it is a text file with commas. When you read it back, pandas infers types from the character sequences it sees, and it guesses conservatively (<code>int64</code>, <code>float64</code>, <code>object</code>). To recover your types, pass <code>dtype</code> and <code>parse_dates</code> explicitly:</p>
+<pre><code class="language-python">df_csv = pd.read_csv(
+    "eval.csv",
+    dtype={"label": "int32", "score": "float32"},
+    parse_dates=["timestamp"],
+)
+
+print(df_csv.dtypes)
+# text                object
+# label                int32
+# score               float32
+# timestamp    datetime64[ns]
+</code></pre>
+<p>The <code>dtype</code> dict maps column names to types. <code>parse_dates</code> accepts a list of column names to coerce from string to <code>datetime64</code>. You own the schema when you read CSV; the file does not carry it for you. Microsoft Learn’s “Explore and Analyze Data with Python” module walks through loading and inspecting tabular data with Pandas this way (<a href="https://learn.microsoft.com/training/modules/explore-analyze-data-with-python/2-explore-data-numpy-pandas">learn.microsoft.com/training/modules/explore-analyze-data-with-python</a>).</p>
+<h2 id="reading-and-writing-jsonl"><a class="header" href="#reading-and-writing-jsonl">Reading and Writing JSONL</a></h2>
+<p>JSONL writes each row as a JSON object on its own line. Pandas calls this <code>orient="records"</code> combined with <code>lines=True</code>:</p>
+<pre><code class="language-python">df.to_json("corpus.jsonl", orient="records", lines=True)
+</code></pre>
+<p>The file looks like this:</p>
+<pre><code>{"text":"classify this","label":1,"score":0.9100000262260437,"timestamp":1704067200000}
+{"text":"another sample","label":0,"score":0.4300000071525574,"timestamp":1704153600000}
+{"text":"third record","label":1,"score":0.7799999713897705,"timestamp":1704240000000}
+</code></pre>
+<p>Two things to notice. First, <code>score</code> has expanded: the <code>float32</code> value <code>0.91</code> cannot be represented exactly in JSON’s floating-point encoding, so pandas serializes it at full <code>float64</code> precision. Second, <code>timestamp</code> is a millisecond epoch integer, not an ISO string; pandas serializes datetimes as integers by default.</p>
+<p>Read it back:</p>
+<pre><code class="language-python">df_jsonl = pd.read_json("corpus.jsonl", lines=True)
+
+print(df_jsonl.dtypes)
+# text         object
+# label         int64   &lt;-- int32 gone
+# score        float64  &lt;-- float32 gone
+# timestamp    datetime64[ns]  &lt;-- this one survives, pandas infers it
+</code></pre>
+<p>JSONL preserves the datetime (because pandas interprets epoch milliseconds as <code>datetime64</code>) but loses numeric subtypes just like CSV does. For a corpus, this is acceptable: the structure survives, and the text is what matters. For a typed feature store, it is not.</p>
+<h2 id="reading-and-writing-parquet"><a class="header" href="#reading-and-writing-parquet">Reading and Writing Parquet</a></h2>
+<p>Parquet encodes the schema alongside the data. Your dtypes do not need to survive inference; they are written into the file’s metadata and restored exactly on read. The engine that makes this work with pandas is <code>pyarrow</code> (<code>pip install pyarrow</code>):</p>
+<pre><code class="language-python">df.to_parquet("features.parquet", engine="pyarrow", index=False)
+df_parquet = pd.read_parquet("features.parquet", engine="pyarrow")
+
+print(df_parquet.dtypes)
+# text                object
+# label                int32   &lt;-- exact
+# score               float32  &lt;-- exact
+# timestamp    datetime64[ns]  &lt;-- exact
+</code></pre>
+<p>All four dtypes survive intact. The file is also smaller: the pandas docs note that Parquet uses columnar compression, which means a column of repeated <code>int32</code> values compresses far more aggressively than the same values encoded as ASCII digits in a CSV row. For a 3-row frame the size difference is negligible; at a million rows it is the difference between a 40 MB file and a 4 MB file.</p>
+<p>Parquet also supports column-subset reads. If your feature store has 200 columns and a downstream model needs only 3, you pull those 3 without deserializing the rest:</p>
+<pre><code class="language-python">subset = pd.read_parquet("features.parquet", columns=["text", "score"])
+print(subset.shape)    # (3, 2)
+print(subset.dtypes)
+# text      object
+# score    float32
+</code></pre>
+<p>CSV has no equivalent. Reading 3 columns from a CSV still parses every byte of every row.</p>
+<h2 id="the-round-trip-discipline"><a class="header" href="#the-round-trip-discipline">The Round-Trip Discipline</a></h2>
+<p>Before you commit a format choice, trace what survives the round trip for your specific dtypes:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Format</th><th><code>int32</code></th><th><code>float32</code></th><th><code>datetime64</code></th><th>Column subset read</th></tr>
+</thead>
+<tbody>
+<tr><td>CSV</td><td>No (needs <code>dtype=</code>)</td><td>No (needs <code>dtype=</code>)</td><td>No (needs <code>parse_dates=</code>)</td><td>No</td></tr>
+<tr><td>JSONL</td><td>No</td><td>No</td><td>Yes (epoch ms)</td><td>No</td></tr>
+<tr><td>Parquet</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+</tbody>
+</table>
+</div>
+<p>The rule is: use the format that matches what you need to preserve, not the one that is most convenient to produce. Your eval table ships as CSV because every reviewer can open it. Your annotated corpus ships as JSONL because every annotation tool reads it. Your feature store ships as Parquet because memory and speed matter at scale, and nothing downstream should be re-inferring types from bytes.</p>
+<p>Format selection is a memory-and-speed contract with your pipeline, not a file extension you pick at random.</p>
+<h2 id="core-concepts-9"><a class="header" href="#core-concepts-9">Core Concepts</a></h2>
+<ul>
+<li>CSV serializes data as text and carries no schema; every numeric and datetime dtype must be explicitly declared on <code>read_csv</code> via <code>dtype=</code> and <code>parse_dates=</code>, or pandas infers conservatively and widens types.</li>
+<li>JSONL writes one JSON object per line using <code>orient="records", lines=True</code> and is the standard corpus format; it preserves structure but not numeric subtypes, so <code>int32</code> and <code>float32</code> return as <code>int64</code> and <code>float64</code>.</li>
+<li>Parquet encodes the DataFrame schema in the file’s metadata and restores all dtypes exactly on read, including <code>int32</code>, <code>float32</code>, and <code>datetime64</code>; it is the format you choose once data is big and column-subset reads matter.</li>
+<li>Each format has a natural pipeline role: CSV for eval interchange, JSONL for corpora and annotation, Parquet for feature stores and anything that needs typed round trips at scale.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module3/reading-and-writing-ai-formats/">
+<p><strong>Build It in Claude Code:</strong> Build <code>io_formats.py</code>, a self-contained script that round-trips a typed DataFrame through CSV, JSONL, and Parquet, asserts dtype behavior at each step, and confirms Parquet is smaller than CSV for the same data.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="groupby-merge-and-apply"><a class="header" href="#groupby-merge-and-apply">Groupby, Merge, and Apply</a></h1>
+<p>Your model ran overnight. You have a predictions frame and a labels frame sitting in two separate CSVs, and the question you need to answer is: how accurate was it per class? That question has three steps: join the frames, split by class, and reduce to a number. Pandas has a primitive for each step.</p>
+<h2 id="the-artifact-1"><a class="header" href="#the-artifact-1">The Artifact</a></h2>
+<p>You build <code>score_pipeline.py</code>: a script that merges a predictions frame to a labels frame by example id, groups the merged result by class to compute per-class counts and accuracy, and contrasts <code>apply</code> with its vectorized equivalent so you can see the difference in one run.</p>
+<h2 id="split-apply-combine"><a class="header" href="#split-apply-combine">Split-Apply-Combine</a></h2>
+<p>The mental model behind <code>groupby</code> is three moves: split the frame into groups by a key, apply a function to each group independently, then combine the results back into a single frame. Pandas does the split and combine automatically; you supply only the apply step.</p>
+<p>Start with a merged frame where each row is one prediction (you build the merge in the next section; here, focus on the grouping):</p>
+<pre><code class="language-python">import pandas as pd
+
+# After merging predictions to labels on 'id' (next section)
+# merged has columns: id, class_label, correct (1 or 0)
+per_class = (
+    merged
+    .groupby("class_label")
+    .agg(
+        count=pd.NamedAgg(column="correct", aggfunc="count"),
+        accuracy=pd.NamedAgg(column="correct", aggfunc="mean"),
+    )
+)
+print(per_class)
+</code></pre>
+<p>Named aggregations keep the output column names explicit. The alternative (<code>grouped["correct"].agg(["count", "mean"])</code>) works but names the columns after the function strings, which is harder to read downstream. Named aggregation is the form that survives code review. Microsoft Learn’s “Explore and Analyze Data with Python” module groups and aggregates DataFrame data this way (<a href="https://learn.microsoft.com/training/modules/explore-analyze-data-with-python/2-explore-data-numpy-pandas">learn.microsoft.com/training/modules/explore-analyze-data-with-python</a>).</p>
+<p><code>groupby</code> does not execute until you call the aggregation. The <code>grouped</code> object is lazy: it holds the split plan, not the split result. Calling <code>.agg(...)</code> materializes it.</p>
+<h2 id="merge-joining-predictions-to-labels"><a class="header" href="#merge-joining-predictions-to-labels">Merge: Joining Predictions to Labels</a></h2>
+<p>You rarely receive predictions and ground truth in the same frame. Scoring starts with a join.</p>
+<pre><code class="language-python">import numpy as np
+
+rng = np.random.default_rng(42)
+n = 20
+classes = ["cat", "dog", "bird"]
+
+labels_df = pd.DataFrame({
+    "id":          range(n),
+    "class_label": rng.choice(classes, n),
+    "true_label":  rng.integers(0, 2, n),
+})
+
+preds_df = pd.DataFrame({
+    "id":         range(n - 2),       # two predictions missing on purpose
+    "pred_label": rng.integers(0, 2, n - 2),
+})
+
+merged = pd.merge(preds_df, labels_df, on="id", how="inner")
+print(f"labels: {len(labels_df)}, preds: {len(preds_df)}, merged: {len(merged)}")
+# labels: 20, preds: 18, merged: 18
+</code></pre>
+<p><code>how="inner"</code> keeps only rows where the id appears in both frames. Two labels dropped because no prediction matched. That is not a bug; it is the join telling you your prediction run was incomplete.</p>
+<p>Now build the <code>correct</code> column and group:</p>
+<pre><code class="language-python">merged["correct"] = (merged["pred_label"] == merged["true_label"]).astype(int)
+
+per_class = (
+    merged
+    .groupby("class_label")
+    .agg(
+        count=pd.NamedAgg(column="correct", aggfunc="count"),
+        accuracy=pd.NamedAgg(column="correct", aggfunc="mean"),
+    )
+    .round(3)
+)
+print(per_class)
+</code></pre>
+<p><code>how="left"</code> would keep all predictions even when no label exists, filling the label columns with <code>NaN</code>. That leaks phantom rows into your metrics: <code>mean()</code> on a column with <code>NaN</code> silently skips them, but <code>count()</code> counts non-null values only, so the two aggregations would count different rows. An unchecked <code>left</code> join is a silent accuracy inflation. Inner join, then check <code>len(merged)</code> against <code>len(preds_df)</code>: that gap is the real signal.</p>
+<h2 id="apply-the-escape-hatch-you-reach-for-last"><a class="header" href="#apply-the-escape-hatch-you-reach-for-last">apply: The Escape Hatch You Reach For Last</a></h2>
+<p>Module 2 taught that <code>df.apply(func, axis=1)</code> is a disguised per-row Python loop. Pandas calls your function once per row, passing a <code>Series</code>; it never vectorizes across the batch. The column operation is always preferred when one exists.</p>
+<p>Here is the pattern to recognize and replace:</p>
+<pre><code class="language-python"># Slow: apply is a Python loop over rows
+merged["correct_apply"] = merged.apply(
+    lambda row: int(row["pred_label"] == row["true_label"]),
+    axis=1,
+)
+
+# Fast: vectorized column comparison
+merged["correct_vec"] = (merged["pred_label"] == merged["true_label"]).astype(int)
+
+assert (merged["correct_apply"] == merged["correct_vec"]).all(), \
+    "apply and vectorized must agree"
+print("Both methods agree:", merged[["correct_apply", "correct_vec"]].head())
+</code></pre>
+<p>Both produce identical results. The vectorized version runs as one pandas operation across the entire column; the <code>apply</code> version calls Python once per row. At 20 rows the difference is noise. At two million rows it is the reason a batch scoring job times out.</p>
+<p><code>apply</code> earns its place only when the logic requires data from multiple rows of the same group, or when you need an external library that has no vectorized pandas equivalent. For a two-column comparison, reach for the column expression first.</p>
+<h2 id="per-class-precision-starts-here"><a class="header" href="#per-class-precision-starts-here">Per-Class Precision Starts Here</a></h2>
+<p>The <code>groupby</code> above is the first step in computing per-class precision, recall, and F1. Made-with-ml’s <code>data.py</code> does a stratified split on the label column before training, a groupby-shaped operation that ensures each class appears in both train and validation sets at the right ratio. The same idea scales up: any metric you want to slice by class, by time window, or by data source is a <code>groupby</code> followed by an <code>agg</code>. The merge that precedes it is the seam where predictions meet ground truth, and the NaN count after that merge is where your data quality lives.</p>
+<p>A scoring pipeline that skips the merge sanity check is guessing at its own denominator.</p>
+<h2 id="core-concepts-10"><a class="header" href="#core-concepts-10">Core Concepts</a></h2>
+<ul>
+<li><code>groupby(col).agg(name=pd.NamedAgg(column=..., aggfunc=...))</code> splits a frame by key, applies an aggregation to each group, and returns a frame with explicit output column names; named aggregation is the production form.</li>
+<li><code>pd.merge(..., how="inner")</code> keeps only rows matched on both sides; <code>how="left"</code> preserves unmatched left rows as <code>NaN</code>, which silently corrupts per-class metrics if you do not check the row count after the join.</li>
+<li><code>df.apply(func, axis=1)</code> is a per-row Python loop; replace it with a vectorized column expression whenever the logic touches only values in the same row.</li>
+<li>Per-class accuracy starts with a merge of predictions to labels on a shared key, then a <code>groupby</code> on the class column.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module3/groupby-merge-apply/">
+<p><strong>Build It in Claude Code</strong> — build <code>score_pipeline.py</code>, a script that merges a predictions frame to a labels frame, groups by class to compute per-class accuracy, and asserts that <code>apply</code> and a vectorized column expression produce identical results.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="cleaning-and-missing-data"><a class="header" href="#cleaning-and-missing-data">Cleaning and Missing Data</a></h1>
+<p>The gap between a raw scrape and a training set is not a formatting problem. It is a modeling decision: every row you leave in reaches the model, and every NaN that survives to a metric silently corrupts your numbers.</p>
+<h2 id="the-artifact-2"><a class="header" href="#the-artifact-2">The Artifact</a></h2>
+<p>You build <code>clean_corpus.py</code>: a script that takes a messy DataFrame of raw text examples, deduplicates it, handles missing values, reshapes an eval summary table, and normalizes the text column, then asserts the output is clean.</p>
+<h2 id="drop-duplicates-first"><a class="header" href="#drop-duplicates-first">Drop Duplicates First</a></h2>
+<p>Duplicate rows in a training set inflate apparent class frequency. Duplicates in an eval set let the same example vote twice. Catch them before anything else.</p>
+<pre><code class="language-python">import pandas as pd
+import numpy as np
+
+raw = pd.DataFrame({
+    "id":    [1, 2, 2, 3, 4, 4],
+    "label": ["positive", "negative", "negative", "positive", "neutral", "neutral"],
+    "text":  ["Great product", "Terrible", "Terrible", "Works fine", None, "Ok product"],
+})
+
+print("Before dedup:", raw.shape)          # (6, 3)
+print(raw.duplicated().sum(), "duplicates")  # 2
+</code></pre>
+<p><code>duplicated()</code> returns a boolean Series: <code>True</code> for every row that is a repeat of an earlier one. The default keeps the first occurrence.</p>
+<pre><code class="language-python">clean = raw.drop_duplicates()
+print("After dedup:", clean.shape)         # (4, 3)
+</code></pre>
+<p>If you need to drop on a subset of columns (same <code>id</code> counts as duplicate regardless of text), pass <code>subset</code>:</p>
+<pre><code class="language-python">clean = raw.drop_duplicates(subset=["id"])
+</code></pre>
+<p>The choice of <code>keep</code> (<code>"first"</code>, <code>"last"</code>, or <code>False</code> to drop all copies) is a data decision, not a default. State it in a comment so the next person reading the pipeline knows why.</p>
+<h2 id="handle-missing-values"><a class="header" href="#handle-missing-values">Handle Missing Values</a></h2>
+<p>After dedup, audit the nulls:</p>
+<pre><code class="language-python">print(clean.isna().sum())
+# id       0
+# label    0
+# text     1
+</code></pre>
+<p>Now comes the decision. <code>dropna</code> removes rows with any null; <code>fillna</code> replaces them. They are not equivalent, and the right answer depends on the data:</p>
+<ul>
+<li>Drop when the null column is the target or when imputing would fabricate signal. A text column with <code>None</code> cannot be imputed without inventing content; drop the row.</li>
+<li>Fill when a numeric feature is missing at random and a sensible default (zero, column mean) exists without introducing bias.</li>
+</ul>
+<p>For a text corpus, drop:</p>
+<pre><code class="language-python">clean = clean.dropna(subset=["text"])
+print("After dropna:", clean.shape)        # (3, 3)
+assert clean["text"].isna().sum() == 0
+</code></pre>
+<p>For a numeric score column with a known sentinel, fill:</p>
+<pre><code class="language-python">scores = pd.Series([0.9, np.nan, 0.7, np.nan, 0.85])
+filled = scores.fillna(scores.mean())
+print(filled)
+</code></pre>
+<p><code>fillna</code> accepts a scalar, a dict keyed by column name, or a forward/backward fill strategy (<code>ffill</code>, <code>bfill</code>). The strategy matters: forward-filling a time-ordered label column is reasonable; forward-filling a shuffled corpus is not. Microsoft Learn’s “Explore and Analyze Data with Python” module covers detecting and handling missing values in real-world tabular data (<a href="https://learn.microsoft.com/training/modules/explore-analyze-data-with-python/6-examine-real-world-data">learn.microsoft.com/training/modules/explore-analyze-data-with-python</a>).</p>
+<h2 id="reshape-an-eval-table"><a class="header" href="#reshape-an-eval-table">Reshape an Eval Table</a></h2>
+<p>Eval results often arrive wide: one column per metric, one row per model. To compare models across metrics with groupby or plotting, you need long format. <code>melt</code> converts wide to long.</p>
+<p>Start with a wide eval summary:</p>
+<pre><code class="language-python">eval_wide = pd.DataFrame({
+    "model":     ["bert-base", "distilbert"],
+    "precision": [0.82, 0.79],
+    "recall":    [0.78, 0.81],
+    "f1":        [0.80, 0.80],
+})
+print(eval_wide)
+#        model  precision  recall    f1
+# 0  bert-base       0.82    0.78  0.80
+# 1  distilbert      0.79    0.81  0.80
+</code></pre>
+<p>Melt it so every row is one (model, metric, value) triple:</p>
+<pre><code class="language-python">eval_long = eval_wide.melt(
+    id_vars=["model"],
+    var_name="metric",
+    value_name="score",
+)
+print(eval_long)
+#         model     metric  score
+# 0   bert-base  precision   0.82
+# 1  distilbert  precision   0.79
+# 2   bert-base     recall   0.78
+# 3  distilbert     recall   0.81
+# 4   bert-base         f1   0.80
+# 5  distilbert         f1   0.80
+</code></pre>
+<p>To go the other direction, from long to wide, use <code>pivot</code>:</p>
+<pre><code class="language-python">back_wide = eval_long.pivot(index="model", columns="metric", values="score")
+back_wide.columns.name = None      # drop the "metric" label on the column axis
+back_wide = back_wide.reset_index()
+print(back_wide)
+</code></pre>
+<p><code>pivot</code> requires unique (index, column) pairs; if your data has duplicates per cell, use <code>pivot_table</code> and supply an <code>aggfunc</code> (e.g., <code>"mean"</code>) to resolve them.</p>
+<p>The long format is what groupby, seaborn, and most metric reporters expect. Knowing when to melt and when to pivot is the difference between clean downstream code and a wall of <code>.iloc</code> calls.</p>
+<h2 id="normalize-text-columns"><a class="header" href="#normalize-text-columns">Normalize Text Columns</a></h2>
+<p>The <code>.str</code> accessor gives you vectorized string methods on a Series, the same way M2’s broadcasting gave you vectorized arithmetic on an array. No Python loop. No <code>apply(lambda x: x.lower())</code>.</p>
+<pre><code class="language-python">df = pd.DataFrame({
+    "text": ["  Great Product! ", "TERRIBLE service.", "works FINE ", None]
+})
+
+df["text_clean"] = (
+    df["text"]
+    .str.strip()           # remove leading/trailing whitespace
+    .str.lower()           # lowercase everything
+    .str.replace(r"[!?.,]", "", regex=True)   # strip punctuation
+    .str.replace(r"\s+", " ", regex=True)     # collapse multiple spaces
+    .str.strip()           # strip again after regex replacements
+)
+
+print(df[["text", "text_clean"]])
+#                 text          text_clean
+# 0   Great Product!    great product
+# 1  TERRIBLE service.  terrible service
+# 2        works FINE   works fine
+# 3               None          None
+</code></pre>
+<p>The <code>.str</code> accessor skips <code>NaN</code> automatically and returns <code>NaN</code> in those positions. That means text cleaning does not require a prior <code>dropna</code>; the null propagates cleanly and you handle it separately. This is the <code>clean_text</code> step in the made-with-ml <code>data.py</code> pipeline: strip, lowercase, replace punctuation, collapse whitespace, one vectorized chain.</p>
+<p>For regex-heavy normalization, chain <code>.str.replace()</code> calls with explicit <code>regex=True</code>. The default in pandas 2.0 requires you to state your intent; pass <code>regex=False</code> for literal string replacement to avoid ambiguity.</p>
+<pre><code class="language-python"># Confirm text is normalized: no uppercase letters remain
+assert df["text_clean"].dropna().str.match(r"^[^A-Z]*$").all()
+</code></pre>
+<p>The output of these four steps is what the tokenizer receives. A capital letter that survives lowercase normalization, a duplicate that survives dedup, or a NaN that survives dropna is not a minor impurity. It is training signal the model will learn.</p>
+<h2 id="core-concepts-11"><a class="header" href="#core-concepts-11">Core Concepts</a></h2>
+<ul>
+<li><code>duplicated()</code> flags repeat rows; <code>drop_duplicates()</code> removes them. The <code>keep</code> argument is a data decision: state it explicitly.</li>
+<li>Dropping vs. filling missing values is a modeling decision, not a default: drop when imputing would fabricate signal (a null text column); fill when a sensible sentinel exists (a missing numeric score).</li>
+<li><code>melt</code> converts wide to long (one metric per row); <code>pivot</code> converts long to wide (one metric per column). Long format is what groupby and plotting APIs expect.</li>
+<li>The <code>.str</code> accessor applies vectorized string methods to a Series without a Python loop, skips <code>NaN</code> automatically, and chains: <code>str.strip().str.lower().str.replace(...)</code>.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module3/cleaning-and-missing-data/">
+<p><strong>Build It in Claude Code:</strong> Build <code>clean_corpus.py</code>, a script that deduplicates, handles missing values, and normalizes a messy text DataFrame, then asserts the output is clean in one <code>python</code> command.</p>
 </div>
 
 

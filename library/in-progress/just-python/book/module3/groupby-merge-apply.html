@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Dtypes and What They Cost - Just Python — Applied Python for AI Engineers</title>
+        <title>Groupby, Merge, and Apply - Just Python — Applied Python for AI Engineers</title>
 
 
         <!-- Custom HTML head -->
@@ -177,75 +177,98 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="dtypes-and-what-they-cost"><a class="header" href="#dtypes-and-what-they-cost">Dtypes and What They Cost</a></h1>
-<p>Every NumPy array has a dtype, and if you did not choose it, NumPy chose for you: probably <code>float64</code>. That default costs twice the memory of <code>float32</code> for no precision gain you will ever see from a model output.</p>
-<h2 id="the-dtype-contract"><a class="header" href="#the-dtype-contract">The dtype Contract</a></h2>
-<p>A dtype is a fixed-size C type. It tells NumPy two things: how many bytes each slot in the buffer occupies, and how to interpret those bytes. Every element in the array shares the same dtype; there is no boxing, no per-element overhead. That uniformity is where the speed comes from.</p>
+                        <h1 id="groupby-merge-and-apply"><a class="header" href="#groupby-merge-and-apply">Groupby, Merge, and Apply</a></h1>
+<p>Your model ran overnight. You have a predictions frame and a labels frame sitting in two separate CSVs, and the question you need to answer is: how accurate was it per class? That question has three steps: join the frames, split by class, and reduce to a number. Pandas has a primitive for each step.</p>
+<h2 id="the-artifact"><a class="header" href="#the-artifact">The Artifact</a></h2>
+<p>You build <code>score_pipeline.py</code>: a script that merges a predictions frame to a labels frame by example id, groups the merged result by class to compute per-class counts and accuracy, and contrasts <code>apply</code> with its vectorized equivalent so you can see the difference in one run.</p>
+<h2 id="split-apply-combine"><a class="header" href="#split-apply-combine">Split-Apply-Combine</a></h2>
+<p>The mental model behind <code>groupby</code> is three moves: split the frame into groups by a key, apply a function to each group independently, then combine the results back into a single frame. Pandas does the split and combine automatically; you supply only the apply step.</p>
+<p>Start with a merged frame where each row is one prediction (you build the merge in the next section; here, focus on the grouping):</p>
+<pre><code class="language-python">import pandas as pd
+
+# After merging predictions to labels on 'id' (next section)
+# merged has columns: id, class_label, correct (1 or 0)
+per_class = (
+    merged
+    .groupby("class_label")
+    .agg(
+        count=pd.NamedAgg(column="correct", aggfunc="count"),
+        accuracy=pd.NamedAgg(column="correct", aggfunc="mean"),
+    )
+)
+print(per_class)
+</code></pre>
+<p>Named aggregations keep the output column names explicit. The alternative (<code>grouped["correct"].agg(["count", "mean"])</code>) works but names the columns after the function strings, which is harder to read downstream. Named aggregation is the form that survives code review. Microsoft Learn’s “Explore and Analyze Data with Python” module groups and aggregates DataFrame data this way (<a href="https://learn.microsoft.com/training/modules/explore-analyze-data-with-python/2-explore-data-numpy-pandas">learn.microsoft.com/training/modules/explore-analyze-data-with-python</a>).</p>
+<p><code>groupby</code> does not execute until you call the aggregation. The <code>grouped</code> object is lazy: it holds the split plan, not the split result. Calling <code>.agg(...)</code> materializes it.</p>
+<h2 id="merge-joining-predictions-to-labels"><a class="header" href="#merge-joining-predictions-to-labels">Merge: Joining Predictions to Labels</a></h2>
+<p>You rarely receive predictions and ground truth in the same frame. Scoring starts with a join.</p>
 <pre><code class="language-python">import numpy as np
 
-scores = np.array([0.91, 0.74, 0.88, 0.62], dtype=np.float64)
-print(scores.dtype)     # float64
-print(scores.itemsize)  # 8  (bytes per element)
-print(scores.nbytes)    # 32 (total bytes)
-</code></pre>
-<p><code>arr.dtype</code> always tells you what you have. <code>arr.itemsize</code> tells you the per-element cost. <code>arr.nbytes</code> tells you the bill.</p>
-<h2 id="the-ai-relevant-types"><a class="header" href="#the-ai-relevant-types">The AI-Relevant Types</a></h2>
-<p>Five dtypes cover almost every AI pipeline:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>dtype</th><th>Bytes</th><th>When you use it</th></tr>
-</thead>
-<tbody>
-<tr><td><code>float64</code></td><td>8</td><td>NumPy default; computation, intermediate results</td></tr>
-<tr><td><code>float32</code></td><td>4</td><td>Model output embeddings; halves memory vs float64</td></tr>
-<tr><td><code>int64</code></td><td>8</td><td>Label arrays, index arrays</td></tr>
-<tr><td><code>int32</code></td><td>4</td><td>Compact labels when the count fits in 32 bits</td></tr>
-<tr><td><code>bool</code></td><td>1</td><td>Mask arrays; boolean indexing</td></tr>
-</tbody>
-</table>
-</div>
-<p>The decision that matters most in practice is <code>float64</code> versus <code>float32</code>. Most embedding models emit <code>float32</code> vectors. Azure AI Search documents this directly: <code>Float32</code> (32-bit floating point) is the default vector field data type for Azure AI Search indexes because “most embedding models emit vectors as <code>Float32</code>,” while choosing <code>Float16</code> “often leads to faster query times and reduced memory footprint” at the cost of some precision. (<a href="https://learn.microsoft.com/rest/api/searchservice/supported-data-types#edm-data-types-for-vector-fields">Microsoft Learn: Supported data types, Azure AI Search</a>)</p>
-<p>Loading those <code>float32</code> embeddings into a <code>float64</code> array doubles your memory silently. At 1,536 dimensions and one million rows, that is the difference between 6 GB and 12 GB.</p>
-<h2 id="astype-versus-view"><a class="header" href="#astype-versus-view">astype Versus view</a></h2>
-<p>Two operations change what dtype label an array carries. Only one of them is safe for type conversion.</p>
-<p><strong><code>astype</code></strong> converts values. It reads each element, converts it to the target type, and writes it into a new buffer. The result is a separate array with correct values.</p>
-<pre><code class="language-python">embeddings_f64 = np.random.rand(1000, 1536)   # float64, 8 bytes/element
-embeddings_f32 = embeddings_f64.astype(np.float32)
+rng = np.random.default_rng(42)
+n = 20
+classes = ["cat", "dog", "bird"]
 
-print(embeddings_f64.nbytes)  # 12,288,000
-print(embeddings_f32.nbytes)  #  6,144,000  -- new buffer, half the size
-</code></pre>
-<p><strong><code>view</code></strong> reinterprets bytes. It does not convert values; it reads the same bytes through a different lens. Viewing 8-byte <code>float64</code> slots as 4-byte <code>float32</code> slots does not halve your values: it reads each 8-byte block as two 4-byte floats and returns garbage.</p>
-<pre><code class="language-python">trap = embeddings_f64[0].view(np.float32)
-# trap has 2 * 1536 = 3072 elements, all meaningless
-# it shares the buffer -- no copy occurred, no conversion occurred
-print(np.shares_memory(embeddings_f64, trap))  # True
-</code></pre>
-<p>The trap is real. <code>arr.view(np.float32)</code> will not raise an error; it silently gives you wrong data. Reach for <code>view</code> only when you intend raw byte reinterpretation, which in AI pipelines is almost never.</p>
-<h2 id="the-float32-decision"><a class="header" href="#the-float32-decision">The float32 Decision</a></h2>
-<p>When a model hands you embeddings, read the dtype before assuming:</p>
-<pre><code class="language-python"># Simulate receiving embeddings from a model
-model_output = np.random.rand(512, 1536).astype(np.float32)
+labels_df = pd.DataFrame({
+    "id":          range(n),
+    "class_label": rng.choice(classes, n),
+    "true_label":  rng.integers(0, 2, n),
+})
 
-# Check what you have
-print(model_output.dtype)   # float32
-print(model_output.nbytes)  # 3,145,728
+preds_df = pd.DataFrame({
+    "id":         range(n - 2),       # two predictions missing on purpose
+    "pred_label": rng.integers(0, 2, n - 2),
+})
 
-# If you had loaded into float64 by accident:
-bloated = model_output.astype(np.float64)
-print(bloated.nbytes)       # 6,291,456 -- doubled for nothing
+merged = pd.merge(preds_df, labels_df, on="id", how="inner")
+print(f"labels: {len(labels_df)}, preds: {len(preds_df)}, merged: {len(merged)}")
+# labels: 20, preds: 18, merged: 18
 </code></pre>
-<p>The fix is one line: <code>arr.astype(np.float32)</code>. The cost of not fixing it scales with every row in your corpus.</p>
+<p><code>how="inner"</code> keeps only rows where the id appears in both frames. Two labels dropped because no prediction matched. That is not a bug; it is the join telling you your prediction run was incomplete.</p>
+<p>Now build the <code>correct</code> column and group:</p>
+<pre><code class="language-python">merged["correct"] = (merged["pred_label"] == merged["true_label"]).astype(int)
+
+per_class = (
+    merged
+    .groupby("class_label")
+    .agg(
+        count=pd.NamedAgg(column="correct", aggfunc="count"),
+        accuracy=pd.NamedAgg(column="correct", aggfunc="mean"),
+    )
+    .round(3)
+)
+print(per_class)
+</code></pre>
+<p><code>how="left"</code> would keep all predictions even when no label exists, filling the label columns with <code>NaN</code>. That leaks phantom rows into your metrics: <code>mean()</code> on a column with <code>NaN</code> silently skips them, but <code>count()</code> counts non-null values only, so the two aggregations would count different rows. An unchecked <code>left</code> join is a silent accuracy inflation. Inner join, then check <code>len(merged)</code> against <code>len(preds_df)</code>: that gap is the real signal.</p>
+<h2 id="apply-the-escape-hatch-you-reach-for-last"><a class="header" href="#apply-the-escape-hatch-you-reach-for-last">apply: The Escape Hatch You Reach For Last</a></h2>
+<p>Module 2 taught that <code>df.apply(func, axis=1)</code> is a disguised per-row Python loop. Pandas calls your function once per row, passing a <code>Series</code>; it never vectorizes across the batch. The column operation is always preferred when one exists.</p>
+<p>Here is the pattern to recognize and replace:</p>
+<pre><code class="language-python"># Slow: apply is a Python loop over rows
+merged["correct_apply"] = merged.apply(
+    lambda row: int(row["pred_label"] == row["true_label"]),
+    axis=1,
+)
+
+# Fast: vectorized column comparison
+merged["correct_vec"] = (merged["pred_label"] == merged["true_label"]).astype(int)
+
+assert (merged["correct_apply"] == merged["correct_vec"]).all(), \
+    "apply and vectorized must agree"
+print("Both methods agree:", merged[["correct_apply", "correct_vec"]].head())
+</code></pre>
+<p>Both produce identical results. The vectorized version runs as one pandas operation across the entire column; the <code>apply</code> version calls Python once per row. At 20 rows the difference is noise. At two million rows it is the reason a batch scoring job times out.</p>
+<p><code>apply</code> earns its place only when the logic requires data from multiple rows of the same group, or when you need an external library that has no vectorized pandas equivalent. For a two-column comparison, reach for the column expression first.</p>
+<h2 id="per-class-precision-starts-here"><a class="header" href="#per-class-precision-starts-here">Per-Class Precision Starts Here</a></h2>
+<p>The <code>groupby</code> above is the first step in computing per-class precision, recall, and F1. Made-with-ml’s <code>data.py</code> does a stratified split on the label column before training, a groupby-shaped operation that ensures each class appears in both train and validation sets at the right ratio. The same idea scales up: any metric you want to slice by class, by time window, or by data source is a <code>groupby</code> followed by an <code>agg</code>. The merge that precedes it is the seam where predictions meet ground truth, and the NaN count after that merge is where your data quality lives.</p>
+<p>A scoring pipeline that skips the merge sanity check is guessing at its own denominator.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>A dtype is a fixed-size C type specifying bytes-per-slot and how those bytes are interpreted; every element in an array shares it, which is why NumPy is fast.</li>
-<li><code>astype</code> converts values into a new buffer; <code>view</code> reinterprets the existing bytes without converting them: using <code>view</code> as a type conversion yields garbage.</li>
-<li>Most embedding models emit <code>float32</code>; loading their output into a <code>float64</code> array doubles memory silently and wastes the budget before any computation begins.</li>
-<li><code>arr.dtype</code>, <code>arr.itemsize</code>, and <code>arr.nbytes</code> are the three numbers to read before operating on any array you did not create yourself.</li>
+<li><code>groupby(col).agg(name=pd.NamedAgg(column=..., aggfunc=...))</code> splits a frame by key, applies an aggregation to each group, and returns a frame with explicit output column names; named aggregation is the production form.</li>
+<li><code>pd.merge(..., how="inner")</code> keeps only rows matched on both sides; <code>how="left"</code> preserves unmatched left rows as <code>NaN</code>, which silently corrupts per-class metrics if you do not check the row count after the join.</li>
+<li><code>df.apply(func, axis=1)</code> is a per-row Python loop; replace it with a vectorized column expression whenever the logic touches only values in the same row.</li>
+<li>Per-class accuracy starts with a merge of predictions to labels on a shared key, then a <code>groupby</code> on the class column.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module1/dtypes-and-what-they-cost/">
-<p><strong>Build It in Claude Code:</strong> build a dtype audit script that measures the real memory cost of float64 vs float32 embeddings and proves the view trap produces garbage.</p>
+<div class="claude-handoff" data-exercise="exercises/module3/groupby-merge-apply/">
+<p><strong>Build It in Claude Code</strong> — build <code>score_pipeline.py</code>, a script that merges a predictions frame to a labels frame, groups by class to compute per-class accuracy, and asserts that <code>apply</code> and a vectorized column expression produce identical results.</p>
 </div>
 
 
@@ -253,11 +276,11 @@ print(bloated.nbytes)       # 6,291,456 -- doubled for nothing
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module1/why-numpy-exists.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module3/reading-and-writing-ai-formats.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module1/shape-ndim-and-strides.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module3/cleaning-and-missing-data.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -267,11 +290,11 @@ print(bloated.nbytes)       # 6,291,456 -- doubled for nothing
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module1/why-numpy-exists.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module3/reading-and-writing-ai-formats.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module1/shape-ndim-and-strides.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module3/cleaning-and-missing-data.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
