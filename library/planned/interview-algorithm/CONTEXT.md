@@ -1,4 +1,4 @@
-# CONTEXT — Interview Algorithm (PLANNED)
+# CONTEXT — Algorithmic Interviewing (PLANNED)
 
 The career book. Where every other Scriptorium book builds the skills, this one teaches the reader
 to demonstrate those skills under pressure: an internal framework for reasoning to a strong answer,

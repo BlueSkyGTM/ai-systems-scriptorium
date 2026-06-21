@@ -1,4 +1,4 @@
-# Tasteful Tuning — Blueprint
+# Weights and Measures — Blueprint
 
 ## Positioning
 
@@ -141,15 +141,19 @@ The same page serves either party; that is part of why the focused books pay off
 Stop here. The real title and slug require Ray's sign-off before the in-progress directory is
 created. The following are proposals only.
 
-**Lead candidate: Tasteful Tuning**
-Rationale: captures the thesis directly — this is about judgment and taste over blind training,
-not just mechanics. Memorable, distinctive, accurately scoped. Works as a portfolio artifact
-description ("I built Tasteful Tuning, a book about fine-tuning with eval gates").
+**Lead candidate: Weights and Measures**
+Rationale: thesis-forward — a model's weights are earned through honest evaluation, not blindly
+produced. The phrase encodes the judgment thesis directly and reads cleanly as a portfolio artifact
+description ("I built Weights and Measures, a fine-tuning book about quality gates and earned results").
 
-**Candidate 2: The Fine-Tune Build**
+**Candidate 2: Tasteful Tuning**
+Rationale: captures the taste and judgment angle; memorable and distinctive. Slightly abstract
+compared to the lead; "tuning" underindexes the evaluation thesis.
+
+**Candidate 3: The Fine-Tune Build**
 Rationale: operator-framed, action-oriented, immediately clear to a hiring manager scanning a
-GitHub portfolio. Less distinctive than Tasteful Tuning; could describe any fine-tuning tutorial.
+GitHub portfolio. Less distinctive; could describe any fine-tuning tutorial.
 
-**Candidate 3: Quality at Training Time**
+**Candidate 4: Quality at Training Time**
 Rationale: thesis-forward and accurate; emphasizes the eval/quality angle. Slightly verbose and
 less sticky than the lead. Works better as a subtitle than a title.

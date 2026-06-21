@@ -1,4 +1,4 @@
-# Interview Algorithm — Blueprint
+# Algorithmic Interviewing — Blueprint
 
 ## Positioning
 
@@ -136,11 +136,12 @@ bank can give structured feedback on any practice answer, without hallucinating 
 
 The final title is a human decision at `GATE-NAME-BOOK`. Three candidates follow.
 
-**Lead candidate: Interview Algorithm**
+**Lead candidate: Algorithmic Interviewing**
 
-Describes the book's central contribution precisely: an algorithm, not a script. "Algorithm"
-signals engineering; it reframes the interview as a problem-solving domain rather than a
-performance domain. It is short, memorable, and distinct from the "guide" / "handbook" /
+Reframes the interview as a problem-solving domain rather than a performance domain.
+"Algorithmic" signals engineering and precision; it describes the book's central
+contribution — a transferable reasoning algorithm, not a script — while remaining
+readable to non-engineers. Short, distinctive, and clear of the "guide" / "handbook" /
 "prep" cluster that saturates the category.
 
 **Candidate 2: Answer Architecture**
@@ -149,8 +150,8 @@ Foregrounds the structural, engineering-minded approach to constructing answers.
 as a subtitle companion (e.g. "Answer Architecture: The AI Engineer's Interview Framework").
 Slightly softer signal on the AI Engineering angle than the lead candidate.
 
-**Candidate 3: The Interview Reasoning Framework**
+**Candidate 3: Interview Algorithm**
 
-Descriptive and accurate, reads more like a chapter title than a book title. Better suited
-as a subtitle or module name inside the book than as the cover identity. Retains value as
-a fallback if "Interview Algorithm" reads as overly literal in context.
+The original working title. Accurate and precise; reads slightly more like an internal
+project name than a book cover. Retains value as a subtitle or module name. Better
+suited as the framework's name inside the book than as the cover identity.

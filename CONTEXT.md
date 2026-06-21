@@ -37,6 +37,7 @@ NOT load**, hand off where it says, and stop only at the named gate (defined in
 `library` · `library/completed/sans-python` · `library/planned/show-dont-tell` ·
 `library/planned/simple-systems` · `library/planned/just-python` ·
 `library/planned/ml-in-proportion` · `library/planned/upstream` ·
-`library/planned/tasteful-tuning` · `library/planned/interview-algorithm` · `platform` ·
+`library/planned/tasteful-tuning` · `library/planned/interview-algorithm` ·
+`library/planned/local-metal` · `platform` ·
 `platform/pipeline` · `platform/conventions` · `platform/templates` · `ingredients` ·
 `progression` · `extra-credit` · `build-log` · `vault` · `archive` (HISTORICAL — never route here).

@@ -1,11 +1,11 @@
-# CONTEXT — Tasteful Tuning (PLANNED)
+# CONTEXT — Weights and Measures (PLANNED)
 
 A planned book covering the **PyTorch and model-training gap** Sans Python deliberately left
 thin: the 78% hiring screen (row 2 of `build-log/sans-python/antilibrary-gap-report.md`) that
 M5 L13 addresses only at fine-tune-vs-RAG-vs-prompt literacy depth. Where Sans Python teaches
 the decision, this book teaches the build: PyTorch mechanics, adapter fine-tuning, and the eval
-pipeline that proves a tune is actually good. Thesis: taste and judgment over blind training.
-Quality gates, not loss curves, are the deliverable.
+pipeline that proves a tune is actually good. Thesis: a model's weights are earned through honest
+evaluation, not blindly produced. Quality gates, not loss curves, are the deliverable.
 
 Post-Sans-Python entry point. The reader has already made the fine-tune decision; this book
 builds the thing. Split out from the older `ml-in-proportion` stub: PyTorch/training lives here,

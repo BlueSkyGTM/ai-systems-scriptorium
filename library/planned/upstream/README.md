@@ -1,10 +1,10 @@
-# System Semantics — Blueprint
+# Data Currents — Blueprint
 
 ## Positioning
 
 *Sans Python* ends at the data seam. Module 5 Lesson 14 names the boundary precisely: you own the
 query, the freshness SLO, and the lineage contract into the data platform; you do not build the
-platform. *System Semantics* is what comes next. It is the deep build of everything that lesson
+platform. *Data Currents* is what comes next. It is the deep build of everything that lesson
 named and deferred.
 
 The gap it fills is row 4 of `build-log/sans-python/antilibrary-gap-report.md`: data engineering
@@ -29,7 +29,7 @@ correctly. Lineage is not a compliance checkbox; it is the chain that explains w
 changed, running from the document version that produced the chunk, through the embedding model that
 placed it, to the eval verdict that graded it.
 
-*System Semantics* teaches SQL and the data platform as operational instruments for an AI engineer:
+*Data Currents* teaches SQL and the data platform as operational instruments for an AI engineer:
 ingestion (batch and streaming, with a freshness SLO), pipelines and orchestration (Airflow/Prefect,
 dbt transformations, medallion layers), warehouses and lakehouses (Snowflake, BigQuery, Databricks /
 Microsoft Fabric OneLake, Delta/Iceberg tables), event streaming (Kafka, change-data-capture,
@@ -193,16 +193,19 @@ density makes the human reader fast.
 
 ## Candidate Names (GATE-NAME-BOOK)
 
-**Lead: System Semantics.** Data engineering taught as the interpretive layer between raw data and
-AI inference. "Semantics" captures the why: this is not about moving bytes; it is about what those
-bytes mean to an AI system and how the pipeline preserves or destroys that meaning in transit.
-Distinct, memorable, and true to the thesis.
+**Lead: Data Currents.** Data engineering taught as the interpretive layer between raw data and
+AI inference. "Currents" captures the directional nature of the work: data moving, routing, and
+being shaped as it flows toward an AI system. Distinct, specific, and true to the thesis.
 
-**Alt 1: The Data Seam.** Directly extends M5 L14's title and signals continuity for Sans Python
+**Alt 1: System Semantics.** Foregrounds the interpretive angle: this is not about moving bytes
+but about what those bytes mean to an AI system and how the pipeline preserves or destroys that
+meaning in transit. Risk: "semantics" may read as linguistics rather than data engineering.
+
+**Alt 2: The Data Seam.** Directly extends M5 L14's title and signals continuity for Sans Python
 readers. Clear, practical, and grounded. Risk: sounds like a chapter supplement rather than a
 standalone book; may undersell the depth.
 
-**Alt 2: Pipeline Fluency.** Foregrounds the operational skill (running a production pipeline)
+**Alt 3: Pipeline Fluency.** Foregrounds the operational skill (running a production pipeline)
 rather than the conceptual frame. Approachable for hiring screens. Risk: generic enough to blur
 with any data-engineering primer; does not distinguish the AI-system focus.
 

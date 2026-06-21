@@ -25,6 +25,7 @@ routed_boundaries:
   planned_upstream: library/planned/upstream
   planned_tasteful_tuning: library/planned/tasteful-tuning
   planned_interview_algorithm: library/planned/interview-algorithm
+  planned_local_metal: library/planned/local-metal
   platform: platform
   platform_pipeline: platform/pipeline
   platform_conventions: platform/conventions

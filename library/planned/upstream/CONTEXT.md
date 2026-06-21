@@ -1,4 +1,4 @@
-# CONTEXT — System Semantics (PLANNED)
+# CONTEXT — Data Currents (PLANNED)
 
 A planned book covering the **data-engineering seam** — interpreting and routing data for AI
 systems. The focus: SQL and the data platform (batch ingestion, streaming, orchestration, warehouses,
@@ -7,7 +7,8 @@ M5 L14 "The Data Seam": that lesson names the boundary; this book is the deep bu
 it deferred. The **52% SQL + data-eng hiring screen** (row 4 of
 `build-log/sans-python/antilibrary-gap-report.md`).
 
-**Working title:** System Semantics. Final title is gated at `GATE-NAME-BOOK`.
+**Working title:** Data Currents (lead candidate). Alternates: System Semantics, The Data Seam,
+Pipeline Fluency. Final title is gated at `GATE-NAME-BOOK`.
 
 **Not started.** Starting it is gated at `GATE-NAME-BOOK` (propose the real title first).
 
