@@ -13,7 +13,7 @@ was tuned.
 | Book (working title) | Dir | Light accent | Ayu-dark accent | Note |
 |---|---|---|---|---|
 | Sans Python | `completed/sans-python` | `#b7410e` | `#ff8f40` | shipped anchor (rust) |
-| Only Python | `planned/just-python` | `#b8860b` | `#e6b800` | goldenrod; a quiet Python-yellow nod |
+| Only Python | `in-progress/only-python` | `#b8860b` | `#e6b800` | goldenrod; a quiet Python-yellow nod |
 | Machine Math | `planned/ml-in-proportion` | `#4b3f9e` | `#9a8cff` | indigo; abstract, mathematical |
 | Data Currents | `planned/upstream` | `#0f7d72` | `#2dd4bf` | teal; water and flow |
 | Weights and Measures | `planned/tasteful-tuning` | `#9e2b3a` | `#ff6b81` | crimson; the gravity of training |

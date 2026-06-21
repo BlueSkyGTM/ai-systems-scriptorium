@@ -1,4 +1,4 @@
-# CONTEXT — Only Python (PLANNED)
+# CONTEXT — Only Python (IN PROGRESS)
 
 The direct sequel to Sans Python. Where Sans Python teaches AI engineering without making
 Python the subject, Only Python makes it the subject: the applied Python an AI Engineer
@@ -10,9 +10,9 @@ Fills row 1 of `build-log/sans-python/antilibrary-gap-report.md` — the **94%-o
 Post-Sans-Python, pre-Machine-Learning. The name plays off the first book deliberately:
 first you learned the field *Sans Python*; now you focus *Only Python*.
 
-**Not started** (not graduated to in-progress). A Chapter 1 preview is drafted in `draft/` to
-pressure-test the blueprint; authoring that preview is autonomous, but graduating the book to
-in-progress, and locking its title, is gated at `GATE-NAME-BOOK` (candidates in this folder's `README.md`).
+**Graduated to in-progress 2026-06-20.** `GATE-NAME-BOOK` is cleared: the title is **Only Python**, the
+slug is `only-python`. A Chapter 1 preview is drafted in `draft/`. Next: process the named ore into
+`ingredients`, draft the stage `PLAN.md`, and stop at `GATE-LOCK-PLAN` before the fleet authors.
 
 ## Ore (in the vault — not yet distilled)
 
@@ -34,11 +34,12 @@ ore map and module table in `README.md`.
 
 ## Load / Don't-Load
 
-- **Load (when it graduates):** this folder's `README.md`, the named vault ore via
-  `vault/MANIFEST.md`, `ingredients`, `platform/pipeline`.
+- **Load:** this folder's `README.md`, the named vault ore via `vault/MANIFEST.md`, `ingredients`,
+  `platform/conventions` (AUTHORING + STANDARDS + STYLE), `platform/pipeline`.
 - **Do NOT load:** the shipped book, other planned books.
 
 ## Handoff & Gates
 
-`GATE-NAME-BOOK` → process ore via `vault/CONTEXT.md` → `platform/pipeline/CONTEXT.md`
-(`GATE-LOCK-PLAN`, `GATE-APPROVE-SHIP`). See `platform/HUMAN-GATES.md`.
+`GATE-NAME-BOOK` cleared. Process ore via `vault/CONTEXT.md` → `platform/pipeline/CONTEXT.md`; stop at
+`GATE-LOCK-PLAN` (lock the stage plan) before authoring, then `GATE-APPROVE-SHIP` per stage. See
+`platform/HUMAN-GATES.md`.

@@ -20,7 +20,7 @@ routed_boundaries:
   book_sans_python: library/completed/sans-python
   planned_show_dont_tell: library/planned/show-dont-tell
   planned_simple_systems: library/planned/simple-systems
-  planned_just_python: library/planned/just-python
+  in_progress_only_python: library/in-progress/only-python
   planned_ml_in_proportion: library/planned/ml-in-proportion
   planned_upstream: library/planned/upstream
   planned_tasteful_tuning: library/planned/tasteful-tuning

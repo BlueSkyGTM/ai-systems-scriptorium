@@ -161,10 +161,10 @@ the ore map and module table are machine-parseable. An LLM processing this file 
 reconstruct the full scope, locate the ore, and understand the exclusion logic without
 supplemental context.
 
-## Candidate Names (GATE-NAME-BOOK)
+## Name (GATE-NAME-BOOK — Cleared)
 
-Name selection is gated: `GATE-NAME-BOOK` must fire before this book moves to
-in-progress. The names below are proposals for that gate.
+**Locked 2026-06-20: the title is _Only Python_, the slug is `only-python`.** The candidates below are
+kept as the record of the decision.
 
 | Name | Rationale |
 |------|-----------|
@@ -172,4 +172,4 @@ in-progress. The names below are proposals for that gate.
 | **Applied Python for AI Engineers** | Descriptive and SEO-clear for standalone readers who did not read Sans Python. Trades resonance for discoverability. |
 | **Python, Properly** | Captures the "finally drill it correctly" feeling; signals opinion and confidence. Less explicit about AI-engineering scope. |
 
-Propose these names at `GATE-NAME-BOOK` before authoring begins.
+Decision: **Only Python**. The book has graduated to `library/in-progress/only-python`.
