@@ -31,3 +31,12 @@ Mirror the Sans Python theme pattern (`theme/copy-to-claude.css` + `theme/syntax
 
 Light variants sit on warm paper; Ayu-dark variants sit on a deeper-than-page canvas. The point
 is recognition: a reader should know which book they are in from the color alone.
+
+## Dark-Theme Reading Foreground (All Books)
+
+Every book's Ayu dark theme lifts the stock mdBook foreground (`--fg: #c5c5c5`, a muted gray that
+reads as "transparent") to a crisp near-white (`#ededed`), matched to the Claude Code desktop UI so
+long reading sessions stay easy on the eyes. Ship it as `theme/readability.css` (`.ayu { --fg: #ededed; }`),
+loaded after the stock variables. This touches only the plain prose foreground; the per-book signature
+accent and the syntax-token colors are unchanged. The light / Rust theme keeps near-black text on warm
+paper. Sans Python is the reference (`completed/sans-python/theme/readability.css`).

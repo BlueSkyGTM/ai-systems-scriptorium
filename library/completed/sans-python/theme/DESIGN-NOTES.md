@@ -11,6 +11,13 @@ Keep this current whenever a front-end choice changes.
   a deeper-than-page canvas so blocks pop, saturated high-contrast tokens (orange keywords, lime strings,
   gold functions, blue types, purple numbers, italic comments), and a code-as-card container (rounded,
   padding, a thin per-theme border). Scoped per theme class (`.ayu` vs `.rust`/`.light`).
+- **`theme/readability.css` — dark-theme reading foreground (2026-06-20).** mdBook's stock Ayu `--fg`
+  is `#c5c5c5`, a muted gray that reads as "transparent" over a long session. It is lifted to a crisp
+  near-white (`#ededed`), matched to the Claude Code desktop UI, so the reading text is easy on the eyes.
+  Only the plain prose/heading foreground changes: the rust accent, the inline-code gold, and the syntax
+  tokens are set explicitly in `syntax-polish.css` and do not read from `--fg`. The Rust / light theme is
+  left at near-black on warm paper (its issue would be the opposite of transparent). This is the standard
+  every book's dark theme should inherit; see `platform/conventions/PALETTES.md`.
 - **Code-block edge + scrollbar fix (2026-06-20).** `pre > code` now uses `box-sizing: border-box`, which
   removes a spurious horizontal scrollbar that showed on every block: as `content-box` the left/right padding
   pushed the border-box wider than the parent, tripping `overflow-x: auto` even with nothing to scroll. The
