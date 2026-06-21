@@ -11,10 +11,11 @@ Only what is still open. Resolved items live in git history and `build-log/`; th
 
 ## Strategic (deferred)
 
-- **Bot Bottega** — extract the engine (gates + orchestration + the contract pattern + optional ICM) as a
-  cloneable starter, so a new repo never starts from scratch. The Scriptorium is its reference instance.
-  Pending Ray's decision on the unifying thread ("onboard the agent into the gig, then get out of its
-  way") and whether to build it. Captured in the session record + auto-memory.
+- **Bot Bottega** — the engine for building **AI Operating Systems** (Claude-documented systems an AI can
+  manage and operate, e.g. the GTM engine), not content mills like ICM. Salvaged from the Scriptorium's
+  machinery (gates + orchestration + contract pattern + optional ICM) plus an onboard-for-autonomy,
+  fail-fast intake. **Decided 2026-06-21: build it, ship it to its own repo, then scrub it from this repo**
+  (it does not belong in the book factory). Next: `/autoplan` the build. See the bot-bottega auto-memory.
 - **Stub books** — `library/planned/show-dont-tell` and `library/planned/simple-systems` are stubs that
   overlap and were never started. Decide: fold, cut, or activate.
 
