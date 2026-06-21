@@ -85,6 +85,6 @@ FSRS optimizer can later retune the weights from real review history. For Open B
 
 ## Build plan (when greenlit)
 
-An Extra Credit tool: `extra-credit/tools/open-brain/` — a stdlib FSRS implementation + a thin GBrain
+An Extra Credit enhancer: `extra-credit/production/open-brain/` — a stdlib FSRS implementation + a thin GBrain
 client (put_page / list_pages / add_link / add_timeline_entry) for card CRUD and due-queries. Prototype
 on one module's `## Core concepts`, run the quiz loop with the agent, then promote into `progression/`.

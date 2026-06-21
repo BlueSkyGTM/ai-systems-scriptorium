@@ -32,9 +32,7 @@ reading sessions stay easy on the eyes. Shipped as `theme/readability.css` (`.ay
 loaded after the stock variables. It touches only the plain prose foreground; the syntax-token colors are
 unchanged. The light / Rust theme keeps near-black text on warm paper.
 
-## Retired: The Per-Book Signature Table (Historical)
+## Per-Book Palettes: Retired
 
-The lineup once planned a distinct accent per book (goldenrod for Just Python, indigo for Machine Math,
-teal for Data Currents, crimson for Weights and Measures, pine for Anatomy of an Answer, steel blue for
-Local Metal). That approach is retired per the decision above; the colors are recorded here only as
-history, not as instructions. Do not implement them.
+A distinct accent per book was planned and dropped: the debugging cost outweighed the variety, and one
+theme reads cleaner. One shared theme, no exceptions; do not reintroduce per-book color.

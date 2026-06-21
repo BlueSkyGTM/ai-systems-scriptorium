@@ -1,23 +1,24 @@
 # CONTEXT — Extra Credit (the enhancers lab)
 
-The Scriptorium makes books and shelves a library. This room holds the **enhancers**: optional tools
+The Scriptorium makes books and shelves a library. This room holds the **enhancers**: optional add-ons
 that make the *learning* better, and nothing else. The mission is solidified in [`README.md`](README.md);
 the one rule is **enhance, never overpower** (a reader finishing one book straight through beats a reader
-a quarter in because they were fiddling with a tool). Tools are **born connected** to the logged material
-(the protocol below), and they earn their way from a throwaway **experiment** to real **production**
-before graduating to a permanent home. This is **not** a general experiment sandbox and **not** a home
-for off-mission work; anything that does not serve the library's learning belongs in its own repo.
+a quarter in because they were fiddling with an add-on). Enhancers are **born connected** to the logged
+material (the protocol below), and they earn their way from a throwaway **experiment** to real
+**production** before graduating to a permanent home. This is **not** a general experiment sandbox and
+**not** a home for off-mission work; anything that does not serve the library's learning belongs in its
+own repo.
 
 This is a Tier-2 boundary (see the precedence rule in [`../CLAUDE.md`](../CLAUDE.md)): it may only
 **narrow** the global contract, never loosen it. Generating here is autonomous work; the only gate is
-`GATE-PUBLISH`, and only when a tool graduates to its own public repo.
+`GATE-PUBLISH`, and only when an enhancer graduates to its own public repo.
 
 ## The two tiers
 
 | Tier | Path | Bar | Lifecycle |
 |---|---|---|---|
 | Experiments | [`experiments/`](experiments/README.md) | low — a probe, a spike, a "does this even work" | throwaway by default; delete freely |
-| Tools | [`tools/`](tools/README.md) | higher — runnable, documented, meant for real use | keepers; can **graduate** to its own repo or into `library/` at `GATE-PUBLISH` |
+| Production | [`production/`](production/README.md) | higher — runnable, documented, proven; meant for real use | keepers; **graduate** to a permanent home (injected into a book, or its own repo at `GATE-PUBLISH`) |
 
 Each generated repo is its own folder under the right tier, scaffolded from
 [`_template/`](_template/README.md).
@@ -26,7 +27,7 @@ Each generated repo is its own folder under the right tier, scaffolded from
 
 When asked to "generate a repo / experiment / tool for X":
 
-1. **Pick the tier** from intent — a quick probe → `experiments/`; something to keep and use → `tools/`.
+1. **Pick the tier** from intent — a quick probe → `experiments/`; something proven and meant to last → `production/`.
 2. **Scaffold from `_template/`** — a STYLE-grade `README.md`, the code, and a `## Connections`
    section. Defaults follow the platform: runnable and **offline / stdlib-first** where it fits
    (the books' BUILD→TEST ethos), small surface, no secret material.
@@ -57,5 +58,5 @@ input, and the archive is history. Surfacing a connection is not the same as aut
 
 - Don't route into or author against `vault/` or `archive/`.
 - Don't let an experiment quietly become a dependency of a shipped book — graduate it deliberately.
-- Don't put a `CONTEXT.md` inside `experiments/`, `tools/`, or a generated repo — this boundary
+- Don't put a `CONTEXT.md` inside `experiments/`, `production/`, or a generated repo — this boundary
   covers them. A nested `CONTEXT.md` would register as an orphan route and fail `route-lint`.
