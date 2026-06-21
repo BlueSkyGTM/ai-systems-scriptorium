@@ -74,6 +74,15 @@ the later hardware modules extend.
    narrowing to confirm at lock (open decision 4).
 3. **Editorial seam framing** — "why does a Production AI Engineer need this?" in every lead.
 
+**Vault capture (Ray's directive 2026-06-21):** every new external resource a lesson cites is
+pulled into the vault as tracked ore — a new subtree under `vault/<slug>/` with a short
+`PROVENANCE.md` (source URL, license, retrieval date, why it's here) — so citations are backed
+by repo-tracked material, not bare URLs. The conductor captures cited resources into the vault
+during integration/VERIFY; `aipe` is already there. **Connector for gaps:** the MS-Learn
+connector fills gaps wherever it has coverage (it leads from M2 on, e.g. Linux/CUDA on Windows);
+workers/subagents employ it directly while authoring and ground every claim in a real, verified
+URL — zero fabricated citations.
+
 ## The fleet plan (orchestration)
 
 Per `platform/ORCHESTRATION.md` and the Just Python A/B result (handler tier only for

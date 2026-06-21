@@ -13,8 +13,9 @@ the other books are ingested.
 (the SPEC's BOM), not a machine; this book is the curriculum that takes a reader from buying the
 parts to managing a networked local-model host. It is authored from grounded sources (the SPEC +
 the aipe ore + vendor/NVIDIA + Ollama/distro docs); the reader confirms outputs on their own
-build. M1 (The Build) plan is **locked** (`GATE-LOCK-PLAN` cleared 2026-06-21). See
-`build-log/local-metal/build-progress.md`. Next: author M1 via the pipeline.
+build. **Module 1 (The Build) shipped 2026-06-21** (`GATE-APPROVE-SHIP` cleared: 5 lessons + 4
+exercises; the `HARDWARE.md` + `check_hardware.py` throughline + `breakeven.py`). See
+`build-log/local-metal/build-progress.md`. Next: M2 (Linux and CUDA) via the pipeline.
 
 ## Ore (primary source + vault depth)
 
