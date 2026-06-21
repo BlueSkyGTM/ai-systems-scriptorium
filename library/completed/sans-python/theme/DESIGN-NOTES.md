@@ -31,6 +31,13 @@ reference theme the other books in the lineup inherit (see `platform/conventions
   warm-gray edge per theme (light `rgba(190,188,182,0.16)` on Ayu's dark canvas, taupe `rgba(120,113,100,0.18)`
   on the light paper). A first pass used an accent-orange edge (`rgba(255,143,64,0.30)`); it made every block
   wear the accent and flattened the page hierarchy, so it was dialled back.
+- **Border visibility raised, kept neutral (2026-06-20).** The dialled-back alpha (`0.16`/`0.18`) read as
+  reliably present on the Ayu dark theme but fell below the perceptual threshold on the light/Rust theme:
+  syntax-colored blocks looked edged while plain blocks (a no-language block, a shell one-liner) looked
+  border-less, so the page seemed to have borders on some blocks and not others. The edge is on every
+  `pre > code` (it never was truly missing); the neutral alpha was raised to a clearly visible but quiet
+  level so all blocks carry the same card edge: Ayu `rgba(190,188,182,0.30)`, light `rgba(120,113,100,0.32)`.
+  Still neutral, not the accent, which stays reserved for the handoff CTA, inline code, and syntax tokens.
 
 ## The Claude Code handoff block (`theme/copy-to-claude.{css,js}`)
 

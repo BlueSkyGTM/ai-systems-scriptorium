@@ -30,7 +30,7 @@
 
         <!-- Custom theme stylesheets -->
         <link rel="stylesheet" href="theme/copy-to-claude-45921320.css">
-        <link rel="stylesheet" href="theme/syntax-polish-2de0cc70.css">
+        <link rel="stylesheet" href="theme/syntax-polish-0cdef977.css">
         <link rel="stylesheet" href="theme/readability-bab89f0d.css">
 
 
@@ -39,7 +39,7 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-79574284.js";
+            window.path_to_searchindex_js = "searchindex-4348c693.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-5badbb0b.js"></script>
@@ -301,12 +301,18 @@ source .venv/bin/activate          # Windows WSL2: same command
 <p>No GPU? Use Google Colab; it gives you a free T4 and nothing changes about the code. The course assumes you know which path you are on.</p>
 <p>CUDA and driver versions move fast. If that wheel index 404s, look up the current build at pytorch.org rather than guessing the suffix.</p>
 <h2 id="reproducibility-posture"><a class="header" href="#reproducibility-posture">Reproducibility Posture</a></h2>
-<p>Three habits that save future you:</p>
-<ol>
-<li><strong>Lockfile:</strong> run <code>uv pip compile pyproject.toml -o requirements.lock</code> after adding packages. Commit the lock, not the venv.</li>
-<li><strong><code>.gitignore</code>:</strong> add <code>.venv/</code>, <code>*.pt</code>, <code>*.pth</code>, <code>*.safetensors</code>, <code>*.gguf</code>; model weights belong in Git LFS or DVC, not in your repo history.</li>
-<li><strong>Per-module venvs:</strong> when you start a new module, create a fresh <code>.venv</code>. Never share a venv across modules with conflicting PyTorch/CUDA versions.</li>
-</ol>
+<p>Three habits save future you.</p>
+<p><strong>Lock your dependencies.</strong> After you add packages, compile a lockfile and commit it; commit the lock, never the virtual environment itself.</p>
+<pre><code class="language-sh">uv pip compile pyproject.toml -o requirements.lock
+</code></pre>
+<p><strong>Keep environments and weights out of git.</strong> A virtual environment and a multi-gigabyte model weight have no business in your repository history; weights live in Git LFS or DVC. Add these to <code>.gitignore</code>:</p>
+<pre><code class="language-gitignore">.venv/
+*.pt
+*.pth
+*.safetensors
+*.gguf
+</code></pre>
+<p><strong>Use one virtual environment per module.</strong> When you start a new module, create a fresh <code>.venv</code>. Never share one across modules, because their PyTorch and CUDA versions conflict.</p>
 <h2 id="verify-the-stack"><a class="header" href="#verify-the-stack">Verify the Stack</a></h2>
 <pre><code class="language-python"># verify.py
 import sys, subprocess
@@ -326,7 +332,7 @@ for name, result in checks:
 <pre><code class="language-sh">python verify.py
 </code></pre>
 <p>All five lines print without errors. That is done.</p>
-<p>An Production AI Engineer owns the environment that serves models; a reproducible, layer-by-layer setup is the substrate that everything else runs on.</p>
+<p>A Production AI Engineer owns the environment that serves models; a reproducible, layer-by-layer setup is the substrate that everything else runs on.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
 <li>The four-layer stack (system → managers → runtimes → libraries) installs bottom-up because each layer depends on the one below.</li>
@@ -465,7 +471,7 @@ for name, result in checks:
 <p><strong>LLM-as-judge</strong> is the production answer to the scaling problem: exact-match metrics miss semantic equivalence, and human review doesn’t scale. The trust protocol is non-negotiable; freeze the judge model and version (a judge upgrade changes your historical scores), calibrate against roughly 100 human labels, require Spearman ρ ≥ 0.7 before using the judge in CI. G-Eval produces a 0–1 score with a custom rubric; RAGAS produces four named metrics; DeepEval runs in pytest so the eval loop becomes a test suite. Silent failure modes: length bias (longer answers score higher regardless of quality), same-family bias (a model prefers its own outputs), JSON parse failures that silently drop cases from the average.</p>
 <p><strong>Long-context evaluation</strong> closes the gap between what a model advertises and what you can rely on. Advertised context length and usable context length are not the same number. Gemini 2.5 Pro advertises 1M tokens; at 1M tokens, its 8-needle MRCR score drops to 26.3%. The rule is to report two numbers for any model you operate: retrieval-effective length (where single-fact recall holds) and reasoning-effective length (where multi-hop accuracy holds, typically 25–50% of advertised). NIAH (needle-in-haystack) is the baseline; RULER adds 13 task types and reveals multi-hop failures; MRCR scales the needle count to stress multi-round coreference. This feeds the eval-driven development thread that runs through the course.</p>
 <p>Module 2 takes these components and builds them into a RAG system and an eval loop. The components are the same; what changes is the system design around them.</p>
-<p>An Production AI Engineer who knows these components can look at a failing RAG pipeline and name which layer broke, retrieval recall, reranker precision, chunk size mismatch, or judge calibration, instead of treating the whole system as a black box.</p>
+<p>A Production AI Engineer who knows these components can look at a failing RAG pipeline and name which layer broke, retrieval recall, reranker precision, chunk size mismatch, or judge calibration, instead of treating the whole system as a black box.</p>
 <h2 id="core-concepts-4"><a class="header" href="#core-concepts-4">Core Concepts</a></h2>
 <ul>
 <li>The retriever→reader split is the structural foundation of RAG; the IR pipeline under the retriever has four layers (BM25 sparse, dense, RRF fusion, cross-encoder rerank) that catch different failure modes.</li>
@@ -762,7 +768,7 @@ LoRA/QLoRA <em>implementation</em> is out of scope. <strong>Generative media</st
 <p>The decision principle: refuse a framework until the architecture can be drawn as a graph, an org chart, a chat, or a single agent with tools. The shape of the problem determines the tool. An agent framework chosen before the shape is known is a liability.</p>
 <h2 id="the-m2--m3-hinge"><a class="header" href="#the-m2--m3-hinge">The M2 → M3 Hinge</a></h2>
 <p>This ladder is the editorial spine of Modules 3 and 4. Module 3 builds the single-agent rung in depth; the agent loop, tool execution, MCP, memory, and evaluation. Module 4 extends to multi-agent orchestration. The sequence is deliberate: you need to own the single-agent rung before multi-agent complexity is legible.</p>
-<p>An Production AI Engineer adds complexity only when the problem demands it; that discipline, applied at scale, is what separates a system that holds under production load from one that collapses under its own architecture.</p>
+<p>A Production AI Engineer adds complexity only when the problem demands it; that discipline, applied at scale, is what separates a system that holds under production load from one that collapses under its own architecture.</p>
 <h2 id="core-concepts-11"><a class="header" href="#core-concepts-11">Core Concepts</a></h2>
 <ul>
 <li>The three rungs, direct model call, single agent with tools, multi-agent orchestration, each add cost, failure surface, and debugging complexity; move up only when the simpler rung can’t solve the problem.</li>
@@ -2378,7 +2384,7 @@ def supervisor(task: str) -&gt; str:
 <p>A better base model does not fix a role you never specified. It does not fix a handoff that drops context, or a chain with no verifier, or a blackboard that lets a hallucinated fact propagate. Swap the strongest model in the world into a system with a verification gap and you get a strong model confidently shipping unverified answers. The failure lives in the wiring, the specification, the coordination, the missing check, and wiring is something you own, not something you wait on a model release to repair.</p>
 <p>This is why the back half of this module is built the way it is. Budgets, kill switches, propose-then-commit checkpoints, fleet registries with explicit identity and audit; every one of them is a design answer to a MAST family. Specification problems demand explicit scope contracts. Coordination failures demand typed handoffs and audited state. Verification gaps demand an independent verifier the builder can’t overrule. You are not waiting for the model to get good enough. You are building the system that makes a good-enough model reliable.</p>
 <h2 id="the-seam-this-sits-on-2"><a class="header" href="#the-seam-this-sits-on-2">The Seam This Sits On</a></h2>
-<p>Debate is the AI Engineer’s question; can coordination produce a better answer, and how sparsely can I wire it. MAST is the MLOps engineer’s answer; most of what breaks is operational, and operational problems get operational fixes. An Production AI Engineer holds both: reach for debate when accuracy justifies the tokens, wire it sparse, and treat every failure mode as a design input rather than a model complaint. The model is not the variable you control. The system around it is.</p>
+<p>Debate is the AI Engineer’s question; can coordination produce a better answer, and how sparsely can I wire it. MAST is the MLOps engineer’s answer; most of what breaks is operational, and operational problems get operational fixes. A Production AI Engineer holds both: reach for debate when accuracy justifies the tokens, wire it sparse, and treat every failure mode as a design input rather than a model complaint. The model is not the variable you control. The system around it is.</p>
 <h2 id="core-concepts-30"><a class="header" href="#core-concepts-30">Core Concepts</a></h2>
 <ul>
 <li>Multi-agent debate (“society of minds”) improves factuality and reasoning by having N agents propose then critique over R rounds; agent count and round count contribute independently, and cross-model debate beats a single-model monoculture by decorrelating errors.</li>
@@ -4669,22 +4675,6 @@ ship the artifact; is the whole job. You already know how to do it. The rest is 
         <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
         <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
 
-        <!-- Livereload script (if served using the cli tool) -->
-        <script>
-            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
-            const socket = new WebSocket(wsAddress);
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload();
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
 
 
         <script>

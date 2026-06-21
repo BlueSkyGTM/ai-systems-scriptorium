@@ -22,7 +22,7 @@ A RAG system that fails is not a mystery; it is a combination of components, and
 
 Module 2 takes these components and builds them into a RAG system and an eval loop. The components are the same; what changes is the system design around them.
 
-An Production AI Engineer who knows these components can look at a failing RAG pipeline and name which layer broke, retrieval recall, reranker precision, chunk size mismatch, or judge calibration, instead of treating the whole system as a black box.
+A Production AI Engineer who knows these components can look at a failing RAG pipeline and name which layer broke, retrieval recall, reranker precision, chunk size mismatch, or judge calibration, instead of treating the whole system as a black box.
 
 ## Core Concepts
 

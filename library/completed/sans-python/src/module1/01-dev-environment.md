@@ -90,11 +90,25 @@ CUDA and driver versions move fast. If that wheel index 404s, look up the curren
 
 ## Reproducibility Posture
 
-Three habits that save future you:
+Three habits save future you.
 
-1. **Lockfile:** run `uv pip compile pyproject.toml -o requirements.lock` after adding packages. Commit the lock, not the venv.
-2. **`.gitignore`:** add `.venv/`, `*.pt`, `*.pth`, `*.safetensors`, `*.gguf`; model weights belong in Git LFS or DVC, not in your repo history.
-3. **Per-module venvs:** when you start a new module, create a fresh `.venv`. Never share a venv across modules with conflicting PyTorch/CUDA versions.
+**Lock your dependencies.** After you add packages, compile a lockfile and commit it; commit the lock, never the virtual environment itself.
+
+```sh
+uv pip compile pyproject.toml -o requirements.lock
+```
+
+**Keep environments and weights out of git.** A virtual environment and a multi-gigabyte model weight have no business in your repository history; weights live in Git LFS or DVC. Add these to `.gitignore`:
+
+```gitignore
+.venv/
+*.pt
+*.pth
+*.safetensors
+*.gguf
+```
+
+**Use one virtual environment per module.** When you start a new module, create a fresh `.venv`. Never share one across modules, because their PyTorch and CUDA versions conflict.
 
 ## Verify the Stack
 
@@ -122,7 +136,7 @@ python verify.py
 
 All five lines print without errors. That is done.
 
-An Production AI Engineer owns the environment that serves models; a reproducible, layer-by-layer setup is the substrate that everything else runs on.
+A Production AI Engineer owns the environment that serves models; a reproducible, layer-by-layer setup is the substrate that everything else runs on.
 
 ## Core Concepts
 

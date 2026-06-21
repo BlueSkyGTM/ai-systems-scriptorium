@@ -44,7 +44,7 @@ This is why the back half of this module is built the way it is. Budgets, kill s
 
 ## The Seam This Sits On
 
-Debate is the AI Engineer's question; can coordination produce a better answer, and how sparsely can I wire it. MAST is the MLOps engineer's answer; most of what breaks is operational, and operational problems get operational fixes. An Production AI Engineer holds both: reach for debate when accuracy justifies the tokens, wire it sparse, and treat every failure mode as a design input rather than a model complaint. The model is not the variable you control. The system around it is.
+Debate is the AI Engineer's question; can coordination produce a better answer, and how sparsely can I wire it. MAST is the MLOps engineer's answer; most of what breaks is operational, and operational problems get operational fixes. A Production AI Engineer holds both: reach for debate when accuracy justifies the tokens, wire it sparse, and treat every failure mode as a design input rather than a model complaint. The model is not the variable you control. The system around it is.
 
 ## Core Concepts
 
