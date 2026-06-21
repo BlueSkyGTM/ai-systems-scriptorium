@@ -1,4 +1,4 @@
-# Algorithmic Interviewing — Blueprint
+# Anatomy of an Answer — Blueprint
 
 ## Positioning
 
@@ -136,7 +136,7 @@ bank can give structured feedback on any practice answer, without hallucinating 
 
 The final title is a human decision at `GATE-NAME-BOOK`. Three candidates follow.
 
-**Lead candidate: Algorithmic Interviewing**
+**Lead candidate: Anatomy of an Answer**
 
 Reframes the interview as a problem-solving domain rather than a performance domain.
 "Algorithmic" signals engineering and precision; it describes the book's central

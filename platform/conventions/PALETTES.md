@@ -17,7 +17,7 @@ was tuned.
 | Machine Math | `planned/ml-in-proportion` | `#4b3f9e` | `#9a8cff` | indigo; abstract, mathematical |
 | Data Currents | `planned/upstream` | `#0f7d72` | `#2dd4bf` | teal; water and flow |
 | Weights and Measures | `planned/tasteful-tuning` | `#9e2b3a` | `#ff6b81` | crimson; the gravity of training |
-| Algorithmic Interviewing | `planned/interview-algorithm` | `#2f6b4f` | `#5fd39a` | pine; calm and confident (title still settling) |
+| Anatomy of an Answer | `planned/interview-algorithm` | `#2f6b4f` | `#5fd39a` | pine; calm and confident |
 | Local Metal | `planned/local-metal` | `#3a6ea5` | `#5fa8e6` | steel blue; cool hardware |
 
 ## How Each Palette Is Applied (per Book Theme, at Build)
