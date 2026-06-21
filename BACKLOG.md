@@ -49,7 +49,7 @@ The original collected items (kept as the record):
 ## Closing-pass polish (the original deferred backlog, item c)
 7. **Reconcile the ~73% RAG-retrieval-failure stat** across M2 `03-rag-system.md` + M5 lesson 11 — soft
    provenance; rule on attribution/hedge across both together.
-8. **Fix the banned "An AI Platform Engineer who…" frame** in `exercises/module3/05-typing-the-product-layer/README.md`.
+8. **Fix the banned "A Production AI Engineer who…" frame** in `exercises/module3/05-typing-the-product-layer/README.md`.
 9. **Re-read M1/M2 module Overview READMEs** against the final shipped structure.
 
 ## Content gaps (from the live review)

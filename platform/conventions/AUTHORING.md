@@ -13,7 +13,7 @@ finished mdBook lesson **and** its Claude Code exercise, in the locked voice, wi
 | `ingredients/dossiers/moduleN.md` (the keep/cut/merge/thread ruling) | — (read-only; tells you what belongs and why) |
 | Microsoft Learn (via connector) | validated production pattern woven into the lesson |
 | `platform/templates/concept-lesson.md` / `build-lesson.md` | the skeleton each lesson fills |
-| your seam framing | the "why an AI Platform Engineer needs this" in every lead |
+| your seam framing | the "why a Production AI Engineer needs this" in every lead |
 
 ## The three sources (rule 10 — non-negotiable)
 
@@ -26,7 +26,7 @@ No lesson is authored from one source. Every lesson combines:
 2. **Microsoft Learn** — the production pattern / validation. **Use the connector. Do not assume from
    memory.** Confirm the architecture maps to current practice (LLMOps inner/outer loop, eval-driven
    development, the complexity ladder, prompt versioning).
-3. **Editorial seam framing** — sequence, what belongs together, and the answer to "why does an AI Platform
+3. **Editorial seam framing** — sequence, what belongs together, and the answer to "why does a Production AI
    Engineer need this?" baked into the lead.
 
 If you have only one source, you are not authoring — you are copying. Stop and get the other two.

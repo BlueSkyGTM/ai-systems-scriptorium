@@ -36,10 +36,10 @@ Holds across all lessons. This is what makes 280 lessons from 9 sources read as 
 
 - [ ] **Lead (1–2 sentences):** the problem, and why a seam engineer needs this. The first sentence's only
       job is to make the reader read the second. No throat-clearing, no "In this lesson we will…".
-- [ ] **Ending — the seam line:** one sentence on what this means for an AI Platform Engineer. Then stop.
+- [ ] **Ending — the seam line:** one sentence on what this means for a Production AI Engineer. Then stop.
       Zinsser: end with a click, the moment the reader didn't quite expect but recognizes as right. **Vary the
       shape** — a consequence, a warning, a cost, a reframe, a question answered — and never reuse a fixed
-      template (see §8). The "An AI Platform Engineer who…" opener is banned as a default; earn the ending fresh.
+      template (see §8). The "A Production AI Engineer who…" opener is banned as a default; earn the ending fresh.
 - [ ] **Then the handoff:** the copy-button block that hands the work to Claude Code.
 
 ## 5. Core concepts (the retention hook)

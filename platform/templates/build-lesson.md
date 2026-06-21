@@ -3,7 +3,7 @@ SKELETON: Build lesson. For "build this" lessons (you ship working code). Fill e
 Obey STYLE.md. Run the Zinsser pass before shipping. Delete these comments.
 Author in the threaded language at point-of-use (TypeScript from M3, Rust from M5).
 Source the substance from the migration src/ ingredient; validate the build pattern against Microsoft
-Learn (use the connector, don't assume); frame the seam (why an AI Platform Engineer needs this).
+Learn (use the connector, don't assume); frame the seam (why a Production AI Engineer needs this).
 -->
 
 # <Lesson Title>
@@ -16,7 +16,7 @@ Learn (use the connector, don't assume); frame the seam (why an AI Platform Engi
 thing that happens. Show the key code/command, not the whole file. Surface the relevant thread inline
 (eval / versioning / safety / complexity ladder) where it belongs. -->
 
-<!-- SEAM LINE (1 sentence): what shipping this proves for an AI Platform Engineer. Then stop. -->
+<!-- SEAM LINE (1 sentence): what shipping this proves for a Production AI Engineer. Then stop. -->
 
 ## Core concepts
 

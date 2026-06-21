@@ -2,7 +2,7 @@
 SKELETON: Concept lesson. For "understand this" lessons (a pattern, a tradeoff, a mental model).
 Fill every section. Obey STYLE.md. Run the Zinsser pass before shipping. Delete these comments.
 Source the substance from the migration src/ ingredient; validate the production pattern against
-Microsoft Learn (use the connector, don't assume); frame the seam (why an AI Platform Engineer needs this).
+Microsoft Learn (use the connector, don't assume); frame the seam (why a Production AI Engineer needs this).
 -->
 
 # <Lesson Title>
@@ -12,7 +12,7 @@ Microsoft Learn (use the connector, don't assume); frame the seam (why an AI Pla
 <!-- BODY: one idea, cleanest components. Active voice, present tense, second person. Examples over
 abstraction. One thought per paragraph. A diagram only if it replaces words. -->
 
-<!-- SEAM LINE (1 sentence): what this means for an AI Platform Engineer. Then stop. -->
+<!-- SEAM LINE (1 sentence): what this means for a Production AI Engineer. Then stop. -->
 
 ## Core concepts
 
