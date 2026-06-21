@@ -31,6 +31,8 @@ NOT load**, hand off where it says, and stop only at the named gate (defined in
 - **Paths:** `platform/route-manifest.yaml` — the single source of truth for every routed and
   config-consumed path. `platform/bin/route-lint` enforces both this router and the manifest.
 - **Book index:** `CATALOG.md`. **Cross-cutting backlog:** `BACKLOG.md`.
+- **Orchestration:** `platform/ORCHESTRATION.md` — how the agent fleet runs (conductor →
+  handlers → workers) so heavy execution and the human gates run concurrently.
 
 ## Routed boundaries (each has its own CONTEXT.md)
 
