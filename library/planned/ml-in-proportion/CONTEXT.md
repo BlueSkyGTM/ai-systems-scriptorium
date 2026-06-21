@@ -1,22 +1,30 @@
-# CONTEXT — ML in Proportion (PLANNED)
+# CONTEXT — Machine Math (PLANNED)
 
-A planned book covering the **machine-learning gaps** Sans Python set aside as Path-A (MLE) material:
-classic ML fundamentals (regression, trees, boosting, AUC-ROC, feature engineering) **and the math they
-actually require** (linear algebra / calculus / probability), at applied / point-of-use depth —
-conceptual fluency for the ML-system-design interview, not from-scratch derivation.
+A planned book filling antilibrary gap rows 3 + 6 from
+`build-log/sans-python/antilibrary-gap-report.md`: classic ML fundamentals (regression, trees,
+boosting, AUC-ROC, feature engineering) paired with the math each one requires (linear algebra /
+calculus / probability / information theory), at applied depth. The thesis: math arrives bolted to the
+fundamental that needs it. Neither half is taught alone.
 
-**Scope call (recorded):** the *fundamentals* lead — they are the interview-relevant gap (row 3, medium
-risk); the *math* (row 6, low applied risk) is included only where a fundamental needs it. This replaces
-the narrower "Machine Learning Math" framing: math-only would be a thin book about the least-tested
-layer. Sans Python stays the core roadmap; this branches from it. Origin: rows 3 + 6 of
-`build-log/sans-python/antilibrary-gap-report.md`.
+**Scope boundary (recorded):** PyTorch, deep-model training, fine-tuning, and neural-network math are
+OUT of scope. They are split into a separate planned book ("Tasteful Tuning"). This book ends where
+the neural network begins. Classic ML only; the math it requires only.
 
-**Not started.** Starting it is gated at `GATE-NAME-BOOK` (propose the real title first).
+**Post-Sans-Python positioning:** Sans Python is the core roadmap (LLM engineering, agents, fleet,
+deploy). Machine Math branches from it for readers who need the MLE-adjacent layer: the ML-system-design
+interview, feature work, and the math the interviewer assumes fluency in.
+
+**Not started.** Starting it is gated at `GATE-NAME-BOOK` (propose the real title first; lead
+candidate is "Machine Math"). See `README.md` for the full blueprint.
 
 ## Ore (in the vault — not yet distilled)
 
-- `ai-engineering-from-scratch` math + ML-fundamentals foundations; `made-with-ml` classic-ML chapters.
-  Survey at process-ore time via `vault/MANIFEST.md`.
+- `ai-engineering-from-scratch` Phase 01 (Math Foundations) + Phase 02 (ML Fundamentals): the primary
+  ore for both halves of this book.
+- `made-with-ml` classic-ML notebook and evaluation pipeline (`data.py`, `evaluate.py`, `predict.py`,
+  holdout dataset): evaluation and artifact ore. Training internals (`train.py`, `models.py`) are
+  antilibrary for mwml and remain excluded here (PyTorch / deep-training seam).
+- Survey both at process-ore time via `vault/MANIFEST.md` and `ingredients/source/_repos/`.
 
 ## Dual-use
 
@@ -27,7 +35,8 @@ same page serves either party.
 
 - **Load (when it graduates):** this folder's `README.md`, the named vault ore via `vault/MANIFEST.md`,
   `ingredients`, `platform/pipeline`.
-- **Do NOT load:** the shipped book, other planned books.
+- **Do NOT load:** the shipped Sans Python book; other planned books; any `made-with-ml` training
+  internals (`train.py`, `models.py`, `tune.py`); anything under `skills/` or `gstack/`.
 
 ## Handoff & gates
 

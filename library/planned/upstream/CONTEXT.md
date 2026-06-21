@@ -1,30 +1,36 @@
-# CONTEXT — Upstream (PLANNED)
+# CONTEXT — System Semantics (PLANNED)
 
-A planned book covering the **data-engineering gap** — the MLOps-native half Sans Python kept light: SQL
-and the data platform (ingestion, pipelines, streaming, warehouses, lineage — Kafka / Spark / Airflow and
-kin) beyond the Docling ingestion front-door the core book already teaches. The **52% SQL + data-eng
-screen**.
+A planned book covering the **data-engineering seam** — interpreting and routing data for AI
+systems. The focus: SQL and the data platform (batch ingestion, streaming, orchestration, warehouses,
+lakehouses, lineage) as the AI engineer's operational instruments. Extends directly from Sans Python
+M5 L14 "The Data Seam": that lesson names the boundary; this book is the deep build of everything
+it deferred. The **52% SQL + data-eng hiring screen** (row 4 of
+`build-log/sans-python/antilibrary-gap-report.md`).
 
-Sans Python stays the core roadmap; this branches from it, picking up where the M5 ingestion thread
-stops. Origin: row 4 of `build-log/sans-python/antilibrary-gap-report.md`.
+**Working title:** System Semantics. Final title is gated at `GATE-NAME-BOOK`.
 
 **Not started.** Starting it is gated at `GATE-NAME-BOOK` (propose the real title first).
 
 ## Ore (in the vault — not yet distilled)
 
-- `made-with-ml` data-engineering / pipeline chapters and the data-platform material across the vault.
-  Survey at process-ore time via `vault/MANIFEST.md`.
+- `made-with-ml` — data pipeline, data versioning, MLOps workflow, batch orchestration
+  (`data.py`, `datasets/`, `deploy/jobs/`). Primary ore for M1–M4.
+- `ai-engineering-from-scratch` — M4/M5 infrastructure and production chapters. Secondary ore for
+  M5–M6.
+- `ai-performance-engineering` — deploy/serving docs. Supporting ore for M5.
+- Survey at process-ore time via `vault/MANIFEST.md` and
+  `ingredients/source/_repos/<repo>/curriculum-map.md`.
 
 ## Dual-use
 
-Written to be **read by a human learner and ingested by an LLM** — dense, linked, plain markdown. The
-same page serves either party.
+Written to be **read by a human learner and ingested by an LLM** — dense, linked, plain markdown.
+The same page serves either party.
 
 ## Load / don't-load
 
 - **Load (when it graduates):** this folder's `README.md`, the named vault ore via `vault/MANIFEST.md`,
   `ingredients`, `platform/pipeline`.
-- **Do NOT load:** the shipped book, other planned books.
+- **Do NOT load:** the shipped book (Sans Python), other planned books.
 
 ## Handoff & gates
 

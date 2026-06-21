@@ -1,7 +1,7 @@
 # vault MANIFEST — the nine source repos
 
-The ore the Scriptorium distills into books. ~767M total, on local disk only, **gitignored**
-(manifest-primary). Each repo is **recoverable; on disk only** — re-clone from the URL below if lost.
+The ore the Scriptorium distills into books. ~767M total, **committed to this private repo verbatim**
+(2026-06-20; previously gitignored/manifest-primary). Each repo is also recoverable by re-cloning the URL below.
 Module feeds are from `ingredients/source/INDEX.md` (the librarian's inventory of what each repo fed).
 
 | Repo (`vault/…`) | Prefix | Size | Feeds (modules) | Clone URL |
@@ -21,7 +21,8 @@ Module feeds are from `ingredients/source/INDEX.md` (the librarian's inventory o
 - **`ai-performance-engineering` (725M)** is the bulk of the vault; its top-level README has no real
   origin URL (placeholder `github.com/your-username/...`). It carries a large binary
   (`resources/NVIDIA_GTC_2026_...pdf`). Treat it as on-disk-only until a real source is confirmed.
-- **Recoverable:** the vault was never committed; it is the ore's only on-disk copy. If you need a
-  durable backup, back it up out-of-band — git is not backing it up.
+- **Versioned (2026-06-20):** the vault is now committed to this private repo verbatim (force-added past
+  the vendored repos' own .gitignore), so git is the durable backup. The historical "gitignored, on-disk
+  only" framing no longer applies.
 - **Provenance for distilled content** lives in `ingredients/source/_repos/<repo>/` (per-repo
   inventory, curriculum-map, antilibrary, visuals) and `ingredients/source/INDEX.md`.
