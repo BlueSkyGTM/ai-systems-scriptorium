@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-647bc5d5.js";
+            window.path_to_searchindex_js = "searchindex-79e1fe5a.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-a1cde07b.js"></script>
+        <script src="toc-3e4049db.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -3155,6 +3155,552 @@ proof it ran.</li>
 </div>
 
 <!-- SOURCES: https://code.claude.com/docs/en/mcp -->
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-7-perf-and-tuning"><a class="header" href="#module-7-perf-and-tuning">Module 7: Perf and Tuning</a></h1>
+<p>The rig works. It serves a model, routes between local and cloud, and answers to Claude Code. Every
+number it produces so far, though, came from stock settings: whatever Ollama defaulted to the day you
+installed it. Those defaults are conservative, and they are the starting line, not the finish. This
+module is where you tune.</p>
+<p>Tuning a single consumer GPU is not the same job as tuning a datacenter. You have one card, a fixed
+memory budget, and a handful of levers that actually move the needle. The discipline that matters is
+not knowing a hundred flags; it is the loop a production engineer runs without thinking: measure,
+change one thing, measure again, and keep the change only if the number improved. This module makes
+that loop explicit and gives you the tools to run it.</p>
+<p>You start by profiling, because tuning blind is guessing. Token generation is bound by memory
+bandwidth, not raw compute, so the signature you learn to read is a GPU that is busy moving weights,
+not one pegged at full math utilization. Then you meet the levers worth pulling on this card: flash
+attention, KV-cache quantization, request parallelism, and context sizing, each with the tradeoff it
+actually carries rather than the speedup a forum post promised.</p>
+<p>The measurement that ties it together is throughput under load. The single-stream tokens per second
+you recorded in Module 4 is the wrong metric for a server that answers more than one request at a time.
+You will build <code>loadbench.py</code> to fire concurrent generations and report aggregate throughput and the
+slowest request, the numbers that tell you whether the rig holds up when you actually lean on it.</p>
+<p>You leave this module, and the book, with a seventh file in the portfolio repository: <code>TUNING.md</code>, a
+before-and-after that shows the baseline from Module 4, the result after tuning, and exactly which
+levers moved which number. Seven modules ago this was a parts list. Now it is a documented, routed,
+wired, and tuned inference host, with seven files that prove every claim. That before-and-after is the
+last word the book asks you to write, and the first thing a reviewer should read.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="where-the-time-goes"><a class="header" href="#where-the-time-goes">Where the Time Goes</a></h1>
+<p>Tuning without profiling is guessing. Before you change a single setting, you need to see where
+the time actually goes, because the answer is not where most people expect it.</p>
+<h2 id="step-1-the-two-numbers-a-gpu-reports"><a class="header" href="#step-1-the-two-numbers-a-gpu-reports">Step 1: The Two Numbers a GPU Reports</a></h2>
+<p><code>nvidia-smi</code> has a streaming mode that prints per-second device metrics to the terminal:</p>
+<pre><code class="language-bash">nvidia-smi dmon -s um
+</code></pre>
+<p>The <code>-s</code> flag selects metric groups. <code>u</code> requests utilization; <code>m</code> requests memory utilization.
+Two columns matter here.</p>
+<p><code>sm%</code> is streaming-multiprocessor utilization: the fraction of the GPU’s compute cores that are
+doing math. <code>mem%</code> is memory utilization: how hard the memory subsystem is working to move data
+between VRAM and the compute units. Together they tell you whether the GPU is constrained by how
+fast it can compute or by how fast it can read.</p>
+<p>Start <code>nvidia-smi dmon -s um</code> in one terminal, then send a long generation (a few hundred tokens)
+in another. What you should see looks roughly like this:</p>
+<pre><code># gpu   sm%  mem%
+    0    42    81
+    0    38    84
+    0    45    79
+    0    40    83
+    0    36    86
+</code></pre>
+<p>The exact numbers vary by model size, quantization, and batch size. The shape is what to read.</p>
+<h2 id="step-2-the-bandwidth-bound-signature"><a class="header" href="#step-2-the-bandwidth-bound-signature">Step 2: The Bandwidth-Bound Signature</a></h2>
+<p>That output is not a problem. It is the signature of memory-bandwidth-bound inference, and it is
+exactly what local LLM serving looks like.</p>
+<p>Here is why. When the model generates a token, it reads the full set of model weights from VRAM
+once per token, feeds them to the arithmetic units, and performs a matrix-by-vector
+multiplication. The computation itself is small, because you are generating one token, not running
+a training batch of thousands. The GPU finishes the math fast and then waits while the memory
+subsystem loads the next round of weights. The bottleneck is the transfer, not the multiplication.</p>
+<p>The signature of that bottleneck is <code>mem%</code> in the 70 to 90 range while <code>sm%</code> stays well below
+100, often 30 to 60 percent. The compute cores are idle a significant fraction of the time, not
+because they are misconfigured, but because they are waiting on memory. This is the normal,
+expected shape of transformer inference at token-generation time.</p>
+<p>Module 4 put numbers on the gap: the RTX 4060 Ti’s GDDR6 delivers roughly 288 GB/s, while
+DDR5-6000 system RAM delivers roughly 96 GB/s. The 3:1 ratio is why layers stranded in system
+RAM generate tokens so much more slowly. It is also why, once the model is fully on-card, the
+memory bus, not the compute units, remains the limiting factor.</p>
+<h2 id="step-3-what-this-tells-you-about-tuning"><a class="header" href="#step-3-what-this-tells-you-about-tuning">Step 3: What This Tells You About Tuning</a></h2>
+<p>Because you are bandwidth-bound, the wins are not where a forum post usually points. Higher clock
+speeds on the compute cores do not help when the cores are already waiting on the bus. More shader
+parallelism does not help when the work per token is a single matrix-by-vector pass.</p>
+<p>What does help is moving less data or moving it better. Three levers directly attack the bandwidth
+problem:</p>
+<ul>
+<li><strong>Quantization</strong> shrinks the weights. A Q4_K_M model loads roughly half the bytes per token
+compared to a Q8 model, so each token reads half the VRAM.</li>
+<li><strong>KV-cache quantization</strong> shrinks the attention cache that grows with context length. On long
+contexts, the KV cache can consume as much bandwidth as the weights.</li>
+<li><strong>Request batching</strong> lets one weight read serve several concurrent token positions at once,
+amortizing the memory cost across multiple requests.</li>
+</ul>
+<p>The next lesson covers each lever and the tradeoff it actually carries. The point here is that
+profiling first shows you which problem to solve: if <code>sm%</code> is the ceiling, you have a compute
+problem; if <code>mem%</code> is the ceiling and <code>sm%</code> is not, you have a bandwidth problem, and you need
+bandwidth solutions.</p>
+<h2 id="step-4-watch-vram-headroom"><a class="header" href="#step-4-watch-vram-headroom">Step 4: Watch VRAM Headroom</a></h2>
+<p>While <code>nvidia-smi dmon</code> runs in one terminal, open a second watcher in another:</p>
+<pre><code class="language-bash">nvidia-smi
+</code></pre>
+<p>Or add memory usage to the stream by running <code>nvidia-smi dmon -s um</code> alongside a standard
+<code>nvidia-smi</code> refresh. The field to watch is the used/total VRAM figure, for example
+<code>12850 MiB / 16384 MiB</code>.</p>
+<p>This matters because of the cliff from Module 4. If VRAM usage climbs past roughly 95 percent,
+Ollama starts offloading layers to system RAM, and the bandwidth drop is immediate and severe: a
+model that was doing 25 tokens per second on-card can fall to 3 tokens per second when even a
+handful of layers spill over. The clip does not come with a warning. You see it in the slowdown,
+and then you confirm it with <code>ollama ps</code>.</p>
+<p>Keep headroom. A KV cache grows with context length, so a model comfortably on-card at a short
+prompt can tip over the edge on a long conversation. Knowing your baseline headroom, from the
+profiling run, tells you how much margin you have before that happens.</p>
+<p>Once you can read <code>sm%</code>, <code>mem%</code>, and VRAM headroom under a real generation load, you know the
+actual shape of your workload. Everything in the next lesson follows from that shape.</p>
+<h2 id="core-concepts-24"><a class="header" href="#core-concepts-24">Core Concepts</a></h2>
+<ul>
+<li>Profile before you tune: <code>sm%</code> and <code>mem%</code> from <code>nvidia-smi dmon -s um</code> tell you whether you
+are constrained by compute or by memory bandwidth; guessing the constraint without measuring it
+leads to tuning the wrong lever.</li>
+<li>The bandwidth-bound signature is high <code>mem%</code> (roughly 70 to 90 percent) with <code>sm%</code> well below
+100 (often 30 to 60 percent); this is normal for token generation, not a misconfiguration.</li>
+<li>Because token generation reads the full model weights from VRAM for every token while doing only
+a small matrix-by-vector computation, the wins come from moving less data (quantization,
+KV-cache quantization, batching), not from chasing compute utilization.</li>
+<li>VRAM headroom matters during profiling: if usage climbs past roughly 95 percent, layers spill to
+system RAM and throughput drops severely, confirming the cliff first established in Module 4.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module7/where-the-time-goes/">
+<p><strong>Build It in Claude Code</strong>: Run <code>nvidia-smi dmon -s um</code> while generating, and record the peak <code>sm%</code> and <code>mem%</code> plus a one-line verdict on whether your workload is memory-bandwidth-bound.</p>
+</div>
+
+<!-- SOURCES: https://docs.nvidia.com/deploy/nvidia-smi/index.html | https://www.baseten.co/blog/llm-transformer-inference-guide/ | https://www.hardware-corner.net/gpu-ranking-local-llm/ -->
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-tuning-levers"><a class="header" href="#the-tuning-levers">The Tuning Levers</a></h1>
+<p>You profiled the rig and you know where the time goes. Now you can tune deliberately. There are only four levers worth pulling on one consumer card; each has a real tradeoff, and knowing the tradeoff is what keeps you from chasing a forum number that doesn’t apply to your setup.</p>
+<h2 id="step-1-flash-attention"><a class="header" href="#step-1-flash-attention">Step 1: Flash Attention</a></h2>
+<p>Flash attention rewrites the attention computation to process data in tiles that fit inside on-chip SRAM, rather than reading and writing the full attention matrix through VRAM on every step. The practical effect on a single card: a modest speedup on long sequences and a smaller attention memory footprint. On a bandwidth-constrained GPU like the 4060 Ti, gains depend on sequence length; short prompts see less benefit than long-context workloads. (Flash attention papers report large throughput improvements on server hardware; treat single-card numbers as representative, not guaranteed.)</p>
+<p>Enable it by setting the environment variable before Ollama starts:</p>
+<pre><code>OLLAMA_FLASH_ATTENTION=1
+</code></pre>
+<p>The other reason to enable it is not speed at all: flash attention is a prerequisite for KV-cache quantization in Step 2. Enable it first, before touching the cache type, or the cache flag has no effect.</p>
+<h2 id="step-2-kv-cache-quantization"><a class="header" href="#step-2-kv-cache-quantization">Step 2: KV-Cache Quantization</a></h2>
+<p>The KV cache holds the attention keys and values for every token in the context window. In the default configuration it lives in VRAM at f16 precision. You can halve or quarter that footprint by switching the cache type:</p>
+<pre><code>OLLAMA_KV_CACHE_TYPE=q8_0   # ~half the KV-cache VRAM; minimal quality cost
+OLLAMA_KV_CACHE_TYPE=q4_0   # ~quarter the KV-cache VRAM; noticeable quality cost
+</code></pre>
+<p>The f16 default is the zero-cost baseline. <code>q8_0</code> is the practical choice: the precision loss is minimal in most workloads and the VRAM savings are meaningful. <code>q4_0</code> is available if you need to push further, but the quality degradation is real and worth measuring before committing.</p>
+<p>What this lever actually buys is not speed; it is context. Freed KV-cache VRAM lets you extend the context window, or hold more parallel requests, within the same memory budget. If your bottleneck is context length rather than tokens per second, this is the most direct fix.</p>
+<p>Requires flash attention to be enabled (Step 1).</p>
+<h2 id="step-3-request-parallelism"><a class="header" href="#step-3-request-parallelism">Step 3: Request Parallelism</a></h2>
+<p>By default Ollama queues requests and processes them one at a time. Setting <code>OLLAMA_NUM_PARALLEL</code> to a value greater than one lets the model serve multiple concurrent requests in the same forward pass:</p>
+<pre><code>OLLAMA_NUM_PARALLEL=2
+</code></pre>
+<p>The gain here is aggregate throughput, not single-request latency. When several requests arrive together, one weight read can serve them all; the GPU stops idling between requests. Under genuine concurrent load, this is the most impactful lever in the set.</p>
+<p>The cost is proportional: each additional parallel slot needs its own KV-cache allocation in VRAM. If <code>num_ctx</code> is 4096 tokens per request and you set <code>OLLAMA_NUM_PARALLEL=2</code>, you are holding two full KV caches simultaneously. The headroom fills fast, so this lever and context sizing are directly connected.</p>
+<p>One important nuance: if you are the only user, single-stream tokens per second does not improve. This lever only pays off when you have actual concurrent load to serve, which is exactly what the next lesson measures.</p>
+<h2 id="step-4-context-sizing-and-keep-alive"><a class="header" href="#step-4-context-sizing-and-keep-alive">Step 4: Context Sizing and Keep-Alive</a></h2>
+<p>KV-cache VRAM scales linearly with context length. Every token in the window needs a key-value entry for every layer and every head; double the context, roughly double the cache. Set <code>num_ctx</code> in your model configuration, or the global default via:</p>
+<pre><code>OLLAMA_CONTEXT_LENGTH=4096
+</code></pre>
+<p>Size it to what your actual workload needs, not to the model’s theoretical maximum. A context window you do not use is VRAM you cannot spend on parallelism or a larger model.</p>
+<p><code>OLLAMA_KEEP_ALIVE</code> controls how long a loaded model stays resident in VRAM after its last request. The default is five minutes. Longer keep-alive eliminates reload latency between requests; shorter keep-alive frees VRAM sooner for other uses. On a dedicated inference host, a longer window is almost always the right call. On a workstation where you share the GPU with other tasks, a shorter window keeps VRAM available between sessions.</p>
+<h2 id="step-5-the-one-at-a-time-discipline"><a class="header" href="#step-5-the-one-at-a-time-discipline">Step 5: The One-at-a-Time Discipline</a></h2>
+<p>Every lever here interacts with at least one other. Parallelism and context both eat KV-cache VRAM; KV-cache quantization and context sizing both affect output quality; flash attention is a prerequisite for cache quantization. The temptation is to apply all of them at once and measure the total effect.</p>
+<p>That approach tells you nothing. If throughput goes up, you do not know which lever caused it. If quality drops, you do not know which one to roll back.</p>
+<p>The discipline is simple: change one setting, restart Ollama, run the same prompt sequence, record the metric, and compare to baseline. Keep the setting only if the number improved and quality held. Then move to the next lever. A tuning session that takes ninety minutes with this discipline is more useful than one that takes ten minutes without it.</p>
+<p>The before-and-after you are building toward, <code>TUNING.md</code>, is the record of that sequence: one lever, one measurement, one decision, repeated four times. That document is what makes the tuning reproducible and reviewable.</p>
+<p>A tuned rig with documented numbers is a claim a reviewer can reproduce; an untuned rig with a forum setting applied is just a guess that happened to persist. The next lesson puts all four levers under concurrent load so you can see which ones actually change the throughput curve.</p>
+<h2 id="core-concepts-25"><a class="header" href="#core-concepts-25">Core Concepts</a></h2>
+<ul>
+<li>Flash attention reduces attention-step VRAM and gives a modest single-stream speedup on long sequences; enable it first because KV-cache quantization requires it.</li>
+<li>KV-cache quantization (<code>q8_0</code> or <code>q4_0</code>) trades precision for VRAM, primarily extending your context budget rather than increasing tokens per second.</li>
+<li><code>OLLAMA_NUM_PARALLEL</code> raises aggregate throughput under concurrent load at the cost of proportionally more KV-cache VRAM; it does not speed up a single isolated request.</li>
+<li>Change one lever at a time, measure against a fixed baseline, and keep only what the numbers confirm.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module7/the-tuning-levers/">
+<p><strong>Build It in Claude Code</strong>: Write a one-page tuning plan: for each lever (flash attention, KV-cache type, num_parallel, context length), record the value to try, the metric it should move, and its VRAM cost; decide the order to apply them.</p>
+</div>
+
+<!-- SOURCES: https://github.com/ollama/ollama/blob/main/docs/faq.mdx | https://github.com/ollama/ollama/blob/main/envconfig/config.go | https://docs.ollama.com/faq | https://github.com/dao-ailab/flash-attention -->
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="throughput-under-load"><a class="header" href="#throughput-under-load">Throughput Under Load</a></h1>
+<p>Module 4 measured one request at a time. A server answers several at once, and that is a
+different number entirely.</p>
+<h2 id="why-aggregate-is-different"><a class="header" href="#why-aggregate-is-different">Why Aggregate Is Different</a></h2>
+<p><code>bench.py</code> reports single-stream tok/s: how fast the model generates when exactly one request
+is in flight. That number is real, but it is not the number that tells you whether the rig
+holds up under real use.</p>
+<p>When <code>OLLAMA_NUM_PARALLEL</code> is greater than 1, Ollama runs multiple sequence positions through
+the model in the same forward pass. The GPU reads the weights once and produces tokens for
+several concurrent requests from that single read. This is the win concurrency unlocks:
+aggregate throughput, the total tokens all requests together produce per wall-clock second,
+can exceed single-stream tok/s because the memory bus is serving multiple clients from one
+fetch.</p>
+<p>The cost is visible on any individual request. Each one waits its turn in the batch, so
+per-request latency rises a little as concurrency climbs. That tradeoff is the shape of the
+number you need to read: aggregate throughput goes up; the slowest single request gets slower.
+Both facts belong in the measurement.</p>
+<p>You need two numbers, then: aggregate throughput (total tokens across all requests divided by
+the wall-clock time the whole batch took) and tail latency (the slowest single request).
+<code>bench.py</code> gives you neither, because it only fires one.</p>
+<h2 id="the-measurement"><a class="header" href="#the-measurement">The Measurement</a></h2>
+<p>Fire N requests simultaneously, start one clock before they all launch, stop it after the last
+one returns. Then:</p>
+<pre><code>aggregate tok/s = total tokens across all N requests / wall-clock time for the batch
+</code></pre>
+<p>The denominator is not the sum of per-request times. The requests ran concurrently, so you
+divide by the time the batch itself occupied the clock, not by the accumulated serial time. A
+batch of four requests that each take 10 seconds but overlap gives a wall time of roughly 10
+seconds, not 40.</p>
+<p>Tail latency is the slowest individual request time. That number tells you the worst-case wait
+any one caller experiences, which is the number a user feels.</p>
+<h2 id="build-it-1"><a class="header" href="#build-it-1">Build It</a></h2>
+<p>Create <code>exercises/module7/throughput-under-load/loadbench.py</code> with this exact code. It uses
+only the standard library: <code>urllib</code>, <code>json</code>, <code>argparse</code>, <code>sys</code>, <code>time</code>, and
+<code>concurrent.futures</code>.</p>
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+loadbench.py: measure aggregate throughput under concurrent load.
+
+Single-stream tok/s (Module 4's bench.py) is the wrong metric for a server that
+answers more than one request at a time. loadbench.py fires N concurrent
+generations at Ollama's /api/generate and reports aggregate tokens/second and the
+slowest request (tail latency), the numbers that show whether the rig holds up.
+
+Usage:
+  python loadbench.py "a prompt" --concurrency 4   # live: N concurrent generations
+  python loadbench.py --selftest                   # offline: validate the aggregation math
+"""
+
+import argparse
+import json
+import sys
+import time
+import urllib.error
+import urllib.request
+from concurrent.futures import ThreadPoolExecutor
+
+DEFAULT_MODEL = "qwen2.5-coder:14b"
+GENERATE_URL = "http://localhost:11434/api/generate"
+
+
+def aggregate(results, wall_seconds):
+    """Aggregate per-request (eval_count, seconds) into throughput + tail latency.
+
+    Aggregate tokens/sec is total generated tokens over the wall-clock time the
+    whole batch took, not the sum of per-request times, because the requests ran
+    concurrently. Tail latency is the slowest single request.
+    """
+    if wall_seconds &lt;= 0:
+        raise ValueError("wall_seconds must be positive")
+    total_tokens = sum(count for count, _ in results)
+    slowest = max(seconds for _, seconds in results)
+    return {
+        "requests": len(results),
+        "aggregate_tokens_per_second": round(total_tokens / wall_seconds, 1),
+        "slowest_request_s": round(slowest, 2),
+    }
+
+
+def one_request(prompt, model, url=GENERATE_URL):
+    """Run one non-streaming generation; return (eval_count, seconds)."""
+    payload = json.dumps({"model": model, "prompt": prompt, "stream": False}).encode("utf-8")
+    request = urllib.request.Request(
+        url, data=payload, headers={"Content-Type": "application/json"}, method="POST"
+    )
+    start = time.perf_counter()
+    with urllib.request.urlopen(request) as response:
+        body = json.loads(response.read().decode("utf-8"))
+    return body.get("eval_count", 0), time.perf_counter() - start
+
+
+def loadbench(prompt, concurrency, model=DEFAULT_MODEL):
+    """Fire `concurrency` requests at once and aggregate the result."""
+    start = time.perf_counter()
+    with ThreadPoolExecutor(max_workers=concurrency) as pool:
+        results = list(pool.map(lambda _: one_request(prompt, model), range(concurrency)))
+    return aggregate(results, time.perf_counter() - start)
+
+
+def selftest():
+    """Validate the aggregation math offline. No server, no threads needed."""
+    # 4 requests, 200 tokens each (800 total); batch wall time 10.0 s -&gt; 80 tok/s aggregate.
+    results = [(200, 8.0), (200, 9.0), (200, 10.0), (200, 7.5)]
+    agg = aggregate(results, wall_seconds=10.0)
+    assert agg["aggregate_tokens_per_second"] == 80.0, f"aggregate math wrong: {agg}"
+    assert agg["slowest_request_s"] == 10.0, f"tail latency wrong: {agg}"
+    assert agg["requests"] == 4, "request count wrong"
+    print("selftest passed: aggregate throughput and tail latency math are correct")
+    return 0
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Benchmark aggregate throughput under load.")
+    parser.add_argument("prompt", nargs="?", help="the prompt to send concurrently")
+    parser.add_argument("--concurrency", type=int, default=4, help="number of concurrent requests")
+    parser.add_argument("--model", default=DEFAULT_MODEL, help="model tag to benchmark")
+    parser.add_argument("--selftest", action="store_true", help="validate the aggregation math offline")
+    args = parser.parse_args()
+
+    if args.selftest:
+        sys.exit(selftest())
+
+    if not args.prompt:
+        parser.error("provide a prompt, or use --selftest")
+
+    try:
+        agg = loadbench(args.prompt, args.concurrency, model=args.model)
+    except urllib.error.URLError as exc:
+        print(f"could not reach Ollama at {GENERATE_URL}: {exc}", file=sys.stderr)
+        sys.exit(1)
+    print(f"requests:            {agg['requests']}")
+    print(f"aggregate tok/s:     {agg['aggregate_tokens_per_second']}")
+    print(f"slowest request (s): {agg['slowest_request_s']}")
+
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+<p>Four functions do the work. <code>aggregate</code> contains the formula: total tokens divided by
+wall-clock batch time, plus the max of per-request durations for tail latency. It is pure
+and takes no network calls, which is why <code>selftest</code> can verify it without a running server.
+<code>one_request</code> posts a single non-streaming generation to <code>/api/generate</code> and reads
+<code>eval_count</code> from the response body, the same field <code>bench.py</code> uses, documented in Ollama’s
+API reference
+(<a href="https://github.com/ollama/ollama/blob/main/docs/api.md">github.com/ollama/ollama/blob/main/docs/api.md</a>).
+<code>loadbench</code> wraps N calls in a <code>ThreadPoolExecutor</code>, starts the wall clock before the pool
+opens, and stops it after all futures resolve. <code>selftest</code> fixes four results at 200 tokens
+each over a 10-second wall time and asserts the aggregate comes out to exactly 80.0 tok/s,
+with the slowest request at 10.0 seconds.</p>
+<h2 id="run-it-4"><a class="header" href="#run-it-4">Run It</a></h2>
+<p>Start with the offline check. No rig required:</p>
+<pre><code class="language-bash">python loadbench.py --selftest
+</code></pre>
+<p>What you should see:</p>
+<pre><code>selftest passed: aggregate throughput and tail latency math are correct
+</code></pre>
+<p>With the rig running, set <code>OLLAMA_NUM_PARALLEL</code> to allow concurrent serving
+(<a href="https://github.com/ollama/ollama/blob/main/envconfig/config.go">github.com/ollama/ollama/blob/main/envconfig/config.go</a>):</p>
+<pre><code class="language-bash">OLLAMA_NUM_PARALLEL=4 ollama serve
+</code></pre>
+<p>Then fire four concurrent requests:</p>
+<pre><code class="language-bash">python loadbench.py "explain what a transformer is" --concurrency 4
+</code></pre>
+<p>What you should see (representative; exact numbers depend on your hardware, model, and
+prompt length):</p>
+<pre><code>requests:            4
+aggregate tok/s:     61.4
+slowest request (s): 6.83
+</code></pre>
+<p>Single-stream, the same prompt might produce around 30 tok/s from <code>bench.py</code>. Four concurrent
+requests pushing through <code>num_parallel</code> can roughly double aggregate throughput because the
+GPU amortizes one weight read across multiple sequence positions. The gain is real but not
+linear: it saturates as VRAM fills and the memory bus becomes the ceiling again. The slowest
+request also takes longer than it would alone, which is the tradeoff the tail latency number
+makes visible. Both figures together tell you where the rig actually stands under load; the
+next lesson records the before-and-after of every lever you pulled to get there.</p>
+<h2 id="core-concepts-26"><a class="header" href="#core-concepts-26">Core Concepts</a></h2>
+<ul>
+<li>Aggregate throughput is total tokens across all concurrent requests divided by the
+wall-clock time for the whole batch, not by the sum of per-request times; the requests
+overlapped, so the denominator is the elapsed clock, not the serial total.</li>
+<li>Single-stream tok/s (from <code>bench.py</code>) measures how fast one reply streams; aggregate tok/s
+measures how much total work the server delivers per second when several requests run
+together: these are different quantities and both belong in a complete benchmark.</li>
+<li>Tail latency is the slowest single request in the batch; it is the number a user actually
+feels, and it rises as concurrency increases because each request waits its turn in the batch.</li>
+<li>Concurrency trades a little per-request latency for more total throughput: the GPU serves
+multiple sequence positions from one weight read, amortizing the memory-bandwidth cost, but
+the gain saturates once the bus is fully loaded.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module7/throughput-under-load/">
+<p><strong>Build It in Claude Code</strong>: Create <code>exercises/module7/throughput-under-load/loadbench.py</code>, a stdlib tool that fires N concurrent generations at <code>http://localhost:11434/api/generate</code> and reports aggregate tokens/second and the slowest request, with a <code>--selftest</code> mode that validates the aggregation math offline.</p>
+</div>
+
+<!-- SOURCES: https://github.com/ollama/ollama/blob/main/docs/api.md | https://github.com/ollama/ollama/blob/main/envconfig/config.go -->
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="record-the-tuning"><a class="header" href="#record-the-tuning">Record the Tuning</a></h1>
+<p>You profiled the rig, you pulled the levers; now record the before-and-after that proves it was worth it. This is the last file the book asks you to write.</p>
+<h2 id="step-1-capture-before-and-after"><a class="header" href="#step-1-capture-before-and-after">Step 1: Capture Before and After</a></h2>
+<p>The baseline comes from Module 4, single-stream, stock settings. The tuned number comes from <code>loadbench.py</code> after setting the levers. The headline lever is <code>OLLAMA_NUM_PARALLEL</code>: it raises aggregate throughput under load by letting Ollama serve multiple requests concurrently rather than queuing them.</p>
+<p>Representative figures on the RTX 4060 Ti 16GB (label representative; your numbers differ by prompt, model, and thermals):</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Condition</th><th>Aggregate tok/s</th></tr>
+</thead>
+<tbody>
+<tr><td>Baseline (Module 4, single stream)</td><td>30.0</td></tr>
+<tr><td>Tuned (num_parallel=4, flash attention, q8_0 KV cache)</td><td>64.0</td></tr>
+</tbody>
+</table>
+</div>
+<p>The 2x+ lift comes primarily from <code>OLLAMA_NUM_PARALLEL=4</code>. Flash attention and <code>OLLAMA_KV_CACHE_TYPE=q8_0</code> contribute a modest single-stream speedup and a smaller KV footprint; the parallelism setting is what moves the aggregate number.</p>
+<h2 id="step-2-the-complete-tuningmd"><a class="header" href="#step-2-the-complete-tuningmd">Step 2: The Complete TUNING.md</a></h2>
+<p>Create <code>exercises/module7/record-the-tuning/TUNING.md</code> with your own before-and-after figures. The complete file:</p>
+<pre><code class="language-markdown"># Tuning Record
+
+Before and after tuning the serving stack, with the levers applied. Read by check_tuning.py.
+
+## Baseline
+
+Aggregate tok/s: 30.0
+Source: Module 4 LATENCY.md (single stream, stock settings)
+
+## Tuned
+
+Aggregate tok/s: 64.0
+Levers: OLLAMA_NUM_PARALLEL=4, OLLAMA_FLASH_ATTENTION=1, OLLAMA_KV_CACHE_TYPE=q8_0
+
+## Levers Applied
+
+| Lever | Setting | What It Moved |
+|-------|---------|---------------|
+| OLLAMA_NUM_PARALLEL | 4 | aggregate throughput under load, 30 to 64 tok/s |
+| OLLAMA_FLASH_ATTENTION | 1 | modest single-stream speedup, lower attention memory |
+| OLLAMA_KV_CACHE_TYPE | q8_0 | smaller KV cache, room for a larger context window |
+</code></pre>
+<h2 id="step-3-ship-the-validator-3"><a class="header" href="#step-3-ship-the-validator-3">Step 3: Ship the Validator</a></h2>
+<p>Create <code>check_tuning.py</code> beside <code>TUNING.md</code> at <code>exercises/module7/record-the-tuning/check_tuning.py</code>.</p>
+<p>Here is what it enforces, in order:</p>
+<ul>
+<li>All three sections present: <code>## Baseline</code>, <code>## Tuned</code>, <code>## Levers Applied</code>.</li>
+<li>The <code>Baseline</code> section has <code>Aggregate tok/s</code> and <code>Source</code> filled.</li>
+<li>The <code>Tuned</code> section has <code>Aggregate tok/s</code> and <code>Levers</code> filled.</li>
+<li>No placeholder tokens (<code>TODO</code>, <code>TBD</code>, <code>xxx</code>, angle brackets, ellipses).</li>
+<li>The <code>## Levers Applied</code> table has at least one complete row: all three columns filled.</li>
+<li>The key gate: the tuned <code>Aggregate tok/s</code> must be at least the baseline. You keep a lever only if it improved the number; if tuning regressed throughput, the validator exits 1 and names the gap.</li>
+</ul>
+<p>The complete validator:</p>
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+check_tuning.py: validate TUNING.md for the Local Metal module-7 throughline.
+
+Usage: python check_tuning.py [path/to/TUNING.md]
+Exits 0 when the record is complete and the tuned throughput is at least the
+baseline (a proven, non-regressing change); exits 1 and names the first gap.
+"""
+
+import re
+import sys
+from pathlib import Path
+
+TUNING_PATH = Path(__file__).parent / "TUNING.md"
+
+REQUIRED_SECTIONS = ["## Baseline", "## Tuned", "## Levers Applied"]
+BASELINE_FIELDS = ["Aggregate tok/s", "Source"]
+TUNED_FIELDS = ["Aggregate tok/s", "Levers"]
+
+PLACEHOLDERS = {"TODO", "TBD", "xxx", "fill in", "&lt;", "&gt;", "..."}
+
+
+def fail(message: str) -&gt; None:
+    print(f"TUNING.md incomplete: {message}")
+    sys.exit(1)
+
+
+def load(path: Path) -&gt; str:
+    if not path.exists():
+        fail(f"{path} not found")
+    return path.read_text(encoding="utf-8")
+
+
+def check_sections(text: str) -&gt; None:
+    for section in REQUIRED_SECTIONS:
+        if section not in text:
+            fail(f'section "{section}" missing from TUNING.md')
+
+
+def check_no_placeholders(text: str) -&gt; None:
+    for token in PLACEHOLDERS:
+        if token in text:
+            fail(f'placeholder token "{token}" still present; fill in the real value')
+
+
+def extract_section(text: str, heading: str) -&gt; str:
+    match = re.search(rf"{re.escape(heading)}\n(.*?)(?=\n## |\Z)", text, re.DOTALL)
+    if not match:
+        fail(f'"{heading}" section has no content')
+    return match.group(1)
+
+
+def field_value(section_text: str, field: str, section_name: str) -&gt; str:
+    # [^\S\n] is horizontal whitespace only: it must not span the newline,
+    # or a blank field would capture the next line's value.
+    match = re.search(rf"{re.escape(field)}[^\S\n]*:[^\S\n]*([^\n]+)", section_text)
+    if not match:
+        fail(f'field "{field}" not found in {section_name}')
+    if not match.group(1).strip():
+        fail(f'field "{field}" in {section_name} is empty')
+    return match.group(1).strip()
+
+
+def parse_number(value: str):
+    match = re.search(r"([\d.]+)", value)
+    return float(match.group(1)) if match else None
+
+
+def check_levers_table(section_text: str) -&gt; None:
+    rows = []
+    for line in section_text.splitlines():
+        line = line.strip()
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if any("---" in c for c in cells):
+            continue  # separator row
+        if "Lever" in cells and "Setting" in cells:
+            continue  # header row
+        rows.append(cells)
+    if not rows:
+        fail('"## Levers Applied" has no rows; record at least one lever you changed')
+    for cells in rows:
+        if len(cells) &lt; 3 or any(not c for c in cells[:3]):
+            fail(f'lever row "{" | ".join(cells)}" needs three filled columns (Lever, Setting, What It Moved)')
+
+
+def main() -&gt; None:
+    path = Path(sys.argv[1]) if len(sys.argv) &gt; 1 else TUNING_PATH
+    text = load(path)
+    check_sections(text)
+    check_no_placeholders(text)
+    baseline = extract_section(text, "## Baseline")
+    tuned = extract_section(text, "## Tuned")
+    base_value = field_value(baseline, "Aggregate tok/s", "## Baseline")
+    field_value(baseline, "Source", "## Baseline")
+    tuned_value = field_value(tuned, "Aggregate tok/s", "## Tuned")
+    field_value(tuned, "Levers", "## Tuned")
+    check_levers_table(extract_section(text, "## Levers Applied"))
+
+    base_tps = parse_number(base_value)
+    tuned_tps = parse_number(tuned_value)
+    if base_tps is None or tuned_tps is None:
+        fail("Aggregate tok/s must be a number in both ## Baseline and ## Tuned")
+    if tuned_tps &lt; base_tps:
+        fail(f"tuned throughput {tuned_tps} is below baseline {base_tps}; "
+             "keep a lever only if it improved the number, then re-record")
+    print("TUNING.md complete")
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+<p>One regex detail worth knowing: <code>[^\S\n]</code> matches horizontal whitespace only (spaces and tabs), not newlines. A <code>field:</code> line with nothing after the colon correctly fails the non-empty check because the pattern cannot reach the next line’s content.</p>
+<h2 id="step-4-the-live-vs-expected-rule-3"><a class="header" href="#step-4-the-live-vs-expected-rule-3">Step 4: The Live-vs-Expected Rule</a></h2>
+<p>With the rig: run <code>loadbench.py</code> before and after setting the levers, and paste your real aggregate tok/s into <code>TUNING.md</code>. Without the rig: paste the representative figures above. The validator checks that the record is complete and non-regressing, not the exact values; the reference build satisfies every check.</p>
+<p>Seven modules ago this was a parts list at a counter. Now it is a documented, routed, wired, and tuned inference host, with seven portfolio files (HARDWARE.md, SETUP.md, MODELS.md, LATENCY.md, ROUTING.md, DELEGATION.md, TUNING.md) and a runnable spine from <code>ollama_client.py</code> through <code>route.py</code> to <code>mcp_server.py</code> that a reviewer can trace end to end. TUNING.md is not the capstone because it is last; it is the capstone because it forces you to name every decision and show it improved something. That is how engineers sign off a build.</p>
+<h2 id="core-concepts-27"><a class="header" href="#core-concepts-27">Core Concepts</a></h2>
+<ul>
+<li>A before-and-after record is the proof tuning worked: a number without a comparison point is a claim, not a result.</li>
+<li>The tuned-at-least-baseline gate catches regressions that feel like progress; you keep a lever only when the number it produced is better than the number you started with.</li>
+<li>Aggregate throughput, not single-stream tokens per second, is the server metric: it measures what happens when the rig has to serve real concurrent load.</li>
+<li>The seven-file portfolio (HARDWARE.md through TUNING.md) is the complete artifact: each file is validator-backed, each records a decision, and together they tell the full story of the build.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module7/record-the-tuning/">
+<p><strong>Build It in Claude Code</strong>: Create <code>exercises/module7/record-the-tuning/TUNING.md</code> with your baseline (from Module 4) and tuned aggregate throughput plus the levers you applied, then create <code>check_tuning.py</code> beside it so it exits 0 only when the record is complete and the tuned number is at least the baseline.</p>
+</div>
+
+<!-- SOURCES: https://github.com/ollama/ollama/blob/main/envconfig/config.go -->
 
                     </main>
 

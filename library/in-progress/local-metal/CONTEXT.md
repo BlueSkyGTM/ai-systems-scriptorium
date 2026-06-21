@@ -13,17 +13,18 @@ the other books are ingested.
 (the SPEC's BOM), not a machine; this book is the curriculum that takes a reader from buying the
 parts to managing a networked local-model host. It is authored from grounded sources (the SPEC +
 the aipe ore + vendor/NVIDIA + Ollama/distro docs); the reader confirms outputs on their own
-build. **Modules 1-6 shipped 2026-06-21** (`GATE-APPROVE-SHIP`): M1 "The Build" (`HARDWARE.md` +
-`check_hardware.py` + `breakeven.py`), M2 "Linux and CUDA" (`SETUP.md` + `check_setup.py` +
-`partition_plan.py`), M3 "The Model Stack" (`MODELS.md` + `check_models.py` + the runnable
-`ollama_client.py` M5/M6 seed + `stack_check.py`), M4 "Unified Memory" (`LATENCY.md` +
-`check_latency.py` + `bench.py` + `vram_fit.py`; big models split across GPU+DDR5, the latency
-baseline M7 tunes against), M5 "The Routing Layer" (`ROUTING.md` + `check_routing.py` + `route.py`,
-which wraps `ollama_client.py` as the local arm of a local-vs-cloud router), and M6 "Wire to Claude
-Code" (`mcp_server.py` MCP delegation server + `.mcp.json` + `DELEGATION.md` + `check_delegation.py`;
-the runnable spine ollama_client.py -> route.py -> mcp_server.py). See
-`build-log/local-metal/build-progress.md`. Next: M7 (Perf and Tuning), the final module, via the
-pipeline.
+build. **ALL 7 MODULES SHIPPED 2026-06-21 — the book is content-complete** (`GATE-APPROVE-SHIP`
+cleared per module): M1 "The Build" (`HARDWARE.md` + `check_hardware.py` + `breakeven.py`), M2 "Linux
+and CUDA" (`SETUP.md` + `check_setup.py` + `partition_plan.py`), M3 "The Model Stack" (`MODELS.md` +
+`check_models.py` + the runnable `ollama_client.py` seed + `stack_check.py`), M4 "Unified Memory"
+(`LATENCY.md` + `check_latency.py` + `bench.py` + `vram_fit.py`), M5 "The Routing Layer" (`ROUTING.md`
++ `check_routing.py` + `route.py`), M6 "Wire to Claude Code" (`mcp_server.py` + `.mcp.json` +
+`DELEGATION.md` + `check_delegation.py`), and M7 "Perf and Tuning" (`TUNING.md` + `check_tuning.py` +
+`loadbench.py`). 35 lessons + 28 exercises; 7 portfolio documents (HARDWARE/SETUP/MODELS/LATENCY/
+ROUTING/DELEGATION/TUNING.md) + the runnable spine `ollama_client.py` -> `route.py` -> `mcp_server.py`;
+`mdbook build` clean; zero em-dashes book-wide; every code artifact tested. See
+`build-log/local-metal/build-progress.md`. **Next: the cataloguing move to `library/completed/`
+(no gate) once Ray confirms content-complete; public copy is the separate `GATE-PUBLISH`.**
 
 ## Ore (primary source + vault depth)
 

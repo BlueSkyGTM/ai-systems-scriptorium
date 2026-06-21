@@ -61,3 +61,13 @@
 - [Build the MCP Server](module6/build-the-mcp-server.md)
 - [Register with Claude Code](module6/register-with-claude-code.md)
 - [Log the Delegation](module6/log-the-delegation.md)
+
+---
+
+# Module 7: Perf and Tuning
+
+- [Overview](module7/00-overview.md)
+- [Where the Time Goes](module7/where-the-time-goes.md)
+- [The Tuning Levers](module7/the-tuning-levers.md)
+- [Throughput Under Load](module7/throughput-under-load.md)
+- [Record the Tuning](module7/record-the-tuning.md)
