@@ -41,3 +41,13 @@
 - [Quantization Tradeoffs](module4/quantization-tradeoffs.md)
 - [Measure Latency](module4/measure-latency.md)
 - [Record the Baseline](module4/record-the-baseline.md)
+
+---
+
+# Module 5: The Routing Layer
+
+- [Overview](module5/00-overview.md)
+- [The Routing Decision](module5/the-routing-decision.md)
+- [Signals and Thresholds](module5/signals-and-thresholds.md)
+- [Build the Router](module5/build-the-router.md)
+- [Record the Policy](module5/record-the-policy.md)

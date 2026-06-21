@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-0793ab71.js";
+            window.path_to_searchindex_js = "searchindex-1bfabdbd.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-58d72f42.js"></script>
+        <script src="toc-8f379981.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -2022,6 +2022,531 @@ SETUP.md, and MODELS.md as a validator-backed artifact anyone reading the repo c
 </div>
 
 <!-- SOURCES: https://github.com/ollama/ollama/blob/main/docs/api.md | https://modelfit.io/gpu/rtx-4060-ti/ -->
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-5-the-routing-layer"><a class="header" href="#module-5-the-routing-layer">Module 5: The Routing Layer</a></h1>
+<p>The rig can now serve a model and you can measure what that costs. What you do not have yet is a
+reason to reach for it. A local model that you remember to use sometimes is a toy; a local model that
+your tooling reaches for automatically, on the right requests, is infrastructure. This module builds
+the piece that makes the choice: a router.</p>
+<p>The decision is not “local or cloud, pick one forever.” It is per request. Some work is a perfect fit
+for the rig: short prompts, routine edits, anything you would rather not send off your machine, the
+high-volume drudgery where the cloud bill adds up. Other work is not: a refactor that needs 200,000
+tokens of context the local model cannot hold, a one-off hard problem where you want the best answer
+regardless of cost. A router reads a few signals off each request and sends it to the side that fits.</p>
+<p>Those signals are the substance of the module. Cost: local inference is amortized hardware, near zero
+per token, while cloud is metered. Latency budget: the local model is slower, which is fine for a
+background job and wrong for an interactive one. Context size: the request either fits the local
+model’s window or it does not. Sensitivity: some data should not leave the machine. You will turn
+those four into a written policy with concrete thresholds, justified against the latency baseline you
+measured in Module 4.</p>
+<p>Then you build <code>route.py</code>. Its core is a pure function: hand it a request, it returns a decision and
+the reason for it. That core runs and self-tests with no rig and no cloud key, because a routing
+policy is logic, not a network call. The live path is where the compounding pays off: when the
+decision is “local,” <code>route.py</code> calls the <code>ollama_client.py</code> you built in Module 3. The client you
+wrote three modules ago becomes the local arm of a hybrid system.</p>
+<p>You leave this module with a fifth file in the portfolio repository: <code>ROUTING.md</code>, the policy that
+says, in writing, which work goes where and why. The metal, the runtime, the stack, and its speed were
+documented in the first four modules; now the decision layer on top of them is too. Module 6 takes the
+last step, wiring this router into Claude Code so the delegation happens without you thinking about it.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-routing-decision"><a class="header" href="#the-routing-decision">The Routing Decision</a></h1>
+<p>The rig only pays off when something decides when to use it. That decision is not made once and left alone; it is made per request, and it is made from a short list of signals you can read before any model sees the prompt.</p>
+<h2 id="step-1-cost-is-the-motivation"><a class="header" href="#step-1-cost-is-the-motivation">Step 1: Cost Is the Motivation</a></h2>
+<p>Local inference has an amortized cost structure. You spent money on the card; the per-token cost after that is electricity, which rounds to near zero at home inference volumes. Cloud inference is metered: every token you send costs a fraction of a cent, and routine high-volume work compounds that into a real line item.</p>
+<p>That asymmetry is why a router exists at all. Work that is high-volume, repetitive, and well-defined belongs on the rig you already paid for. Work that is rare, large, or where the best possible answer justifies the price belongs on a frontier model you pay per call. The router is the mechanism that enforces this split automatically rather than leaving it to memory.</p>
+<h2 id="step-2-the-per-request-signals"><a class="header" href="#step-2-the-per-request-signals">Step 2: The Per-Request Signals</a></h2>
+<p>Every request carries four signals. You read them before routing, not after.</p>
+<p><strong>Context size</strong> is the closest thing to a hard rule. A 14B model on a 16 GB card holds roughly 4K to 8K tokens of context comfortably: the KV cache grows with context length and competes with the model weights for the same VRAM, so long contexts shrink the headroom fast. Frontier models operate in a different class entirely; Claude models support 200K tokens, with some configurations reaching 1M. A request that exceeds the local model’s window is not a latency question or a quality question, it is a fit question, and the answer is always cloud.</p>
+<p><strong>Latency budget</strong> points in both directions. The local model is slower, a fact you measured in Module 4. A background job or batch run tolerates that; a tight interactive loop, a streaming response the user is watching form, may not. But the local model also has no network round-trip, which means small fast jobs can actually land faster locally when the cloud overhead dominates. Read the budget for the request in front of you, not for the average request.</p>
+<p><strong>Task stakes</strong> separate routine from consequential. Short edits, classification, reformatting, boilerplate generation: these are well-defined tasks with clear right answers, and a good local model handles them reliably. Open-ended reasoning, architecture decisions, one-shot deliverables you will ship on: these are cases where you want the best answer available regardless of what it costs. Escalate when the consequence of a weak answer is high.</p>
+<p><strong>Sensitivity</strong> is different from the other three. Cost, latency, and stakes are signals about the request itself; sensitivity is a rule you choose to encode. On your own rig, private data can stay on the machine as a hard constraint. If a prompt contains credentials, personal identifiers, or anything you would not paste into a browser, you can route it local even when another signal would otherwise send it to the cloud. This is a local-first benefit you enforce by policy, not an industry-standard routing lever. The sources on routing architecture emphasize cost, latency, context size, and task complexity as the standard signals; sensitivity is the one you add because you own the machine.</p>
+<h2 id="step-3-which-way-each-signal-points"><a class="header" href="#step-3-which-way-each-signal-points">Step 3: Which Way Each Signal Points</a></h2>
+<p>The defaults are simple. Route local when the request fits the local window, is cost-sensitive, latency-tolerant, or sensitivity-flagged. Escalate to cloud when the context exceeds the local window, or when the task is high-stakes enough that quality outweighs cost.</p>
+<p>Sensitivity overrides toward local even when other signals point the other way. A prompt that is both private and large is a harder call, and the next lesson asks you to write that conflict down explicitly before you write any code.</p>
+<p>The four signals in order of firmness: context size is a binary fit-or-no-fit gate; sensitivity is a hard local override when you choose to enforce it; latency and stakes are the sliding scale in between, where “routine” routes local and “consequential” escalates. Most requests settle quickly; the interesting ones sit at the edges, and naming the deciding signal in writing is how you debug a routing policy later.</p>
+<p>When you can route any request by naming the signal that decided it, the next step is encoding those signals as thresholds rather than judgment calls.</p>
+<h2 id="core-concepts-16"><a class="header" href="#core-concepts-16">Core Concepts</a></h2>
+<ul>
+<li>Local inference is amortized hardware cost, near zero per token after purchase; cloud is metered per token; that asymmetry is the reason a router exists.</li>
+<li>Context size is a binary gate: a request either fits the local model’s window (roughly 4K to 8K tokens on a 16 GB card) or it does not, and a request that does not fit escalates regardless of other signals.</li>
+<li>Latency budget and task stakes are the sliding-scale signals: latency-tolerant or routine work routes local; tight interactive loops or high-consequence one-offs escalate.</li>
+<li>Sensitivity is a rule you choose to encode, not a standard routing signal: on your own rig, private data staying on the machine is a local-first policy you enforce, and it overrides other signals toward local.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module5/the-routing-decision/">
+<p><strong>Build It in Claude Code</strong>: Take five example requests and route each one to local or cloud, writing the deciding signal (context size, latency budget, stakes, or sensitivity) and a one-line reason for each.</p>
+</div>
+
+<!-- SOURCES: https://docs.litellm.ai/docs/routing | https://www.mindstudio.ai/blog/hybrid-ai-architecture-local-models-cloud-frontier | https://pooya.blog/blog/local-ai-ollama-benchmarks-cost-2026/ | https://docs.ollama.com/faq | https://platform.claude.com/docs/en/docs/build-with-claude/context-windows | https://platform.claude.com/docs/en/docs/about-claude/pricing -->
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="signals-and-thresholds"><a class="header" href="#signals-and-thresholds">Signals and Thresholds</a></h1>
+<p>A routing decision you keep in your head is not a policy. A policy is written down, with
+numbers you can point to and a rule that applies them. This lesson writes it.</p>
+<h2 id="step-1-pick-the-thresholds"><a class="header" href="#step-1-pick-the-thresholds">Step 1: Pick the Thresholds</a></h2>
+<p>You have four signals from the module overview. Each one needs a concrete cut: not “large
+context” but a token count, not “slow” but a millisecond budget. Here is the cut for each,
+and the reason behind each number.</p>
+<p><strong>Context size.</strong> The local 14B model holds roughly 4K to 8K tokens comfortably on a 16 GB
+card. Ollama defaults <code>num_ctx</code> to 2048 or 4096 depending on the version; as context grows,
+the KV cache grows with it and competes with the model weights for VRAM. Set the local
+context limit at 8192 tokens. Over that, the request escalates to cloud. A frontier model
+like Claude reaches 200K to 1M tokens, so the escalation covers everything the local model
+cannot hold.</p>
+<p><strong>Latency budget.</strong> Tie this to your Module 4 baseline. The on-card 14B runs around 30
+tokens per second with a time-to-first-token under 250 ms. A model that has spilled into
+system RAM crawls, and a split model across two machines adds a network round-trip on top.
+Set a latency budget of 2000 ms: any request tagged as interactive that still fits the local
+context window goes local, because local avoids the network round-trip entirely.</p>
+<p><strong>Sensitivity.</strong> Private data stays on the machine. This is not a soft preference; it is a
+hard local rule you enforce as an override. If a request carries data you would not send to
+a third party, the target is local regardless of context size or stakes.</p>
+<p><strong>Stakes.</strong> Some requests are one-offs where you want the best answer regardless of cost: a
+tricky architectural decision, a document going to a client, a prompt you will run once.
+Route these to cloud and pay the metered cost. Local inference is amortized, near zero per
+token; cloud inference is metered per token. The economics favor local for high-volume
+routine work and favor cloud for high-stakes one-offs.</p>
+<h2 id="step-2-write-routingmd"><a class="header" href="#step-2-write-routingmd">Step 2: Write ROUTING.md</a></h2>
+<p>Create the policy file at <code>exercises/module5/signals-and-thresholds/ROUTING.md</code> using
+exactly this template:</p>
+<pre><code class="language-markdown"># Routing Policy
+
+How requests are routed between the local rig and the cloud. Read by check_routing.py.
+
+## Signals
+
+| Signal | Threshold | Routes To |
+|--------|-----------|-----------|
+| Context size | over 8192 tokens | cloud |
+| Latency budget | under 2000 ms, fits local | local |
+| Sensitivity | private / on-machine | local |
+| Stakes | high-stakes one-off | cloud |
+
+## Targets
+
+Local model: qwen2.5-coder:14b (8K practical context)
+Cloud model: claude (frontier, 1M-token context)
+
+## Policy
+
+Route to local when the request fits the local context window and is cost-sensitive,
+latency-tolerant, or privacy-sensitive. Escalate to cloud when the context exceeds the local
+window or the task is high-stakes and wants the best answer regardless of cost. Sensitive data
+never leaves the machine.
+</code></pre>
+<p>The file has three sections. <code>## Signals</code> is the table: one row per signal, one threshold,
+one target. <code>## Targets</code> names the two endpoints by their actual identifiers, not abstract
+labels. <code>## Policy</code> is the prose rule that ties the table together: it is the readable
+version of the decision logic, the thing you would explain to a colleague.</p>
+<h2 id="step-3-justify-against-the-data"><a class="header" href="#step-3-justify-against-the-data">Step 3: Justify Against the Data</a></h2>
+<p>None of these thresholds are guesses. The 8192 token limit comes from the VRAM-vs-context
+tradeoff you saw in Module 4: on a 16 GB card at Q4_K_M, the KV cache starts to crowd the
+model above that window size. The 2000 ms latency budget comes from the 30 tok/s baseline
+you measured; at that speed the first token arrives in under 250 ms and a short response
+completes well within the budget. The cloud escalation comes from the frontier context window,
+published at 200K to 1M tokens, which is why the escalation is not “somewhat larger context”
+but “context the local model cannot hold at all.”</p>
+<p>A policy is defensible when each number traces to a measurement. This one does.</p>
+<p>The next lesson turns this written policy into a function: the same four signals, the same
+thresholds, but expressed in Python so the routing happens without you.</p>
+<h2 id="core-concepts-17"><a class="header" href="#core-concepts-17">Core Concepts</a></h2>
+<ul>
+<li>A routing policy is thresholds written down; a threshold kept only in your head cannot be
+tested, shared, or enforced.</li>
+<li>Each threshold in ROUTING.md traces to a measurement, not a guess: context limit to VRAM
+headroom, latency budget to tok/s baseline, cloud escalation to frontier context window.</li>
+<li>ROUTING.md has three sections: Signals (the decision table), Targets (the named endpoints),
+and Policy (the prose rule that ties them together).</li>
+<li>Sensitivity is an override, not a row to weigh against others: private data never leaves
+the machine regardless of context size or stakes.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module5/signals-and-thresholds/">
+<p><strong>Build It in Claude Code</strong>: Create <code>exercises/module5/signals-and-thresholds/ROUTING.md</code> with a <code>## Signals</code> table, a <code>## Targets</code> section naming your local and cloud models, and a <code>## Policy</code> paragraph; set each threshold from your own card’s limits and your Module 4 latency baseline.</p>
+</div>
+
+<!-- SOURCES: https://docs.ollama.com/faq | https://platform.claude.com/docs/en/docs/build-with-claude/context-windows | https://docs.litellm.ai/docs/routing | https://pooya.blog/blog/local-ai-ollama-benchmarks-cost-2026/ -->
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="build-the-router"><a class="header" href="#build-the-router">Build the Router</a></h1>
+<p>You wrote the routing policy in prose. Now make it executable. The key design choice is this: the
+routing decision is pure logic, so it tests with no rig and no cloud key; only the live path
+touches the network.</p>
+<h2 id="pure-policy-testable-core"><a class="header" href="#pure-policy-testable-core">Pure Policy, Testable Core</a></h2>
+<p>The entry point is <code>route(request)</code>. It takes a small <code>Request</code> dataclass carrying four signals,
+the same four the policy in <code>ROUTING.md</code> names: <code>prompt_tokens</code>, <code>latency_budget_ms</code>, <code>sensitive</code>,
+and <code>high_stakes</code>. It returns a <code>Decision</code>: a target (<code>"local"</code> or <code>"cloud"</code>) plus the reason the
+policy chose it.</p>
+<p>Because <code>route()</code> has no side effects and no network calls, <code>--selftest</code> can assert its decisions
+on a fixed set of requests without anything running. The test does not start Ollama, does not reach
+a cloud endpoint, and does not need your hardware. This is the same offline-core pattern as the
+Module 3 client and the Module 4 benchmark: the pure function is the machine-checkable done-when,
+and the live path is layered on top.</p>
+<h2 id="the-compounding-payoff"><a class="header" href="#the-compounding-payoff">The Compounding Payoff</a></h2>
+<p>The live path (<code>--run</code>) routes a prompt and, when the decision comes back <code>"local"</code>, calls
+<code>call()</code> from the <code>ollama_client.py</code> you built in Module 3. That is not a coincidence in the
+design. The client you built two modules ago is now the local arm of a hybrid system; the work
+compounds exactly as the Module 3 ending said it would.</p>
+<p>The cloud arm in <code>route.py</code> is a stub. It prints a placeholder and exits cleanly. You wire your
+own cloud provider there when you need it; you do not need a cloud key to complete this module, and
+the <code>--selftest</code> path does not care either way.</p>
+<h2 id="build-it"><a class="header" href="#build-it">Build It</a></h2>
+<p>Create <code>exercises/module5/build-the-router/route.py</code> with this exact code:</p>
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+route.py: decide whether a request runs on the local rig or escalates to the cloud.
+
+The core is a pure policy function, route(request) -&gt; Decision, that reads four
+signals off a request and returns a target ("local" or "cloud") plus the reason.
+The live path (--run) calls ollama_client.call() when the decision is local; the
+cloud arm is a stub you wire to your own provider.
+
+Usage:
+  python route.py --selftest          # offline: assert the policy on a fixed request set
+  python route.py --run "a prompt"    # live (local arm): route, and if local, call Ollama
+"""
+
+import argparse
+import sys
+from dataclasses import dataclass, field
+
+# --- Policy thresholds (recorded in ROUTING.md; edit to match your rig) ---
+LOCAL_CONTEXT_LIMIT = 8192          # tokens the local model can hold comfortably
+LATENCY_BUDGET_MS = 2000            # below this, the request is "interactive" and wants speed
+LOCAL_MODEL = "qwen2.5-coder:14b"
+CLOUD_MODEL = "claude (frontier)"
+
+
+@dataclass
+class Request:
+    prompt_tokens: int = 0          # estimated context size in tokens
+    latency_budget_ms: int = 10_000  # how long the caller will wait
+    sensitive: bool = False         # must the data stay on the machine?
+    high_stakes: bool = False       # does the caller want the best answer regardless of cost?
+
+
+@dataclass
+class Decision:
+    target: str                     # "local" or "cloud"
+    reason: str
+
+
+def route(request):
+    """Pure routing policy: signals in, a decision out. No network, no side effects."""
+    # Sensitivity wins: private data never leaves the machine.
+    if request.sensitive:
+        if request.prompt_tokens &gt; LOCAL_CONTEXT_LIMIT:
+            return Decision("local", "sensitive data stays local even though context is large; chunk it")
+        return Decision("local", "sensitive data must stay on the machine")
+    # Context that does not fit the local window must escalate.
+    if request.prompt_tokens &gt; LOCAL_CONTEXT_LIMIT:
+        return Decision("cloud", f"context {request.prompt_tokens} tokens exceeds local limit {LOCAL_CONTEXT_LIMIT}")
+    # High-stakes one-offs go to the frontier model.
+    if request.high_stakes:
+        return Decision("cloud", "high-stakes request wants the best answer regardless of cost")
+    # Everything else fits the local window and is cheap and private: keep it local.
+    return Decision("local", "routine request fits the local window and is cost-sensitive")
+
+
+def selftest():
+    """Assert the policy on a fixed set of requests. No rig, no cloud key."""
+    cases = [
+        (Request(prompt_tokens=500), "local"),
+        (Request(prompt_tokens=200_000), "cloud"),
+        (Request(prompt_tokens=500, high_stakes=True), "cloud"),
+        (Request(prompt_tokens=500, sensitive=True), "local"),
+        (Request(prompt_tokens=200_000, sensitive=True), "local"),
+    ]
+    for request, expected in cases:
+        decision = route(request)
+        assert decision.target == expected, (
+            f"expected {expected} for {request}, got {decision.target} ({decision.reason})"
+        )
+        assert decision.reason, "every decision must carry a reason"
+    print(f"selftest passed: {len(cases)} routing decisions correct")
+    return 0
+
+
+def run(prompt):
+    """Live local arm: route a simple request and, if local, call Ollama."""
+    request = Request(prompt_tokens=max(1, len(prompt) // 4))  # rough token estimate
+    decision = route(request)
+    print(f"route: {decision.target} ({decision.reason})")
+    if decision.target == "local":
+        try:
+            from ollama_client import call  # the M3 client, the local arm of the router
+        except ImportError:
+            print("local arm needs ollama_client.py on the path (Module 3)", file=sys.stderr)
+            return 1
+        print(call(prompt, model=LOCAL_MODEL))
+    else:
+        print(f"(escalate to {CLOUD_MODEL}: wire your cloud provider here)")
+    return 0
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Route a request between local and cloud.")
+    parser.add_argument("--selftest", action="store_true", help="assert the policy offline")
+    parser.add_argument("--run", metavar="PROMPT", help="route a prompt and run the local arm")
+    args = parser.parse_args()
+    if args.selftest:
+        sys.exit(selftest())
+    if args.run:
+        sys.exit(run(args.run))
+    parser.error("use --selftest or --run")
+
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+<p>Walk the pieces before you run them.</p>
+<p>The four threshold constants at the top mirror <code>ROUTING.md</code>: if you tune your thresholds in the
+policy document, change them here too. <code>LOCAL_CONTEXT_LIMIT</code> is the token count your local model
+handles without degrading; 8,192 is a conservative floor for a 14B model, not the architectural
+maximum.</p>
+<p><code>Request</code> and <code>Decision</code> are plain dataclasses with no magic. The four fields on <code>Request</code> are
+exactly the four signals the module overview names; the two fields on <code>Decision</code> enforce that every
+routing outcome carries a justification, not just a label.</p>
+<p>The <code>route()</code> function reads the signals in a deliberate order. Sensitivity comes first because it
+is the only signal that acts as an override: if the data must stay on the machine, it stays on the
+machine, regardless of context size or stakes. After that, context fit is checked, because a
+request that does not fit the local window has no local option. High-stakes comes last among the
+escalation conditions; everything that clears all three checks goes local by default.</p>
+<p><code>selftest()</code> covers five fixed cases. Two confirm the default paths (small routine goes local,
+huge context goes cloud). Two confirm the override properties (high-stakes escalates, sensitive
+always stays local). The fifth case is the interesting one: a sensitive request that is also over
+the context limit still goes local, because sensitivity beats context size in the ordering. Read
+that case before you run it; it captures the design intent of the priority order.</p>
+<p><code>run()</code> estimates prompt tokens by dividing character count by four, a rough but consistent
+heuristic. When the decision is local, it imports <code>call</code> from <code>ollama_client</code>. The import is
+deferred inside the function deliberately: <code>--selftest</code> works even when <code>ollama_client.py</code> is
+nowhere on the path, because the import is never reached.</p>
+<h2 id="run-it-2"><a class="header" href="#run-it-2">Run It</a></h2>
+<p>With no rig and no key, run the selftest:</p>
+<pre><code class="language-bash">python route.py --selftest
+</code></pre>
+<p>What you should see:</p>
+<pre><code>selftest passed: 5 routing decisions correct
+</code></pre>
+<p>With the rig running and <code>ollama_client.py</code> from Module 3 on the path:</p>
+<pre><code class="language-bash">python route.py --run "reformat this function"
+</code></pre>
+<p>What you should see (the reply text varies; the shape does not):</p>
+<pre><code>route: local (routine request fits the local window and is cost-sensitive)
+Here's the reformatted function with consistent spacing and cleaner structure:
+...
+</code></pre>
+<p>The route line prints before the network call completes. If the import fails, the error message
+tells you exactly what is missing. If the route decision surprises you, check whether
+<code>LOCAL_CONTEXT_LIMIT</code> in <code>route.py</code> matches the value in <code>ROUTING.md</code>.</p>
+<p>The next lesson records and gates the policy: it takes the thresholds you just made executable and
+writes them into a decision log that Module 6 reads when it decides whether to intervene.</p>
+<h2 id="core-concepts-18"><a class="header" href="#core-concepts-18">Core Concepts</a></h2>
+<ul>
+<li>A routing policy is pure logic and should be testable as such: <code>route(request)</code> takes signals
+and returns a decision with no network calls, so the selftest runs anywhere with no rig.</li>
+<li>The offline selftest is the machine-checkable done-when: if <code>--selftest</code> exits 0, the policy
+is correct by construction, regardless of what the live path does.</li>
+<li>The live path reuses <code>ollama_client.py</code> directly, so the Module 3 work compounds: the client
+you built then is now the local arm of a hybrid routing system.</li>
+<li>Sensitivity-first ordering encodes the override: the policy checks <code>sensitive</code> before context
+size or stakes, because keeping data on the machine is a constraint, not a preference.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module5/build-the-router/">
+<p><strong>Build It in Claude Code</strong>: Create <code>exercises/module5/build-the-router/route.py</code>, a stdlib-only router whose pure <code>route(request)</code> function decides local vs cloud from the request signals, with a <code>--selftest</code> mode that asserts the decisions offline and a <code>--run</code> path that calls your Module 3 <code>ollama_client.py</code> for the local arm.</p>
+</div>
+
+<!-- SOURCES: https://docs.litellm.ai/docs/routing | https://docs.ollama.com/api/openai-compatibility -->
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="record-the-policy"><a class="header" href="#record-the-policy">Record the Policy</a></h1>
+<p>You wrote the policy and built the router. Now make the policy a checked artifact. The module
+closes the way Modules 3 and 4 did: gate the record with a validator that will not let it go
+stale, and the module’s done-when is the validator passing.</p>
+<h2 id="step-1-the-complete-routingmd"><a class="header" href="#step-1-the-complete-routingmd">Step 1: The Complete ROUTING.md</a></h2>
+<p>Before running the validator, confirm your file matches the reference exactly. The lesson on
+signals and thresholds created this file; this lesson does not change it. It only gates it.</p>
+<p>The complete <code>exercises/module5/signals-and-thresholds/ROUTING.md</code>:</p>
+<pre><code class="language-markdown"># Routing Policy
+
+How requests are routed between the local rig and the cloud. Read by check_routing.py.
+
+## Signals
+
+| Signal | Threshold | Routes To |
+|--------|-----------|-----------|
+| Context size | over 8192 tokens | cloud |
+| Latency budget | under 2000 ms, fits local | local |
+| Sensitivity | private / on-machine | local |
+| Stakes | high-stakes one-off | cloud |
+
+## Targets
+
+Local model: qwen2.5-coder:14b (8K practical context)
+Cloud model: claude (frontier, 1M-token context)
+
+## Policy
+
+Route to local when the request fits the local context window and is cost-sensitive,
+latency-tolerant, or privacy-sensitive. Escalate to cloud when the context exceeds the local
+window or the task is high-stakes and wants the best answer regardless of cost. Sensitive data
+never leaves the machine.
+</code></pre>
+<p>Check your copy against this line by line before moving on. The validator is unforgiving about
+missing sections and placeholder text.</p>
+<h2 id="step-2-ship-the-validator"><a class="header" href="#step-2-ship-the-validator">Step 2: Ship the Validator</a></h2>
+<p>Create <code>check_routing.py</code> beside <code>ROUTING.md</code> at
+<code>exercises/module5/signals-and-thresholds/check_routing.py</code>.</p>
+<p>Here is what it enforces, in order:</p>
+<ul>
+<li>All three sections present: <code>## Signals</code>, <code>## Targets</code>, <code>## Policy</code>.</li>
+<li>No placeholder tokens, including angle brackets. The thresholds are written with the words
+“over” and “under” rather than the <code>&lt;</code> and <code>&gt;</code> symbols precisely because the validator treats
+those symbols as unfilled placeholders. A policy with <code>&lt; 2000 ms</code> in it would fail; “under 2000
+ms” passes.</li>
+<li>The Signals table has at least three rows, each with all three cells filled: Signal, Threshold,
+and Routes To.</li>
+<li>The Targets section names both a local model and a cloud model, each with a non-empty value on
+the same line as the field name.</li>
+<li>The Policy section holds a real written policy of at least 40 characters, not a stub.</li>
+</ul>
+<p>The complete validator:</p>
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+check_routing.py: validate ROUTING.md for the Local Metal module-5 throughline.
+
+Usage: python check_routing.py [path/to/ROUTING.md]
+Exits 0 when the policy is complete (signals with thresholds, targets, a written
+policy); exits 1 and names the first gap found.
+"""
+
+import re
+import sys
+from pathlib import Path
+
+ROUTING_PATH = Path(__file__).parent / "ROUTING.md"
+
+REQUIRED_SECTIONS = ["## Signals", "## Targets", "## Policy"]
+TARGET_FIELDS = ["Local model", "Cloud model"]
+MIN_SIGNALS = 3
+MIN_POLICY_CHARS = 40
+
+PLACEHOLDERS = {"TODO", "TBD", "xxx", "fill in", "&lt;", "&gt;", "..."}
+
+
+def fail(message: str) -&gt; None:
+    print(f"ROUTING.md incomplete: {message}")
+    sys.exit(1)
+
+
+def load(path: Path) -&gt; str:
+    if not path.exists():
+        fail(f"{path} not found")
+    return path.read_text(encoding="utf-8")
+
+
+def check_sections(text: str) -&gt; None:
+    for section in REQUIRED_SECTIONS:
+        if section not in text:
+            fail(f'section "{section}" missing from ROUTING.md')
+
+
+def check_no_placeholders(text: str) -&gt; None:
+    for token in PLACEHOLDERS:
+        if token in text:
+            fail(f'placeholder token "{token}" still present; fill in the real value')
+
+
+def extract_section(text: str, heading: str) -&gt; str:
+    match = re.search(rf"{re.escape(heading)}\n(.*?)(?=\n## |\Z)", text, re.DOTALL)
+    if not match:
+        fail(f'"{heading}" section has no content')
+    return match.group(1)
+
+
+def check_fields(section_text: str, fields: list, section_name: str) -&gt; None:
+    for field in fields:
+        # [^\S\n] is horizontal whitespace only: it must not span the newline,
+        # or a blank field would capture the next line's value.
+        match = re.search(rf"{re.escape(field)}[^\S\n]*:[^\S\n]*([^\n]+)", section_text)
+        if not match:
+            fail(f'field "{field}" not found in {section_name}')
+        if not match.group(1).strip():
+            fail(f'field "{field}" in {section_name} is empty')
+
+
+def check_signals_table(section_text: str) -&gt; None:
+    rows = []
+    for line in section_text.splitlines():
+        line = line.strip()
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if any("---" in c for c in cells):
+            continue  # separator row
+        if "Signal" in cells and "Routes To" in cells:
+            continue  # header row
+        rows.append(cells)
+    if len(rows) &lt; MIN_SIGNALS:
+        fail(f'"## Signals" needs at least {MIN_SIGNALS} signal rows; found {len(rows)}')
+    for cells in rows:
+        if len(cells) &lt; 3:
+            fail(f'signal row "{" | ".join(cells)}" needs three columns (Signal, Threshold, Routes To)')
+        if any(not c for c in cells[:3]):
+            fail(f'signal row "{" | ".join(cells)}" has an empty cell; every signal needs a threshold and a target')
+
+
+def check_policy(section_text: str) -&gt; None:
+    if len(section_text.strip()) &lt; MIN_POLICY_CHARS:
+        fail("the \"## Policy\" section needs a written policy, not a stub")
+
+
+def main() -&gt; None:
+    path = Path(sys.argv[1]) if len(sys.argv) &gt; 1 else ROUTING_PATH
+    text = load(path)
+    check_sections(text)
+    check_no_placeholders(text)
+    check_signals_table(extract_section(text, "## Signals"))
+    check_fields(extract_section(text, "## Targets"), TARGET_FIELDS, "## Targets")
+    check_policy(extract_section(text, "## Policy"))
+    print("ROUTING.md complete")
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+<p>One regex detail worth knowing: <code>[^\S\n]</code> matches horizontal whitespace only (spaces and tabs).
+It does not span the newline. A field line with nothing after the colon correctly fails the
+non-empty check because the pattern cannot reach the next line’s content.</p>
+<h2 id="step-3-the-live-vs-expected-rule"><a class="header" href="#step-3-the-live-vs-expected-rule">Step 3: The Live-vs-Expected Rule</a></h2>
+<p>The validator checks that the policy is complete and well-formed, not that its thresholds are
+“right” for your rig. The 8192-token context limit and the 2000 ms latency budget reflect the
+reference card; tune them to your own hardware and keep the structure. What the validator holds
+constant is the three-section contract: signals with thresholds, named targets, a written
+rationale. It passes against the reference policy above.</p>
+<p>Run it to confirm:</p>
+<pre><code class="language-bash">python exercises/module5/signals-and-thresholds/check_routing.py
+</code></pre>
+<p>You should see <code>ROUTING.md complete</code> and exit 0. Then test the gate: temporarily delete a signal
+row so only two remain and run the validator again. It exits 1 and names the shortfall. Restore
+the row before continuing.</p>
+<p>Five portfolio files now describe the metal, the runtime, the stack, the speed, and the decision
+layer. <code>route.py</code> is built and waiting. Module 6 wires it into Claude Code, and the delegation
+starts happening without you thinking about it.</p>
+<h2 id="core-concepts-19"><a class="header" href="#core-concepts-19">Core Concepts</a></h2>
+<ul>
+<li>A policy is a portfolio artifact only when a validator can confirm it is complete: the file
+alone is prose, the file plus the passing validator is a checked record.</li>
+<li>The three-section contract enforces structure: signals declare the triggers, targets name the
+endpoints, and the policy states the rationale in plain language.</li>
+<li>Thresholds are written with words rather than angle-bracket symbols because the validator treats
+<code>&lt;</code> and <code>&gt;</code> as unfilled placeholder tokens; a policy that uses the words “over” and “under”
+passes; one that uses the comparison symbols does not.</li>
+<li>The routing layer completes the hybrid system: local for what fits the window, is
+cost-sensitive, or is private; cloud for what exceeds it or demands the best answer regardless
+of cost.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module5/record-the-policy/">
+<p><strong>Build It in Claude Code</strong>: Create <code>check_routing.py</code> beside your <code>ROUTING.md</code> so it exits 0 only when all three sections are present, the Signals table has at least three complete rows, the Targets name a local and a cloud model, and the Policy section holds a real written policy.</p>
+</div>
+
+<!-- SOURCES: https://docs.litellm.ai/docs/routing -->
 
                     </main>
 

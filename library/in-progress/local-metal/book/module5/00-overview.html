@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>A 14B Model on the Card - Local Metal — Build and Network Your Own AI Inference Server</title>
+        <title>Overview - Local Metal — Build and Network Your Own AI Inference Server</title>
 
 
         <!-- Custom HTML head -->
@@ -177,120 +177,41 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="a-14b-model-on-the-card"><a class="header" href="#a-14b-model-on-the-card">A 14B Model on the Card</a></h1>
-<p>The runtime is installed and listening. The question now is whether the first model you pull
-will actually serve fast, or whether it will quietly overflow into system RAM and crawl.</p>
-<h2 id="step-1-pull-the-model"><a class="header" href="#step-1-pull-the-model">Step 1: Pull the Model</a></h2>
-<p>Pull the default coding model for this build:</p>
-<pre><code class="language-bash">ollama pull qwen2.5-coder:14b
-</code></pre>
-<p>Ollama downloads the GGUF file, which is 9.0 GB on disk at the default tag. Confirm it arrived:</p>
-<pre><code class="language-bash">ollama list
-</code></pre>
-<p>What you should see:</p>
-<pre><code>NAME                      ID              SIZE    MODIFIED
-qwen2.5-coder:14b         ...             9.0 GB  a few seconds ago
-</code></pre>
-<p>The SIZE column is disk size, not VRAM cost. That distinction matters: the two numbers are not
-the same, and mixing them up is how a model ends up spilling.</p>
-<h2 id="step-2-read-the-tag"><a class="header" href="#step-2-read-the-tag">Step 2: Read the Tag</a></h2>
-<p>The default tag Ollama pulls is <code>Q4_K_M</code>. That string encodes the quantization scheme used to
-compress the model weights. The short reading: <code>Q4</code> means four-bit weight quantization; <code>K_M</code>
-is the variant within the GGUF “K-quant” family, where the quantizer uses block-wise scaling
-to preserve more accuracy than a flat four-bit scheme would.</p>
-<p>The published tags for <code>qwen2.5-coder:14b</code> span a range of sizes:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Tag</th><th>Approximate Size</th></tr>
-</thead>
-<tbody>
-<tr><td>Q2_K</td><td>5.8 GB</td></tr>
-<tr><td>Q3_K_M</td><td>7.3 GB</td></tr>
-<tr><td>Q4_K_M</td><td>9.0 GB</td></tr>
-<tr><td>Q8_0</td><td>16 GB</td></tr>
-<tr><td>FP16</td><td>30 GB</td></tr>
-</tbody>
-</table>
-</div>
-<p>Four-bit roughly halves the disk size versus eight-bit, because each weight takes half the bits.
-That is why <code>Q4_K_M</code> fits a 16 GB card with room to spare, while <code>Q8_0</code> would consume the
-entire card before a single token of context or any compute buffers. The deep tradeoff between
-quantization level and output quality gets its own treatment in Modules 4 and 7; here the only
-question is whether the tag fits the card.</p>
-<h2 id="step-3-understand-the-headroom"><a class="header" href="#step-3-understand-the-headroom">Step 3: Understand the Headroom</a></h2>
-<p>The 9.0 GB of weights on disk is not the VRAM cost at runtime. Loading and serving the model
-also requires a KV cache for in-context attention and compute buffers for the forward pass.
-The realistic loaded footprint for <code>qwen2.5-coder:14b</code> at Q4_K_M is roughly 10 to 12 GB,
-depending on context length. On a 16 GB card, that leaves several GB of headroom for the
-context window you will actually use.</p>
-<p>Treat any specific number here as approximate: the exact figure shifts with context length
-and Ollama version. The invariant is the inequality: weights + KV cache + buffers must
-be less than total VRAM. On a 16 GB card at Q4_K_M, they are.</p>
-<h2 id="step-4-prove-zero-overflow"><a class="header" href="#step-4-prove-zero-overflow">Step 4: Prove Zero Overflow</a></h2>
-<p>Two checks confirm the model is running entirely on the GPU.</p>
-<p>First, while the model is loaded, run:</p>
-<pre><code class="language-bash">ollama ps
-</code></pre>
-<p>What you should see:</p>
-<pre><code>NAME                 ID        SIZE    PROCESSOR    UNTIL
-qwen2.5-coder:14b   ...        ...     100% GPU     4 minutes from now
-</code></pre>
-<p>The PROCESSOR column is the verdict. <code>100% GPU</code> means the entire model is resident in VRAM.
-A reading like <code>30% CPU 70% GPU</code> means part of the model spilled into system RAM and is
-serving across the system bus, which is roughly 10 to 50 times slower per token. If you see
-a CPU split, drop to a smaller tag (for example, <code>qwen2.5-coder:7b</code>) and re-pull.</p>
-<p>Second, run:</p>
-<pre><code class="language-bash">nvidia-smi
-</code></pre>
-<p>What you should see in the Memory-Usage column while the model is loaded:</p>
-<pre><code>|  0%   52C    P0             65W / 165W  |   11254MiB / 16380MiB  |     15%      Default |
-</code></pre>
-<p>The reference build shows roughly <code>11254MiB / 16380MiB</code>: the model, its KV cache, and buffers
-together, comfortably under the 16380 MiB the card reports as usable. Your number will be close
-but not identical; any reading below about 14000 MiB leaves enough headroom for the default
-context window.</p>
-<h2 id="step-5-know-the-swap-ins"><a class="header" href="#step-5-know-the-swap-ins">Step 5: Know the Swap-ins</a></h2>
-<p><code>qwen2.5-coder:14b</code> is the default for this build because it is a current coding model with
-strong benchmark results at the Q4 size. Two alternatives swap in cleanly on a 16 GB card:</p>
-<ul>
-<li><code>codellama:13b</code> (approximately 7.4 GB at the default tag) leaves more headroom if you need
-a larger context window or want to run a second lightweight model simultaneously.</li>
-<li>The <code>deepseek-coder</code> family is worth knowing, though the naming is non-obvious: there is no
-<code>deepseek-coder:14b</code>. The closest peer is <code>deepseek-coder-v2:16b</code> at roughly 8.9 GB, similar
-VRAM cost to the Qwen model.</li>
-</ul>
-<p>Either alternative fits the card at their default tags. The reasoning that keeps a model on the
-card does not change: check the tag size, load it, read <code>ollama ps</code>, confirm <code>100% GPU</code>.</p>
-<p>Once <code>100% GPU</code> is yours, the card is doing real work at inference speed, not a throttled crawl
-that only looks like local AI. The VRAM budget you leave unspent is not waste; it is the context
-headroom that lets the model hold a full conversation.</p>
-<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
-<ul>
-<li>A quantization tag like <code>Q4_K_M</code> means four-bit K-quant weight compression; lower bit depth
-shrinks the model so it fits tighter VRAM budgets, at a quality tradeoff covered in later modules.</li>
-<li>The fits-on-card invariant is non-negotiable: weights plus KV cache plus compute buffers must
-stay below total VRAM, or every generated token pays a system-bus penalty.</li>
-<li><code>ollama ps</code> with <code>100% GPU</code> in the PROCESSOR column is the proof of zero overflow; any CPU
-fraction in that column means the model has spilled and must be replaced with a smaller tag.</li>
-<li>The VRAM footprint at runtime is larger than the on-disk size; budget roughly 10 to 12 GB of
-VRAM for a 9.0 GB Q4_K_M model, not 9.0 GB.</li>
-</ul>
-<div class="claude-handoff" data-exercise="exercises/module3/a-14b-model-on-card/">
-<p><strong>Build It in Claude Code</strong>: Create <code>exercises/module3/a-14b-model-on-card/MODELS.md</code> with the <code>## Serving Layer</code> and <code>## Models</code> sections, recording <code>qwen2.5-coder:14b</code>, its quantization, and its VRAM used against your 16 GB total. The next lesson finalizes this file and adds the validator.</p>
-</div>
-
-<!-- SOURCES: https://ollama.com/library/qwen2.5-coder:14b | https://ollama.com/library/qwen2.5-coder/tags | https://huggingface.co/bartowski/Qwen2.5-Coder-14B-Instruct-GGUF | https://github.com/ollama/ollama/issues/10445 | https://github.com/ollama/ollama/issues/9704 | https://ollama.com/library/codellama -->
+                        <h1 id="module-5-the-routing-layer"><a class="header" href="#module-5-the-routing-layer">Module 5: The Routing Layer</a></h1>
+<p>The rig can now serve a model and you can measure what that costs. What you do not have yet is a
+reason to reach for it. A local model that you remember to use sometimes is a toy; a local model that
+your tooling reaches for automatically, on the right requests, is infrastructure. This module builds
+the piece that makes the choice: a router.</p>
+<p>The decision is not “local or cloud, pick one forever.” It is per request. Some work is a perfect fit
+for the rig: short prompts, routine edits, anything you would rather not send off your machine, the
+high-volume drudgery where the cloud bill adds up. Other work is not: a refactor that needs 200,000
+tokens of context the local model cannot hold, a one-off hard problem where you want the best answer
+regardless of cost. A router reads a few signals off each request and sends it to the side that fits.</p>
+<p>Those signals are the substance of the module. Cost: local inference is amortized hardware, near zero
+per token, while cloud is metered. Latency budget: the local model is slower, which is fine for a
+background job and wrong for an interactive one. Context size: the request either fits the local
+model’s window or it does not. Sensitivity: some data should not leave the machine. You will turn
+those four into a written policy with concrete thresholds, justified against the latency baseline you
+measured in Module 4.</p>
+<p>Then you build <code>route.py</code>. Its core is a pure function: hand it a request, it returns a decision and
+the reason for it. That core runs and self-tests with no rig and no cloud key, because a routing
+policy is logic, not a network call. The live path is where the compounding pays off: when the
+decision is “local,” <code>route.py</code> calls the <code>ollama_client.py</code> you built in Module 3. The client you
+wrote three modules ago becomes the local arm of a hybrid system.</p>
+<p>You leave this module with a fifth file in the portfolio repository: <code>ROUTING.md</code>, the policy that
+says, in writing, which work goes where and why. The metal, the runtime, the stack, and its speed were
+documented in the first four modules; now the decision layer on top of them is too. Module 6 takes the
+last step, wiring this router into Claude Code so the delegation happens without you thinking about it.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module3/install-ollama-and-docker.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module4/record-the-baseline.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module3/the-openai-compatible-api.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module5/the-routing-decision.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -300,11 +221,11 @@ VRAM for a 9.0 GB Q4_K_M model, not 9.0 GB.</li>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module3/install-ollama-and-docker.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module4/record-the-baseline.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module3/the-openai-compatible-api.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module5/the-routing-decision.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
