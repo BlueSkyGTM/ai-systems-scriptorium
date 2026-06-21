@@ -10,8 +10,9 @@ Fills row 1 of `build-log/sans-python/antilibrary-gap-report.md` — the **94%-o
 Post-Sans-Python, pre-Machine-Learning. The name plays off the first book deliberately:
 first you learned the field *Sans Python*; now you focus *Only Python*.
 
-**Not started.** Starting it is gated at `GATE-NAME-BOOK` (propose the real title first;
-candidates listed in this folder's `README.md`).
+**Not started** (not graduated to in-progress). A Chapter 1 preview is drafted in `draft/` to
+pressure-test the blueprint; authoring that preview is autonomous, but graduating the book to
+in-progress, and locking its title, is gated at `GATE-NAME-BOOK` (candidates in this folder's `README.md`).
 
 ## Ore (in the vault — not yet distilled)
 

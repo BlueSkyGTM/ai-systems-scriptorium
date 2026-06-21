@@ -25,8 +25,10 @@ covers the numerical types that appear in AI pipelines:
 Choosing the wrong dtype is the most common NumPy performance error. A model that outputs
 `float32` embeddings loaded into a `float64` array doubles memory consumption silently.
 `arr.dtype` always tells you what you have; `arr.astype(np.float32)` copies to the target
-type. `arr.view(np.float32)` reinterprets the buffer in place (zero copy) when the total
-byte count is compatible, but view is only safe when you understand the byte layout.
+type. `arr.view(np.float32)` reinterprets the existing bytes without converting them: a `float64`
+viewed as `float32` does not halve your values, it reads each 8-byte slot as two 4-byte floats
+and yields garbage. Reach for `view` only when you mean a raw byte reinterpretation, never as a
+type conversion.
 [MS-Learn: Explore and analyze data with Python,
 https://learn.microsoft.com/training/modules/explore-analyze-data-with-python/]
 
@@ -49,10 +51,8 @@ For a C-contiguous (row-major) 2D array with shape `(rows, cols)` and itemsize `
 strides are `(cols * k, k)`: to move one row down, skip `cols * k` bytes; to move one
 column right, skip `k` bytes. For a 1D array of float64, strides is `(8,)`.
 
-This is the same model that DirectML uses internally for tensor memory layout: a stride of
-zero along a dimension means that dimension broadcasts rather than allocates. NumPy exposes
-this explicitly. [MS-Learn: Using strides to express padding and memory layout,
-https://learn.microsoft.com/windows/ai/directml/dml-strides]
+A stride of zero along a dimension is how NumPy broadcasts that dimension instead of
+allocating new memory for it; you will meet that trick again in Lesson 03.
 
 ```python
 arr = np.zeros((3, 4), dtype=np.float32)

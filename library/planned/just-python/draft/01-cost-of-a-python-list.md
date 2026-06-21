@@ -3,8 +3,8 @@
 Call `sys.getsizeof([])` and you get 56 bytes. Add one float and it jumps to 64 bytes. Add a
 million floats, and Python has allocated the list header plus a million eight-byte pointers,
 each pointing at a heap object that itself costs at least 24 bytes. A million floats in a
-Python list consumes roughly 28 MB, not the 8 MB a contiguous float64 array would. That gap
-is not a bug. It is the price of Python's data model, and understanding it is the prerequisite
+Python list consumes roughly 32 MB (an 8 MB pointer array plus 24 MB of float objects), four
+times the 8 MB a contiguous float64 array would. That gap is not a bug. It is the price of Python's data model, and understanding it is the prerequisite
 for knowing when NumPy pays.
 
 ## Python's Object Model
@@ -51,12 +51,8 @@ float objects: 32 MB total for one million floats. The same data in a NumPy `flo
 costs 8 MB, exactly eight bytes per element in a contiguous block.
 
 `sys.getsizeof` is shallow: it does not follow references. This is the right call for measuring
-the container itself, but it will mislead you about total memory if you stop there. The
-`get_data_memory_size` utility in Azure ML's `azureml.automl.runtime.shared.memory_utilities`
-module uses a similar approach for ndarray and DataFrame profiling, measuring the buffer
-directly rather than the container header. The principle is the same: measure what the CPU
-actually touches, not the Python object wrapper. [MS-Learn: memory_utilities module,
-https://learn.microsoft.com/python/api/azureml-automl-runtime/azureml.automl.runtime.shared.memory_utilities]
+the container itself, but it will mislead you about total memory if you stop there. The principle
+to carry forward: measure what the CPU actually touches, the buffer, not the Python object wrapper.
 
 ## The Contiguous Alternative
 
@@ -114,6 +110,6 @@ mathematically operated on. That is where the list pays its cost and where NumPy
 
 <div class="claude-handoff" data-exercise="draft/exercises/01-cost-of-a-python-list/">
 
-**Build It in Claude Code**: Write a script that allocates a million floats as a Python list and as a NumPy `float64` array, measures true memory cost for both using `sys.getsizeof` (shallow) and `ndarray.nbytes` (buffer), computes the ratio, and prints a structured comparison table. Then replace the float data with a batch of 512 embedding vectors (1,536 dims each) from a CSV and repeat the measurement.
+**Build It in Claude Code**: Write a script that allocates a million floats as a Python list and as a NumPy `float64` array, measures true memory cost for both using `sys.getsizeof` (shallow) and `ndarray.nbytes` (buffer), computes the ratio, and prints a structured comparison table. Then replace the float data with a batch of 512 embedding vectors (1,536 dims each), synthetic or loaded from a CSV, and repeat the measurement.
 
 </div>

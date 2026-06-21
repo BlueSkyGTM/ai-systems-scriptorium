@@ -25,10 +25,10 @@ All work goes in `exercises/module1/engine.py`, which you started in Exercise 01
    ```
    [label]
      shape:   (512, 1536)
-     dtype:   float32
+     dtype:   float64
      ndim:    2
-     strides: (6144, 4)
-     nbytes:  3,145,728
+     strides: (12288, 8)
+     nbytes:  6,291,456
      C_CONTIGUOUS: True
      OWNDATA:      True
    ```

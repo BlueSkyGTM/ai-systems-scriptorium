@@ -21,7 +21,7 @@ and evaluation tables you already built are the data you will look at through a 
 
 | Lesson | Title | What It Teaches |
 |--------|-------|-----------------|
-| 01 | The Cost of a Python List | Python's data model: object overhead, reference counting, why a list of floats is 8x larger than you think |
+| 01 | The Cost of a Python List | Python's data model: object overhead, reference counting, why a list of floats costs about 4x a contiguous float64 array |
 | 02 | dtype and Strides | NumPy's storage contract: typed contiguous memory, strides, views versus copies, and why the layout determines speed |
 | 03 | Broadcasting Without a Loop | The broadcasting rules that let NumPy eliminate explicit iteration; reading and writing broadcast expressions |
 | 04 | Indexing That Moves No Data | Fancy indexing vs. basic indexing; when slicing returns a view and when it returns a copy; memory implications |
