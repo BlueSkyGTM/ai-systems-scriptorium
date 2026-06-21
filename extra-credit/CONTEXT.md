@@ -1,10 +1,12 @@
-# CONTEXT — Extra Credit (the lab)
+# CONTEXT — Extra Credit (the enhancers lab)
 
-The Scriptorium makes books and shelves a library. This is its third room: a **lab** where the
-agent generates repo scaffolds on demand — for throwaway experiments *and* for keepers meant to be
-used — applying the same best practices the books are built with. It exists so the work stays
-**active** between the big curriculum phases, and so every scrap of practice is **born connected**
-to the logged material instead of stranded on its own island.
+The Scriptorium makes books and shelves a library. This room holds the **enhancers**: optional tools
+that make the *learning* better, and nothing else. The mission is solidified in [`README.md`](README.md);
+the one rule is **enhance, never overpower** (a reader finishing one book straight through beats a reader
+a quarter in because they were fiddling with a tool). Tools are **born connected** to the logged material
+(the protocol below), and they earn their way from a throwaway **experiment** to real **production**
+before graduating to a permanent home. This is **not** a general experiment sandbox and **not** a home
+for off-mission work; anything that does not serve the library's learning belongs in its own repo.
 
 This is a Tier-2 boundary (see the precedence rule in [`../CLAUDE.md`](../CLAUDE.md)): it may only
 **narrow** the global contract, never loosen it. Generating here is autonomous work; the only gate is
