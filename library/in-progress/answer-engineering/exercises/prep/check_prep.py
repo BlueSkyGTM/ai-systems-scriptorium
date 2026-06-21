@@ -2,20 +2,33 @@
 """
 check_prep.py -- Validator for the Answer Engineering prep dossier.
 
-Validates two logs in the same directory as this script:
-  decomposition-log.md  (exercise 1: ten question decompositions)
-  answers-log.md        (exercise 2: five full Algorithm runs)
+Validates the logs in the same directory as this script. Module 1 established
+the two core logs; Module 2 adds four more; Module 3 adds the behavioral bank.
+The --module flag controls which artifacts are required for the exit code.
 
-Exits 0 only when both logs are complete and free of placeholder text.
-Exits 1 otherwise, with a clear per-file report.
+  decomposition-log.md  (M1: ten question decompositions + calibration)
+                        (M2 extension: Hard Cases section with >=3 HC entries)
+  answers-log.md        (M1: five full Algorithm runs with scores)
+  signal-map.md         (M2: three questions mapped across two company contexts)
+  practice-log.md       (M2: two answers recorded and self-scored)
+  audit-log.md          (M2: two answers run through the pitfalls audit)
+  behavioral-bank.md    (M3: four STAR-L stories covering all four categories,
+                             each with an audit verdict; no placeholders)
+
+Exits 0 only when the required logs for the selected module are complete and
+free of placeholder text. Exits 1 otherwise, with a clear per-file report.
 
 Usage:
-  python check_prep.py           Run validation and print report.
-  python check_prep.py --help    Show this help text.
+  python check_prep.py              Run all checks; report per-artifact status.
+  python check_prep.py --module 1   Require only M1 artifacts complete.
+  python check_prep.py --module 2   Require M1 + all M2 artifacts complete.
+  python check_prep.py --module 3   Require M1 + M2 + behavioral-bank.md complete.
+  python check_prep.py --module all Same as the default (all artifacts).
+  python check_prep.py --help       Show this help text.
 
 Section markers the validator expects
 --------------------------------------
-decomposition-log.md:
+decomposition-log.md (M1 checks):
   Each entry is headed by:  ## Q<n>   (e.g. ## Q1, ## Q7)
   Required fields (one per entry, on their own line):
     **Literal parse:**
@@ -23,6 +36,16 @@ decomposition-log.md:
     **Primary hypothesis:**
   Calibration section headed by:  ## Calibration
     (must exist and must not contain only placeholder text)
+
+decomposition-log.md (M2 Hard Cases extension):
+  Hard Cases section headed by:  ## Hard Cases
+  Each entry is headed by:       ### HC<n>   (e.g. ### HC1, ### HC3)
+  Required fields per entry:
+    **Senior reading:**
+    **Primary hypothesis (senior):**
+    **Staff reading:**
+    **Primary hypothesis (staff):**
+    **How the hypothesis shifts:**
 
 answers-log.md:
   Each entry is headed by:  ## A<n>   (e.g. ## A1, ## A5)
@@ -37,6 +60,42 @@ answers-log.md:
     **Completeness:**
   Score values must be one of: strong, partial, weak
   (case-insensitive; must not be TODO or other placeholder)
+
+signal-map.md:
+  Each entry is headed by:  ### SM<n>   (e.g. ### SM1, ### SM3)
+  Required fields per entry:
+    **Stated signal:**
+    **Latent signal:**
+    **Frontier lab context:**
+    **Enterprise context:**
+
+practice-log.md:
+  Each entry is headed by:  ### PL<n>   (e.g. ### PL1, ### PL2)
+  Required fields per entry:
+    **2-minute version:**
+    **30-second version:**
+    **Delivery self-score:**
+
+audit-log.md:
+  Each entry is headed by:  ### AL<n>   (e.g. ### AL1, ### AL2)
+  Required fields per entry:
+    **Pitfalls present:**
+    **Basic bar verdict:**
+    **Staff bar verdict:**
+    **Revised sentence:**
+
+behavioral-bank.md (M3):
+  Each entry is headed by:  ## Story <n>   (e.g. ## Story 1, ## Story 4)
+  Required fields per entry:
+    **Category:**   (must be one of: ownership, conflict, failure, influence)
+    **Situation:**
+    **Task:**
+    **Action:**
+    **Result:**
+    **Learning:**
+    **Audit verdict:**
+  All four categories must appear across the entries.
+  Minimum four entries. No placeholder text in any field.
 """
 
 import argparse
@@ -52,6 +111,10 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 
 DECOMP_LOG = SCRIPT_DIR / "decomposition-log.md"
 ANSWERS_LOG = SCRIPT_DIR / "answers-log.md"
+SIGNAL_MAP = SCRIPT_DIR / "signal-map.md"
+PRACTICE_LOG = SCRIPT_DIR / "practice-log.md"
+AUDIT_LOG = SCRIPT_DIR / "audit-log.md"
+BEHAVIORAL_BANK = SCRIPT_DIR / "behavioral-bank.md"
 
 # Placeholder text patterns: any required field containing these fails.
 PLACEHOLDER_PATTERNS = re.compile(
@@ -114,8 +177,54 @@ def split_into_entries(text: str, heading_pattern: re.Pattern) -> list[tuple[str
     return entries
 
 
+def validate_entries(
+    entries: list[tuple[str, list[str]]],
+    required_fields: list[str],
+    min_count: int,
+    artifact_name: str,
+    messages: list[str],
+) -> bool:
+    """
+    Shared entry-validation logic: check count and required fields for a set
+    of entries. Appends messages and returns True if all checks pass.
+
+    `artifact_name` appears in error messages to identify the artifact (e.g.
+    "signal-map.md" or "Hard Cases section").
+    """
+    passed = True
+    found_count = len(entries)
+
+    if found_count < min_count:
+        messages.append(
+            f"FAIL: {artifact_name}: found {found_count} entries; "
+            f"need at least {min_count}."
+        )
+        passed = False
+    else:
+        messages.append(f"OK:   {artifact_name}: {found_count} entries found.")
+
+    for heading, entry_lines in entries:
+        entry_label = heading
+        for field in required_fields:
+            value = extract_field_value(entry_lines, field)
+            if value is None:
+                messages.append(f"FAIL: {entry_label}: missing field '{field}'.")
+                passed = False
+            elif not value:
+                messages.append(f"FAIL: {entry_label}: field '{field}' is empty.")
+                passed = False
+            elif is_placeholder(value):
+                messages.append(
+                    f"FAIL: {entry_label}: field '{field}' contains placeholder "
+                    f"text: {value!r}"
+                )
+                passed = False
+
+    return passed
+
+
 # ---------------------------------------------------------------------------
-# Decomposition log validator
+# Decomposition log validator (M1 core)
 # ---------------------------------------------------------------------------
 
 # Heading pattern: ## Q<digits>  (exactly, case-sensitive)
@@ -131,24 +240,44 @@ DECOMP_REQUIRED_FIELDS = [
 
 MIN_DECOMP_ENTRIES = 10
 
+# Hard Cases (M2 extension within decomposition-log.md)
+HC_ENTRY_RE = re.compile(r"^###\s+HC(\d+)$")
+HARD_CASES_RE = re.compile(r"^##\s+Hard Cases$", re.IGNORECASE)
 
-def validate_decomposition_log(path: Path) -> tuple[bool, list[str]]:
+HC_REQUIRED_FIELDS = [
+    "**Senior reading:**",
+    "**Primary hypothesis (senior):**",
+    "**Staff reading:**",
+    "**Primary hypothesis (staff):**",
+    "**How the hypothesis shifts:**",
+]
+
+MIN_HC_ENTRIES = 3
+
+
+def validate_decomposition_log(path: Path, check_hard_cases: bool = False) -> tuple[bool, list[str]]:
     """
     Validate decomposition-log.md.
+
+    When `check_hard_cases` is True (M2 mode), also validates the ## Hard Cases
+    extension. When False (M1 mode), only the core M1 checks run.
+
     Returns (passed: bool, messages: list[str]).
     """
     messages: list[str] = []
 
     if not path.exists():
         messages.append(f"NOT STARTED: {path.name} does not exist yet.")
-        messages.append("  Copy decomposition-log.template.md to decomposition-log.md and complete it.")
+        messages.append(
+            "  Copy decomposition-log.template.md to decomposition-log.md and complete it."
+        )
         return False, messages
 
     text = path.read_text(encoding="utf-8")
     lines = text.splitlines()
     passed = True
 
-    # --- Check for entry headings ---
+    # --- M1: Check for Q-entry headings ---
     all_entries = split_into_entries(text, DECOMP_ENTRY_RE)
     found_count = len(all_entries)
 
@@ -161,9 +290,9 @@ def validate_decomposition_log(path: Path) -> tuple[bool, list[str]]:
     else:
         messages.append(f"OK:   {found_count} question entries found.")
 
-    # --- Check each entry for required fields ---
+    # --- M1: Check each Q-entry for required fields ---
     for heading, entry_lines in all_entries:
-        entry_label = heading  # e.g. "## Q1"
+        entry_label = heading
         for field in DECOMP_REQUIRED_FIELDS:
             value = extract_field_value(entry_lines, field)
             if value is None:
@@ -178,7 +307,7 @@ def validate_decomposition_log(path: Path) -> tuple[bool, list[str]]:
                 )
                 passed = False
 
-    # --- Check calibration section ---
+    # --- M1: Check calibration section ---
     calibration_present = False
     calibration_text: list[str] = []
     in_calibration = False
@@ -198,7 +327,6 @@ def validate_decomposition_log(path: Path) -> tuple[bool, list[str]]:
         messages.append("FAIL: Missing '## Calibration' section.")
         passed = False
     else:
-        # Collapse to non-empty, non-comment lines
         content_lines = [
             l for l in calibration_text
             if l.strip() and not l.strip().startswith("<!--")
@@ -216,6 +344,39 @@ def validate_decomposition_log(path: Path) -> tuple[bool, list[str]]:
         else:
             messages.append("OK:   Calibration section is present and filled in.")
 
+    # --- M2 extension: Hard Cases section ---
+    if check_hard_cases:
+        hard_cases_present = False
+        hard_cases_text: list[str] = []
+        in_hc_section = False
+
+        for line in lines:
+            if HARD_CASES_RE.match(line.strip()):
+                hard_cases_present = True
+                in_hc_section = True
+                continue
+            # Stop collecting at any sibling ## heading (but NOT ### headings)
+            if in_hc_section and re.match(r"^##\s+(?!#)", line.strip()):
+                in_hc_section = False
+            if in_hc_section:
+                hard_cases_text.append(line)
+
+        if not hard_cases_present:
+            messages.append(
+                "FAIL: Missing '## Hard Cases' section in decomposition-log.md. "
+                "Append it and complete at least three ### HC<n> entries."
+            )
+            passed = False
+        else:
+            hc_section_text = "\n".join(hard_cases_text)
+            hc_entries = split_into_entries(hc_section_text, HC_ENTRY_RE)
+            hc_passed = validate_entries(
+                hc_entries, HC_REQUIRED_FIELDS, MIN_HC_ENTRIES,
+                "Hard Cases section", messages,
+            )
+            if not hc_passed:
+                passed = False
+
     if passed:
         messages.append(f"PASS: {path.name} is complete.")
 
@@ -223,7 +384,7 @@ def validate_decomposition_log(path: Path) -> tuple[bool, list[str]]:
 
 
 # ---------------------------------------------------------------------------
-# Answers log validator
+# Answers log validator (M1)
 # ---------------------------------------------------------------------------
 
 # Heading pattern: ## A<digits>
@@ -277,7 +438,7 @@ def validate_answers_log(path: Path) -> tuple[bool, list[str]]:
 
     # --- Check each entry ---
     for heading, entry_lines in all_entries:
-        entry_label = heading  # e.g. "## A1"
+        entry_label = heading
         entry_text = "\n".join(entry_lines)
 
         # Check that all four step headings appear
@@ -353,6 +514,232 @@ def extract_step_body(entry_text: str, step_prefix: str) -> str | None:
 
 
 # ---------------------------------------------------------------------------
+# Signal map validator (M2)
+# ---------------------------------------------------------------------------
+
+SM_ENTRY_RE = re.compile(r"^###\s+SM(\d+)$")
+
+SM_REQUIRED_FIELDS = [
+    "**Stated signal:**",
+    "**Latent signal:**",
+    "**Frontier lab context:**",
+    "**Enterprise context:**",
+]
+
+MIN_SM_ENTRIES = 3
+
+
+def validate_signal_map(path: Path) -> tuple[bool, list[str]]:
+    """
+    Validate signal-map.md.
+    Returns (passed: bool, messages: list[str]).
+    """
+    messages: list[str] = []
+
+    if not path.exists():
+        messages.append(f"NOT STARTED: {path.name} does not exist yet.")
+        messages.append("  Copy signal-map.template.md to signal-map.md and complete it.")
+        return False, messages
+
+    text = path.read_text(encoding="utf-8")
+    passed = True
+
+    entries = split_into_entries(text, SM_ENTRY_RE)
+    entry_passed = validate_entries(
+        entries, SM_REQUIRED_FIELDS, MIN_SM_ENTRIES, path.name, messages,
+    )
+    if not entry_passed:
+        passed = False
+
+    if passed:
+        messages.append(f"PASS: {path.name} is complete.")
+
+    return passed, messages
+
+
+# ---------------------------------------------------------------------------
+# Practice log validator (M2)
+# ---------------------------------------------------------------------------
+
+PL_ENTRY_RE = re.compile(r"^###\s+PL(\d+)$")
+
+PL_REQUIRED_FIELDS = [
+    "**2-minute version:**",
+    "**30-second version:**",
+    "**Delivery self-score:**",
+]
+
+MIN_PL_ENTRIES = 2
+
+
+def validate_practice_log(path: Path) -> tuple[bool, list[str]]:
+    """
+    Validate practice-log.md.
+    Returns (passed: bool, messages: list[str]).
+    """
+    messages: list[str] = []
+
+    if not path.exists():
+        messages.append(f"NOT STARTED: {path.name} does not exist yet.")
+        messages.append("  Copy practice-log.template.md to practice-log.md and complete it.")
+        return False, messages
+
+    text = path.read_text(encoding="utf-8")
+    passed = True
+
+    entries = split_into_entries(text, PL_ENTRY_RE)
+    entry_passed = validate_entries(
+        entries, PL_REQUIRED_FIELDS, MIN_PL_ENTRIES, path.name, messages,
+    )
+    if not entry_passed:
+        passed = False
+
+    if passed:
+        messages.append(f"PASS: {path.name} is complete.")
+
+    return passed, messages
+
+
+# ---------------------------------------------------------------------------
+# Audit log validator (M2)
+# ---------------------------------------------------------------------------
+
+AL_ENTRY_RE = re.compile(r"^###\s+AL(\d+)$")
+
+AL_REQUIRED_FIELDS = [
+    "**Pitfalls present:**",
+    "**Basic bar verdict:**",
+    "**Staff bar verdict:**",
+    "**Revised sentence:**",
+]
+
+MIN_AL_ENTRIES = 2
+
+
+def validate_audit_log(path: Path) -> tuple[bool, list[str]]:
+    """
+    Validate audit-log.md.
+    Returns (passed: bool, messages: list[str]).
+    """
+    messages: list[str] = []
+
+    if not path.exists():
+        messages.append(f"NOT STARTED: {path.name} does not exist yet.")
+        messages.append("  Copy audit-log.template.md to audit-log.md and complete it.")
+        return False, messages
+
+    text = path.read_text(encoding="utf-8")
+    passed = True
+
+    entries = split_into_entries(text, AL_ENTRY_RE)
+    entry_passed = validate_entries(
+        entries, AL_REQUIRED_FIELDS, MIN_AL_ENTRIES, path.name, messages,
+    )
+    if not entry_passed:
+        passed = False
+
+    if passed:
+        messages.append(f"PASS: {path.name} is complete.")
+
+    return passed, messages
+
+
+# ---------------------------------------------------------------------------
+# Behavioral bank validator (M3)
+# ---------------------------------------------------------------------------
+
+# Heading pattern: ## Story <digits>
+BB_ENTRY_RE = re.compile(r"^##\s+Story\s+(\d+)$")
+
+BB_REQUIRED_FIELDS = [
+    "**Category:**",
+    "**Situation:**",
+    "**Task:**",
+    "**Action:**",
+    "**Result:**",
+    "**Learning:**",
+    "**Audit verdict:**",
+]
+
+# Valid category values (case-insensitive).
+VALID_BB_CATEGORIES = {"ownership", "conflict", "failure", "influence"}
+
+MIN_BB_ENTRIES = 4
+
+
+def validate_behavioral_bank(path: Path) -> tuple[bool, list[str]]:
+    """
+    Validate behavioral-bank.md.
+
+    Checks that the file has at least four ## Story <n> entries, each with
+    all seven required fields filled in and free of placeholder text, and that
+    all four categories (ownership, conflict, failure, influence) appear across
+    the entries.
+
+    Returns (passed: bool, messages: list[str]).
+    """
+    messages: list[str] = []
+
+    if not path.exists():
+        messages.append(f"NOT STARTED: {path.name} does not exist yet.")
+        messages.append(
+            "  Copy behavioral-bank.template.md to behavioral-bank.md and complete it."
+        )
+        return False, messages
+
+    text = path.read_text(encoding="utf-8")
+    passed = True
+
+    entries = split_into_entries(text, BB_ENTRY_RE)
+
+    # --- Count check ---
+    entry_passed = validate_entries(
+        entries, BB_REQUIRED_FIELDS, MIN_BB_ENTRIES, path.name, messages,
+    )
+    if not entry_passed:
+        passed = False
+
+    # --- Category check: all four must appear ---
+    categories_found: set[str] = set()
+    for heading, entry_lines in entries:
+        raw = extract_field_value(entry_lines, "**Category:**")
+        if raw:
+            categories_found.add(raw.strip().lower())
+
+    missing_categories = VALID_BB_CATEGORIES - categories_found
+    if missing_categories:
+        missing_sorted = sorted(missing_categories)
+        messages.append(
+            f"FAIL: {path.name}: missing categories: "
+            + ", ".join(missing_sorted)
+            + ". Each of ownership, conflict, failure, influence must appear."
+        )
+        passed = False
+    else:
+        messages.append(
+            f"OK:   {path.name}: all four categories present "
+            f"({', '.join(sorted(categories_found))})."
+        )
+
+    # --- Per-entry category value check ---
+    for heading, entry_lines in entries:
+        raw = extract_field_value(entry_lines, "**Category:**")
+        if raw and not is_placeholder(raw):
+            cat = raw.strip().lower()
+            if cat not in VALID_BB_CATEGORIES:
+                messages.append(
+                    f"FAIL: {heading}: **Category:** value {raw!r} is not one of: "
+                    + ", ".join(sorted(VALID_BB_CATEGORIES)) + "."
+                )
+                passed = False
+
+    if passed:
+        messages.append(f"PASS: {path.name} is complete.")
+
+    return passed, messages
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -362,15 +749,30 @@ def build_parser() -> argparse.ArgumentParser:
         prog="check_prep.py",
         description=(
             "Validate the Answer Engineering prep dossier. "
-            "Checks decomposition-log.md and answers-log.md for completeness. "
-            "Exits 0 when both logs are complete; exits 1 otherwise."
+            "Checks logs for completeness and placeholder-free content. "
+            "Exits 0 when the required logs for the selected module are complete; "
+            "exits 1 otherwise."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "Run from exercises/prep/ or any directory; paths resolve relative to this script.\n\n"
-            "Expected files:\n"
-            "  decomposition-log.md  -- ten question decompositions + calibration section\n"
-            "  answers-log.md        -- five full Algorithm runs with scores\n"
+            "Module levels:\n"
+            "  --module 1   Require decomposition-log.md + answers-log.md complete (M1 gate).\n"
+            "  --module 2   Require M1 artifacts + Hard Cases + signal-map.md +\n"
+            "               practice-log.md + audit-log.md complete (M2 gate).\n"
+            "  --module 3   Require M1 + M2 artifacts + behavioral-bank.md complete (M3 gate).\n"
+            "  --module all Same as omitting the flag: report all artifacts, same exit logic as 3.\n\n"
+            "Status values per artifact: PASS / INCOMPLETE / NOT STARTED\n"
+        ),
+    )
+    parser.add_argument(
+        "--module",
+        choices=["1", "2", "3", "all"],
+        default="all",
+        help=(
+            "Module gate to enforce. '1' requires only M1 artifacts. "
+            "'2' requires M1 + M2 artifacts. '3' or 'all' requires M1 + M2 + M3 artifacts. "
+            "Default: all."
         ),
     )
     return parser
@@ -378,13 +780,25 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     parser = build_parser()
-    parser.parse_args()  # --help is handled here; no positional args expected
+    args = parser.parse_args()
+
+    module = args.module  # "1", "2", "3", or "all"
+    require_m2 = module in ("2", "3", "all")
+    require_m3 = module in ("3", "all")
 
     print("Answer Engineering Prep Dossier Validator")
     print("=" * 44)
     print()
 
-    decomp_passed, decomp_messages = validate_decomposition_log(DECOMP_LOG)
+    # Run all validators, collecting results.
+    # M1 artifacts are always checked; M2 artifacts are checked when require_m2;
+    # M3 artifacts are checked when require_m3.
+
+    check_hard_cases = require_m2
+
+    decomp_passed, decomp_messages = validate_decomposition_log(
+        DECOMP_LOG, check_hard_cases=check_hard_cases
+    )
     answers_passed, answers_messages = validate_answers_log(ANSWERS_LOG)
 
     print(f"--- {DECOMP_LOG.name} ---")
@@ -397,16 +811,72 @@ def main() -> int:
         print(" ", msg)
     print()
 
-    if decomp_passed and answers_passed:
-        print("RESULT: Both logs are complete. Dossier passes.")
+    if require_m2:
+        sm_passed, sm_messages = validate_signal_map(SIGNAL_MAP)
+        pl_passed, pl_messages = validate_practice_log(PRACTICE_LOG)
+        al_passed, al_messages = validate_audit_log(AUDIT_LOG)
+
+        print(f"--- {SIGNAL_MAP.name} ---")
+        for msg in sm_messages:
+            print(" ", msg)
+        print()
+
+        print(f"--- {PRACTICE_LOG.name} ---")
+        for msg in pl_messages:
+            print(" ", msg)
+        print()
+
+        print(f"--- {AUDIT_LOG.name} ---")
+        for msg in al_messages:
+            print(" ", msg)
+        print()
+
+    if require_m3:
+        bb_passed, bb_messages = validate_behavioral_bank(BEHAVIORAL_BANK)
+
+        print(f"--- {BEHAVIORAL_BANK.name} ---")
+        for msg in bb_messages:
+            print(" ", msg)
+        print()
+
+    # Build the required artifact lists and results based on module level.
+    if require_m3:
+        all_passed = (
+            decomp_passed and answers_passed
+            and sm_passed and pl_passed and al_passed
+            and bb_passed
+        )
+        required_names = [
+            DECOMP_LOG.name, ANSWERS_LOG.name,
+            SIGNAL_MAP.name, PRACTICE_LOG.name, AUDIT_LOG.name,
+            BEHAVIORAL_BANK.name,
+        ]
+        results = [
+            decomp_passed, answers_passed,
+            sm_passed, pl_passed, al_passed,
+            bb_passed,
+        ]
+    elif require_m2:
+        all_passed = decomp_passed and answers_passed and sm_passed and pl_passed and al_passed
+        required_names = [
+            DECOMP_LOG.name, ANSWERS_LOG.name,
+            SIGNAL_MAP.name, PRACTICE_LOG.name, AUDIT_LOG.name,
+        ]
+        results = [decomp_passed, answers_passed, sm_passed, pl_passed, al_passed]
+    else:
+        all_passed = decomp_passed and answers_passed
+        required_names = [DECOMP_LOG.name, ANSWERS_LOG.name]
+        results = [decomp_passed, answers_passed]
+
+    if all_passed:
+        print(f"RESULT: All required logs are complete. Dossier passes (--module {module}).")
         return 0
     else:
-        failed = []
-        if not decomp_passed:
-            failed.append(DECOMP_LOG.name)
-        if not answers_passed:
-            failed.append(ANSWERS_LOG.name)
-        print(f"RESULT: Incomplete. Fix the issues above in: {', '.join(failed)}")
+        failed = [name for name, ok in zip(required_names, results) if not ok]
+        print(
+            f"RESULT: Incomplete (--module {module}). "
+            f"Fix the issues above in: {', '.join(failed)}"
+        )
         return 1
 
 

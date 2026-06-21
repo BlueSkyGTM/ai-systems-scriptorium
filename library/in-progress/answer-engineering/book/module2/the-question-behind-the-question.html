@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Construct the Answer - Answer Engineering — The AI Engineer&#x27;s Interview Framework</title>
+        <title>The Question Behind the Question - Answer Engineering — The AI Engineer&#x27;s Interview Framework</title>
 
 
         <!-- Custom HTML head -->
@@ -177,38 +177,100 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="construct-the-answer"><a class="header" href="#construct-the-answer">Construct the Answer</a></h1>
-<p>You decomposed correctly and named the signal. You still lose the offer if the answer only points at the signal instead of delivering the evidence it demands.</p>
-<h2 id="the-construction-problem"><a class="header" href="#the-construction-problem">The Construction Problem</a></h2>
-<p>Most candidates conflate “aimed at the right signal” with “good enough.” They are not the same. The answer gestures at the right territory and stops short of proof.</p>
-<p>A strong answer has three properties: specific enough that a weak candidate could not give it, structured so the interviewer can follow the reasoning, complete enough to close the loop on the hypothesis. Specificity is the most critical and the most commonly abandoned under pressure. When you are nervous you reach for the general case: “I used eval-driven development.” That is a claim. The evidence version: “I built three binary judges, one for groundedness, one for answer relevance, one for format compliance, calibrated each against fifty labeled examples from our support queue, and set the groundedness judge as a hard gate in CI.” The first sentence is something anyone can say. The second is not.</p>
-<p>Structure makes the reasoning visible so the interviewer can score it. Completeness means you close the loop: a story that ends with “we made the decision” without naming the outcome is not complete.</p>
-<h2 id="build-backward-from-the-hypothesis"><a class="header" href="#build-backward-from-the-hypothesis">Build Backward From the Hypothesis</a></h2>
-<p>Start from the hypothesis, not from the beginning of the story.</p>
-<p>Ask: what does the hypothesis require as evidence? If the hypothesis is “this candidate makes defensible calls under uncertainty,” the required outputs are a real decision (not “I contributed to the discussion”), explicit uncertainty (what you did not know and why), and a reasoning process you can trace. Those three are your required outputs. Everything else is optional context.</p>
-<p>Then find the shortest path to that evidence. Shortest is not always chronological. You can start with the decision, unpack the uncertainty, then describe the reasoning. Or start with the constraint, name the options, then the call. Cut everything that does not move toward the evidence. The construction ratio: roughly 20% context, 60% evidence (the decision, reasoning, and action), 20% result and reflection.</p>
-<h2 id="the-named-construction-scaffolds"><a class="header" href="#the-named-construction-scaffolds">The Named Construction Scaffolds</a></h2>
-<p>Five frameworks exist because five question types exist. Pick the scaffold that matches the type, build inside it.</p>
-<p><strong>STAR-L</strong> for behavioral questions: Situation, Task, Action, Result, Learning. Two moves separate strong STAR-L answers from weak ones: use “I” for every action (not “we” – “we” hides ownership), and quantify the result (behavioral answers without numbers get scored as anecdotal). The Learning step is load-bearing for AI roles: AI projects carry unique uncertainty, and the Learning step is where you demonstrate you internalized the AI-specific lesson, not a generic one.</p>
-<p>Take a real case. The question: “Tell me about a time you strongly advocated for a technical decision that turned out to be wrong.” A weak answer names the mistake and moves on. The strong STAR-L runs the full arc: pushed to replace the retrieval pipeline with a pure long-context approach, argued in two design reviews, committed the team to a quarter of migration work. Eval results showed quality matched but cost ran 4x projection: cache hit rates collapsed under update frequency, p95 latency doubled. After two weeks of marginal gains, wrote a one-page memo stating plainly that the recommendation was wrong on the economics, then proposed a hybrid approach to the same audience. The hybrid shipped; 60% of migration work was salvaged; the postmortem produced a team rule that any architecture pitch must include a cost model under realistic update patterns. The specificity that makes this unfakeable: “cost ran 4x projection,” “two weeks of marginal gains,” “one-page memo.” No one invents those details. The answer lands because they are real.</p>
-<p><strong>SPIDER</strong> for systems-design questions: Scope and clarify, Prioritize requirements, Initial architecture, Deep dive critical paths, Evaluation and observability, Reliability and scale. The biggest gap between senior and staff answers shows up in the E and R phases: end every deep dive with a sentence on observability and a sentence on failure modes. This is not stylistic. The Azure Well-Architected Framework for AI workloads states that the nondeterministic nature of AI workloads makes vigilant quality monitoring essential, because measurements can change unexpectedly at any time after deployment (learn.microsoft.com/azure/well-architected/ai/operations). Azure AI Foundry’s observability model names evaluation, monitoring, and tracing as the three core capabilities spanning the full lifecycle, from pre-production evaluation through post-production quality and latency tracking (learn.microsoft.com/azure/foundry/concepts/observability). A SPIDER answer that reaches the E and R phases and names these in production terms demonstrates operational experience. One that stops at the architecture diagram does not.</p>
-<p><strong>ETA</strong> for concept-explanation questions: Explain simply, Technical details, Applications and tradeoffs. Go from the one-sentence definition to appropriate depth, then connect to practical usage. ETA is for explaining a component; SPIDER is for designing a system.</p>
-<p><strong>Tradeoff analysis</strong> for comparison and justification questions: “RAG vs fine-tuning,” “when would you skip reranking?” The key construction move: “it depends” is fine only when followed immediately by “it depends on X, Y, Z, and here is how each changes the answer.” Without the second half it reads as hedging. Name the options, define the evaluation criteria weighted for this decision, analyze each against the criteria, make a recommendation, and name the risk. The recommendation is non-negotiable: identifying tradeoffs without committing demonstrates indecision, not nuance.</p>
-<p><strong>Debugging framework</strong> for production-incident questions: gather information first (when did this start, what changed, all requests or a subset), form three to five hypotheses ranked by likelihood, describe the diagnostic approach, propose fixes with a verification plan. The construction move is leading with the gather step. Candidates who open with hypotheses before naming what information they have are showing the same reasoning gap they would in production.</p>
-<h2 id="the-stress-test"><a class="header" href="#the-stress-test">The Stress Test</a></h2>
-<p>Before you stop, run one check: could a weak candidate give this same answer?</p>
-<p>If yes, add one specific thing. A number, a decision with real stakes, a failure mode you caught.</p>
-<p>This check is internal. You are not asking the interviewer; you are asking yourself, in the final seconds before you stop talking, whether you delivered the evidence or only gestured at it. Consider another case. When flagging that an agent’s tool permissions were broader than needed, the weak version says “I raised a security concern and was overruled.” The strong version names the specific blast radius if the agent were prompt-injected, the two mitigations that fit inside the launch window (an audit log on the write paths and an anomaly alert on write volume), and the decision record entry before committing. Any candidate can say they raised a concern. Only one candidate ran the blast-radius analysis and converted a lost argument into cheap guardrails.</p>
-<p>Decomposing the question is table stakes. The construction step is where you deliver the evidence or describe the shape of where it would be.</p>
+                        <h1 id="the-question-behind-the-question"><a class="header" href="#the-question-behind-the-question">The Question Behind the Question</a></h1>
+<p>M1 gave you the three-part parse: strip the framing, assign a signal category, name the primary
+hypothesis. It works cleanly when one signal dominates. Real loops deliver the harder kind, and
+getting them right is the margin between candidates who pass screens and candidates who collect offers.</p>
+<p>Three cases M1 does not cover. You need to recognize all three before you speak.</p>
+<h2 id="the-latent-signal"><a class="header" href="#the-latent-signal">The Latent Signal</a></h2>
+<p>Some questions wear one category on the surface and carry a different one underneath. The stated
+words point one direction; context points another.</p>
+<p>Take “walk me through the architecture of a production RAG system.” On the surface it reads as a
+technical depth question. But context changes the hypothesis. If you mentioned a specific retrieval
+pipeline two minutes ago and the interviewer immediately followed with this question, they are not
+running a survey of RAG patterns. They are checking whether you built the thing you implied you
+built: the primary signal has shifted to ownership, with technical depth as the instrument. The
+same words, a different probe.</p>
+<p>Before you assign a category, register one additional data point: what was said in the thirty
+seconds before this question? The interviewer’s previous move almost always surfaces the latent
+signal; follow-up questions are not random. They are a probe calibrated to what the interviewer
+just heard.</p>
+<h2 id="the-follow-up-that-reveals-the-real-probe"><a class="header" href="#the-follow-up-that-reveals-the-real-probe">The Follow-Up That Reveals the Real Probe</a></h2>
+<p>Miss the latent signal on the first question and the follow-up gives you a second chance, but only
+if you treat it as data.</p>
+<p>The follow-up an interviewer chooses tells you what they were after in the first question. If you
+answered “walk me through the architecture of a production RAG system” by covering the retrieval
+and generation stack, and the interviewer follows with “who made the chunking decision?”, they have
+told you the real probe was ownership all along, not technical depth. The answer they needed was
+evidence that you drove the decisions in the system you described, not an architecture diagram.</p>
+<p>The follow-up is a second-chance decomposition. Run it: what does this new question reveal about
+what the first one was collecting? Then reorient. Most candidates treat a follow-up as a new
+question to answer in isolation; the stronger move is to treat it as a correction signal on where
+the decomposition went wrong.</p>
+<p>Missing one follow-up is correctable. Treating four follow-up questions as four unrelated probes
+and never reading the pattern is not.</p>
+<h2 id="how-the-hypothesis-shifts-with-level"><a class="header" href="#how-the-hypothesis-shifts-with-level">How the Hypothesis Shifts With Level</a></h2>
+<p>The same question, asked of a senior IC and a staff IC, collects different evidence. The words are
+identical. The primary hypothesis is not.</p>
+<p>Consider “tell me about a time you led a technical initiative without formal authority.” At the
+senior level, the hypothesis centers on technical ownership and individual delivery: did you drive
+the system, make the call, own the technical direction? The answer that lands is first-person and
+specific: what you built, what tradeoffs you made, what the system does.</p>
+<p>At the staff level, the hypothesis shifts: not just “can this person drive a system?” but “does
+this person change what others around them can do?” The L8+ bar is clear: staff ICs own
+orchestration layers and LLMOps platforms that serve all engineering teams. The scope moves from
+a system to the platform that enables systems. Multiplying others is not an optional flourish; it
+is the primary thing being tested.</p>
+<p>What changes in the three-part parse is step three: the primary hypothesis you name.</p>
+<ul>
+<li><strong>Senior:</strong> “I drive technical initiatives end-to-end and own the outcome.”</li>
+<li><strong>Staff:</strong> “I drive technical initiatives in ways that change what the team can build afterward,
+and I can name the organizational artifact that proves it.”</li>
+</ul>
+<p>The staff answer must contain that organizational artifact: a platform, a pattern, a standard, a
+template other engineers adopted. Without it, a technically strong answer reads as a senior answer
+delivered by someone applying for the wrong level.</p>
+<p>The third differentiator is ambiguity tolerance that extends into governance. At the senior level,
+defensible decision-making under uncertainty is the bar. At the staff level the interviewer checks
+whether the candidate thinks structurally about non-deterministic systems: runtime governance,
+compliance surfaces, cross-cutting concerns that live above any single feature. “How do you
+implement guardrails for an autonomous agent?” at the staff level expects a candidate who surfaces
+audit requirements, blast radius, and the review gate that governs the system over time, not just
+the guardrails that ship with version one.</p>
+<h2 id="worked-decomposition-same-question-two-levels"><a class="header" href="#worked-decomposition-same-question-two-levels">Worked Decomposition: Same Question, Two Levels</a></h2>
+<p>Question: “Describe a situation where you changed direction mid-project.”</p>
+<p><strong>Senior decomposition.</strong> Literal parse: “changed direction” (judgment call under new information),
+“mid-project” (decision made while committed). Primary signal: judgment under uncertainty; ownership
+secondary, because the interviewer wants to see you owned the pivot. Primary hypothesis: “I make
+defensible direction changes and own the result.”</p>
+<p><strong>Staff decomposition.</strong> Same parse. Different primary hypothesis, because the question at this
+level carries an additional probe: what was the organizational ripple? Did you manage the impact
+across teams, update the standards other engineers depended on, and leave a cleaner system in
+place of the original direction? Primary hypothesis: “I make direction changes in ways that don’t
+create organizational debt for the teams around me, and I can name what I put in place so the new
+direction held.”</p>
+<p>The difference is not the story you tell. It is which part of the story you lead with.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>Construction starts from the hypothesis: identify what evidence the hypothesis requires, then choose the example and order that reaches that evidence fastest.</li>
-<li>Specificity is the critical property: an answer that points at the right signal but supplies no detail a weak candidate could not also supply is still a weak answer.</li>
-<li>The five named construction scaffolds match question type: STAR-L for behavioral, SPIDER for systems design, ETA for concept explanation, tradeoff analysis for comparison questions, the debugging framework for production-incident questions.</li>
-<li>The stress test runs before you stop: ask whether a weak candidate could give the same answer; if yes, add one specific thing.</li>
+<li>A question’s stated category and its actual signal category can differ; the thirty seconds before
+the question almost always surfaces the latent probe.</li>
+<li>The interviewer’s follow-up question is a second-chance decomposition: it reveals what the first
+question was actually collecting, and the correct move is to reorient, not answer in isolation.</li>
+<li>The same question asked of a senior IC and a staff IC names a different primary hypothesis:
+senior tests technical ownership and individual delivery; staff tests whether the candidate
+changes what others can do and names the organizational artifact that proves it.</li>
+<li>Ambiguity tolerance at the staff level extends beyond individual decisions into runtime governance
+and cross-cutting concerns; a technically strong answer without that layer reads as a senior
+answer at the wrong level.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module1/construct-the-answer/">
-<p><strong>Try It in Claude Code:</strong> run the full four-step Algorithm on five questions (one per signal category plus one systems-design prompt), write out the complete constructed answer for each, and self-score every answer on specificity, structure, and completeness using the prep-dossier rubric.</p>
+<div class="claude-handoff" data-exercise="exercises/module2/the-question-behind-the-question/">
+<p><strong>Try It in Claude Code:</strong> Take three real questions from the taxonomy: “tell me about a time you
+led a technical initiative without formal authority,” “describe a situation where you changed
+direction mid-project,” and “how do you implement guardrails for an autonomous agent.” For each
+one, write out two full decompositions (senior level, staff level), naming the literal parse, the
+primary hypothesis for each level, and one sentence on what the answer must include to hold that
+hypothesis. Then compare: where does the decomposition stay the same across levels, and where does
+it shift?</p>
 </div>
 
 
@@ -216,11 +278,11 @@
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module1/decompose-the-question.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module2/00-overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module2/00-overview.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module2/reading-the-room.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -230,11 +292,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module1/decompose-the-question.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module2/00-overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module2/00-overview.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module2/reading-the-room.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

@@ -6,12 +6,16 @@ not a script to recite. It treats answer construction as an engineering discipli
 AI Engineer hiring loop in full — behavioral, technical, and AI/ML systems-design interviews — and
 positions the Sans Python portfolio artifacts as the resume.
 
-**Graduated to in-progress 2026-06-21; Module 1 shipped.** `GATE-NAME-BOOK` cleared (title **Answer
-Engineering**, slug `answer-engineering`). M1 "The Framework" (overview + 2 lessons + 2 exercises) was
-authored conductor-direct, reviewed to STYLE + STANDARDS with MS-Learn citations verified live, built
-clean (`mdbook build`), and shipped (`GATE-APPROVE-SHIP`, 2026-06-21). It installs the four-step
-Algorithm and seeds the prep-dossier throughline (`exercises/prep/` + `check_prep.py`). See
-`build-log/answer-engineering/build-progress.md`. Next: Module 2 (The Algorithm in Detail).
+**Graduated to in-progress 2026-06-21; Modules 1–3 shipped.** `GATE-NAME-BOOK` cleared (title **Answer
+Engineering**, slug `answer-engineering`). M1 "The Framework" (overview + 2 lessons + 2 exercises)
+installs the four-step Algorithm and seeds the prep-dossier throughline (`exercises/prep/` +
+`check_prep.py`). M2 "The Algorithm in Detail" (overview + 4 lessons + 4 exercises) deepens each step on
+the hard cases and grows the validator to v2 in place. M3 "Behavioral Interviews" (overview + 4 lessons +
+4 exercises) is the behavioral example bank: each lesson reasons two worked examples to a STAR-L answer,
+two examples reused toward different signals to demonstrate method-over-memorization; validator grown to
+v3 in place. All authored conductor-direct, reviewed to STYLE + STANDARDS with MS-Learn citations verified
+live, built clean (`mdbook build`), and shipped (`GATE-APPROVE-SHIP`, 2026-06-21). See
+`build-log/answer-engineering/build-progress.md`. Next: Module 4 (technical screens).
 
 ## Ore (in the vault — not yet distilled)
 
@@ -39,7 +43,7 @@ makes it especially legible to both.
 
 ## Handoff & gates
 
-`GATE-NAME-BOOK` cleared; M1 shipped. For the next module: draft its
-`build-log/answer-engineering/m2/PLAN.md`, stop at `GATE-LOCK-PLAN`, then the fleet authors via
+`GATE-NAME-BOOK` cleared; M1–M3 shipped. For the next module: draft its
+`build-log/answer-engineering/m4/PLAN.md`, stop at `GATE-LOCK-PLAN`, then the fleet authors via
 `platform/pipeline/CONTEXT.md`, and stop at `GATE-APPROVE-SHIP` per stage. See
 `platform/HUMAN-GATES.md`.

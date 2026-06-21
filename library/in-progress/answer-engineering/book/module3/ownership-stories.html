@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Construct the Answer - Answer Engineering — The AI Engineer&#x27;s Interview Framework</title>
+        <title>Ownership Stories - Answer Engineering — The AI Engineer&#x27;s Interview Framework</title>
 
 
         <!-- Custom HTML head -->
@@ -177,38 +177,113 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="construct-the-answer"><a class="header" href="#construct-the-answer">Construct the Answer</a></h1>
-<p>You decomposed correctly and named the signal. You still lose the offer if the answer only points at the signal instead of delivering the evidence it demands.</p>
-<h2 id="the-construction-problem"><a class="header" href="#the-construction-problem">The Construction Problem</a></h2>
-<p>Most candidates conflate “aimed at the right signal” with “good enough.” They are not the same. The answer gestures at the right territory and stops short of proof.</p>
-<p>A strong answer has three properties: specific enough that a weak candidate could not give it, structured so the interviewer can follow the reasoning, complete enough to close the loop on the hypothesis. Specificity is the most critical and the most commonly abandoned under pressure. When you are nervous you reach for the general case: “I used eval-driven development.” That is a claim. The evidence version: “I built three binary judges, one for groundedness, one for answer relevance, one for format compliance, calibrated each against fifty labeled examples from our support queue, and set the groundedness judge as a hard gate in CI.” The first sentence is something anyone can say. The second is not.</p>
-<p>Structure makes the reasoning visible so the interviewer can score it. Completeness means you close the loop: a story that ends with “we made the decision” without naming the outcome is not complete.</p>
-<h2 id="build-backward-from-the-hypothesis"><a class="header" href="#build-backward-from-the-hypothesis">Build Backward From the Hypothesis</a></h2>
-<p>Start from the hypothesis, not from the beginning of the story.</p>
-<p>Ask: what does the hypothesis require as evidence? If the hypothesis is “this candidate makes defensible calls under uncertainty,” the required outputs are a real decision (not “I contributed to the discussion”), explicit uncertainty (what you did not know and why), and a reasoning process you can trace. Those three are your required outputs. Everything else is optional context.</p>
-<p>Then find the shortest path to that evidence. Shortest is not always chronological. You can start with the decision, unpack the uncertainty, then describe the reasoning. Or start with the constraint, name the options, then the call. Cut everything that does not move toward the evidence. The construction ratio: roughly 20% context, 60% evidence (the decision, reasoning, and action), 20% result and reflection.</p>
-<h2 id="the-named-construction-scaffolds"><a class="header" href="#the-named-construction-scaffolds">The Named Construction Scaffolds</a></h2>
-<p>Five frameworks exist because five question types exist. Pick the scaffold that matches the type, build inside it.</p>
-<p><strong>STAR-L</strong> for behavioral questions: Situation, Task, Action, Result, Learning. Two moves separate strong STAR-L answers from weak ones: use “I” for every action (not “we” – “we” hides ownership), and quantify the result (behavioral answers without numbers get scored as anecdotal). The Learning step is load-bearing for AI roles: AI projects carry unique uncertainty, and the Learning step is where you demonstrate you internalized the AI-specific lesson, not a generic one.</p>
-<p>Take a real case. The question: “Tell me about a time you strongly advocated for a technical decision that turned out to be wrong.” A weak answer names the mistake and moves on. The strong STAR-L runs the full arc: pushed to replace the retrieval pipeline with a pure long-context approach, argued in two design reviews, committed the team to a quarter of migration work. Eval results showed quality matched but cost ran 4x projection: cache hit rates collapsed under update frequency, p95 latency doubled. After two weeks of marginal gains, wrote a one-page memo stating plainly that the recommendation was wrong on the economics, then proposed a hybrid approach to the same audience. The hybrid shipped; 60% of migration work was salvaged; the postmortem produced a team rule that any architecture pitch must include a cost model under realistic update patterns. The specificity that makes this unfakeable: “cost ran 4x projection,” “two weeks of marginal gains,” “one-page memo.” No one invents those details. The answer lands because they are real.</p>
-<p><strong>SPIDER</strong> for systems-design questions: Scope and clarify, Prioritize requirements, Initial architecture, Deep dive critical paths, Evaluation and observability, Reliability and scale. The biggest gap between senior and staff answers shows up in the E and R phases: end every deep dive with a sentence on observability and a sentence on failure modes. This is not stylistic. The Azure Well-Architected Framework for AI workloads states that the nondeterministic nature of AI workloads makes vigilant quality monitoring essential, because measurements can change unexpectedly at any time after deployment (learn.microsoft.com/azure/well-architected/ai/operations). Azure AI Foundry’s observability model names evaluation, monitoring, and tracing as the three core capabilities spanning the full lifecycle, from pre-production evaluation through post-production quality and latency tracking (learn.microsoft.com/azure/foundry/concepts/observability). A SPIDER answer that reaches the E and R phases and names these in production terms demonstrates operational experience. One that stops at the architecture diagram does not.</p>
-<p><strong>ETA</strong> for concept-explanation questions: Explain simply, Technical details, Applications and tradeoffs. Go from the one-sentence definition to appropriate depth, then connect to practical usage. ETA is for explaining a component; SPIDER is for designing a system.</p>
-<p><strong>Tradeoff analysis</strong> for comparison and justification questions: “RAG vs fine-tuning,” “when would you skip reranking?” The key construction move: “it depends” is fine only when followed immediately by “it depends on X, Y, Z, and here is how each changes the answer.” Without the second half it reads as hedging. Name the options, define the evaluation criteria weighted for this decision, analyze each against the criteria, make a recommendation, and name the risk. The recommendation is non-negotiable: identifying tradeoffs without committing demonstrates indecision, not nuance.</p>
-<p><strong>Debugging framework</strong> for production-incident questions: gather information first (when did this start, what changed, all requests or a subset), form three to five hypotheses ranked by likelihood, describe the diagnostic approach, propose fixes with a verification plan. The construction move is leading with the gather step. Candidates who open with hypotheses before naming what information they have are showing the same reasoning gap they would in production.</p>
-<h2 id="the-stress-test"><a class="header" href="#the-stress-test">The Stress Test</a></h2>
-<p>Before you stop, run one check: could a weak candidate give this same answer?</p>
-<p>If yes, add one specific thing. A number, a decision with real stakes, a failure mode you caught.</p>
-<p>This check is internal. You are not asking the interviewer; you are asking yourself, in the final seconds before you stop talking, whether you delivered the evidence or only gestured at it. Consider another case. When flagging that an agent’s tool permissions were broader than needed, the weak version says “I raised a security concern and was overruled.” The strong version names the specific blast radius if the agent were prompt-injected, the two mitigations that fit inside the launch window (an audit log on the write paths and an anomaly alert on write volume), and the decision record entry before committing. Any candidate can say they raised a concern. Only one candidate ran the blast-radius analysis and converted a lost argument into cheap guardrails.</p>
-<p>Decomposing the question is table stakes. The construction step is where you deliver the evidence or describe the shape of where it would be.</p>
+                        <h1 id="ownership-stories"><a class="header" href="#ownership-stories">Ownership Stories</a></h1>
+<p>The interviewer running a behavioral round is settling one question before any other: can I trust this
+person with an outcome? Ownership stories are the evidence they read.</p>
+<h2 id="the-signal-and-the-hypothesis"><a class="header" href="#the-signal-and-the-hypothesis">The Signal and the Hypothesis</a></h2>
+<p>Every question in this category tests the same hypothesis: did this candidate drive something, or did
+they watch someone else drive it? The interviewer is not looking for a record of participation. They
+are looking for an “I” behind a decision, a build, or a result, and they will read your pronouns to
+find it.</p>
+<p>The canonical failure mode is the “we” answer. “We explored three approaches.” “The team shipped in
+six weeks.” None of these let the interviewer locate your contribution. “We” is a place to hide. An
+ownership answer replaces it: “I interviewed five stakeholders and found the common thread.” “I wrote
+the memo.” “I built the three prototypes.”</p>
+<p>Four failure modes define the category:</p>
+<p><strong>The “we” answer.</strong> The candidate narrates a team outcome without naming their own action. The
+interviewer cannot score ownership because none is visible.</p>
+<p><strong>Blaming others.</strong> “Management changed scope at the last minute.” This may be factually true and is
+fatal regardless. Ownership means describing what you did inside the constraint, not the constraint
+that made it hard.</p>
+<p><strong>Activity without result.</strong> The candidate describes what they built but not what changed. The Result
+and Learning steps are where ownership lands; an answer that stops at Action is half-built.</p>
+<p><strong>Vague or inflated claims.</strong> “I led the AI initiative” with no project, no timeline, no number. The
+stress-test for an ownership answer is specificity no weak candidate could invent.</p>
+<h2 id="worked-example-one-driving-a-decision-under-ambiguity"><a class="header" href="#worked-example-one-driving-a-decision-under-ambiguity">Worked Example One: Driving a Decision Under Ambiguity</a></h2>
+<p><strong>The question:</strong> “Tell me about a time you started an AI project with unclear requirements.”</p>
+<h3 id="decompose-first"><a class="header" href="#decompose-first">Decompose First</a></h3>
+<p>The signal: ownership under uncertainty. The hypothesis: does this candidate make progress when the
+path is unclear, or do they wait for clarity they cannot have? What the hypothesis requires as
+evidence: a real project with actual ambiguity, the specific move the candidate made to resolve it,
+and a result that shows the resolution worked.</p>
+<h3 id="construct-the-star-l"><a class="header" href="#construct-the-star-l">Construct the STAR-L</a></h3>
+<p>Take a candidate who joins a project with three stakeholders pulling in three directions. Sales wants
+what they call “magic search.” Engineering wants a scoped deliverable. Leadership wants
+differentiation from competitors. The candidate is the tech lead.</p>
+<p>The weak version: “I ran stakeholder interviews and we aligned on a direction. We shipped the MVP in
+six weeks.” That describes the shape of the work without showing any reasoning. The interviewer learns
+nothing about judgment.</p>
+<p>The strong construction builds toward the evidence the hypothesis requires.</p>
+<p>The candidate interviews five stakeholders one by one. What they find: all three factions share one
+concern, time to answer. Sales calls it “magic” because customers spend twenty minutes finding
+something that should take two. Engineering calls it “scope” because they need an estimable
+deliverable. Leadership calls it “differentiation” because competitors do not solve this either.</p>
+<p>That thread becomes the anchor. The candidate builds three rapid prototypes: keyword ranking, semantic
+search using embeddings, and conversational RAG. Each is demoed with real queries from support logs,
+with actual performance numbers and cost attached. Semantic search answers faster and fits the quarter.</p>
+<p>Semantic search ships in six weeks. User time-to-answer drops forty percent. That result clears
+buy-in for phase two.</p>
+<p>The Learning step: prototyping with real tradeoffs visible moves a stalled conversation faster than
+any abstract proposal. The candidate now starts every ambiguous project with a prototype pass, not a
+requirements document.</p>
+<h3 id="the-stress-test"><a class="header" href="#the-stress-test">The Stress-Test</a></h3>
+<p>Could a weak candidate give this same answer? No, because of three specifics: the thread found across
+all five stakeholders, the three prototype levels against real support queries, and the forty percent
+drop. Remove any of those and the answer goes generic. They are the proof the candidate did the work.</p>
+<p>Note what “I” does in this construction. The candidate interviewed. The candidate found the thread.
+The candidate built and demoed the prototypes. The team shipped together, but the decisions belong to
+one person. That is the “I” discipline under pressure.</p>
+<h2 id="worked-example-two-owning-the-call-and-the-walkback"><a class="header" href="#worked-example-two-owning-the-call-and-the-walkback">Worked Example Two: Owning the Call and the Walkback</a></h2>
+<p><strong>The question:</strong> “Tell me about a time you strongly advocated for a technical decision that turned
+out to be wrong.”</p>
+<h3 id="decompose-first-1"><a class="header" href="#decompose-first-1">Decompose First</a></h3>
+<p>The signal is ownership with two layers. First: did the candidate advocate with real conviction, or
+did they hedge from the start? Second, and more important: when the decision failed, did they own it,
+or did they let someone else surface the problem?</p>
+<p>The evidence required: a real decision, real conviction, a real failure with numbers, and a clear
+record of the candidate naming the failure themselves rather than waiting to be caught.</p>
+<h3 id="construct-the-star-l-1"><a class="header" href="#construct-the-star-l-1">Construct the STAR-L</a></h3>
+<p>Take a candidate who campaigns to replace a retrieval pipeline with a pure long-context approach. Not
+a suggestion: two design reviews, sustained argument, and enough conviction that the team commits a
+quarter of migration work partly on the candidate’s recommendation. The Situation is that the
+candidate believed this most. That matters. The interviewer needs to see real skin in the call.</p>
+<p>Eval results come back. Quality matches the old system. Cost runs four times the projection. Cache hit
+rates collapse under actual update frequency; P95 latency doubles. Both assumptions the pitch relied
+on fail in production.</p>
+<p>Here is where ownership separates from description. The candidate’s first instinct is to tune out of
+it. Two weeks of marginal gains later, they write a one-page memo: not a Slack message, not a hallway
+word, a memo with the numbers, stating plainly that the recommendation was wrong on the economics.
+They propose a hybrid: long-context for small static corpora, retrieval for everything else, and
+present it to the same audience they originally convinced.</p>
+<p>The hybrid ships. About sixty percent of the migration work is salvaged. The postmortem produces a
+team rule: any architecture pitch must include a cost model under realistic update patterns.</p>
+<p>The Learning step: the candidate attaches explicit kill criteria to their own proposals going forward,
+so walking back is a checkpoint in the process rather than a public admission.</p>
+<h3 id="the-stress-test-1"><a class="header" href="#the-stress-test-1">The Stress-Test</a></h3>
+<p>The specifics that make this unfakeable: two design reviews, a quarter committed, four times the
+projected cost, two weeks of marginal gains before the memo, sixty percent salvaged. No weak candidate
+invents those details. More importantly, no weak candidate foregrounds the memo. Anyone can say “the
+decision turned out wrong.” Only one candidate wrote it down, with the numbers, to the same room.</p>
+<p>Note what this case does not foreground: the kill criteria device, the internal calibration that
+changed. Those are what a failure question draws out. An ownership question draws out the act: the
+candidate who made the call, ran two weeks of repair attempts, then named the failure publicly rather
+than waiting for someone else to. Same story, different signal, different layer. That is the Algorithm
+doing its job.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>Construction starts from the hypothesis: identify what evidence the hypothesis requires, then choose the example and order that reaches that evidence fastest.</li>
-<li>Specificity is the critical property: an answer that points at the right signal but supplies no detail a weak candidate could not also supply is still a weak answer.</li>
-<li>The five named construction scaffolds match question type: STAR-L for behavioral, SPIDER for systems design, ETA for concept explanation, tradeoff analysis for comparison questions, the debugging framework for production-incident questions.</li>
-<li>The stress test runs before you stop: ask whether a weak candidate could give the same answer; if yes, add one specific thing.</li>
+<li>The ownership signal is the “I” behind a decision: the interviewer needs to locate one specific
+person’s call, not a team’s collective motion.</li>
+<li>Four failure modes kill ownership answers: the “we” answer, blaming others, activity without result,
+and vague or inflated claims.</li>
+<li>Construction starts from the hypothesis: identify what accountability evidence the question requires,
+then build toward it.</li>
+<li>The stress-test for ownership is memo-level specificity: a detail or decision only someone who
+actually made the call could supply.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module1/construct-the-answer/">
-<p><strong>Try It in Claude Code:</strong> run the full four-step Algorithm on five questions (one per signal category plus one systems-design prompt), write out the complete constructed answer for each, and self-score every answer on specificity, structure, and completeness using the prep-dossier rubric.</p>
+<p>The interviewer deciding whether to trust you with an outcome reads your answer, not your resume. One
+specific, owned, named decision is worth more than a paragraph of activity.</p>
+<div class="claude-handoff" data-exercise="exercises/module3/ownership-stories/">
+<p><strong>Try It in Claude Code:</strong> Write one of your own ownership stories, run the full Algorithm on it (decompose the signal and hypothesis, construct the STAR-L toward that evidence, apply the stress-test), then run the weak-answer audit from Module 2 and add the result to your behavioral bank.</p>
 </div>
 
 
@@ -216,11 +291,11 @@
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module1/decompose-the-question.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module3/00-overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module2/00-overview.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module3/conflict-stories.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -230,11 +305,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module1/decompose-the-question.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module3/00-overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module2/00-overview.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module3/conflict-stories.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

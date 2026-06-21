@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Construct the Answer - Answer Engineering — The AI Engineer&#x27;s Interview Framework</title>
+        <title>Influence Stories - Answer Engineering — The AI Engineer&#x27;s Interview Framework</title>
 
 
         <!-- Custom HTML head -->
@@ -177,38 +177,130 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="construct-the-answer"><a class="header" href="#construct-the-answer">Construct the Answer</a></h1>
-<p>You decomposed correctly and named the signal. You still lose the offer if the answer only points at the signal instead of delivering the evidence it demands.</p>
-<h2 id="the-construction-problem"><a class="header" href="#the-construction-problem">The Construction Problem</a></h2>
-<p>Most candidates conflate “aimed at the right signal” with “good enough.” They are not the same. The answer gestures at the right territory and stops short of proof.</p>
-<p>A strong answer has three properties: specific enough that a weak candidate could not give it, structured so the interviewer can follow the reasoning, complete enough to close the loop on the hypothesis. Specificity is the most critical and the most commonly abandoned under pressure. When you are nervous you reach for the general case: “I used eval-driven development.” That is a claim. The evidence version: “I built three binary judges, one for groundedness, one for answer relevance, one for format compliance, calibrated each against fifty labeled examples from our support queue, and set the groundedness judge as a hard gate in CI.” The first sentence is something anyone can say. The second is not.</p>
-<p>Structure makes the reasoning visible so the interviewer can score it. Completeness means you close the loop: a story that ends with “we made the decision” without naming the outcome is not complete.</p>
-<h2 id="build-backward-from-the-hypothesis"><a class="header" href="#build-backward-from-the-hypothesis">Build Backward From the Hypothesis</a></h2>
-<p>Start from the hypothesis, not from the beginning of the story.</p>
-<p>Ask: what does the hypothesis require as evidence? If the hypothesis is “this candidate makes defensible calls under uncertainty,” the required outputs are a real decision (not “I contributed to the discussion”), explicit uncertainty (what you did not know and why), and a reasoning process you can trace. Those three are your required outputs. Everything else is optional context.</p>
-<p>Then find the shortest path to that evidence. Shortest is not always chronological. You can start with the decision, unpack the uncertainty, then describe the reasoning. Or start with the constraint, name the options, then the call. Cut everything that does not move toward the evidence. The construction ratio: roughly 20% context, 60% evidence (the decision, reasoning, and action), 20% result and reflection.</p>
-<h2 id="the-named-construction-scaffolds"><a class="header" href="#the-named-construction-scaffolds">The Named Construction Scaffolds</a></h2>
-<p>Five frameworks exist because five question types exist. Pick the scaffold that matches the type, build inside it.</p>
-<p><strong>STAR-L</strong> for behavioral questions: Situation, Task, Action, Result, Learning. Two moves separate strong STAR-L answers from weak ones: use “I” for every action (not “we” – “we” hides ownership), and quantify the result (behavioral answers without numbers get scored as anecdotal). The Learning step is load-bearing for AI roles: AI projects carry unique uncertainty, and the Learning step is where you demonstrate you internalized the AI-specific lesson, not a generic one.</p>
-<p>Take a real case. The question: “Tell me about a time you strongly advocated for a technical decision that turned out to be wrong.” A weak answer names the mistake and moves on. The strong STAR-L runs the full arc: pushed to replace the retrieval pipeline with a pure long-context approach, argued in two design reviews, committed the team to a quarter of migration work. Eval results showed quality matched but cost ran 4x projection: cache hit rates collapsed under update frequency, p95 latency doubled. After two weeks of marginal gains, wrote a one-page memo stating plainly that the recommendation was wrong on the economics, then proposed a hybrid approach to the same audience. The hybrid shipped; 60% of migration work was salvaged; the postmortem produced a team rule that any architecture pitch must include a cost model under realistic update patterns. The specificity that makes this unfakeable: “cost ran 4x projection,” “two weeks of marginal gains,” “one-page memo.” No one invents those details. The answer lands because they are real.</p>
-<p><strong>SPIDER</strong> for systems-design questions: Scope and clarify, Prioritize requirements, Initial architecture, Deep dive critical paths, Evaluation and observability, Reliability and scale. The biggest gap between senior and staff answers shows up in the E and R phases: end every deep dive with a sentence on observability and a sentence on failure modes. This is not stylistic. The Azure Well-Architected Framework for AI workloads states that the nondeterministic nature of AI workloads makes vigilant quality monitoring essential, because measurements can change unexpectedly at any time after deployment (learn.microsoft.com/azure/well-architected/ai/operations). Azure AI Foundry’s observability model names evaluation, monitoring, and tracing as the three core capabilities spanning the full lifecycle, from pre-production evaluation through post-production quality and latency tracking (learn.microsoft.com/azure/foundry/concepts/observability). A SPIDER answer that reaches the E and R phases and names these in production terms demonstrates operational experience. One that stops at the architecture diagram does not.</p>
-<p><strong>ETA</strong> for concept-explanation questions: Explain simply, Technical details, Applications and tradeoffs. Go from the one-sentence definition to appropriate depth, then connect to practical usage. ETA is for explaining a component; SPIDER is for designing a system.</p>
-<p><strong>Tradeoff analysis</strong> for comparison and justification questions: “RAG vs fine-tuning,” “when would you skip reranking?” The key construction move: “it depends” is fine only when followed immediately by “it depends on X, Y, Z, and here is how each changes the answer.” Without the second half it reads as hedging. Name the options, define the evaluation criteria weighted for this decision, analyze each against the criteria, make a recommendation, and name the risk. The recommendation is non-negotiable: identifying tradeoffs without committing demonstrates indecision, not nuance.</p>
-<p><strong>Debugging framework</strong> for production-incident questions: gather information first (when did this start, what changed, all requests or a subset), form three to five hypotheses ranked by likelihood, describe the diagnostic approach, propose fixes with a verification plan. The construction move is leading with the gather step. Candidates who open with hypotheses before naming what information they have are showing the same reasoning gap they would in production.</p>
-<h2 id="the-stress-test"><a class="header" href="#the-stress-test">The Stress Test</a></h2>
-<p>Before you stop, run one check: could a weak candidate give this same answer?</p>
-<p>If yes, add one specific thing. A number, a decision with real stakes, a failure mode you caught.</p>
-<p>This check is internal. You are not asking the interviewer; you are asking yourself, in the final seconds before you stop talking, whether you delivered the evidence or only gestured at it. Consider another case. When flagging that an agent’s tool permissions were broader than needed, the weak version says “I raised a security concern and was overruled.” The strong version names the specific blast radius if the agent were prompt-injected, the two mitigations that fit inside the launch window (an audit log on the write paths and an anomaly alert on write volume), and the decision record entry before committing. Any candidate can say they raised a concern. Only one candidate ran the blast-radius analysis and converted a lost argument into cheap guardrails.</p>
-<p>Decomposing the question is table stakes. The construction step is where you deliver the evidence or describe the shape of where it would be.</p>
+                        <h1 id="influence-stories"><a class="header" href="#influence-stories">Influence Stories</a></h1>
+<p>At the staff level you are hired for leverage, and the behavioral round is where interviewers
+decide whether you have it.</p>
+<h2 id="the-signal"><a class="header" href="#the-signal">The Signal</a></h2>
+<p>Every influence question tests the same hypothesis: does this candidate move people without
+formal authority, and does their work change what others can build? The interview is not asking
+whether you convinced someone. It is asking whether you left anything behind.</p>
+<p>That gap between winning an argument and leaving an organizational artifact is exactly where
+senior answers stop and staff answers begin. A senior-level answer says “I shipped X and it
+worked.” A staff-level answer says “I shipped X, which became the standard the team applies to
+every new integration.” The artifact is the proof of leverage: a pattern, a template, a
+documented process, a set of metrics that outlasts the project that produced them.</p>
+<p>Decompose any influence question the same way you decompose any behavioral question. What is the
+hypothesis? Can this person lead without authority, and at the staff level, do they leave
+organizational artifacts behind? Build your STAR-L toward that evidence, and stress-test it with
+one question: if you removed yourself from the story, does anything still exist?</p>
+<h2 id="the-failure-modes"><a class="header" href="#the-failure-modes">The Failure Modes</a></h2>
+<p>Four patterns kill influence answers. Know them before you construct.</p>
+<p><strong>Influence-as-winning.</strong> The candidate frames the story as a persuasion contest they won. Strong
+influence does not work through argument victory; it works through aligning incentives, proposing
+concrete alternatives, and making the right call obviously attractive. If your story reads as “I
+convinced them I was right,” you have described a debate, not leadership.</p>
+<p><strong>“We” without “I changed.”</strong> The influence story must name your specific move. “We established a
+new template” attributes nothing to you. The staff answer is personal and precise: “I proposed the
+collaboration structure, which became the template the team now uses.” Ownership lives in the verb
+and the “I.”</p>
+<p><strong>Ethics framed as obstruction.</strong> When an influence story involves raising a safety or fairness
+concern, the failure mode is presenting yourself as a blocker who stopped a project. The strong
+move is framing the concern as a business and legal risk, proposing two options, and letting the
+decision-maker choose. You are a problem-solver who surfaced a risk, not a conscience who said no.</p>
+<p><strong>Stopping at the decision outcome.</strong> Many candidates end the story when the decision is made. The
+influence signal lives in what happened after: what changed for others, what became the standard,
+what the team could build next that it could not build before. If your story ends at “and they
+agreed with me,” it is missing the organizational artifact that proves the influence was real.</p>
+<h2 id="worked-example-one-raising-a-fairness-concern"><a class="header" href="#worked-example-one-raising-a-fairness-concern">Worked Example One: Raising a Fairness Concern</a></h2>
+<p>The question: “Tell me about a time you raised an ethical concern about an AI system.”</p>
+<p><strong>Decompose.</strong> The hypothesis is not “does this candidate have a conscience?” It is: “can this
+candidate identify an AI-specific risk, surface it in a way that changes what the team does, and
+leave an organizational trace that protects future work?” The signal is technical influence,
+category-specific: the ability to reframe a values concern as an operational one and move the
+organization without authority.</p>
+<p><strong>What evidence does the hypothesis require?</strong> A concrete, quantified problem (not a vague
+discomfort), a reframing that makes the concern actionable for a business audience, proposed
+options that fit inside the team’s actual constraints, and a result that extended beyond this
+project.</p>
+<p><strong>Construct the STAR-L.</strong></p>
+<p>Situation: while building a resume screening model, the training data was heavily weighted toward
+graduates of a small number of universities. The task was not just technical: raising the concern
+in a way that would be taken seriously without being dismissed as blocking the launch.</p>
+<p>The action is where the staff signal lives. The first move was quantification: 80% precision on
+graduates of top programs versus 45% precision on candidates with similar qualifications from
+other schools. That gap is not a values claim; it is a measurement of model behavior. The second
+move was reframing: before any meeting, this was presented as a business and legal risk, citing
+recent litigation over biased automated hiring decisions. The third move was proposing options
+rather than reporting a problem: rebalance the training data for broader demographic
+representation, or constrain the model to matching rather than ranking and route all candidates to
+human review. Those two options fit different risk tolerances. The team chose the first option and
+added fairness metrics to the evaluation suite.</p>
+<p>The result: a three-week delay in launch, a model that performed consistently across demographic
+groups, and an evaluation requirement that became the standard for every subsequent ML model the
+team shipped.</p>
+<p><strong>Stress-test.</strong> Could a weak candidate give this same answer? No. The 80% versus 45% precision
+gap is a specific measurement that required running the analysis. The two options are concrete
+enough that the team could choose between them. The fairness metric requirement that extended to
+all future models is the organizational artifact: it exists after you do, and it changes what the
+next engineer has to do before they ship.</p>
+<p>The move: decompose the concern into a quantified problem, reframe it in the language the
+decision-maker cares about, propose options rather than blocking, and make sure the result
+outlasts the project. The detail that earns this answer its credibility is not the ethical
+position; it is the measurement that made the ethical position undeniable.</p>
+<h2 id="worked-example-two-converting-a-lost-argument"><a class="header" href="#worked-example-two-converting-a-lost-argument">Worked Example Two: Converting a Lost Argument</a></h2>
+<p>The question: “Describe a time you raised a concern and the team decided against you. What did
+you do?”</p>
+<p><strong>Decompose.</strong> This question is listed under conflict in some interview frameworks. When you
+foreground what happened after the decision, it becomes an influence question: did the candidate
+convert a lost argument into something durable, or did they accept the outcome and move on? The
+hypothesis is: can this candidate operate constructively after being overruled, and do they leave
+a record that protects the organization even when they lose?</p>
+<p><strong>What evidence does the hypothesis require?</strong> Proportional escalation (the concern was real and
+the candidate took it seriously, but did not overstep), a constructive action inside the decision
+window, and a result that shows the concern was valid even after the argument was over.</p>
+<p><strong>Construct the STAR-L.</strong></p>
+<p>Situation: before a launch, the agent’s tool permissions were broader than the feature required.
+It had write access to systems it only needed to read. Leadership weighed a two-week delay against
+existing launch commitments and decided to ship as-is, with a prioritized follow-up ticket.</p>
+<p>The task required a judgment call: disagree with the decision or commit to it? The job was to
+ensure the decision was made with full information. After that, the choice was escalate or commit.</p>
+<p>The action: rather than accepting a vague “this is risky,” the concern was written down precisely.
+Specifically: the blast radius if the agent were prompt-injected, including a realistic attack path
+and a description of which systems were exposed. Then, two mitigations that fit inside the existing
+launch window were proposed: an audit log on the write paths and an anomaly alert on write volume.
+Both were accepted. The disagreement was documented in the decision record, and the launch
+proceeded without relitigating the argument in hallway conversations.</p>
+<p>The result: the launch was fine. Three weeks later, the anomaly alert fired on a misconfigured
+integration test, not an attack, but it validated that the monitoring worked. The permission
+scoping shipped a month later, prioritized partly because of that signal. The written decision
+record, the audit log, and the alert together formed the organizational trace: a set of artifacts
+that outlasted the argument.</p>
+<p><strong>Stress-test.</strong> The blast-radius analysis with a realistic attack path is not something any
+candidate can fabricate. The two specific mitigations were concrete enough to be accepted inside
+the launch window. The documented disagreement in the decision record is the artifact that matters:
+it proves the concern was raised with specificity, protects the team if the risk materializes, and
+builds the credibility that makes the next concern land harder.</p>
+<p>The move: convert the lost argument into cheap guardrails and a written record. That conversion is
+the influence, not the original disagreement. The candidate who ends the story at “I disagreed but
+deferred” has told a conflict story. The candidate who ends it at the audit log, the alert, and the
+decision record has told an influence story.</p>
+<h2 id="the-distinction-between-these-two-examples"><a class="header" href="#the-distinction-between-these-two-examples">The Distinction Between These Two Examples</a></h2>
+<p>Both cases involve raising a concern. The resume-screening case foregrounds reframing: the ethical
+concern became a business risk, and the organizational artifact was a new evaluation standard. The
+permissions case foregrounds conversion: a lost argument became a set of operational guardrails, and
+the organizational artifact was the combination of documented disagreement and live monitoring. The
+move depends on your situation, not on which story sounds better. What does not depend on the
+situation is this: if you cannot name what still exists after you walked out of the room, you have
+not yet told an influence story.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>Construction starts from the hypothesis: identify what evidence the hypothesis requires, then choose the example and order that reaches that evidence fastest.</li>
-<li>Specificity is the critical property: an answer that points at the right signal but supplies no detail a weak candidate could not also supply is still a weak answer.</li>
-<li>The five named construction scaffolds match question type: STAR-L for behavioral, SPIDER for systems design, ETA for concept explanation, tradeoff analysis for comparison questions, the debugging framework for production-incident questions.</li>
-<li>The stress test runs before you stop: ask whether a weak candidate could give the same answer; if yes, add one specific thing.</li>
+<li>The influence signal is organizational: the staff-level hypothesis is whether your work changed what others could build, not whether you convinced anyone.</li>
+<li>Influence operates through aligned incentives and proposed options, not argument-winning; framing a concern as a business and legal risk is more durable than framing it as a moral position.</li>
+<li>The organizational artifact is the test: if you remove yourself from the story, what still exists? A pattern, a standard, a decision record, a monitoring alert.</li>
+<li>Stopping at the decision outcome is the category-specific failure mode; the influence signal lives in what happened after, not in whether you were right.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module1/construct-the-answer/">
-<p><strong>Try It in Claude Code:</strong> run the full four-step Algorithm on five questions (one per signal category plus one systems-design prompt), write out the complete constructed answer for each, and self-score every answer on specificity, structure, and completeness using the prep-dossier rubric.</p>
+<div class="claude-handoff" data-exercise="exercises/module3/influence-stories/">
+<p><strong>Try It in Claude Code:</strong> write one of your own influence stories that names the organizational artifact it left behind, run the full Algorithm and the weak-answer audit on it, and add it to your behavioral bank.</p>
 </div>
 
 
@@ -216,13 +308,10 @@
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module1/decompose-the-question.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module3/failure-stories.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module2/00-overview.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -230,13 +319,10 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module1/decompose-the-question.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module3/failure-stories.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module2/00-overview.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                    </a>
             </nav>
 
         </div>
