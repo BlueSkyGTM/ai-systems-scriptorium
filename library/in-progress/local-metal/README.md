@@ -182,28 +182,16 @@ this file are machine-parseable. The same pages serve both parties.
 
 ---
 
-## Candidate Names (GATE-NAME-BOOK)
+## Name (GATE-NAME-BOOK — Cleared)
 
-Proposing three names below. **Ray chooses before the book graduates to in-progress.**
+**Locked 2026-06-21: the title is _Local Metal_, the slug is `local-metal`.** The rig is built
+and running, so the book graduates with all seven modules authorable and live-verifiable. The
+candidates below are kept as the record of the decision.
 
-### Lead: Local Metal
+| Name | Rationale |
+|------|-----------|
+| **Local Metal** (lead) | Precise, concrete, AI-engineering-idiomatic. "Local" signals the local-vs-frontier axis the routing layer lives on; "Metal" signals bare-metal hardware (not cloud). Names exactly what the reader builds and why it matters. Short enough to live in a path without ambiguity — and it is already the slug throughout the tree, so zero path churn. |
+| **Home Inference** | Emphasizes the outcome (running inference at home) over the hardware. More accessible to a reader who does not yet know they want to build a machine; less precise for an engineer who already knows the domain. |
+| **Bare Metal** | Classic sysadmin phrase for running directly on hardware without a hypervisor. Familiar and accurate, but slightly generic (used in cloud contexts too), which muddies the homebrew framing. Strongest for a sysadmin-leaning audience; weaker for the AI-Engineer audience this library targets. |
 
-Precise, concrete, AI-engineering-idiomatic. "Local" signals the local-vs-frontier axis
-that the routing layer lives on; "Metal" signals bare-metal hardware (not cloud). Together
-they name exactly what the reader builds and why it matters. Short enough to live in a
-path without ambiguity.
-
-### Alternate: Home Inference
-
-Emphasizes the outcome (running inference at home) rather than the hardware. More
-accessible to a reader who does not yet know they want to build a machine; less precise
-for an engineer who already knows the domain. Works as a subtitle or chapter heading if
-Local Metal wins.
-
-### Alternate: Bare Metal
-
-Classic sysadmin phrase for running directly on hardware without a hypervisor. Technically
-accurate and familiar. Slightly more generic than Local Metal (bare metal is used in cloud
-contexts too, which muddies the "homebrew" framing). Strong if the positioning leans into
-the Linux/sysadmin audience; slightly weaker for the AI Engineer audience this library
-targets.
+Decision: **Local Metal**. The book has graduated to `library/in-progress/local-metal`.

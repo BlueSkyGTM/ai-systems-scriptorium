@@ -19,11 +19,11 @@ routed_boundaries:
   library: library
   book_sans_python: library/completed/sans-python
   in_progress_just_python: library/in-progress/just-python
+  in_progress_local_metal: library/in-progress/local-metal
   planned_ml_in_proportion: library/planned/ml-in-proportion
   planned_upstream: library/planned/upstream
   planned_tasteful_tuning: library/planned/tasteful-tuning
   planned_interview_algorithm: library/planned/interview-algorithm
-  planned_local_metal: library/planned/local-metal
   platform: platform
   platform_pipeline: platform/pipeline
   platform_conventions: platform/conventions
