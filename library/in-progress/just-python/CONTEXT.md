@@ -10,9 +10,10 @@ Fills row 1 of `build-log/sans-python/antilibrary-gap-report.md` — the **94%-o
 Post-Sans-Python, pre-Machine-Learning. The name plays off the first book deliberately:
 first you learned the field *Sans Python*; now you focus *Just Python*.
 
-**Graduated to in-progress 2026-06-20.** `GATE-NAME-BOOK` is cleared: the title is **Just Python**, the
-slug is `just-python`. A Chapter 1 preview is drafted in `draft/`. Next: process the named ore into
-`ingredients`, draft the stage `PLAN.md`, and stop at `GATE-LOCK-PLAN` before the fleet authors.
+**Graduated to in-progress 2026-06-20; Module 1 shipped.** `GATE-NAME-BOOK` cleared (title **Just
+Python**, slug `just-python`); the M1 plan was locked (`GATE-LOCK-PLAN`) and the five M1 lessons + four
+exercises were authored by the tiered fleet, reviewed to STYLE + STANDARDS, and shipped
+(`GATE-APPROVE-SHIP`, 2026-06-20). See `build-log/just-python/build-progress.md`. Next: Module 2.
 
 ## Ore (in the vault — not yet distilled)
 
@@ -40,6 +41,6 @@ ore map and module table in `README.md`.
 
 ## Handoff & Gates
 
-`GATE-NAME-BOOK` cleared. Process ore via `vault/CONTEXT.md` → `platform/pipeline/CONTEXT.md`; stop at
-`GATE-LOCK-PLAN` (lock the stage plan) before authoring, then `GATE-APPROVE-SHIP` per stage. See
-`platform/HUMAN-GATES.md`.
+`GATE-NAME-BOOK` cleared; M1 shipped. For the next module: draft its
+`build-log/just-python/mN/PLAN.md`, stop at `GATE-LOCK-PLAN`, then the fleet authors via
+`platform/pipeline/CONTEXT.md`, and stop at `GATE-APPROVE-SHIP` per stage. See `platform/HUMAN-GATES.md`.

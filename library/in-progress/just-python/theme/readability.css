@@ -1,0 +1,18 @@
+/* Just Python — readability: lift the dark-theme body text to a crisp near-white.
+
+   mdBook's stock Ayu foreground is #c5c5c5, a muted gray that reads as "transparent"
+   on the deep canvas over a long reading session. This matches it to the brighter
+   near-white of the Claude Code desktop UI so the reading text stays easy on the eyes.
+   The Rust / light theme already runs near-black text on warm paper, so it is left
+   untouched (its complaint would be the opposite of transparent).
+
+   Loaded after mdBook's variables.css (additional-css wins on equal specificity), so
+   this override holds. Only the plain reading foreground changes: the signature goldenrod
+   accent, the inline-code gold, and the syntax-token colors are all unchanged, since
+   those are set explicitly in syntax-polish.css and do not read from --fg.
+
+   All-books standard: #ededed. See platform/conventions/PALETTES.md. */
+
+.ayu {
+  --fg: #ededed;   /* was #c5c5c5 — crisp near-white, matched to the desktop app */
+}

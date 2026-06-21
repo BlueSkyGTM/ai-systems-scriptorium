@@ -1,0 +1,105 @@
+/* Sans Python — code-block polish.
+   Deepens contrast + color toward the VS Code Rust look and the Ayu palette.
+   Scoped per mdBook theme class so each stays coherent. Loaded after the stock
+   highlight CSS, so these win. */
+
+/* ---- Container polish (all themes): a card that reads as code, not prose ---- */
+pre {
+  border-radius: 8px;
+}
+pre > code {
+  box-sizing: border-box;                    /* width includes padding: kills the spurious horizontal scrollbar */
+  border-radius: 8px;
+  padding: 0.95rem 1.05rem !important;
+  line-height: 1.55;
+  font-size: 0.92em;
+  border: 1px solid rgba(128, 128, 128, 0.45);  /* thin edge so a block reads as a card; tinted per theme below */
+}
+/* inline code: a touch more contrast so it separates from prose */
+:not(pre) > code {
+  padding: 0.12em 0.36em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+/* =====================================================================
+   AYU (dark) — the "magic": deep canvas + saturated, high-contrast tokens
+   ===================================================================== */
+.ayu pre > code,
+.ayu pre,
+.ayu code.hljs {
+  background-color: #0b0e14;            /* deeper than the page (#0f1419) so blocks pop */
+  color: #bfbdb6;                       /* Ayu foreground */
+}
+/* quiet neutral edge: lifts the block off the near-same-color Ayu page without wearing the accent */
+.ayu pre > code { border-color: #3a424e; }   /* clear slate edge on the near-black card */
+.ayu :not(pre) > code {
+  background-color: #11151c;
+  color: #ffb454;                       /* inline code in Ayu gold */
+}
+.ayu .hljs-comment,
+.ayu .hljs-quote            { color: #5c6773; font-style: italic; }
+.ayu .hljs-keyword,
+.ayu .hljs-meta,
+.ayu .hljs-selector-tag,
+.ayu .hljs-doctag           { color: #ff8f40; }                 /* orange — keywords/storage */
+.ayu .hljs-operator,
+.ayu .hljs-symbol,
+.ayu .hljs-bullet           { color: #f29668; }                 /* soft orange — operators */
+.ayu .hljs-string,
+.ayu .hljs-regexp,
+.ayu .hljs-addition         { color: #aad94c; }                 /* lime — strings */
+.ayu .hljs-title,
+.ayu .hljs-title.function_,
+.ayu .hljs-section,
+.ayu .hljs-name             { color: #ffb454; }                 /* gold — function/def names */
+.ayu .hljs-type,
+.ayu .hljs-title.class_,
+.ayu .hljs-built_in,
+.ayu .hljs-class .hljs-title { color: #59c2ff; }                /* blue — types/classes/builtins */
+.ayu .hljs-number,
+.ayu .hljs-literal,
+.ayu .hljs-variable.constant_ { color: #d2a6ff; }               /* purple — numbers/literals */
+.ayu .hljs-attr,
+.ayu .hljs-attribute,
+.ayu .hljs-property,
+.ayu .hljs-tag              { color: #73d0ff; }                 /* light blue — attrs/props */
+.ayu .hljs-variable,
+.ayu .hljs-template-variable,
+.ayu .hljs-params           { color: #bfbdb6; }
+.ayu .hljs-deletion         { color: #f07178; }
+
+/* =====================================================================
+   RUST / LIGHT — a cleaner, more saturated high-contrast light palette
+   ===================================================================== */
+.rust pre > code, .light pre > code,
+.rust pre, .light pre,
+.rust code.hljs, .light code.hljs {
+  background-color: #fbf7f0;            /* warm paper, a hair off the page */
+  color: #3b3228;
+}
+/* quiet warm-neutral edge to match the Ayu treatment (accent reserved for syntax + the handoff CTA) */
+.rust pre > code, .light pre > code { border-color: #c7baa1; }   /* clear warm-taupe edge on the paper card */
+.rust :not(pre) > code, .light :not(pre) > code {
+  background-color: #f3ece1;
+  color: #a5310f;                       /* rust-red inline code */
+}
+.rust .hljs-comment, .light .hljs-comment,
+.rust .hljs-quote,   .light .hljs-quote     { color: #9a917f; font-style: italic; }
+.rust .hljs-keyword, .light .hljs-keyword,
+.rust .hljs-meta,    .light .hljs-meta,
+.rust .hljs-selector-tag, .light .hljs-selector-tag { color: #a5310f; }   /* rust-red keywords */
+.rust .hljs-string,  .light .hljs-string,
+.rust .hljs-regexp,  .light .hljs-regexp    { color: #4b7a17; }           /* green strings */
+.rust .hljs-title,   .light .hljs-title,
+.rust .hljs-title.function_, .light .hljs-title.function_,
+.rust .hljs-section, .light .hljs-section,
+.rust .hljs-name,    .light .hljs-name      { color: #9a6700; }           /* amber function names */
+.rust .hljs-type,    .light .hljs-type,
+.rust .hljs-built_in,.light .hljs-built_in,
+.rust .hljs-title.class_, .light .hljs-title.class_ { color: #0b5fa5; }   /* blue types/builtins */
+.rust .hljs-number,  .light .hljs-number,
+.rust .hljs-literal, .light .hljs-literal   { color: #6f42c1; }           /* purple numbers */
+.rust .hljs-attr,    .light .hljs-attr,
+.rust .hljs-property,.light .hljs-property,
+.rust .hljs-tag,     .light .hljs-tag       { color: #0b5fa5; }
