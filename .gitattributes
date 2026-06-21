@@ -1,0 +1,10 @@
+# Line-ending policy. Ends the Windows CRLF churn that the tracked mdBook output
+# and the vendored vault were generating on every commit.
+
+# Authored source: store and check out as LF, so nothing flips to CRLF on Windows.
+* text=auto eol=lf
+
+# Generated mdBook output and vendored vault ore: treat as binary; never convert or
+# diff their line endings (the book is regenerated; the vault is kept verbatim).
+library/completed/sans-python/book/** -text
+vault/** -text
