@@ -1,11 +1,15 @@
-# CONTEXT — Anatomy of an Answer (PLANNED)
+# CONTEXT — Answer Engineering (IN PROGRESS)
 
 The career book. Where every other Scriptorium book builds the skills, this one teaches the reader
 to demonstrate those skills under pressure: an internal framework for reasoning to a strong answer,
-not a script to recite. It covers the AI Engineer hiring loop in full — behavioral, technical, and
-AI/ML systems-design interviews — and positions the Sans Python portfolio artifacts as the resume.
+not a script to recite. It treats answer construction as an engineering discipline. It covers the
+AI Engineer hiring loop in full — behavioral, technical, and AI/ML systems-design interviews — and
+positions the Sans Python portfolio artifacts as the resume.
 
-**Not started.** Starting it is gated at `GATE-NAME-BOOK` (propose the real title first).
+**Graduated to in-progress 2026-06-21.** `GATE-NAME-BOOK` cleared (title **Answer Engineering**,
+slug `answer-engineering`). No module locked yet; the next step is to process the ore and draft the
+Module 1 plan. Module 1 ("The Framework", two lessons + two exercises) already has a working draft
+in `draft/` from the planning phase — author from it, do not discard it.
 
 ## Ore (in the vault — not yet distilled)
 
@@ -26,11 +30,13 @@ makes it especially legible to both.
 
 ## Load / don't-load
 
-- **Load (when it graduates):** this folder's `README.md`, `vault/ai-system-design-guide` chapter
-  `00` via `vault/MANIFEST.md`, `ingredients/source/module4/asdg-*`, `platform/pipeline`.
+- **Load:** this folder's `README.md` and `draft/`, `vault/ai-system-design-guide` chapter `00`
+  via `vault/MANIFEST.md`, `ingredients/source/module4/asdg-*`, `platform/conventions` (AUTHORING +
+  STANDARDS + STYLE), `platform/pipeline`.
 - **Do NOT load:** the shipped book, other planned books.
 
 ## Handoff & gates
 
-`GATE-NAME-BOOK` → process ore via `vault/CONTEXT.md` → `platform/pipeline/CONTEXT.md`
-(`GATE-LOCK-PLAN`, `GATE-APPROVE-SHIP`). See `platform/HUMAN-GATES.md`.
+`GATE-NAME-BOOK` cleared. For Module 1: draft its `build-log/answer-engineering/m1/PLAN.md`, stop at
+`GATE-LOCK-PLAN`, then the fleet authors via `platform/pipeline/CONTEXT.md`, and stop at
+`GATE-APPROVE-SHIP` per stage. See `platform/HUMAN-GATES.md`.

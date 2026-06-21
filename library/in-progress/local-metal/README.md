@@ -20,7 +20,7 @@ because each book upgrades the home environment:
 | Machine Math | sharper judgment about what the models are doing on the metal |
 | Weights and Measures | a model you fine-tuned and can now host yourself |
 | Data Currents | a data pipeline that feeds the local models |
-| Anatomy of an Answer | the story of the rig, told to a hiring manager |
+| Answer Engineering | the story of the rig, told to a hiring manager |
 
 Where Sans Python teaches AI engineering on hosted compute, Local Metal teaches the same
 engineer to own a slice of compute at home: select and assemble the hardware, configure Linux

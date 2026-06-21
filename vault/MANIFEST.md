@@ -8,7 +8,7 @@ Module feeds are from `ingredients/source/INDEX.md` (the librarian's inventory o
 |---|---|---|---|---|
 | `ai-engineering-from-scratch` | `aefs` | 22M | M1, M2, M3, M4, M5 (the spine source) | https://github.com/rohitg00/ai-engineering-from-scratch |
 | `ai-performance-engineering` | `aipe` | 725M | M4 (deploy/serving/perf) | not discoverable (README points to a `your-username` placeholder); recoverable on disk |
-| `ai-system-design-guide` | `asdg` | 2.8M | M2, M3, M4; primary ore for the planned *Anatomy of an Answer* (interview) book | https://github.com/ombharatiya/ai-system-design-guide |
+| `ai-system-design-guide` | `asdg` | 2.8M | M2, M3, M4; primary ore for the *Answer Engineering* (interview) book | https://github.com/ombharatiya/ai-system-design-guide |
 | `fleet-engineering` | `fleet` | 1.2M | M3 (fleet patterns/reference/schemas) | https://github.com/cobusgreyling/fleet-engineering |
 | `loop-engineering` | `loop` | 2.6M | M3 (loop patterns) | https://github.com/cobusgreyling/loop-engineering |
 | `loop-engineering-orange-book` | `obook` | 7.2M | loop/agent reference (supporting) | https://github.com/alchaincyf/loop-engineering-orange-book |

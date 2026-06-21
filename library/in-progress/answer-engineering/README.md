@@ -1,4 +1,4 @@
-# Anatomy of an Answer — Blueprint
+# Answer Engineering — Blueprint
 
 ## Positioning
 
@@ -132,26 +132,13 @@ can internalize it step by step; an LLM can use the worked examples as a rubric 
 practice answers. A coaching session that loads the framework chapter and the relevant example
 bank can give structured feedback on any practice answer, without hallucinating criteria.
 
-## Candidate Names (GATE-NAME-BOOK)
+## Title (locked at GATE-NAME-BOOK)
 
-The final title is a human decision at `GATE-NAME-BOOK`. Three candidates follow.
+**Answer Engineering** (slug `answer-engineering`), chosen 2026-06-21. The title frames answer
+construction as an engineering discipline rather than a performance: the book's central
+contribution is a transferable reasoning method for building strong answers under pressure, not a
+script to recite. It sits in the lineup's house style — short, technical, no drama — alongside
+Weights and Measures, Data Currents, and Local Metal.
 
-**Lead candidate: Anatomy of an Answer**
-
-Reframes the interview as a problem-solving domain rather than a performance domain.
-"Algorithmic" signals engineering and precision; it describes the book's central
-contribution — a transferable reasoning algorithm, not a script — while remaining
-readable to non-engineers. Short, distinctive, and clear of the "guide" / "handbook" /
-"prep" cluster that saturates the category.
-
-**Candidate 2: Answer Architecture**
-
-Foregrounds the structural, engineering-minded approach to constructing answers. Works well
-as a subtitle companion (e.g. "Answer Architecture: The AI Engineer's Interview Framework").
-Slightly softer signal on the AI Engineering angle than the lead candidate.
-
-**Candidate 3: Interview Algorithm**
-
-The original working title. Accurate and precise; reads slightly more like an internal
-project name than a book cover. Retains value as a subtitle or module name. Better
-suited as the framework's name inside the book than as the cover identity.
+The book's internal reasoning framework is still named "the Algorithm" in the lessons; that is the
+method-inside-the-book, distinct from the cover title.
