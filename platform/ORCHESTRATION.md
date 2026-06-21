@@ -31,8 +31,9 @@ at the same time.
   conductor would otherwise serialize on worker intake while a human gate or a second cluster waits. Keeping
   the human loop alive during heavy execution is the handler's actual job.
 - **A single cluster with no concurrent gate: the conductor manages the workers directly, even at 3–4
-  workers.** Validated by the Just Python M2-vs-M3 A/B (`build-log/stress-test/`): a conductor-direct
-  four-worker run matched the handler-tier run on quality, with one fewer tier and less overhead. Worker
+  workers.** Validated by the Just Python M2-vs-M3 comparison (M2 ran a handler tier, M3 ran
+  conductor-direct): the conductor-direct four-worker run matched the handler run on quality, with one
+  fewer tier and less overhead. Worker
   *count* alone does not justify a handler; concurrent gates or multiple clusters do.
 - Anything touching a human gate: keep it with the conductor; never delegate a gate to a worker.
 

@@ -18,8 +18,6 @@ routed_boundaries:
   root: .
   library: library
   book_sans_python: library/completed/sans-python
-  planned_show_dont_tell: library/planned/show-dont-tell
-  planned_simple_systems: library/planned/simple-systems
   in_progress_just_python: library/in-progress/just-python
   planned_ml_in_proportion: library/planned/ml-in-proportion
   planned_upstream: library/planned/upstream

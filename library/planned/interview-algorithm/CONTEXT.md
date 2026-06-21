@@ -28,8 +28,7 @@ makes it especially legible to both.
 
 - **Load (when it graduates):** this folder's `README.md`, `vault/ai-system-design-guide` chapter
   `00` via `vault/MANIFEST.md`, `ingredients/source/module4/asdg-*`, `platform/pipeline`.
-- **Do NOT load:** the shipped book, other planned books (including `show-dont-tell` — this book
-  supersedes the interview angle; the orchestrator reconciles the catalog).
+- **Do NOT load:** the shipped book, other planned books.
 
 ## Handoff & gates
 

@@ -5,7 +5,7 @@
 Local Metal is the Scriptorium's home production environment: the machine where a Production
 AI Engineer actually runs and hosts the systems the rest of the library teaches them to build.
 It is a companion to Sans Python, not a capstone above it, and it is deliberately home-scale,
-not an enterprise feat. It shares Simple Systems' principle: a simple system you can stand up
+not an enterprise feat. It is deliberately a simple system you can stand up
 at home, then grow.
 
 It is progress-agnostic. You do not have to finish the other books to start it; you can build
@@ -20,8 +20,7 @@ because each book upgrades the home environment:
 | Machine Math | sharper judgment about what the models are doing on the metal |
 | Weights and Measures | a model you fine-tuned and can now host yourself |
 | Data Currents | a data pipeline that feeds the local models |
-| Algorithmic Interviewing | the story of the rig, told to a hiring manager |
-| Simple Systems | the design sensibility for keeping the home system simple |
+| Anatomy of an Answer | the story of the rig, told to a hiring manager |
 
 Where Sans Python teaches AI engineering on hosted compute, Local Metal teaches the same
 engineer to own a slice of compute at home: select and assemble the hardware, configure Linux

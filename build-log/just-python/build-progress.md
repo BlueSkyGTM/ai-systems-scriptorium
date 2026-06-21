@@ -23,8 +23,6 @@ connector.** One Opus handler drove four Sonnet workers (one lesson each); the c
 draft against `STYLE.md` + `STANDARDS.md`, ran VERIFY against the connector (which caught and removed
 fabricated MS-Learn citations the workers had invented), authored the overview, and folded shared state
 (`SUMMARY.md`, `exercises/CLAUDE.md`). `mdbook build` clean; the four exercise gates pass deterministically.
-M2 doubles as **stress-test track 1** (does the method, not Claude's built-ins, complete the books) — the
-per-book log is `build-log/stress-test/just-python.md`; the running verdict is `build-log/stress-test/FINDINGS.md`.
 
 M3 ran the **orchestration A/B: conductor-direct, no handler tier.** Four Sonnet workers managed directly by
 the conductor matched M2's handler-tier run on quality with one fewer tier; `platform/ORCHESTRATION.md` was

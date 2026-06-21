@@ -16,8 +16,6 @@ Only what is still open. Resolved items live in git history and `build-log/`; th
   machinery (gates + orchestration + contract pattern + optional ICM) plus an onboard-for-autonomy,
   fail-fast intake. **Decided 2026-06-21: build it, ship it to its own repo, then scrub it from this repo**
   (it does not belong in the book factory). Next: `/autoplan` the build. See the bot-bottega auto-memory.
-- **Stub books** — `library/planned/show-dont-tell` and `library/planned/simple-systems` are stubs that
-  overlap and were never started. Decide: fold, cut, or activate.
 
 ## Lab
 

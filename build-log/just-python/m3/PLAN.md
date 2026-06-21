@@ -30,7 +30,7 @@ rows into a training or evaluation set with Pandas, not a Python loop.
    `ingredients/source/_repos/made-with-ml/curriculum-map.md`), grounding the lessons in a real production
    data pipeline. **No vault→ingredients distillation pass is needed** — pandas-docs is reference-grade, read
    by the worker at author time, not loaded into the conductor. (This corrects the prior stress-test guess
-   that M3 would force the distillation machinery; see Open Decision 2 and `build-log/stress-test/`.)
+   that M3 would force the distillation machinery; see Open Decision 2.)
 4. **M3 is the Core-build rung (STANDARDS Part 1).** Four build lessons, each a runnable script with a
    machine-checkable done-when; the throughline grows; difficulty earned from real corpus/eval prep, not API
    breadth. No forward dependencies: M3 uses M1's memory model and M2's vectorization, never the reverse.

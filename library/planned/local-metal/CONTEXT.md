@@ -1,7 +1,7 @@
 # CONTEXT — Local Metal (PLANNED)
 
 The Scriptorium's home production environment (the 7th book). Progress-agnostic and
-home-scale: a companion to Sans Python in the Simple Systems spirit, not an enterprise feat.
+home-scale: a companion to Sans Python in a keep-it-simple spirit, not an enterprise feat.
 Teaches the Production AI Engineer to build a homebrew inference machine, run a local model
 stack, and wire Claude Code to delegate work to it; the full arc runs from the Micro Center
 parts counter to a networked local-model host with a routing layer. It is where the rest of
