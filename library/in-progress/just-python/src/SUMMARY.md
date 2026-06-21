@@ -71,3 +71,13 @@
 - [Confusion Counts with NumPy](module7/confusion-counts-with-numpy.md)
 - [Precision, Recall, and F1](module7/precision-recall-f1.md)
 - [Emit, Test, and Ship](module7/emit-test-and-ship.md)
+
+---
+
+# Module 8: Integrated Python Engineering Exam
+
+- [Overview](module8/00-overview.md)
+- [The Exam](module8/the-exam.md)
+- [Compose the Pipeline](module8/compose-the-pipeline.md)
+- [The Rubric and Grading](module8/the-rubric-and-grading.md)
+- [Run, Test, and Ship](module8/run-test-and-ship.md)

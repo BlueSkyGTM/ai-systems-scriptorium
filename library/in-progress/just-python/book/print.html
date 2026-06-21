@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-9783b096.js";
+            window.path_to_searchindex_js = "searchindex-66f9e151.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-8f1a7742.js"></script>
+        <script src="toc-997d00fb.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -3049,6 +3049,680 @@ def test_engine_happy_path(tmp_path):
 </ul>
 <div class="claude-handoff" data-exercise="exercises/module7/emit-test-and-ship/">
 <p><strong>Build It in Claude Code:</strong> Finish <code>exercises/module7/eval_engine.py</code> by adding <code>run</code> and the <code>if __name__ == "__main__":</code> block; write <code>smoke.py</code> with the happy-path and negative-case tests; and fill out <code>outputs/skill-evaluation-engine.md</code>. The gate is green when <code>python eval_engine.py</code> exits 0, writes the Markdown report, and <code>pytest smoke.py</code> passes both tests.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-8-integrated-python-engineering-exam"><a class="header" href="#module-8-integrated-python-engineering-exam">Module 8: Integrated Python Engineering Exam</a></h1>
+<h2 id="what-this-module-covers-7"><a class="header" href="#what-this-module-covers-7">What This Module Covers</a></h2>
+<p>Module 6 cleaned a corpus; Module 7 judged a model on one. Module 8 is the take-home that chains both. You build <code>pipeline.py</code>: it imports your <code>wrangle.py</code> (M6) and <code>eval_engine.py</code> (M7) off disk, runs a raw corpus through the wrangler, feeds the clean labels and a batch of predictions to the eval engine, and writes one integrated report. A <code>rubric.py</code> then grades the produced run against six acceptance criteria in code, not opinion.</p>
+<p>This is the capstone, and it is not a new build. The rule of the exam is worth stating twice: compose the artifacts you already shipped; do not rebuild them. An engineer who can wire prior artifacts into a reproducible, graded pipeline is showing the thing a single script cannot: the infrastructure, not just the result.</p>
+<h2 id="arc-of-lessons-7"><a class="header" href="#arc-of-lessons-7">Arc of Lessons</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Lesson</th><th>Title</th><th>What You Do</th><th>Composes</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>The Exam</td><td>Frame the take-home: two inputs in, one graded report out; bundle the sample corpus and predictions</td><td>M6, M7</td></tr>
+<tr><td>2</td><td>Compose the Pipeline</td><td>Build <code>pipeline.py</code> and <code>artifact_adapter.py</code>; import <code>wrangle.py</code> and <code>eval_engine.py</code> off disk and chain them</td><td>M6, M7</td></tr>
+<tr><td>3</td><td>The Rubric and Grading</td><td>Build <code>rubric.py</code>: the six criteria in code, matching the prose; grade by code, fail the deficient run</td><td>all</td></tr>
+<tr><td>4</td><td>Run, Test, and Ship</td><td>The <code>pytest</code> smoke gate (green run plus a deficient run that fails), the skill write-up, the finished repo</td><td>all</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="throughline-artifact-7"><a class="header" href="#throughline-artifact-7">Throughline Artifact</a></h2>
+<p><code>pipeline.py</code> is the terminal node of the whole book. The arc has been building one structure the entire way: <code>measure.py</code> (M1 through M3) became the input <code>vectorization_report.py</code> (M4) composed; <code>wrangle.py</code> (M6) and <code>eval_engine.py</code> (M7) are the two portfolio artifacts; <code>pipeline.py</code> (M8) imports the last two off disk and chains them. The capstone composes the prior artifacts; it does not restate them. The acceptance gate is <code>smoke.py</code>: it runs the chain on a locked sample, grades it 6/6 with <code>rubric.py</code>, and proves a deliberately deficient run fails the criterion it offends. The skill write-up in <code>outputs/skill-integrated-exam.md</code> is the portfolio surface. The reader ships one GitHub repo where three scripts run clean and a rubric grades the result.</p>
+<h2 id="prerequisites-7"><a class="header" href="#prerequisites-7">Prerequisites</a></h2>
+<ul>
+<li>Modules 1 through 7, especially M6 (<code>wrangle.py</code>) and M7 (<code>eval_engine.py</code>). The exam imports both off disk; they must exist and pass their own gates before M8 can run.</li>
+<li>A Python 3.11+ environment with pandas, numpy, pyarrow (the wrangler emits Parquet), and pytest. No sklearn, no network, no live model: the gate is deterministic and offline.</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-exam"><a class="header" href="#the-exam">The Exam</a></h1>
+<p>Module 6 cleaned a corpus and shipped <code>wrangle.py</code>. Module 7 judged a model and shipped <code>eval_engine.py</code>. The final exam chains both into one graded pipeline: two inputs in, one machine-graded report out.</p>
+<h2 id="what-this-module-covers-8"><a class="header" href="#what-this-module-covers-8">What This Module Covers</a></h2>
+<p>The capstone is not a new build. The rule of the exam is simple enough to state twice so you cannot miss it: compose the artifacts you already built; do not rebuild them. You write one driver script that calls <code>wrangle.py</code> then hands the clean output to <code>eval_engine.py</code>, and a rubric checker grades the result against six acceptance criteria in code, not opinion.</p>
+<h2 id="arc-of-lessons-8"><a class="header" href="#arc-of-lessons-8">Arc of Lessons</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Lesson</th><th>Title</th><th>What You Do</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>The Exam</td><td>Understand what the exam is and why this is the take-home that matters</td></tr>
+<tr><td>2</td><td>Compose the Pipeline</td><td>Wire <code>wrangle.py</code> and <code>eval_engine.py</code> into a single <code>pipeline.py</code> driver</td></tr>
+<tr><td>3</td><td>The Rubric and Grading</td><td>Author <code>rubric.py</code>, the six-criterion acceptance checker</td></tr>
+<tr><td>4</td><td>Run, Test, and Ship</td><td>Build the smoke gate, ship the skill write-up, complete the book</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="what-the-exam-is"><a class="header" href="#what-the-exam-is">What the Exam Is</a></h2>
+<p>You are handed two files: a raw JSONL corpus and a CSV of batch model predictions. The corpus goes through <code>wrangle.py</code> (the M6 artifact): it deduplicates on <code>id</code>, drops null labels, and normalizes text. The clean frame feeds <code>eval_engine.py</code> (the M7 artifact): it computes per-class precision, recall, and F1 and renders a Markdown report. The rubric checker grades the combined run.</p>
+<p>The result is one GitHub repo with three runnable scripts and a graded report. That is the take-home a hiring manager runs: <code>python smoke.py</code>, green gate, per-class metrics, done. No notebook, no manual steps, no “it worked on my machine” disclaimer.</p>
+<h2 id="why-this-is-the-take-home-that-matters"><a class="header" href="#why-this-is-the-take-home-that-matters">Why This Is the Take-Home That Matters</a></h2>
+<p>A single accuracy number hides which class a model fails. Any engineer can compute <code>correct / total</code>. The engineer who composes a wrangler and an eval engine into a reproducible, tested pipeline, then grades the output per class with a rubric expressed in code, is showing something a number cannot: she built the infrastructure, not the result alone.</p>
+<p>The Sans Python M8 capstone drew the same distinction from the other side: the fleet builds software, you operate and judge it. Here the pipeline runs data; you compose and grade it. The shape is the same: reuse the artifacts, apply the rubric, let the code decide pass or fail (<a href="https://learn.microsoft.com/azure/machine-learning/concept-model-management-and-deployment?view=azureml-api-2">learn.microsoft.com/azure/machine-learning/concept-model-management-and-deployment</a>).</p>
+<h2 id="the-six-acceptance-criteria"><a class="header" href="#the-six-acceptance-criteria">The Six Acceptance Criteria</a></h2>
+<p>The rubric checker in Lesson 3 grades against these six, one verdict per criterion:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>#</th><th>Criterion</th><th>Passes When</th></tr>
+</thead>
+<tbody>
+<tr><td>R1</td><td>RUNS</td><td>the pipeline runs end to end and writes <code>report.md</code></td></tr>
+<tr><td>R2</td><td>SCHEMA-VALID</td><td><code>wrangle.py</code> drops the duplicate and the null; 10 rows survive</td></tr>
+<tr><td>R3</td><td>METRICS-CORRECT</td><td>per-class precision, recall, and F1 match the locked oracle</td></tr>
+<tr><td>R4</td><td>COMPOSED</td><td>the run imports <code>wrangle.py</code> and <code>eval_engine.py</code> off disk; nothing rebuilt</td></tr>
+<tr><td>R5</td><td>PROBLEM-FRAMED</td><td>the report names the dataset, the metric, and the weakest class</td></tr>
+<tr><td>R6</td><td>TESTED+VERSIONED</td><td>the run declares a version; the smoke gate proves the negative case</td></tr>
+</tbody>
+</table>
+</div>
+<p>The rubric in the guide and the rubric in the checker are one specification in two forms. They must match: a criterion that passes in code but is missing from the prose, or documented but not checked, is not a criterion; it is a comment. Data quality failures that reach an eval engine are silent multipliers: a duplicate that passes the clean gate inflates a class count; a null label that slips through breaks a per-class metric (<a href="https://learn.microsoft.com/fabric/data-science/semantic-link-validate-data">learn.microsoft.com/fabric/data-science/semantic-link-validate-data</a>).</p>
+<h2 id="the-lineage"><a class="header" href="#the-lineage">The Lineage</a></h2>
+<p><code>wrangle.py</code> and <code>eval_engine.py</code> are not prerequisites you happened to build on the way here. They are the exam inputs. The compounding has been real: M6’s clean-and-deduplicate decision determines which rows the M7 eval engine sees; M7’s per-class metric math determines what the M8 rubric can grade. You cannot compose artifacts you do not have on disk, which is why the exam begins only after both are shipped and passing their own gates.</p>
+<p>The exam is not the summit of a mountain you sprint up at the end. It is the node where the three prior portfolio artifacts connect; and the proof that a pipeline is only as honest as the data that flows through it.</p>
+<h2 id="core-concepts-28"><a class="header" href="#core-concepts-28">Core Concepts</a></h2>
+<ul>
+<li>The final exam composes <code>wrangle.py</code> and <code>eval_engine.py</code> from disk; rewriting either is a sign of misreading the task, and the rubric will flag it.</li>
+<li>Six acceptance criteria, expressed both in prose and in <code>rubric.py</code>, define done; a criterion documented but not checked in code is not a criterion.</li>
+<li>Data quality failures compound silently: a duplicate the clean stage misses inflates a metric; a null label it misses breaks one; the wrangler is the gate that makes the eval trustworthy.</li>
+<li>One GitHub repo, three runnable scripts, and a graded Markdown report is the artifact a hiring manager runs; that is what this pipeline produces.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module8/the-exam/">
+<p><strong>Build It in Claude Code:</strong> Create the two exam input files that the pipeline will consume. Open the exercise for this lesson, read the brief, and create <code>sample_corpus.jsonl</code> (12 raw rows) and <code>sample_predictions.csv</code> (10 locked prediction rows) exactly as specified. Then write <code>exam_brief.md</code> describing the task in your own words. Acceptance check: both data files parse without error, <code>sample_corpus.jsonl</code> has 12 lines, <code>sample_predictions.csv</code> has 10 data rows.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="compose-the-pipeline"><a class="header" href="#compose-the-pipeline">Compose the Pipeline</a></h1>
+<p>Your M6 wrangler and your M7 eval engine live in sibling directories. The capstone does not copy them; it imports them off disk and chains them.</p>
+<h2 id="what-you-build-14"><a class="header" href="#what-you-build-14">What You Build</a></h2>
+<p>You build <code>artifact_adapter.py</code>, which loads <code>wrangle.py</code> and <code>eval_engine.py</code> by file path using <code>importlib</code>, and <code>pipeline.py</code>, which calls them in sequence and returns a typed <code>ExamRun</code> that the rubric grades. The pipeline never re-implements what the earlier artifacts own.</p>
+<h2 id="why-off-disk-import"><a class="header" href="#why-off-disk-import">Why Off-Disk Import</a></h2>
+<p>A direct <code>import wrangle</code> only works if <code>wrangle.py</code> is on <code>sys.path</code>. Your M6 artifact lives at <code>exercises/module6/wrangle.py</code>, and your M7 artifact lives at <code>exercises/module7/eval_engine.py</code>: sibling directories that the exam must not restructure. <code>importlib.util.spec_from_file_location</code> imports a module from an absolute path, no <code>sys.path</code> surgery required. This is the same move Sans Python M8 made with <code>fleet_adapter.py</code>: the exam proves the composition is real because it cannot run without the real artifact. Rebuilding <code>wrangle</code> inside the exam would pass silently even if your M6 work were broken.</p>
+<h2 id="the-adapter"><a class="header" href="#the-adapter">The Adapter</a></h2>
+<p><code>artifact_adapter.py</code> resolves both paths relative to <code>pipeline.py</code>’s location and returns the two imported modules as a tuple.</p>
+<pre><code class="language-python"># artifact_adapter.py
+import importlib.util
+import pathlib
+import sys
+
+
+def _load_module(name: str, path: pathlib.Path):
+    """Load a Python module from an absolute file path."""
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    # Register before exec so the module's own dataclasses and type hints
+    # resolve: Python looks the module up in sys.modules by name during exec.
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def load_artifacts(pipeline_file: str):
+    """Return (wrangle_module, eval_engine_module) loaded off disk.
+
+    Resolution is anchored to the pipeline file so the paths stay
+    correct regardless of where the caller runs from.
+    """
+    here = pathlib.Path(pipeline_file).parent
+    wrangle = _load_module(
+        "wrangle",
+        (here / ".." / "module6" / "wrangle.py").resolve(),
+    )
+    eval_engine = _load_module(
+        "eval_engine",
+        (here / ".." / "module7" / "eval_engine.py").resolve(),
+    )
+    return wrangle, eval_engine
+</code></pre>
+<p><code>spec_from_file_location</code> takes a name (used for the module’s <code>__name__</code>) and an absolute path. <code>.resolve()</code> collapses the <code>..</code> segments so the path is unambiguous; the sibling exercise dirs <code>module6/</code> and <code>module7/</code> sit one level up from <code>module8/</code>. Registering the module in <code>sys.modules</code> before <code>exec_module</code> is not optional: a frozen dataclass resolves its own annotations by looking its module up by name, and an unregistered module fails with a <code>NoneType</code> error at import. If either file is missing, the import fails immediately with a clear error rather than a silent <code>AttributeError</code> three calls later.</p>
+<h2 id="the-pipeline-shape"><a class="header" href="#the-pipeline-shape">The Pipeline Shape</a></h2>
+<p><code>pipeline.py</code> declares one result dataclass and one entry function. The shape is locked; the rubric reads the field names directly.</p>
+<pre><code class="language-python"># pipeline.py (shape; your task is to fill the body)
+import pathlib
+from dataclasses import dataclass
+
+import pandas as pd
+
+import artifact_adapter
+
+
+@dataclass(frozen=True)
+class ExamConfig:
+    corpus_path: str
+    predictions_path: str
+    output_dir: str
+    version: str = "1.0"
+
+
+@dataclass
+class ExamRun:
+    report_path: str
+    n_clean: int
+    metrics: list
+    composed_modules: list
+    version: str
+
+
+def run_pipeline(config: ExamConfig) -&gt; ExamRun:
+    ...
+
+
+_HERE = pathlib.Path(__file__).parent
+default_config = ExamConfig(
+    corpus_path=str(_HERE / "sample_corpus.jsonl"),
+    predictions_path=str(_HERE / "sample_predictions.csv"),
+    output_dir=str(_HERE / "outputs"),
+)
+
+
+if __name__ == "__main__":
+    run_pipeline(default_config)
+</code></pre>
+<p><code>composed_modules</code> carries the proof: a list like <code>["wrangle.py", "eval_engine.py"]</code> shows that both modules were imported off disk, not reimplemented. The rubric checks this field. <code>default_config</code> lives at module scope, not inside <code>__main__</code>, so the smoke gate in lesson 4 can import it directly.</p>
+<h2 id="the-data-flow"><a class="header" href="#the-data-flow">The Data Flow</a></h2>
+<p><code>run_pipeline</code> executes five steps in order. Each step uses only the contract the prior module already established.</p>
+<p><strong>Step 1: wrangle the corpus.</strong>
+Build a <code>WrangleConfig</code> from the wrangle module and point it at <code>sample_corpus.jsonl</code>. Call <code>wrangle.run(wrangle_config)</code>. It returns a <code>WrangleStats</code>; capture <code>stats.rows_out</code>. On the locked sample this is 10.</p>
+<pre><code class="language-python">wrangle_mod, eval_mod = artifact_adapter.load_artifacts(__file__)
+
+out = pathlib.Path(config.output_dir)
+out.mkdir(parents=True, exist_ok=True)
+clean_path = str(out / "clean.parquet")
+
+WrangleConfig = wrangle_mod.WrangleConfig
+wrangle_config = WrangleConfig(
+    input_path=config.corpus_path,
+    output_path=clean_path,
+)
+stats = wrangle_mod.run(wrangle_config)
+n_clean = stats.rows_out          # 10 on the locked sample
+</code></pre>
+<p><strong>Step 2: read the clean Parquet.</strong>
+<code>wrangle.run</code> emits Parquet to <code>wrangle_config.output_path</code>. Read it back with <code>pd.read_parquet</code> to recover the <code>{id, label}</code> columns.</p>
+<pre><code class="language-python">import pandas as pd
+
+clean_df = pd.read_parquet(clean_path)   # columns: id, label (+ text dropped by wrangle)
+</code></pre>
+<p><strong>Step 3: merge predictions with labels.</strong>
+Read <code>sample_predictions.csv</code> (columns <code>id</code>, <code>prediction</code>). Merge on <code>id</code> with the clean frame to produce a frame with columns <code>id</code>, <code>prediction</code>, <code>label</code>. Write it to a temp CSV; this is the eval engine’s input.</p>
+<pre><code class="language-python">preds = pd.read_csv(config.predictions_path)
+eval_input = preds.merge(clean_df[["id", "label"]], on="id", how="inner")
+
+tmp_csv = str(out / "eval_input.csv")
+eval_input.to_csv(tmp_csv, index=False)
+</code></pre>
+<p>The merge is inner: any prediction without a clean label is dropped. This matches the M7 engine’s expectation that every row has both columns.</p>
+<p><strong>Step 4: run the eval engine.</strong>
+Build an <code>EvalConfig</code> from the eval module. Call <code>eval_mod.run(eval_config)</code>. It returns <code>list[ClassMetrics]</code>.</p>
+<pre><code class="language-python">EvalConfig = eval_mod.EvalConfig
+eval_config = EvalConfig(
+    input_path=tmp_csv,
+    output_path=str(out / "eval_report.md"),
+)
+metrics = eval_mod.run(eval_config)   # list[ClassMetrics]
+</code></pre>
+<p><strong>Step 5: write the integrated report.</strong>
+The eval engine already writes a per-class table. The integrated report adds the dataset name, the metric name, the table, the macro-average row, and the headline finding: the weakest class by F1.</p>
+<pre><code class="language-python">weakest = min(metrics, key=lambda m: m.f1)
+
+rows = "\n".join(
+    f"| {m.cls} | {m.precision:.3f} | {m.recall:.3f} | {m.f1:.3f} | {m.support} |"
+    for m in metrics
+)
+macro_p = sum(m.precision for m in metrics) / len(metrics)
+macro_r = sum(m.recall    for m in metrics) / len(metrics)
+macro_f = sum(m.f1        for m in metrics) / len(metrics)
+
+report_md = f"""# Integrated Evaluation Report
+
+**Dataset:** sample_corpus.jsonl ({n_clean} clean rows after wrangling)
+**Metric:** per-class precision / recall / F1
+
+| class | precision | recall | f1 | support |
+|---|---|---|---|---|
+{rows}
+| **macro avg** | **{macro_p:.3f}** | **{macro_r:.3f}** | **{macro_f:.3f}** | **{n_clean}** |
+
+**Headline finding:** `{weakest.cls}` is the weakest class (F1 = {weakest.f1:.3f}, recall = {weakest.recall:.3f}).
+Review training support for `{weakest.cls}` before promoting this model.
+"""
+
+integrated_path = str(out / "report.md")
+pathlib.Path(integrated_path).write_text(report_md, encoding="utf-8")
+</code></pre>
+<p><strong>Step 6: return <code>ExamRun</code>.</strong></p>
+<pre><code class="language-python">return ExamRun(
+    report_path=integrated_path,
+    n_clean=n_clean,
+    metrics=metrics,
+    composed_modules=["wrangle.py", "eval_engine.py"],
+    version=config.version,
+)
+</code></pre>
+<h2 id="the-integrated-report"><a class="header" href="#the-integrated-report">The Integrated Report</a></h2>
+<p>The report names the dataset and the metric, shows the per-class table, the macro-average row, and states the weakest class. This is what goes in a model card before a model card has a model card section. On the locked sample data (10 clean rows, the prediction set from lesson 1’s exercise), the weakest class will be the one with the lowest F1; the exact class depends on your <code>sample_predictions.csv</code>, so the pipeline computes it rather than hardcoding it.</p>
+<p>Reproducible pipelines in Azure ML follow the same shape: data prep and scoring are separate, reusable steps whose outputs chain together (<a href="https://learn.microsoft.com/azure/machine-learning/concept-model-management-and-deployment?view=azureml-api-2">learn.microsoft.com/azure/machine-learning/concept-model-management-and-deployment?view=azureml-api-2</a>). What you are building here is the same idea at exercise scale: each prior artifact is a reusable step, and the pipeline is the chain.</p>
+<h2 id="the-main-block-1"><a class="header" href="#the-main-block-1">The main Block</a></h2>
+<pre><code class="language-python">if __name__ == "__main__":
+    result = run_pipeline(default_config)
+    print(f"n_clean          : {result.n_clean}")
+    print(f"composed_modules : {result.composed_modules}")
+    print(f"report           : {result.report_path}")
+    print(f"version          : {result.version}")
+</code></pre>
+<p><code>default_config</code> is already defined at module scope (above), so <code>run_pipeline(default_config)</code> here and <code>from pipeline import default_config</code> in the smoke gate both see the same object. <code>python pipeline.py</code> exits 0, prints the four summary lines, and writes <code>outputs/report.md</code>. That is the acceptance gate. No model call. No internet. The artifacts you already built do the work.</p>
+<h2 id="core-concepts-29"><a class="header" href="#core-concepts-29">Core Concepts</a></h2>
+<ul>
+<li><code>importlib.util.spec_from_file_location</code> imports a module from an absolute file path, with no <code>sys.path</code> manipulation; anchoring the path to <code>__file__</code> makes the resolution portable across machines.</li>
+<li>The capstone composes prior artifacts off disk rather than rebuilding them: if M6’s wrangler is broken, the pipeline fails at import time, which is the correct failure, not a silent wrong answer.</li>
+<li>Merging predictions with clean labels on <code>id</code> is the join the eval engine requires: it produces the <code>{id, prediction, label}</code> frame that <code>EvalConfig</code> names its columns for.</li>
+<li><code>ExamRun.composed_modules</code> is not metadata; it is proof: the rubric reads it to confirm both artifacts were imported, not reimplemented.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module8/compose-the-pipeline/">
+<p><strong>Build It in Claude Code:</strong> Build <code>exercises/module8/artifact_adapter.py</code> and <code>exercises/module8/pipeline.py</code> to the locked shape above. The gate is green when <code>python pipeline.py</code> exits 0, writes <code>outputs/report.md</code>, and a smoke check confirms <code>ExamRun.n_clean == 10</code> and <code>ExamRun.composed_modules == ["wrangle.py", "eval_engine.py"]</code>.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-rubric-and-grading"><a class="header" href="#the-rubric-and-grading">The Rubric and Grading</a></h1>
+<p>Opinion is not a gate. Build <code>rubric.py</code>: a six-criterion acceptance rubric that reads the <code>ExamRun</code> your pipeline produced and returns a verdict in code.</p>
+<h2 id="what-you-build-15"><a class="header" href="#what-you-build-15">What You Build</a></h2>
+<p>You build three things: <code>CRITERIA</code>, the tuple that is the single source of truth for both this lesson’s prose table and the checker; <code>grade(exam) -&gt; RubricReport</code>, which reads the captured <code>ExamRun</code> and evaluates each criterion; and the worked example that shows a good run scoring 6/6 and a deficient run failing the criterion it offends.</p>
+<h2 id="the-invariant"><a class="header" href="#the-invariant">The Invariant</a></h2>
+<p>The rubric exists in two forms: a <code>CRITERIA</code> tuple in <code>rubric.py</code> and the prose table in this lesson. They must match, clause for clause. If you change a criterion here, change it there. This is not a style preference; it is the control. A rubric where the code checks one thing and the prose describes another is not a rubric; it is two separate opinions that happen to co-exist.</p>
+<p>The <code>CRITERIA</code> tuple is the single source of truth because code runs. Prose describes.</p>
+<h2 id="the-six-criteria"><a class="header" href="#the-six-criteria">The Six Criteria</a></h2>
+<p>These are the criteria <code>grade</code> checks. The <code>CRITERIA</code> tuple in <code>rubric.py</code> carries the same six IDs and statements, in this order.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>ID</th><th>Criterion</th><th>Passes When</th></tr>
+</thead>
+<tbody>
+<tr><td>R1</td><td>RUNS</td><td>the pipeline ran end to end and wrote <code>report.md</code>: <code>exam.report_path</code> exists on disk</td></tr>
+<tr><td>R2</td><td>SCHEMA-VALID</td><td>the wrangle stage validated the data: <code>exam.n_clean == 10</code> (no null labels, no duplicate ids leaked through)</td></tr>
+<tr><td>R3</td><td>METRICS-CORRECT</td><td>every per-class precision, recall, and F1 matches the locked oracle within 1e-3</td></tr>
+<tr><td>R4</td><td>COMPOSED</td><td>the run imported the real <code>wrangle.py</code> and <code>eval_engine.py</code> off disk: <code>composed_modules</code> lists both; nothing re-implemented inline</td></tr>
+<tr><td>R5</td><td>PROBLEM-FRAMED</td><td>the report names the dataset, the metric, and the headline finding (the weakest class)</td></tr>
+<tr><td>R6</td><td>TESTED+VERSIONED</td><td>the run declares a version (<code>exam.version</code>); the smoke suite enforces the negative case</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="why-r3-and-r5-both-matter"><a class="header" href="#why-r3-and-r5-both-matter">Why R3 and R5 Both Matter</a></h2>
+<p>A single accuracy number hides the failing class. On the ten-row sample, the macro-average F1 is 0.707. That number does not tell you that <code>dog</code> has recall 0.500: two of its four actual instances were predicted as something else. The per-class table surfaces it.</p>
+<p>Azure AI Language Services states this directly: precision measures how many of the predicted classes are correctly labeled; recall measures how many of the actual class instances were found (<a href="https://learn.microsoft.com/azure/ai-services/language-service/custom-text-classification/concepts/evaluation-metrics">learn.microsoft.com/azure/ai-services/language-service/custom-text-classification/concepts/evaluation-metrics</a>). Low recall on a class means the model is systematically missing it, not predicting it falsely. Those are different failure modes with different fixes, and they only separate when you look at the per-class breakdown.</p>
+<p>R3 locks the numbers so a grader cannot accidentally accept a run with corrupted predictions. R5 requires the report to name the finding: the dataset, the metric, and which class is weakest. A report that prints a table without interpreting it is not framed; it is output.</p>
+<p>The locked oracle for R3:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>class</th><th>precision</th><th>recall</th><th>F1</th><th>support</th></tr>
+</thead>
+<tbody>
+<tr><td>cat</td><td>0.750</td><td>0.750</td><td>0.750</td><td>4</td></tr>
+<tr><td>dog</td><td>0.667</td><td>0.500</td><td>0.571</td><td>4</td></tr>
+<tr><td>bird</td><td>0.667</td><td>1.000</td><td>0.800</td><td>2</td></tr>
+<tr><td><strong>macro avg</strong></td><td><strong>0.694</strong></td><td><strong>0.750</strong></td><td><strong>0.707</strong></td><td><strong>10</strong></td></tr>
+</tbody>
+</table>
+</div>
+<p>The weakest class is <code>dog</code> at recall 0.500. R5 passes only when the report names it.</p>
+<h2 id="the-rubricpy-shape"><a class="header" href="#the-rubricpy-shape">The rubric.py Shape</a></h2>
+<p><code>rubric.py</code> has four pieces. The <code>CRITERIA</code> tuple is first because it is the source of truth. Then two dataclasses. Then <code>grade</code>.</p>
+<pre><code class="language-python">from __future__ import annotations
+from dataclasses import dataclass
+import pathlib
+
+# The six criteria, in order. (id, one-line statement).
+# This tuple is the single source of truth: the prose table in the lesson
+# and this tuple are one rubric; change one, change both.
+CRITERIA = (
+    ("R1", "RUNS: the pipeline ran end to end and wrote report.md"),
+    ("R2", "SCHEMA-VALID: n_clean == 10 (no null labels, no duplicate ids)"),
+    ("R3", "METRICS-CORRECT: per-class P/R/F1 matches the oracle within 1e-3"),
+    ("R4", "COMPOSED: run imported wrangle.py and eval_engine.py off disk; nothing re-implemented inline"),
+    ("R5", "PROBLEM-FRAMED: report names the dataset, the metric, and the weakest class"),
+    ("R6", "TESTED+VERSIONED: the run declares a version; the smoke suite enforces the negative case"),
+)
+
+
+@dataclass
+class CriterionResult:
+    rid:       str
+    statement: str
+    passed:    bool
+    detail:    str
+
+
+@dataclass
+class RubricReport:
+    results: list
+    passed:  bool
+
+    def failed(self) -&gt; list:
+        return [r for r in self.results if not r.passed]
+
+    def as_lines(self) -&gt; list:
+        lines = []
+        for r in self.results:
+            mark = "PASS" if r.passed else "FAIL"
+            lines.append(f"  [{mark}] {r.rid}  {r.statement}")
+            if not r.passed:
+                lines.append(f"         -&gt; {r.detail}")
+        lines.append("")
+        lines.append(
+            f"  VERDICT: {'PASS' if self.passed else 'FAIL'} "
+            f"({sum(r.passed for r in self.results)}/{len(self.results)} criteria)"
+        )
+        return lines
+</code></pre>
+<p><code>grade</code> reads only the captured <code>ExamRun</code> fields. It never re-runs the pipeline.</p>
+<pre><code class="language-python"># Locked oracle for R3 (per-class; tolerance 1e-3)
+_ORACLE = {
+    "cat":  {"precision": 0.750, "recall": 0.750, "f1": 0.750, "support": 4},
+    "dog":  {"precision": 0.667, "recall": 0.500, "f1": 0.571, "support": 4},
+    "bird": {"precision": 0.667, "recall": 1.000, "f1": 0.800, "support": 2},
+}
+_TOL = 1e-3
+
+
+def grade(exam) -&gt; RubricReport:
+    """Grade a captured ExamRun against the six criteria.
+
+    Reads exam.report_path, exam.n_clean, exam.metrics (list of ClassMetrics
+    with .cls/.precision/.recall/.f1/.support), exam.composed_modules,
+    and exam.version.
+
+    Returns a RubricReport whose .passed is True only when all six pass.
+    """
+    # R1 RUNS: the report file exists on disk.
+    r1 = bool(exam.report_path) and pathlib.Path(exam.report_path).exists()
+    r1_detail = (
+        f"report_path={exam.report_path!r} does not exist"
+        if not r1 else
+        f"report written to {exam.report_path}"
+    )
+
+    # R2 SCHEMA-VALID: the wrangle stage produced exactly 10 clean rows.
+    r2 = exam.n_clean == 10
+    r2_detail = (
+        f"n_clean={exam.n_clean} (expected 10): null labels or duplicate ids leaked through"
+        if not r2 else
+        f"n_clean={exam.n_clean}"
+    )
+
+    # R3 METRICS-CORRECT: per-class P/R/F1 match the oracle within 1e-3.
+    by_class = {m.cls: m for m in exam.metrics}
+    r3_misses = []
+    for cls, expected in _ORACLE.items():
+        if cls not in by_class:
+            r3_misses.append(f"{cls} missing from metrics")
+            continue
+        m = by_class[cls]
+        for field in ("precision", "recall", "f1"):
+            diff = abs(getattr(m, field) - expected[field])
+            if diff &gt; _TOL:
+                r3_misses.append(
+                    f"{cls}.{field}: got {getattr(m, field):.4f}, expected {expected[field]:.4f}"
+                )
+    r3 = len(r3_misses) == 0
+    r3_detail = (
+        "; ".join(r3_misses) if not r3 else
+        "all per-class P/R/F1 within 1e-3 of oracle"
+    )
+
+    # R4 COMPOSED: both modules appear in composed_modules; nothing re-implemented inline.
+    composed = set(exam.composed_modules or [])
+    required = {"wrangle.py", "eval_engine.py"}
+    missing = required - composed
+    r4 = len(missing) == 0
+    r4_detail = (
+        f"missing from composed_modules: {sorted(missing)}"
+        if not r4 else
+        f"composed_modules includes {sorted(composed)}"
+    )
+
+    # R5 PROBLEM-FRAMED: report content names dataset, metric, and weakest class.
+    report_text = ""
+    if exam.report_path and pathlib.Path(exam.report_path).exists():
+        report_text = pathlib.Path(exam.report_path).read_text(encoding="utf-8").lower()
+    framing_checks = {
+        "dataset name": any(
+            word in report_text for word in ("predictions", "dataset", "ten-row", "sample")
+        ),
+        "metric named": any(
+            word in report_text for word in ("f1", "precision", "recall")
+        ),
+        "weakest class named": "dog" in report_text,
+    }
+    missing_framing = [k for k, v in framing_checks.items() if not v]
+    r5 = len(missing_framing) == 0
+    r5_detail = (
+        f"report missing: {', '.join(missing_framing)}"
+        if not r5 else
+        "report names dataset, metric, and weakest class"
+    )
+
+    # R6 TESTED+VERSIONED: the run declares a version. The smoke suite enforces
+    # the negative case (test_deficient_run_fails must pass for the gate to be green).
+    r6 = bool(exam.version)
+    r6_detail = (
+        f"version={exam.version!r} is missing"
+        if not r6 else
+        f"version={exam.version}"
+    )
+
+    flags = {
+        "R1": (r1, r1_detail), "R2": (r2, r2_detail),
+        "R3": (r3, r3_detail), "R4": (r4, r4_detail),
+        "R5": (r5, r5_detail), "R6": (r6, r6_detail),
+    }
+    results = [
+        CriterionResult(rid, statement, flags[rid][0], flags[rid][1])
+        for rid, statement in CRITERIA
+    ]
+    return RubricReport(results=results, passed=all(r.passed for r in results))
+</code></pre>
+<h2 id="the-worked-example-two-runs"><a class="header" href="#the-worked-example-two-runs">The Worked Example: Two Runs</a></h2>
+<p><code>grade</code> reads <code>ExamRun</code> fields; it never touches the model or the CSV. The verdict is reproducible from the record. Same run, same grade, every time.</p>
+<p><strong>The good run (6/6 PASS):</strong></p>
+<pre><code>ExamRun(
+    report_path="outputs/report.md",        # file exists on disk
+    n_clean=10,                             # wrangle passed
+    metrics=[...],                          # per-class P/R/F1 matches oracle
+    composed_modules=["wrangle.py", "eval_engine.py"],
+    version="1.0",
+)
+</code></pre>
+<pre><code>  [PASS] R1  RUNS: the pipeline ran end to end and wrote report.md
+  [PASS] R2  SCHEMA-VALID: n_clean == 10 (no null labels, no duplicate ids)
+  [PASS] R3  METRICS-CORRECT: per-class P/R/F1 matches the oracle within 1e-3
+  [PASS] R4  COMPOSED: run imported wrangle.py and eval_engine.py off disk; nothing re-implemented inline
+  [PASS] R5  PROBLEM-FRAMED: report names the dataset, the metric, and the weakest class
+  [PASS] R6  TESTED+VERSIONED: run declares a version and the smoke gate is green including the negative case
+
+  VERDICT: PASS (6/6 criteria)
+</code></pre>
+<p><strong>The deficient run (R2 and R3 FAIL):</strong></p>
+<p>A wrangle stage that skips deduplication lets duplicate rows through. <code>n_clean</code> becomes 12. Now the counts are wrong, and dog’s recall shifts because the duplicate rows added fake instances.</p>
+<pre><code>ExamRun(
+    report_path="outputs/report.md",        # file exists
+    n_clean=12,                             # deduplication skipped: 2 duplicate rows leaked
+    metrics=[                               # corrupted: dog recall is now 0.667, not 0.500
+        ClassMetrics("cat",  0.750, 0.750, 0.750, 4),
+        ClassMetrics("dog",  0.667, 0.667, 0.667, 6),   # wrong support, wrong recall
+        ClassMetrics("bird", 0.667, 1.000, 0.800, 2),
+    ],
+    composed_modules=["wrangle.py", "eval_engine.py"],
+    version="1.0",
+)
+</code></pre>
+<pre><code>  [PASS] R1  RUNS: ...
+  [FAIL] R2  SCHEMA-VALID: n_clean=12 (expected 10): null labels or duplicate ids leaked through
+         -&gt; n_clean=12 (expected 10): null labels or duplicate ids leaked through
+  [FAIL] R3  METRICS-CORRECT: per-class P/R/F1 matches the oracle within 1e-3
+         -&gt; dog.recall: got 0.6667, expected 0.5000; dog.f1: got 0.6667, expected 0.5710
+  [PASS] R4  COMPOSED: ...
+  [PASS] R5  PROBLEM-FRAMED: ...
+  [PASS] R6  TESTED+VERSIONED: ...
+
+  VERDICT: FAIL (4/6 criteria)
+</code></pre>
+<p>The deficient run fails exactly the criteria it offends. R2 and R3 fail; R1, R4, R5, and R6 pass. That precision is the point: the rubric tells you which criterion broke, which tells you where to look. A rubber stamp returns PASS or FAIL. A gate returns which.</p>
+<h2 id="core-concepts-30"><a class="header" href="#core-concepts-30">Core Concepts</a></h2>
+<ul>
+<li><code>CRITERIA</code> is the single source of truth: the prose table in this lesson and the tuple in <code>rubric.py</code> are one rubric in two forms; change one, change both.</li>
+<li><code>grade</code> reads the captured <code>ExamRun</code> and never re-runs the pipeline; the verdict is reproducible from the record, so grading is deterministic and auditable.</li>
+<li>A deliberately deficient run must fail the criterion it offends: R2 fails when <code>n_clean != 10</code>; R3 fails when any per-class metric drifts past 1e-3; a rubric that passes a corrupted run is not a gate, it is a rubber stamp.</li>
+<li>Per-class precision, recall, and F1 surface the failing class that a single accuracy number hides; R5 requires the report to name it, because a table without an interpretation is not a finding.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module8/the-rubric-and-grading/">
+<p><strong>Build It in Claude Code:</strong> Build <code>exercises/module8/rubric.py</code> with the <code>CRITERIA</code> tuple and <code>grade(exam) -&gt; RubricReport</code>. Verify that <code>grade</code> on the good <code>ExamRun</code> returns <code>passed == True</code> with 6/6, and that <code>grade</code> on a deficient <code>ExamRun</code> (corrupted dog recall, or <code>n_clean</code> wrong) returns <code>passed == False</code> failing the exact criterion it offends. The prose table in this lesson and your <code>CRITERIA</code> tuple are one rubric; they must match.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="run-test-and-ship"><a class="header" href="#run-test-and-ship">Run, Test, and Ship</a></h1>
+<p>The exam is done when the gate is green and the run is graded. You have the pipeline, the rubric, and the oracle numbers: <code>smoke.py</code> and <code>tests/test_smoke.py</code> close the loop, then a skill write-up ships the whole arc as a portfolio piece.</p>
+<h2 id="what-you-build-16"><a class="header" href="#what-you-build-16">What You Build</a></h2>
+<p>You build <code>smoke.py</code>, the deterministic offline gate that calls <code>pipeline.run_pipeline</code> on the bundled sample, grades the result with <code>rubric.grade</code>, and asserts the exam passes; <code>tests/test_smoke.py</code>, the pytest entry point that the CI gate runs with one command; and <code>outputs/skill-integrated-exam.md</code>, the portfolio surface that documents what you built and what it proved.</p>
+<h2 id="the-contracts-you-rely-on"><a class="header" href="#the-contracts-you-rely-on">The Contracts You Rely On</a></h2>
+<p>The earlier lessons in this module built two contracts. You do not redefine them here; you use them.</p>
+<p><code>pipeline.run_pipeline(config) -&gt; ExamRun</code> composes <code>wrangle.py</code> and <code>eval_engine.py</code> off disk, cleans the sample, runs the evaluation, and returns a typed result:</p>
+<pre><code class="language-python">ExamRun(
+    report_path: str,
+    n_clean: int,
+    metrics: list[ClassMetrics],
+    composed_modules: list[str],
+    version: str,
+)
+</code></pre>
+<p><code>python pipeline.py</code> exits 0 and writes <code>report.md</code>.</p>
+<p><code>rubric.grade(exam: ExamRun) -&gt; RubricReport</code> checks six criteria, R1 through R6, and returns a record with <code>.passed</code>, <code>.failed()</code>, and <code>.as_lines()</code>:</p>
+<pre><code class="language-python">RubricReport(
+    results: list[CriterionResult],
+    passed: bool,
+)
+</code></pre>
+<p><code>ClassMetrics(cls, precision, recall, f1, support)</code> is the per-class record <code>eval_engine</code> returns, imported here through <code>ExamRun.metrics</code>.</p>
+<h2 id="the-smoke-test-2"><a class="header" href="#the-smoke-test-2">The Smoke Test</a></h2>
+<p><code>smoke.py</code> answers two questions with two test functions: does the pipeline pass the rubric on the locked sample, and does a deficient run fail the criterion it offends?</p>
+<h3 id="test_exam_passes"><a class="header" href="#test_exam_passes">test_exam_passes</a></h3>
+<p>This function runs the full chain and asserts every dimension of the honest result.</p>
+<pre><code class="language-python">import pathlib
+import sys
+
+_HERE = pathlib.Path(__file__).parent
+sys.path.insert(0, str(_HERE))
+
+from pipeline import default_config, run_pipeline
+from rubric import grade
+
+def test_exam_passes():
+    exam = run_pipeline(default_config)
+    report = grade(exam)
+
+    # The rubric must pass and all six criteria must hold.
+    assert report.passed is True
+    assert report.failed() == []
+    assert len(report.results) == 6
+
+    # The pipeline cleaned exactly ten rows.
+    assert exam.n_clean == 10
+
+    # Lock the per-class metrics to the oracle within 1e-3 tolerance.
+    by_class = {m.cls: m for m in exam.metrics}
+
+    assert abs(by_class["cat"].precision - 0.750) &lt; 1e-3
+    assert abs(by_class["cat"].recall    - 0.750) &lt; 1e-3
+    assert abs(by_class["cat"].f1        - 0.750) &lt; 1e-3
+
+    assert abs(by_class["dog"].precision - 0.667) &lt; 1e-3
+    assert abs(by_class["dog"].recall    - 0.500) &lt; 1e-3
+    assert abs(by_class["dog"].f1        - 0.571) &lt; 1e-3
+
+    assert abs(by_class["bird"].precision - 0.667) &lt; 1e-3
+    assert abs(by_class["bird"].recall    - 1.000) &lt; 1e-3
+    assert abs(by_class["bird"].f1        - 0.800) &lt; 1e-3
+</code></pre>
+<p>The oracle numbers are the same locked values <code>eval_engine.py</code> produced in M7: cat 0.750/0.750/0.750, dog 0.667/0.500/0.571, bird 0.667/1.000/0.800. The tolerance is <code>1e-3</code>, not equality; floating-point division is not exact across environments.</p>
+<h3 id="test_deficient_run_fails"><a class="header" href="#test_deficient_run_fails">test_deficient_run_fails</a></h3>
+<p>This function builds a corrupted <code>ExamRun</code> and asserts the rubric rejects it. Strength is proven by what the gate refuses.</p>
+<pre><code class="language-python">from dataclasses import replace
+
+from pipeline import ExamRun, default_config, run_pipeline
+from rubric import grade
+
+def test_deficient_run_fails():
+    # Start from an honest run, then corrupt dog's recall to break R3 (recall gate).
+    honest = run_pipeline(default_config)
+
+    # ClassMetrics is a dataclass, so dataclasses.replace builds a corrupted copy
+    # without importing the class (it lives in eval_engine, loaded off disk).
+    corrupted_metrics = [
+        replace(m, recall=0.0, f1=0.0) if m.cls == "dog" else m
+        for m in honest.metrics
+    ]
+
+    deficient = ExamRun(
+        report_path=honest.report_path,
+        n_clean=honest.n_clean,
+        metrics=corrupted_metrics,
+        composed_modules=honest.composed_modules,
+        version=honest.version,
+    )
+
+    report = grade(deficient)
+    assert report.passed is False
+    failed_ids = {r.rid for r in report.failed()}
+    assert "R3" in failed_ids
+</code></pre>
+<p>The deficient run targets the per-class recall criterion. A second deficient variant targets R2 by setting <code>n_clean != 10</code>, but one is enough to prove the gate fires: pick the one that aligns with how your rubric defines its criteria.</p>
+<h2 id="teststest_smokepy"><a class="header" href="#teststest_smokepy">tests/test_smoke.py</a></h2>
+<p><code>tests/test_smoke.py</code> is the pytest entry that imports and re-runs the same checks. It does not duplicate logic; it imports <code>test_exam_passes</code> and <code>test_deficient_run_fails</code> from <code>smoke.py</code> and lets pytest collect them from a standard path.</p>
+<pre><code class="language-python">import pathlib
+import sys
+
+_ROOT = pathlib.Path(__file__).parent.parent
+sys.path.insert(0, str(_ROOT))
+
+from smoke import test_deficient_run_fails, test_exam_passes
+
+__all__ = ["test_exam_passes", "test_deficient_run_fails"]
+</code></pre>
+<p>Running <code>python -m pytest tests/</code> from the exercise root is the one-command gate. The BUILD→TEST sequence is: <code>python pipeline.py</code> exits 0 and writes <code>report.md</code>; <code>python -m pytest tests/</code> reports two tests passed.</p>
+<h2 id="the-skill-write-up"><a class="header" href="#the-skill-write-up">The Skill Write-Up</a></h2>
+<p><code>outputs/skill-integrated-exam.md</code> is the portfolio surface. It documents the business problem (one repo, three scripts, and a graded report), the lineage from M1 through M8, the rubric the pipeline passes, and how to run it.</p>
+<p>The lineage is the point. <code>measure.py</code> (M1–M3) established per-class reasoning from raw data. <code>vectorization_report.py</code> (M4) composed <code>measure.py</code> to answer a production decision. <code>wrangle.py</code> (M6) built the ingestion and cleaning contract. <code>eval_engine.py</code> (M7) turned a CSV of predictions into a per-class Markdown table. <code>pipeline.py</code> (M8) composes the last two off disk and grades the result against a rubric. That arc is what the write-up documents: not what the code does, but what it proves.</p>
+<h2 id="the-standards-check-2"><a class="header" href="#the-standards-check-2">The Standards Check</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Criterion</th><th>Where it lives</th></tr>
+</thead>
+<tbody>
+<tr><td>Real entry point</td><td><code>python pipeline.py</code> runs the pipeline and exits 0</td></tr>
+<tr><td>README frames the business problem</td><td><code>exercises/module8/run-test-and-ship/README.md</code> opens with the integrated-pipeline problem before the spec</td></tr>
+<tr><td>Machine-checkable acceptance gate</td><td><code>python -m pytest tests/</code> passes both tests; <code>python pipeline.py</code> exits 0</td></tr>
+<tr><td>The negative case is tested</td><td><code>test_deficient_run_fails</code> asserts a corrupted <code>ExamRun</code> fails the criterion it offends</td></tr>
+<tr><td>Versioned, clean layout; no secrets</td><td>reports go to <code>outputs/</code>; no committed keys; the tree is legible</td></tr>
+<tr><td>Ships a skill artifact</td><td><code>outputs/skill-integrated-exam.md</code> is a required output</td></tr>
+</tbody>
+</table>
+</div>
+<p>The gate is green when <code>pipeline.py</code> exits 0, <code>report.md</code> lands in <code>outputs/</code>, and <code>pytest tests/</code> reports two tests passed. That is a machine verdict, not a judgment call.</p>
+<p>Azure Machine Learning frames the production standard this way: model management and deployment require a reproducible, testable pipeline whose outputs are versioned and whose acceptance criteria are expressed in code, not prose (<a href="https://learn.microsoft.com/azure/machine-learning/concept-model-management-and-deployment?view=azureml-api-2">learn.microsoft.com/azure/machine-learning/concept-model-management-and-deployment</a>). The gate you just built meets that bar.</p>
+<p>This lesson closes Just Python. You ship a GitHub repo where <code>wrangle.py</code>, <code>eval_engine.py</code>, and <code>pipeline.py</code> all run clean, a rubric grades the result by code not opinion, and a skill write-up turns the artifact into evidence. The gap between a script that runs and a pipeline that proves is exactly this: a gate that refuses the deficient case.</p>
+<h2 id="core-concepts-31"><a class="header" href="#core-concepts-31">Core Concepts</a></h2>
+<ul>
+<li>A capstone gate has two test functions: the happy path locks the oracle numbers within tolerance, and the negative case asserts the rubric rejects a deliberately deficient run; strength is proven by what the gate refuses, not only what it ships.</li>
+<li><code>smoke.py</code> and <code>tests/test_smoke.py</code> run the same checks through two entry points: <code>python smoke.py</code> for a readable terminal run, <code>python -m pytest tests/</code> for the one-command CI gate; the tests live once, in <code>smoke.py</code>, and are imported.</li>
+<li>Float comparisons in production smoke tests use a tolerance (<code>abs(result - oracle) &lt; 1e-3</code>), not equality; floating-point division across Python versions is not bitwise identical.</li>
+<li>The compounding arc is real only when each artifact is imported, not rebuilt: <code>pipeline.py</code> imports <code>wrangle.py</code> and <code>eval_engine.py</code> off disk; the exam grades what the real artifacts produce, not a copy.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module8/run-test-and-ship/">
+<p><strong>Build It in Claude Code:</strong> Write <code>exercises/module8/smoke.py</code> with <code>test_exam_passes</code> and <code>test_deficient_run_fails</code>; write <code>exercises/module8/tests/test_smoke.py</code> that imports and re-exposes both tests; and fill out <code>exercises/module8/outputs/skill-integrated-exam.md</code> with the business problem, lineage, and how-to-run. The gate is green when <code>python pipeline.py</code> exits 0 and writes <code>report.md</code>, and <code>python -m pytest tests/</code> reports two tests passed.</p>
 </div>
 
 

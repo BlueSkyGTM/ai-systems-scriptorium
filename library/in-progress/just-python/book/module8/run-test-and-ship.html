@@ -1,0 +1,374 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Run, Test, and Ship - Just Python — Applied Python for AI Engineers</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/copy-to-claude-45921320.css">
+        <link rel="stylesheet" href="../theme/syntax-polish-53c427bd.css">
+        <link rel="stylesheet" href="../theme/readability-9f9ae6ec.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "rust";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "../searchindex-66f9e151.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-997d00fb.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Just Python — Applied Python for AI Engineers</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="run-test-and-ship"><a class="header" href="#run-test-and-ship">Run, Test, and Ship</a></h1>
+<p>The exam is done when the gate is green and the run is graded. You have the pipeline, the rubric, and the oracle numbers: <code>smoke.py</code> and <code>tests/test_smoke.py</code> close the loop, then a skill write-up ships the whole arc as a portfolio piece.</p>
+<h2 id="what-you-build"><a class="header" href="#what-you-build">What You Build</a></h2>
+<p>You build <code>smoke.py</code>, the deterministic offline gate that calls <code>pipeline.run_pipeline</code> on the bundled sample, grades the result with <code>rubric.grade</code>, and asserts the exam passes; <code>tests/test_smoke.py</code>, the pytest entry point that the CI gate runs with one command; and <code>outputs/skill-integrated-exam.md</code>, the portfolio surface that documents what you built and what it proved.</p>
+<h2 id="the-contracts-you-rely-on"><a class="header" href="#the-contracts-you-rely-on">The Contracts You Rely On</a></h2>
+<p>The earlier lessons in this module built two contracts. You do not redefine them here; you use them.</p>
+<p><code>pipeline.run_pipeline(config) -&gt; ExamRun</code> composes <code>wrangle.py</code> and <code>eval_engine.py</code> off disk, cleans the sample, runs the evaluation, and returns a typed result:</p>
+<pre><code class="language-python">ExamRun(
+    report_path: str,
+    n_clean: int,
+    metrics: list[ClassMetrics],
+    composed_modules: list[str],
+    version: str,
+)
+</code></pre>
+<p><code>python pipeline.py</code> exits 0 and writes <code>report.md</code>.</p>
+<p><code>rubric.grade(exam: ExamRun) -&gt; RubricReport</code> checks six criteria, R1 through R6, and returns a record with <code>.passed</code>, <code>.failed()</code>, and <code>.as_lines()</code>:</p>
+<pre><code class="language-python">RubricReport(
+    results: list[CriterionResult],
+    passed: bool,
+)
+</code></pre>
+<p><code>ClassMetrics(cls, precision, recall, f1, support)</code> is the per-class record <code>eval_engine</code> returns, imported here through <code>ExamRun.metrics</code>.</p>
+<h2 id="the-smoke-test"><a class="header" href="#the-smoke-test">The Smoke Test</a></h2>
+<p><code>smoke.py</code> answers two questions with two test functions: does the pipeline pass the rubric on the locked sample, and does a deficient run fail the criterion it offends?</p>
+<h3 id="test_exam_passes"><a class="header" href="#test_exam_passes">test_exam_passes</a></h3>
+<p>This function runs the full chain and asserts every dimension of the honest result.</p>
+<pre><code class="language-python">import pathlib
+import sys
+
+_HERE = pathlib.Path(__file__).parent
+sys.path.insert(0, str(_HERE))
+
+from pipeline import default_config, run_pipeline
+from rubric import grade
+
+def test_exam_passes():
+    exam = run_pipeline(default_config)
+    report = grade(exam)
+
+    # The rubric must pass and all six criteria must hold.
+    assert report.passed is True
+    assert report.failed() == []
+    assert len(report.results) == 6
+
+    # The pipeline cleaned exactly ten rows.
+    assert exam.n_clean == 10
+
+    # Lock the per-class metrics to the oracle within 1e-3 tolerance.
+    by_class = {m.cls: m for m in exam.metrics}
+
+    assert abs(by_class["cat"].precision - 0.750) &lt; 1e-3
+    assert abs(by_class["cat"].recall    - 0.750) &lt; 1e-3
+    assert abs(by_class["cat"].f1        - 0.750) &lt; 1e-3
+
+    assert abs(by_class["dog"].precision - 0.667) &lt; 1e-3
+    assert abs(by_class["dog"].recall    - 0.500) &lt; 1e-3
+    assert abs(by_class["dog"].f1        - 0.571) &lt; 1e-3
+
+    assert abs(by_class["bird"].precision - 0.667) &lt; 1e-3
+    assert abs(by_class["bird"].recall    - 1.000) &lt; 1e-3
+    assert abs(by_class["bird"].f1        - 0.800) &lt; 1e-3
+</code></pre>
+<p>The oracle numbers are the same locked values <code>eval_engine.py</code> produced in M7: cat 0.750/0.750/0.750, dog 0.667/0.500/0.571, bird 0.667/1.000/0.800. The tolerance is <code>1e-3</code>, not equality; floating-point division is not exact across environments.</p>
+<h3 id="test_deficient_run_fails"><a class="header" href="#test_deficient_run_fails">test_deficient_run_fails</a></h3>
+<p>This function builds a corrupted <code>ExamRun</code> and asserts the rubric rejects it. Strength is proven by what the gate refuses.</p>
+<pre><code class="language-python">from dataclasses import replace
+
+from pipeline import ExamRun, default_config, run_pipeline
+from rubric import grade
+
+def test_deficient_run_fails():
+    # Start from an honest run, then corrupt dog's recall to break R3 (recall gate).
+    honest = run_pipeline(default_config)
+
+    # ClassMetrics is a dataclass, so dataclasses.replace builds a corrupted copy
+    # without importing the class (it lives in eval_engine, loaded off disk).
+    corrupted_metrics = [
+        replace(m, recall=0.0, f1=0.0) if m.cls == "dog" else m
+        for m in honest.metrics
+    ]
+
+    deficient = ExamRun(
+        report_path=honest.report_path,
+        n_clean=honest.n_clean,
+        metrics=corrupted_metrics,
+        composed_modules=honest.composed_modules,
+        version=honest.version,
+    )
+
+    report = grade(deficient)
+    assert report.passed is False
+    failed_ids = {r.rid for r in report.failed()}
+    assert "R3" in failed_ids
+</code></pre>
+<p>The deficient run targets the per-class recall criterion. A second deficient variant targets R2 by setting <code>n_clean != 10</code>, but one is enough to prove the gate fires: pick the one that aligns with how your rubric defines its criteria.</p>
+<h2 id="teststest_smokepy"><a class="header" href="#teststest_smokepy">tests/test_smoke.py</a></h2>
+<p><code>tests/test_smoke.py</code> is the pytest entry that imports and re-runs the same checks. It does not duplicate logic; it imports <code>test_exam_passes</code> and <code>test_deficient_run_fails</code> from <code>smoke.py</code> and lets pytest collect them from a standard path.</p>
+<pre><code class="language-python">import pathlib
+import sys
+
+_ROOT = pathlib.Path(__file__).parent.parent
+sys.path.insert(0, str(_ROOT))
+
+from smoke import test_deficient_run_fails, test_exam_passes
+
+__all__ = ["test_exam_passes", "test_deficient_run_fails"]
+</code></pre>
+<p>Running <code>python -m pytest tests/</code> from the exercise root is the one-command gate. The BUILD→TEST sequence is: <code>python pipeline.py</code> exits 0 and writes <code>report.md</code>; <code>python -m pytest tests/</code> reports two tests passed.</p>
+<h2 id="the-skill-write-up"><a class="header" href="#the-skill-write-up">The Skill Write-Up</a></h2>
+<p><code>outputs/skill-integrated-exam.md</code> is the portfolio surface. It documents the business problem (one repo, three scripts, and a graded report), the lineage from M1 through M8, the rubric the pipeline passes, and how to run it.</p>
+<p>The lineage is the point. <code>measure.py</code> (M1–M3) established per-class reasoning from raw data. <code>vectorization_report.py</code> (M4) composed <code>measure.py</code> to answer a production decision. <code>wrangle.py</code> (M6) built the ingestion and cleaning contract. <code>eval_engine.py</code> (M7) turned a CSV of predictions into a per-class Markdown table. <code>pipeline.py</code> (M8) composes the last two off disk and grades the result against a rubric. That arc is what the write-up documents: not what the code does, but what it proves.</p>
+<h2 id="the-standards-check"><a class="header" href="#the-standards-check">The Standards Check</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Criterion</th><th>Where it lives</th></tr>
+</thead>
+<tbody>
+<tr><td>Real entry point</td><td><code>python pipeline.py</code> runs the pipeline and exits 0</td></tr>
+<tr><td>README frames the business problem</td><td><code>exercises/module8/run-test-and-ship/README.md</code> opens with the integrated-pipeline problem before the spec</td></tr>
+<tr><td>Machine-checkable acceptance gate</td><td><code>python -m pytest tests/</code> passes both tests; <code>python pipeline.py</code> exits 0</td></tr>
+<tr><td>The negative case is tested</td><td><code>test_deficient_run_fails</code> asserts a corrupted <code>ExamRun</code> fails the criterion it offends</td></tr>
+<tr><td>Versioned, clean layout; no secrets</td><td>reports go to <code>outputs/</code>; no committed keys; the tree is legible</td></tr>
+<tr><td>Ships a skill artifact</td><td><code>outputs/skill-integrated-exam.md</code> is a required output</td></tr>
+</tbody>
+</table>
+</div>
+<p>The gate is green when <code>pipeline.py</code> exits 0, <code>report.md</code> lands in <code>outputs/</code>, and <code>pytest tests/</code> reports two tests passed. That is a machine verdict, not a judgment call.</p>
+<p>Azure Machine Learning frames the production standard this way: model management and deployment require a reproducible, testable pipeline whose outputs are versioned and whose acceptance criteria are expressed in code, not prose (<a href="https://learn.microsoft.com/azure/machine-learning/concept-model-management-and-deployment?view=azureml-api-2">learn.microsoft.com/azure/machine-learning/concept-model-management-and-deployment</a>). The gate you just built meets that bar.</p>
+<p>This lesson closes Just Python. You ship a GitHub repo where <code>wrangle.py</code>, <code>eval_engine.py</code>, and <code>pipeline.py</code> all run clean, a rubric grades the result by code not opinion, and a skill write-up turns the artifact into evidence. The gap between a script that runs and a pipeline that proves is exactly this: a gate that refuses the deficient case.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>A capstone gate has two test functions: the happy path locks the oracle numbers within tolerance, and the negative case asserts the rubric rejects a deliberately deficient run; strength is proven by what the gate refuses, not only what it ships.</li>
+<li><code>smoke.py</code> and <code>tests/test_smoke.py</code> run the same checks through two entry points: <code>python smoke.py</code> for a readable terminal run, <code>python -m pytest tests/</code> for the one-command CI gate; the tests live once, in <code>smoke.py</code>, and are imported.</li>
+<li>Float comparisons in production smoke tests use a tolerance (<code>abs(result - oracle) &lt; 1e-3</code>), not equality; floating-point division across Python versions is not bitwise identical.</li>
+<li>The compounding arc is real only when each artifact is imported, not rebuilt: <code>pipeline.py</code> imports <code>wrangle.py</code> and <code>eval_engine.py</code> off disk; the exam grades what the real artifacts produce, not a copy.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module8/run-test-and-ship/">
+<p><strong>Build It in Claude Code:</strong> Write <code>exercises/module8/smoke.py</code> with <code>test_exam_passes</code> and <code>test_deficient_run_fails</code>; write <code>exercises/module8/tests/test_smoke.py</code> that imports and re-exposes both tests; and fill out <code>exercises/module8/outputs/skill-integrated-exam.md</code> with the business problem, lineage, and how-to-run. The gate is green when <code>python pipeline.py</code> exits 0 and writes <code>report.md</code>, and <code>python -m pytest tests/</code> reports two tests passed.</p>
+</div>
+
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../module8/the-rubric-and-grading.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../module8/the-rubric-and-grading.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/copy-to-claude-88de825c.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

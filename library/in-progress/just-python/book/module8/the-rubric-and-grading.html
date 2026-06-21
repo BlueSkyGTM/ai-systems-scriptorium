@@ -1,0 +1,494 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>The Rubric and Grading - Just Python — Applied Python for AI Engineers</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/copy-to-claude-45921320.css">
+        <link rel="stylesheet" href="../theme/syntax-polish-53c427bd.css">
+        <link rel="stylesheet" href="../theme/readability-9f9ae6ec.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "rust";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "../searchindex-66f9e151.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-997d00fb.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Just Python — Applied Python for AI Engineers</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="the-rubric-and-grading"><a class="header" href="#the-rubric-and-grading">The Rubric and Grading</a></h1>
+<p>Opinion is not a gate. Build <code>rubric.py</code>: a six-criterion acceptance rubric that reads the <code>ExamRun</code> your pipeline produced and returns a verdict in code.</p>
+<h2 id="what-you-build"><a class="header" href="#what-you-build">What You Build</a></h2>
+<p>You build three things: <code>CRITERIA</code>, the tuple that is the single source of truth for both this lesson’s prose table and the checker; <code>grade(exam) -&gt; RubricReport</code>, which reads the captured <code>ExamRun</code> and evaluates each criterion; and the worked example that shows a good run scoring 6/6 and a deficient run failing the criterion it offends.</p>
+<h2 id="the-invariant"><a class="header" href="#the-invariant">The Invariant</a></h2>
+<p>The rubric exists in two forms: a <code>CRITERIA</code> tuple in <code>rubric.py</code> and the prose table in this lesson. They must match, clause for clause. If you change a criterion here, change it there. This is not a style preference; it is the control. A rubric where the code checks one thing and the prose describes another is not a rubric; it is two separate opinions that happen to co-exist.</p>
+<p>The <code>CRITERIA</code> tuple is the single source of truth because code runs. Prose describes.</p>
+<h2 id="the-six-criteria"><a class="header" href="#the-six-criteria">The Six Criteria</a></h2>
+<p>These are the criteria <code>grade</code> checks. The <code>CRITERIA</code> tuple in <code>rubric.py</code> carries the same six IDs and statements, in this order.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>ID</th><th>Criterion</th><th>Passes When</th></tr>
+</thead>
+<tbody>
+<tr><td>R1</td><td>RUNS</td><td>the pipeline ran end to end and wrote <code>report.md</code>: <code>exam.report_path</code> exists on disk</td></tr>
+<tr><td>R2</td><td>SCHEMA-VALID</td><td>the wrangle stage validated the data: <code>exam.n_clean == 10</code> (no null labels, no duplicate ids leaked through)</td></tr>
+<tr><td>R3</td><td>METRICS-CORRECT</td><td>every per-class precision, recall, and F1 matches the locked oracle within 1e-3</td></tr>
+<tr><td>R4</td><td>COMPOSED</td><td>the run imported the real <code>wrangle.py</code> and <code>eval_engine.py</code> off disk: <code>composed_modules</code> lists both; nothing re-implemented inline</td></tr>
+<tr><td>R5</td><td>PROBLEM-FRAMED</td><td>the report names the dataset, the metric, and the headline finding (the weakest class)</td></tr>
+<tr><td>R6</td><td>TESTED+VERSIONED</td><td>the run declares a version (<code>exam.version</code>); the smoke suite enforces the negative case</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="why-r3-and-r5-both-matter"><a class="header" href="#why-r3-and-r5-both-matter">Why R3 and R5 Both Matter</a></h2>
+<p>A single accuracy number hides the failing class. On the ten-row sample, the macro-average F1 is 0.707. That number does not tell you that <code>dog</code> has recall 0.500: two of its four actual instances were predicted as something else. The per-class table surfaces it.</p>
+<p>Azure AI Language Services states this directly: precision measures how many of the predicted classes are correctly labeled; recall measures how many of the actual class instances were found (<a href="https://learn.microsoft.com/azure/ai-services/language-service/custom-text-classification/concepts/evaluation-metrics">learn.microsoft.com/azure/ai-services/language-service/custom-text-classification/concepts/evaluation-metrics</a>). Low recall on a class means the model is systematically missing it, not predicting it falsely. Those are different failure modes with different fixes, and they only separate when you look at the per-class breakdown.</p>
+<p>R3 locks the numbers so a grader cannot accidentally accept a run with corrupted predictions. R5 requires the report to name the finding: the dataset, the metric, and which class is weakest. A report that prints a table without interpreting it is not framed; it is output.</p>
+<p>The locked oracle for R3:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>class</th><th>precision</th><th>recall</th><th>F1</th><th>support</th></tr>
+</thead>
+<tbody>
+<tr><td>cat</td><td>0.750</td><td>0.750</td><td>0.750</td><td>4</td></tr>
+<tr><td>dog</td><td>0.667</td><td>0.500</td><td>0.571</td><td>4</td></tr>
+<tr><td>bird</td><td>0.667</td><td>1.000</td><td>0.800</td><td>2</td></tr>
+<tr><td><strong>macro avg</strong></td><td><strong>0.694</strong></td><td><strong>0.750</strong></td><td><strong>0.707</strong></td><td><strong>10</strong></td></tr>
+</tbody>
+</table>
+</div>
+<p>The weakest class is <code>dog</code> at recall 0.500. R5 passes only when the report names it.</p>
+<h2 id="the-rubricpy-shape"><a class="header" href="#the-rubricpy-shape">The rubric.py Shape</a></h2>
+<p><code>rubric.py</code> has four pieces. The <code>CRITERIA</code> tuple is first because it is the source of truth. Then two dataclasses. Then <code>grade</code>.</p>
+<pre><code class="language-python">from __future__ import annotations
+from dataclasses import dataclass
+import pathlib
+
+# The six criteria, in order. (id, one-line statement).
+# This tuple is the single source of truth: the prose table in the lesson
+# and this tuple are one rubric; change one, change both.
+CRITERIA = (
+    ("R1", "RUNS: the pipeline ran end to end and wrote report.md"),
+    ("R2", "SCHEMA-VALID: n_clean == 10 (no null labels, no duplicate ids)"),
+    ("R3", "METRICS-CORRECT: per-class P/R/F1 matches the oracle within 1e-3"),
+    ("R4", "COMPOSED: run imported wrangle.py and eval_engine.py off disk; nothing re-implemented inline"),
+    ("R5", "PROBLEM-FRAMED: report names the dataset, the metric, and the weakest class"),
+    ("R6", "TESTED+VERSIONED: the run declares a version; the smoke suite enforces the negative case"),
+)
+
+
+@dataclass
+class CriterionResult:
+    rid:       str
+    statement: str
+    passed:    bool
+    detail:    str
+
+
+@dataclass
+class RubricReport:
+    results: list
+    passed:  bool
+
+    def failed(self) -&gt; list:
+        return [r for r in self.results if not r.passed]
+
+    def as_lines(self) -&gt; list:
+        lines = []
+        for r in self.results:
+            mark = "PASS" if r.passed else "FAIL"
+            lines.append(f"  [{mark}] {r.rid}  {r.statement}")
+            if not r.passed:
+                lines.append(f"         -&gt; {r.detail}")
+        lines.append("")
+        lines.append(
+            f"  VERDICT: {'PASS' if self.passed else 'FAIL'} "
+            f"({sum(r.passed for r in self.results)}/{len(self.results)} criteria)"
+        )
+        return lines
+</code></pre>
+<p><code>grade</code> reads only the captured <code>ExamRun</code> fields. It never re-runs the pipeline.</p>
+<pre><code class="language-python"># Locked oracle for R3 (per-class; tolerance 1e-3)
+_ORACLE = {
+    "cat":  {"precision": 0.750, "recall": 0.750, "f1": 0.750, "support": 4},
+    "dog":  {"precision": 0.667, "recall": 0.500, "f1": 0.571, "support": 4},
+    "bird": {"precision": 0.667, "recall": 1.000, "f1": 0.800, "support": 2},
+}
+_TOL = 1e-3
+
+
+def grade(exam) -&gt; RubricReport:
+    """Grade a captured ExamRun against the six criteria.
+
+    Reads exam.report_path, exam.n_clean, exam.metrics (list of ClassMetrics
+    with .cls/.precision/.recall/.f1/.support), exam.composed_modules,
+    and exam.version.
+
+    Returns a RubricReport whose .passed is True only when all six pass.
+    """
+    # R1 RUNS: the report file exists on disk.
+    r1 = bool(exam.report_path) and pathlib.Path(exam.report_path).exists()
+    r1_detail = (
+        f"report_path={exam.report_path!r} does not exist"
+        if not r1 else
+        f"report written to {exam.report_path}"
+    )
+
+    # R2 SCHEMA-VALID: the wrangle stage produced exactly 10 clean rows.
+    r2 = exam.n_clean == 10
+    r2_detail = (
+        f"n_clean={exam.n_clean} (expected 10): null labels or duplicate ids leaked through"
+        if not r2 else
+        f"n_clean={exam.n_clean}"
+    )
+
+    # R3 METRICS-CORRECT: per-class P/R/F1 match the oracle within 1e-3.
+    by_class = {m.cls: m for m in exam.metrics}
+    r3_misses = []
+    for cls, expected in _ORACLE.items():
+        if cls not in by_class:
+            r3_misses.append(f"{cls} missing from metrics")
+            continue
+        m = by_class[cls]
+        for field in ("precision", "recall", "f1"):
+            diff = abs(getattr(m, field) - expected[field])
+            if diff &gt; _TOL:
+                r3_misses.append(
+                    f"{cls}.{field}: got {getattr(m, field):.4f}, expected {expected[field]:.4f}"
+                )
+    r3 = len(r3_misses) == 0
+    r3_detail = (
+        "; ".join(r3_misses) if not r3 else
+        "all per-class P/R/F1 within 1e-3 of oracle"
+    )
+
+    # R4 COMPOSED: both modules appear in composed_modules; nothing re-implemented inline.
+    composed = set(exam.composed_modules or [])
+    required = {"wrangle.py", "eval_engine.py"}
+    missing = required - composed
+    r4 = len(missing) == 0
+    r4_detail = (
+        f"missing from composed_modules: {sorted(missing)}"
+        if not r4 else
+        f"composed_modules includes {sorted(composed)}"
+    )
+
+    # R5 PROBLEM-FRAMED: report content names dataset, metric, and weakest class.
+    report_text = ""
+    if exam.report_path and pathlib.Path(exam.report_path).exists():
+        report_text = pathlib.Path(exam.report_path).read_text(encoding="utf-8").lower()
+    framing_checks = {
+        "dataset name": any(
+            word in report_text for word in ("predictions", "dataset", "ten-row", "sample")
+        ),
+        "metric named": any(
+            word in report_text for word in ("f1", "precision", "recall")
+        ),
+        "weakest class named": "dog" in report_text,
+    }
+    missing_framing = [k for k, v in framing_checks.items() if not v]
+    r5 = len(missing_framing) == 0
+    r5_detail = (
+        f"report missing: {', '.join(missing_framing)}"
+        if not r5 else
+        "report names dataset, metric, and weakest class"
+    )
+
+    # R6 TESTED+VERSIONED: the run declares a version. The smoke suite enforces
+    # the negative case (test_deficient_run_fails must pass for the gate to be green).
+    r6 = bool(exam.version)
+    r6_detail = (
+        f"version={exam.version!r} is missing"
+        if not r6 else
+        f"version={exam.version}"
+    )
+
+    flags = {
+        "R1": (r1, r1_detail), "R2": (r2, r2_detail),
+        "R3": (r3, r3_detail), "R4": (r4, r4_detail),
+        "R5": (r5, r5_detail), "R6": (r6, r6_detail),
+    }
+    results = [
+        CriterionResult(rid, statement, flags[rid][0], flags[rid][1])
+        for rid, statement in CRITERIA
+    ]
+    return RubricReport(results=results, passed=all(r.passed for r in results))
+</code></pre>
+<h2 id="the-worked-example-two-runs"><a class="header" href="#the-worked-example-two-runs">The Worked Example: Two Runs</a></h2>
+<p><code>grade</code> reads <code>ExamRun</code> fields; it never touches the model or the CSV. The verdict is reproducible from the record. Same run, same grade, every time.</p>
+<p><strong>The good run (6/6 PASS):</strong></p>
+<pre><code>ExamRun(
+    report_path="outputs/report.md",        # file exists on disk
+    n_clean=10,                             # wrangle passed
+    metrics=[...],                          # per-class P/R/F1 matches oracle
+    composed_modules=["wrangle.py", "eval_engine.py"],
+    version="1.0",
+)
+</code></pre>
+<pre><code>  [PASS] R1  RUNS: the pipeline ran end to end and wrote report.md
+  [PASS] R2  SCHEMA-VALID: n_clean == 10 (no null labels, no duplicate ids)
+  [PASS] R3  METRICS-CORRECT: per-class P/R/F1 matches the oracle within 1e-3
+  [PASS] R4  COMPOSED: run imported wrangle.py and eval_engine.py off disk; nothing re-implemented inline
+  [PASS] R5  PROBLEM-FRAMED: report names the dataset, the metric, and the weakest class
+  [PASS] R6  TESTED+VERSIONED: run declares a version and the smoke gate is green including the negative case
+
+  VERDICT: PASS (6/6 criteria)
+</code></pre>
+<p><strong>The deficient run (R2 and R3 FAIL):</strong></p>
+<p>A wrangle stage that skips deduplication lets duplicate rows through. <code>n_clean</code> becomes 12. Now the counts are wrong, and dog’s recall shifts because the duplicate rows added fake instances.</p>
+<pre><code>ExamRun(
+    report_path="outputs/report.md",        # file exists
+    n_clean=12,                             # deduplication skipped: 2 duplicate rows leaked
+    metrics=[                               # corrupted: dog recall is now 0.667, not 0.500
+        ClassMetrics("cat",  0.750, 0.750, 0.750, 4),
+        ClassMetrics("dog",  0.667, 0.667, 0.667, 6),   # wrong support, wrong recall
+        ClassMetrics("bird", 0.667, 1.000, 0.800, 2),
+    ],
+    composed_modules=["wrangle.py", "eval_engine.py"],
+    version="1.0",
+)
+</code></pre>
+<pre><code>  [PASS] R1  RUNS: ...
+  [FAIL] R2  SCHEMA-VALID: n_clean=12 (expected 10): null labels or duplicate ids leaked through
+         -&gt; n_clean=12 (expected 10): null labels or duplicate ids leaked through
+  [FAIL] R3  METRICS-CORRECT: per-class P/R/F1 matches the oracle within 1e-3
+         -&gt; dog.recall: got 0.6667, expected 0.5000; dog.f1: got 0.6667, expected 0.5710
+  [PASS] R4  COMPOSED: ...
+  [PASS] R5  PROBLEM-FRAMED: ...
+  [PASS] R6  TESTED+VERSIONED: ...
+
+  VERDICT: FAIL (4/6 criteria)
+</code></pre>
+<p>The deficient run fails exactly the criteria it offends. R2 and R3 fail; R1, R4, R5, and R6 pass. That precision is the point: the rubric tells you which criterion broke, which tells you where to look. A rubber stamp returns PASS or FAIL. A gate returns which.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li><code>CRITERIA</code> is the single source of truth: the prose table in this lesson and the tuple in <code>rubric.py</code> are one rubric in two forms; change one, change both.</li>
+<li><code>grade</code> reads the captured <code>ExamRun</code> and never re-runs the pipeline; the verdict is reproducible from the record, so grading is deterministic and auditable.</li>
+<li>A deliberately deficient run must fail the criterion it offends: R2 fails when <code>n_clean != 10</code>; R3 fails when any per-class metric drifts past 1e-3; a rubric that passes a corrupted run is not a gate, it is a rubber stamp.</li>
+<li>Per-class precision, recall, and F1 surface the failing class that a single accuracy number hides; R5 requires the report to name it, because a table without an interpretation is not a finding.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module8/the-rubric-and-grading/">
+<p><strong>Build It in Claude Code:</strong> Build <code>exercises/module8/rubric.py</code> with the <code>CRITERIA</code> tuple and <code>grade(exam) -&gt; RubricReport</code>. Verify that <code>grade</code> on the good <code>ExamRun</code> returns <code>passed == True</code> with 6/6, and that <code>grade</code> on a deficient <code>ExamRun</code> (corrupted dog recall, or <code>n_clean</code> wrong) returns <code>passed == False</code> failing the exact criterion it offends. The prose table in this lesson and your <code>CRITERIA</code> tuple are one rubric; they must match.</p>
+</div>
+
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../module8/compose-the-pipeline.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../module8/run-test-and-ship.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../module8/compose-the-pipeline.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../module8/run-test-and-ship.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/copy-to-claude-88de825c.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

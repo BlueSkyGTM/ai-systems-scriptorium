@@ -51,8 +51,22 @@ When a learner pastes an exercise into you, they are here to build, not to watch
   crashes). It ships `exercises/module7/outputs/skill-evaluation-engine.md`. Before any M7 exercise: open
   `eval_engine.py`, read which stages exist, add the next to the locked structure.
 
-  Later modules have their own throughline artifacts (the M8 exam script). The same rule applies: find the
-  artifact, read it, then continue the build.
+  **Module 8 is the capstone that composes M6 + M7: `exercises/module8/pipeline.py`**
+  M8 is the integrated exam. It builds `pipeline.py` + `artifact_adapter.py`, which **import `wrangle.py`
+  (M6) and `eval_engine.py` (M7) off disk** (via `importlib`, registering the module in `sys.modules` before
+  `exec_module`) and chain them: ingest the raw corpus -> `wrangle.run` -> read the clean Parquet -> merge
+  predictions with labels on `id` -> `eval_engine.run` -> write one integrated `report.md`. It returns a
+  five-field `ExamRun` (report_path, n_clean, metrics, composed_modules, version). `rubric.py` grades the
+  `ExamRun` against six criteria (R1 RUNS, R2 SCHEMA-VALID, R3 METRICS-CORRECT, R4 COMPOSED, R5
+  PROBLEM-FRAMED, R6 TESTED+VERSIONED); the `CRITERIA` tuple and the lesson's prose table are one rubric in
+  two forms. The acceptance gate is `exercises/module8/smoke.py` + `tests/test_smoke.py` (pytest: the chain
+  grades 6/6 on the locked 10-row sample, and a deliberately deficient run fails the criterion it offends).
+  It ships `exercises/module8/outputs/skill-integrated-exam.md`. Before any M8 exercise: the artifact composes
+  M6 + M7, so **never rebuild `wrangle.py` or `eval_engine.py` inside M8; import them off disk**. The inputs
+  (`sample_corpus.jsonl`, `sample_predictions.csv`) are built in the lesson-1 (`the-exam`) exercise.
+
+  Later modules have their own throughline artifacts. The same rule applies: find the artifact, read it,
+  then continue the build.
 
 ## How to Coach
 
