@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-0e0883fd.js";
+            window.path_to_searchindex_js = "searchindex-0793ab71.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-5fb103e3.js"></script>
+        <script src="toc-58d72f42.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -1450,6 +1450,578 @@ artifact; it is the call layer the routing module will wrap.</li>
 </div>
 
 <!-- SOURCES: https://ollama.com/library/qwen2.5-coder:14b | https://github.com/ollama/ollama/issues/9704 -->
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-4-unified-memory"><a class="header" href="#module-4-unified-memory">Module 4: Unified Memory</a></h1>
+<p>Module 3 ended on a rule: keep the model on the card. A model that fits entirely in the RTX 4060 Ti’s
+16GB serves fast, and <code>ollama ps</code> reading <code>100% GPU</code> was the proof you had done it right. That rule is
+correct, and this module is about the times you will choose to break it on purpose.</p>
+<p>A 32B model is meaningfully smarter than a 14B one. A 70B model is smarter still. Neither fits in 16GB
+of VRAM at a usable quantization. The instinct is to treat that as a wall: the model does not fit, so
+you cannot run it. The truth is that you can, because the rig has a second memory pool. The 64GB of
+DDR5 alongside the GPU is slower than VRAM, but it is real, and Ollama will split a too-large model
+across both, running as many layers on the GPU as fit and the rest on the CPU.</p>
+<p>That split is the subject of this module. Treating VRAM and system RAM as one budget is what “unified
+memory” means here: not the shared silicon of an Apple chip, but a discrete GPU and its host RAM that
+Ollama spans when a model is too big for the fast half alone. Spanning them has a price, paid in
+tokens per second, and the only way to spend it wisely is to measure it.</p>
+<p>You will see exactly what Ollama does when a model exceeds VRAM, learn the quantization tradeoffs that
+decide how much of a model fits on the card in the first place, and build <code>bench.py</code>, a tool that
+reads the server’s own timing fields to report tokens per second and time to first token. Then you
+will run a 14B model that fits on-card against a 32B model that does not, and watch the numbers move.</p>
+<p>You leave this module with a fourth file in the portfolio repository: <code>LATENCY.md</code>, the measured
+baseline for every model you run, recording its tokens per second, its time to first token, and how it
+split across the GPU and CPU. The metal, the runtime, and the model stack were documented in the
+first three modules; now their performance is too. That baseline is the number every tuning decision in
+Module 7 is measured against.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="when-a-model-doesnt-fit"><a class="header" href="#when-a-model-doesnt-fit">When a Model Doesn’t Fit</a></h1>
+<p>Module 3 ended with a rule: if <code>ollama ps</code> reads <code>100% GPU</code>, the model is on the card and you
+are done. This lesson is the deliberate break from that rule, and what you see when you break it.</p>
+<h2 id="step-1-what-ollama-does"><a class="header" href="#step-1-what-ollama-does">Step 1: What Ollama Does</a></h2>
+<p>When a model’s memory footprint exceeds available VRAM, Ollama does not refuse to load it. It
+loads as many transformer layers as fit onto the GPU and runs the remainder on the CPU from
+system RAM. This is called partial layer offload. The parameter that controls it is <code>num_gpu</code>,
+which sets the number of layers to place on the GPU; Ollama sets it automatically based on what
+fits, but you can also set it explicitly in a Modelfile.</p>
+<p>Pull a model that will not fit in 16 GB of VRAM:</p>
+<pre><code class="language-bash">ollama pull qwen2.5-coder:32b
+</code></pre>
+<p>The default tag is <code>Q4_K_M</code>, which is roughly 20 GB on disk. That exceeds the card’s 16 GB
+before a KV cache or compute buffers are added. Ollama downloads it without complaint and loads
+what it can.</p>
+<h2 id="step-2-read-the-split"><a class="header" href="#step-2-read-the-split">Step 2: Read the Split</a></h2>
+<p>Once the model is loaded and serving, run:</p>
+<pre><code class="language-bash">ollama ps
+</code></pre>
+<p>What you should see is different from Module 3. Instead of <code>100% GPU</code>, the PROCESSOR column now
+reports a split:</p>
+<pre><code>NAME                      ID        SIZE    PROCESSOR          UNTIL
+qwen2.5-coder:32b         ...        ...     52% GPU / 48% CPU  4 minutes from now
+</code></pre>
+<p>The split above is representative; your rig’s actual numbers depend on VRAM headroom at the
+moment Ollama loads the model and the context length in use. What matters is the shape: part of
+the model is on the card, part is in system RAM, and you can see exactly how much is where.</p>
+<p>One detail worth knowing: Ollama’s fallback is silent. When a model exceeds VRAM, Ollama reduces
+GPU layers automatically without logging a warning or returning an error. <code>ollama ps</code> is the only
+reliable way to see whether a split happened. Do not assume <code>100% GPU</code> unless you read it.</p>
+<h2 id="step-3-why-the-split-is-slow"><a class="header" href="#step-3-why-the-split-is-slow">Step 3: Why the Split Is Slow</a></h2>
+<p>Token generation is memory-bandwidth-bound. The bottleneck is not compute but how fast the
+hardware can stream weights from memory to the arithmetic units. The two halves of the budget run
+at very different speeds.</p>
+<p>The RTX 4060 Ti’s GDDR6 delivers roughly 288 GB/s. The rig’s dual-channel DDR5-6000 system RAM
+delivers roughly 96 GB/s. That is approximately a 3:1 gap in bandwidth, and the layers stranded
+in system RAM generate tokens at the slower rate, dragging the whole model’s output down.</p>
+<p>In practice, a 32B Q4_K_M model that splits across this card drops to roughly 2 to 3 tokens per
+second. The 14B Q4_K_M model from Module 3, which stays fully on-card, runs at roughly 22 to 34
+tokens per second. Both numbers are representative; you will measure your own rig in the Measure
+Latency lesson. The point is the order of magnitude: one split model is not a slower version of
+the same experience, it is a categorically different one.</p>
+<h2 id="step-4-the-unified-memory-budget"><a class="header" href="#step-4-the-unified-memory-budget">Step 4: The Unified Memory Budget</a></h2>
+<p>The rig does not have one memory budget; it has two, joined. VRAM and system RAM together form
+the pool Ollama spans when a model is too large for the fast half alone. The module overview calls
+this “unified memory,” not because the hardware shares silicon (the GPU and host RAM are
+separate), but because Ollama treats both as one budget it can allocate across.</p>
+<p>The two halves are not equal. Fitting the entire model on the fast half, VRAM, is worth roughly
+ten times the throughput of splitting it. Spilling onto the slow half is a deliberate trade, not
+an accident, and the only reason to make it is when the larger model’s quality is worth the
+speed. Knowing the exact cost of that trade is what the rest of this module measures.</p>
+<p>The next lesson examines quantization: the variable that decides how much of a given model fits
+the fast half in the first place. A tighter quant can pull a model that currently splits fully
+onto the card, sometimes at surprisingly little quality cost.</p>
+<h2 id="core-concepts-12"><a class="header" href="#core-concepts-12">Core Concepts</a></h2>
+<ul>
+<li>When a model exceeds VRAM, Ollama loads as many layers as fit on the GPU and runs the rest on
+the CPU from system RAM; this is partial layer offload, controlled by the <code>num_gpu</code> parameter.</li>
+<li>The <code>ollama ps</code> PROCESSOR column shows the GPU/CPU split; Ollama’s fallback is silent, so
+reading this column is the only reliable way to confirm whether a split occurred.</li>
+<li>Token generation is memory-bandwidth-bound: the RTX 4060 Ti’s VRAM runs at roughly 288 GB/s
+versus roughly 96 GB/s for DDR5-6000 system RAM, a 3:1 gap that makes CPU-resident layers far
+slower to serve.</li>
+<li>VRAM and system RAM form one combined pool Ollama can span, but the two halves are not equal;
+fitting the model on the fast half is worth roughly an order of magnitude in throughput.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module4/when-a-model-doesnt-fit/">
+<p><strong>Build It in Claude Code</strong>: Pull a model larger than your VRAM (for example <code>qwen2.5-coder:32b</code>), run <code>ollama ps</code> during a generation, and record the GPU/CPU split you observe along with a one-line explanation of why the CPU-resident layers slow generation down.</p>
+</div>
+
+<!-- SOURCES: https://github.com/ollama/ollama/blob/main/docs/faq.mdx | https://github.com/ollama/ollama/issues/14258 | https://ollama.com/library/qwen2.5-coder/tags | https://knightli.com/en/2026/04/19/ollama-multiple-gpu-notes/ | https://www.techpowerup.com/review/nvidia-geforce-rtx-4060-ti-16-gb/ | https://modelfit.io/gpu/rtx-4060-ti/ -->
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="quantization-tradeoffs"><a class="header" href="#quantization-tradeoffs">Quantization Tradeoffs</a></h1>
+<p>Module 3 read a quant tag at face value and asked only one question: does it fit the card? This lesson is the reasoning under that tag. The choice of quantization is the single lever that decides whether a model fits in VRAM at all, and making that choice deliberately is what keeps you off the system bus.</p>
+<h2 id="step-1-bits-per-weight"><a class="header" href="#step-1-bits-per-weight">Step 1: Bits per Weight</a></h2>
+<p>A model’s on-disk size follows a simple rule: multiply the parameter count by the bits per weight, then divide by eight to convert to bytes. The bits-per-weight value is determined by the quantization scheme.</p>
+<p>According to the llama.cpp quantization table, the common schemes land at roughly:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Scheme</th><th>Bits per Weight</th></tr>
+</thead>
+<tbody>
+<tr><td>Q4_K_M</td><td>4.9</td></tr>
+<tr><td>Q8_0</td><td>8.5</td></tr>
+<tr><td>F16</td><td>16.0</td></tr>
+</tbody>
+</table>
+</div>
+<p>For a 32B model, those figures produce:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Scheme</th><th>Estimated Size</th></tr>
+</thead>
+<tbody>
+<tr><td>Q4_K_M</td><td>~20 GB</td></tr>
+<tr><td>Q8_0</td><td>~34 GB</td></tr>
+<tr><td>F16</td><td>~64 GB</td></tr>
+</tbody>
+</table>
+</div>
+<p>Ollama lists the Q4_K_M variant of <code>qwen2.5-coder:32b</code> at 20 GB, which confirms the estimate. Lower bit depth, smaller file, and more of it fits on the card.</p>
+<h2 id="step-2-the-quality-cost"><a class="header" href="#step-2-the-quality-cost">Step 2: The Quality Cost</a></h2>
+<p>Fewer bits per weight means coarser weight representation and some quality loss. The standard measure is perplexity: a lower perplexity means the model is more confident and more accurate on held-out text. Q4_K_M lands around 1% higher perplexity than F16, meaning it delivers roughly 98% of the quality at about a quarter of the size. Q8_0 is near-lossless.</p>
+<p>The practical reading: Q4_K_M is the standard sweet spot for local serving. The difference from full precision shows up as occasional wording variation, not factual errors. For a coding or chat use case, it is rarely perceptible.</p>
+<p>Why does Q4_K_M hold quality so well for a four-bit scheme? K-quants use mixed precision inside a fixed-size super-block. Attention and output layers, which are more sensitive to rounding, get more bits; feed-forward layers, which are more redundant, get fewer. That structure is what makes K-quants outperform a naive flat four-bit quantization at the same average bit depth.</p>
+<h2 id="step-3-choosing-the-level-for-your-card"><a class="header" href="#step-3-choosing-the-level-for-your-card">Step 3: Choosing the Level for Your Card</a></h2>
+<p>The decision rule is: pick the highest quantization that still fits the model fully in VRAM with room for context.</p>
+<p>On the 16 GB RTX 4060 Ti, consider two models:</p>
+<ul>
+<li>A 14B model at Q4_K_M is roughly 9 GB on disk and loads to about 10 to 12 GB in VRAM. That leaves several gigabytes for the KV cache. Q8_0 for the same 14B model would cost about 16 GB, consuming the entire card before a single token of context fits.</li>
+<li>A 32B model at Q4_K_M is roughly 20 GB. It exceeds the 16 GB card outright, which is exactly why it spilled in the previous lesson. Q8_0 would reach 34 GB, and F16 would reach 64 GB; neither fits at all.</li>
+</ul>
+<p>Quantization is how you slide a large model down to a size the card can hold. You work from the best quality downward until the model fits with context headroom remaining. When you reach the lowest reasonable scheme and the model still does not fit, you face a genuine choice: accept the GPU/CPU split and pay the speed penalty, or switch to a smaller model that fits entirely on the card.</p>
+<h2 id="step-4-the-deeper-tuning-is-later"><a class="header" href="#step-4-the-deeper-tuning-is-later">Step 4: The Deeper Tuning Is Later</a></h2>
+<p>Choosing a model and quant that fit on the card is a one-time decision per model; it is not the last word on performance. KV-cache quantization, layer offload tuning, and profiling tokens per second under realistic load are Module 7. The goal here is to enter that module with a model that fits, so the profiling numbers reflect GPU throughput rather than system-bus drag.</p>
+<p>Once you know how to read a quant tag, size a model, and apply the highest-that-fits rule, the mechanical part of the decision is fast. The rest is measuring what the choice actually costs in tokens per second.</p>
+<h2 id="core-concepts-13"><a class="header" href="#core-concepts-13">Core Concepts</a></h2>
+<ul>
+<li>A model’s on-disk size equals its parameter count times bits-per-weight divided by eight; Q4_K_M at 4.9 bits/weight, Q8_0 at 8.5, and F16 at 16 set the three common anchors.</li>
+<li>Lower bit depth degrades quality, measured as perplexity; Q4_K_M lands around 1% higher perplexity than F16 (roughly 98% of the quality) while K-quants’ mixed-precision super-blocks hold quality better than flat four-bit schemes.</li>
+<li>Q4_K_M is the standard sweet spot for local serving: near-indistinguishable output, a quarter of the full-precision size, and the default that Ollama pulls when no tag is specified.</li>
+<li>The selection rule is highest-that-fits: start from the best quantization and step down until the model fits in VRAM with context headroom; when none fit, either accept the split or choose a smaller model.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module4/quantization-tradeoffs/">
+<p><strong>Build It in Claude Code</strong>: Create <code>exercises/module4/quantization-tradeoffs/vram_fit.py</code>, a stdlib-only planner that estimates a model’s VRAM footprint from its parameter count and bits-per-weight, then prints whether it FITS or SPILLS against your card’s VRAM budget.</p>
+</div>
+
+<!-- SOURCES: https://github.com/ggml-org/llama.cpp/blob/master/tools/quantize/README.md | https://ollama.com/library/qwen2.5-coder/tags | https://willitrunai.com/blog/quantization-guide-gguf-explained | https://www.promptquorum.com/local-llms/llm-quantization-explained -->
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="measure-latency"><a class="header" href="#measure-latency">Measure Latency</a></h1>
+<p>A model that splits onto system RAM is slower. “Slower” is not a decision until it is a number.
+Two numbers make it one: tokens per second (how fast the model generates once it starts) and time
+to first token (how long you wait before anything arrives). You will build <code>bench.py</code>, a stdlib
+tool that reads those numbers from Ollama’s own response fields, so “smarter but slower” becomes
+something you can actually weigh.</p>
+<h2 id="where-the-numbers-come-from"><a class="header" href="#where-the-numbers-come-from">Where the Numbers Come From</a></h2>
+<p>Ollama’s native <code>/api/generate</code> endpoint embeds timing data directly in its response body. You do
+not wire up a stopwatch: the server already did the accounting. The relevant fields, all in
+nanoseconds:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Field</th><th>What It Measures</th></tr>
+</thead>
+<tbody>
+<tr><td><code>total_duration</code></td><td>wall clock for the whole request</td></tr>
+<tr><td><code>load_duration</code></td><td>time to load the model into memory</td></tr>
+<tr><td><code>prompt_eval_count</code></td><td>tokens in the prompt</td></tr>
+<tr><td><code>prompt_eval_duration</code></td><td>time to process the prompt</td></tr>
+<tr><td><code>eval_count</code></td><td>tokens generated</td></tr>
+<tr><td><code>eval_duration</code></td><td>time spent generating</td></tr>
+</tbody>
+</table>
+</div>
+<p>The Ollama API documentation includes a sample response body that shows every field
+(<a href="https://github.com/ollama/ollama/blob/main/docs/api.md">github.com/ollama/ollama/blob/main/docs/api.md</a>).
+Using the numbers from that sample: <code>eval_count: 290</code>, <code>eval_duration: 4709213000</code> nanoseconds.
+Tokens per second:</p>
+<pre><code>290 / (4709213000 / 1e9) = 290 / 4.709 ≈ 61.6 tok/s
+</code></pre>
+<p>The formula is always <code>eval_count / (eval_duration / 1e9)</code>. That is it.</p>
+<p>Time to first token (TTFT) is harder to read from the final body alone. The body gives you
+<code>load_duration + prompt_eval_duration</code>, which approximates the pre-generation wait, but it misses
+any network or queueing time between your client and the server. The real TTFT is the wall-clock
+interval from the moment you send the request to the moment the first generated token arrives.
+You measure that with a streaming request.</p>
+<h2 id="ttft-by-streaming"><a class="header" href="#ttft-by-streaming">TTFT by Streaming</a></h2>
+<p>Setting <code>"stream": true</code> in the request body changes the response from a single blocking JSON
+object to a sequence of newline-delimited JSON chunks
+(<a href="https://docs.ollama.com/api/usage">docs.ollama.com/api/usage</a>). Each chunk carries a partial
+<code>response</code> string as the model generates. The final chunk sets <code>"done": true</code> and includes all
+the timing fields listed above.</p>
+<p>The TTFT measurement is simple: start a timer when you send the request, read chunks line by line,
+and stop the timer when the first chunk arrives that contains a non-empty <code>response</code>. The <code>done</code>
+chunk at the end gives you <code>eval_count</code> and <code>eval_duration</code> for the tokens-per-second calculation.</p>
+<p>Two measurements, one streaming pass.</p>
+<h2 id="build-the-tool"><a class="header" href="#build-the-tool">Build the Tool</a></h2>
+<p>Create <code>exercises/module4/measure-latency/bench.py</code> with this exact code. It uses only the
+standard library: <code>urllib</code>, <code>json</code>, <code>argparse</code>, <code>sys</code>, and <code>time</code>.</p>
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+bench.py: measure local model latency from Ollama's own timing fields.
+
+Reports tokens/second (generation rate) and time to first token (TTFT) for a
+model served by Ollama, reading the timing fields in the /api/generate response.
+
+Usage:
+  python bench.py "write a haiku about latency"          # live: benchmark the default model
+  python bench.py --model qwen2.5-coder:32b "a prompt"   # live: benchmark a specific model
+  python bench.py --selftest                              # offline: validate the metric math
+"""
+
+import argparse
+import json
+import sys
+import time
+import urllib.error
+import urllib.request
+
+DEFAULT_MODEL = "qwen2.5-coder:14b"
+GENERATE_URL = "http://localhost:11434/api/generate"
+
+
+def tokens_per_second(eval_count, eval_duration_ns):
+    """tok/s = generated tokens / generation time. eval_duration is nanoseconds."""
+    if eval_duration_ns &lt;= 0:
+        raise ValueError("eval_duration must be positive")
+    return eval_count / (eval_duration_ns / 1e9)
+
+
+def metrics_from_response(body, ttft_s):
+    """Extract tok/s and TTFT (ms) from an /api/generate body plus a measured TTFT."""
+    eval_count = body["eval_count"]
+    eval_duration = body["eval_duration"]
+    return {
+        "model": body.get("model", "unknown"),
+        "tokens_per_second": round(tokens_per_second(eval_count, eval_duration), 1),
+        "ttft_ms": round(ttft_s * 1000, 1),
+        "eval_count": eval_count,
+    }
+
+
+def bench(prompt, model=DEFAULT_MODEL, url=GENERATE_URL):
+    """Stream a generation, time the first token, and return latency metrics."""
+    payload = json.dumps({"model": model, "prompt": prompt, "stream": True}).encode("utf-8")
+    request = urllib.request.Request(
+        url, data=payload, headers={"Content-Type": "application/json"}, method="POST"
+    )
+    start = time.perf_counter()
+    ttft_s = None
+    final = {}
+    with urllib.request.urlopen(request) as response:
+        for line in response:
+            chunk = json.loads(line.decode("utf-8"))
+            if ttft_s is None and chunk.get("response"):
+                ttft_s = time.perf_counter() - start
+            if chunk.get("done"):
+                final = chunk
+    if ttft_s is None:
+        ttft_s = time.perf_counter() - start
+    return metrics_from_response(final, ttft_s)
+
+
+def selftest():
+    """Validate the metric math offline against a sample /api/generate response."""
+    sample = {
+        "model": "qwen2.5-coder:14b",
+        "eval_count": 240,
+        "eval_duration": 6_000_000_000,  # 6.0 s expressed in nanoseconds
+        "done": True,
+    }
+    m = metrics_from_response(sample, ttft_s=0.250)
+    assert m["tokens_per_second"] == 40.0, f"tok/s math wrong: {m['tokens_per_second']}"
+    assert m["ttft_ms"] == 250.0, f"ttft math wrong: {m['ttft_ms']}"
+    assert tokens_per_second(100, 1_000_000_000) == 100.0, "tok/s helper wrong"
+    print("selftest passed: tok/s and TTFT math are correct")
+    return 0
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Benchmark a local Ollama model's latency.")
+    parser.add_argument("prompt", nargs="?", help="the prompt to benchmark with")
+    parser.add_argument("--model", default=DEFAULT_MODEL, help="model tag to benchmark")
+    parser.add_argument("--selftest", action="store_true", help="validate the metric math offline")
+    args = parser.parse_args()
+
+    if args.selftest:
+        sys.exit(selftest())
+
+    if not args.prompt:
+        parser.error("provide a prompt, or use --selftest")
+
+    try:
+        m = bench(args.prompt, model=args.model)
+    except urllib.error.URLError as exc:
+        print(f"could not reach Ollama at {GENERATE_URL}: {exc}", file=sys.stderr)
+        sys.exit(1)
+    print(f"model:  {m['model']}")
+    print(f"tok/s:  {m['tokens_per_second']}")
+    print(f"TTFT:   {m['ttft_ms']} ms")
+    print(f"tokens: {m['eval_count']}")
+
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+<p>Three functions do the real work. <code>tokens_per_second</code> contains the formula: nanoseconds to seconds,
+then divide into token count. <code>metrics_from_response</code> pulls <code>eval_count</code> and <code>eval_duration</code> from
+the final <code>done</code> chunk and combines them with the wall-clock TTFT your caller measured.
+<code>selftest</code> runs the math against a fixed sample response and asserts exact values, so you have a
+machine-checkable done-when before the rig is online: 240 tokens over 6.0 seconds is 40.0 tok/s,
+and a 250 ms measured wall-clock is 250.0 ms TTFT.</p>
+<h2 id="run-it-1"><a class="header" href="#run-it-1">Run It</a></h2>
+<p>No rig needed for the first check. Validate the math offline:</p>
+<pre><code class="language-bash">python bench.py --selftest
+</code></pre>
+<p>What you should see:</p>
+<pre><code>selftest passed: tok/s and TTFT math are correct
+</code></pre>
+<p>With the rig running and a model pulled, benchmark a live generation:</p>
+<pre><code class="language-bash">python bench.py "write a haiku about latency"
+</code></pre>
+<p>What you should see (representative output; exact numbers vary by hardware and prompt):</p>
+<pre><code>model:  qwen2.5-coder:14b
+tok/s:  31.4
+TTFT:   214.7 ms
+tokens: 38
+</code></pre>
+<p>A 14B model running entirely on the RTX 4060 Ti’s 16GB typically lands in the 25-34 tok/s range
+with TTFT under 250 ms. Benchmark the same prompt against <code>qwen2.5-coder:32b</code> and the tok/s will
+drop: part of that model lives in system RAM, and every layer that crosses the PCIe bus costs time.
+That drop is the number this tool exists to show you.</p>
+<p>The next lesson records these measurements for each model in <code>LATENCY.md</code>, the baseline that every
+tuning decision in Module 7 is measured against. Run <code>bench.py</code> for each model before you build
+that file; the output lines paste in directly.</p>
+<h2 id="core-concepts-14"><a class="header" href="#core-concepts-14">Core Concepts</a></h2>
+<ul>
+<li>Tokens per second is throughput; time to first token is responsiveness. They are different problems:
+a model can be fast once it starts yet still feel slow if it makes you wait 2 seconds for the
+first word.</li>
+<li>The numbers come from the server’s own timing fields in the <code>/api/generate</code> response, not a
+stopwatch you bolt on. <code>eval_count / (eval_duration / 1e9)</code> is the complete formula for tok/s.</li>
+<li>The offline selftest is the machine-checkable done-when: it asserts exact values against a fixed
+sample, so the math is proven before the rig is online.</li>
+<li>A measured baseline is what converts “smarter but slower” into a decision: without a number,
+the tradeoff is a guess; with one, it is a policy.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module4/measure-latency/">
+<p><strong>Build It in Claude Code</strong>: Create <code>exercises/module4/measure-latency/bench.py</code>, a stdlib-only tool that streams a generation from <code>http://localhost:11434/api/generate</code>, times the first token, and reports tokens per second and TTFT from the response’s timing fields, with a <code>--selftest</code> mode that validates the math offline.</p>
+</div>
+
+<!-- SOURCES: https://github.com/ollama/ollama/blob/main/docs/api.md | https://docs.ollama.com/api/usage | https://github.com/ollama/ollama/blob/main/docs/faq.mdx -->
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="record-the-baseline"><a class="header" href="#record-the-baseline">Record the Baseline</a></h1>
+<p>You measured latency in the last lesson. Now make it a record. The module closes the way Module 3
+did: record what you have, then gate the record with a validator that will not let you move on
+with a gap.</p>
+<h2 id="step-1-run-the-comparison"><a class="header" href="#step-1-run-the-comparison">Step 1: Run the Comparison</a></h2>
+<p>Run <code>bench.py</code> on two models, the 14B that fits entirely on-card and the 32B that splits onto
+system RAM. Use the same prompt for both so the numbers compare cleanly:</p>
+<pre><code class="language-bash">python exercises/module4/measure-latency/bench.py "write a haiku about latency"
+python exercises/module4/measure-latency/bench.py --model qwen2.5-coder:32b "write a haiku about latency"
+</code></pre>
+<p>Record both outputs before continuing. Representative results on the RTX 4060 Ti 16GB (label
+representative; your numbers will differ by prompt and thermals):</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Model</th><th>Split</th><th>TTFT (ms)</th><th>Tokens/sec</th></tr>
+</thead>
+<tbody>
+<tr><td>qwen2.5-coder:14b</td><td>100% GPU</td><td>210.0</td><td>32.0</td></tr>
+<tr><td>qwen2.5-coder:32b</td><td>52% GPU / 48% CPU</td><td>1100.0</td><td>3.0</td></tr>
+</tbody>
+</table>
+</div>
+<p>The point lands itself: the bigger model is an order of magnitude slower once it spills. The 14B
+answers at 32 tok/s with 210 ms before the first word. The 32B answers at 3 tok/s with over a
+second of silence first. That is not a style difference; it is a constraint on what the model can
+do in a live interaction.</p>
+<h2 id="step-2-the-complete-latencymd"><a class="header" href="#step-2-the-complete-latencymd">Step 2: The Complete LATENCY.md</a></h2>
+<p>Open <code>exercises/module4/record-the-baseline/LATENCY.md</code> and fill in both rows. The complete file:</p>
+<pre><code class="language-markdown"># Latency Baseline
+
+Measured latency for each model on the rig, captured with bench.py. Read by check_latency.py.
+
+## Test Conditions
+
+Prompt: write a haiku about latency
+Hardware: RTX 4060 Ti 16GB + 64GB DDR5-6000
+
+## Measurements
+
+| Model | Quantization | Split | TTFT (ms) | Tokens/sec |
+|-------|--------------|-------|-----------|------------|
+| qwen2.5-coder:14b | Q4_K_M | 100% GPU | 210.0 | 32.0 |
+| qwen2.5-coder:32b | Q4_K_M | 52% GPU / 48% CPU | 1100.0 | 3.0 |
+</code></pre>
+<p>Readers with the rig: paste your real <code>bench.py</code> output for each model. Readers pre-hardware: the
+representative figures above satisfy every invariant the validator enforces.</p>
+<h2 id="step-3-ship-the-validator-1"><a class="header" href="#step-3-ship-the-validator-1">Step 3: Ship the Validator</a></h2>
+<p>Create <code>check_latency.py</code> in the same directory as <code>LATENCY.md</code>:
+<code>exercises/module4/record-the-baseline/check_latency.py</code>.</p>
+<p>Here is what it enforces, in order:</p>
+<ul>
+<li>Both sections present (<code>## Test Conditions</code>, <code>## Measurements</code>).</li>
+<li>Every key-value field filled: <code>Prompt</code> and <code>Hardware</code> in the test conditions.</li>
+<li>No placeholder tokens (<code>TODO</code>, <code>TBD</code>, <code>xxx</code>, angle brackets, ellipses).</li>
+<li>At least one measurement row with all five columns: Model, Quantization, Split, TTFT (ms),
+Tokens/sec. Every cell filled.</li>
+<li>The key gate: TTFT and Tokens/sec must be positive numbers. A zero or a blank is not a
+measurement; it is a placeholder. The validator names the offending model and exits 1.</li>
+</ul>
+<p>The complete validator:</p>
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+check_latency.py: validate LATENCY.md for the Local Metal module-4 throughline.
+
+Usage: python check_latency.py [path/to/LATENCY.md]
+Exits 0 when the baseline is complete with real positive measurements; exits 1
+and names the first gap found.
+"""
+
+import re
+import sys
+from pathlib import Path
+
+LATENCY_PATH = Path(__file__).parent / "LATENCY.md"
+
+REQUIRED_SECTIONS = ["## Test Conditions", "## Measurements"]
+CONDITION_FIELDS = ["Prompt", "Hardware"]
+
+PLACEHOLDERS = {"TODO", "TBD", "xxx", "fill in", "&lt;", "&gt;", "..."}
+
+
+def fail(message: str) -&gt; None:
+    print(f"LATENCY.md incomplete: {message}")
+    sys.exit(1)
+
+
+def load(path: Path) -&gt; str:
+    if not path.exists():
+        fail(f"{path} not found")
+    return path.read_text(encoding="utf-8")
+
+
+def check_sections(text: str) -&gt; None:
+    for section in REQUIRED_SECTIONS:
+        if section not in text:
+            fail(f'section "{section}" missing from LATENCY.md')
+
+
+def check_no_placeholders(text: str) -&gt; None:
+    for token in PLACEHOLDERS:
+        if token in text:
+            fail(f'placeholder token "{token}" still present; fill in the real value')
+
+
+def extract_section(text: str, heading: str) -&gt; str:
+    match = re.search(rf"{re.escape(heading)}\n(.*?)(?=\n## |\Z)", text, re.DOTALL)
+    if not match:
+        fail(f'"{heading}" section has no content')
+    return match.group(1)
+
+
+def check_fields(section_text: str, fields: list, section_name: str) -&gt; None:
+    for field in fields:
+        # [^\S\n] is horizontal whitespace only: it must not span the newline,
+        # or a blank field would capture the next line's value.
+        match = re.search(rf"{re.escape(field)}[^\S\n]*:[^\S\n]*([^\n]+)", section_text)
+        if not match:
+            fail(f'field "{field}" not found in {section_name}')
+        if not match.group(1).strip():
+            fail(f'field "{field}" in {section_name} is empty')
+
+
+def parse_number(cell: str):
+    """Extract a leading float from a table cell like '210.0' or '42.0 tok/s'."""
+    match = re.search(r"([\d.]+)", cell)
+    if not match:
+        return None
+    return float(match.group(1))
+
+
+def check_measurements(section_text: str) -&gt; None:
+    rows = []
+    for line in section_text.splitlines():
+        line = line.strip()
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if any("---" in c for c in cells):
+            continue  # separator row
+        if "Model" in cells and "Tokens/sec" in cells:
+            continue  # header row
+        rows.append(cells)
+    if not rows:
+        fail('"## Measurements" has no rows; benchmark at least one model with bench.py')
+    for cells in rows:
+        if len(cells) &lt; 5:
+            fail(f'row "{" | ".join(cells)}" is missing columns '
+                 "(need Model, Quantization, Split, TTFT (ms), Tokens/sec)")
+        if any(not c for c in cells[:5]):
+            fail(f'row "{" | ".join(cells)}" has an empty cell; fill every column')
+        ttft = parse_number(cells[3])
+        toks = parse_number(cells[4])
+        if ttft is None or toks is None:
+            fail(f'row "{cells[0]}" has a non-numeric TTFT or Tokens/sec; use figures like "210.0"')
+        if toks &lt;= 0:
+            fail(f'model "{cells[0]}" has Tokens/sec {toks}; a real measurement is greater than 0')
+        if ttft &lt;= 0:
+            fail(f'model "{cells[0]}" has TTFT {ttft}; a real measurement is greater than 0')
+
+
+def main() -&gt; None:
+    path = Path(sys.argv[1]) if len(sys.argv) &gt; 1 else LATENCY_PATH
+    text = load(path)
+    check_sections(text)
+    check_no_placeholders(text)
+    check_fields(extract_section(text, "## Test Conditions"), CONDITION_FIELDS, "## Test Conditions")
+    check_measurements(extract_section(text, "## Measurements"))
+    print("LATENCY.md complete")
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+<p>One regex detail worth knowing: <code>[^\S\n]</code> matches horizontal whitespace only (spaces and tabs). It
+does not span the newline. A field line with nothing after the colon correctly fails the non-empty
+check because the pattern cannot reach the next line’s content.</p>
+<h2 id="step-4-the-live-vs-expected-rule-1"><a class="header" href="#step-4-the-live-vs-expected-rule-1">Step 4: The Live-vs-Expected Rule</a></h2>
+<p>The validator checks completeness and that every number is real and positive, not the exact values
+themselves. That distinction matters: readers with the rig paste their real <code>bench.py</code> figures;
+readers without it paste the representative figures from Step 1. Either way, the validator passes
+as long as both sections are present, every field is filled, every row has five columns, and every
+TTFT and Tokens/sec is a number greater than zero. The reference build satisfies all of it.</p>
+<p>Run it to confirm:</p>
+<pre><code class="language-bash">python exercises/module4/record-the-baseline/check_latency.py
+</code></pre>
+<p>You should see <code>LATENCY.md complete</code> and exit 0. Then test the gate directly: temporarily set one
+row’s Tokens/sec to <code>0</code> and run the validator again. It exits 1 and names the offending model.
+Restore the original value before continuing.</p>
+<p>The gate is not a style check. A zero means the measurement never ran; a positive number means
+it did. The validator holds that line because a baseline that contains a zero is not a baseline;
+it is a placeholder that looks like one.</p>
+<p>The rig now has a measured baseline: HARDWARE.md describes the metal, SETUP.md describes the
+runtime, MODELS.md describes the stack, and LATENCY.md describes its speed. The four files together
+are the performance record Module 7 tunes against; every optimization you make there is measured
+against what is recorded here.</p>
+<h2 id="core-concepts-15"><a class="header" href="#core-concepts-15">Core Concepts</a></h2>
+<ul>
+<li>A baseline is a comparison point you record before you tune: without it, an optimization is
+a claim; with it, it is a measurement.</li>
+<li>The positive-measurement gate is the real acceptance check: a Tokens/sec of zero means the
+benchmark never completed, and a validator that lets it through would let a gap masquerade as data.</li>
+<li>Tokens per second and TTFT are different axes: throughput tells you how fast a model generates;
+time to first token tells you how long the user waits before anything arrives.</li>
+<li>The fourth portfolio file completes the performance record: LATENCY.md joins HARDWARE.md,
+SETUP.md, and MODELS.md as a validator-backed artifact anyone reading the repo can trust.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module4/record-the-baseline/">
+<p><strong>Build It in Claude Code</strong>: Create <code>exercises/module4/record-the-baseline/LATENCY.md</code> with your bench.py numbers for an on-card model and a model that splits, then create <code>check_latency.py</code> beside it so it exits 0 only when both sections are complete and every row’s TTFT and Tokens/sec are real positive numbers.</p>
+</div>
+
+<!-- SOURCES: https://github.com/ollama/ollama/blob/main/docs/api.md | https://modelfit.io/gpu/rtx-4060-ti/ -->
 
                     </main>
 

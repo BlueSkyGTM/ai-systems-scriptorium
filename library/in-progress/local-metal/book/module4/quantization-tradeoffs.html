@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Record the Stack - Local Metal — Build and Network Your Own AI Inference Server</title>
+        <title>Quantization Tradeoffs - Local Metal — Build and Network Your Own AI Inference Server</title>
 
 
         <!-- Custom HTML head -->
@@ -177,258 +177,74 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="record-the-stack"><a class="header" href="#record-the-stack">Record the Stack</a></h1>
-<p>You have a model on the card and a client that calls it. The stack is real and nothing about it is
-written down. This lesson closes Module 3 the same way Module 2 closed: record what you have, then
-gate the record with a validator that will not let you move on with a gap.</p>
-<h2 id="step-1-capture-a-sample-response"><a class="header" href="#step-1-capture-a-sample-response">Step 1: Capture a Sample Response</a></h2>
-<p>Run the client you built in the last lesson:</p>
-<pre><code class="language-bash">python ollama_client.py "explain a Python decorator in one sentence"
-</code></pre>
-<p>Copy the reply. Open <code>exercises/module3/a-14b-model-on-card/MODELS.md</code> and add a <code>## Sample Response</code>
-section after the <code>## Models</code> table. The section takes two key-value lines and the reply in a fenced
-block.</p>
-<p>What you should see, on the reference build (shown wrapped in a four-backtick outer fence so the
-inner triple-backtick reply block renders):</p>
-<pre><code class="language-markdown">## Sample Response
-
-Prompt: explain a Python decorator in one sentence
-Model: qwen2.5-coder:14b
-
-```
-A decorator is a function that takes another function and extends its behavior
-without modifying the original function's source code.
-```
-</code></pre>
-<p>Fill in <code>Prompt:</code> with your exact prompt and <code>Model:</code> with the model tag you ran. If you have the
-rig, paste your real reply; if not, paste the reference reply above.</p>
-<h2 id="step-2-the-complete-modelsmd"><a class="header" href="#step-2-the-complete-modelsmd">Step 2: The Complete MODELS.md</a></h2>
-<p>Here is the full file with all three sections. Compare yours to it before running the validator.</p>
-<pre><code class="language-markdown"># Model Stack
-
-The serving layer and the models on the rig, with their VRAM footprint. Read by check_models.py.
-
-## Serving Layer
-
-Ollama version: 0.30.10
-Docker version: 27.3.1
-Endpoint: http://localhost:11434
-
-## Models
-
-| Model | Quantization | Size on Disk | VRAM Used | VRAM Total |
-|-------|--------------|--------------|-----------|------------|
-| qwen2.5-coder:14b | Q4_K_M | 9.0 GB | 11.0 GB | 16.0 GB |
-
-## Sample Response
-
-Prompt: explain a Python decorator in one sentence
-Model: qwen2.5-coder:14b
-
-```
-A decorator is a function that takes another function and extends its behavior
-without modifying the original function's source code.
-```
-</code></pre>
-<p>Readers with the rig: fill in your real Ollama and Docker versions, your actual VRAM numbers from
-<code>ollama ps</code> and <code>nvidia-smi</code>, and your real model reply. Readers pre-hardware: the reference figures
-above satisfy every invariant the validator enforces.</p>
-<h2 id="step-3-ship-the-validator"><a class="header" href="#step-3-ship-the-validator">Step 3: Ship the Validator</a></h2>
-<p>Create <code>check_models.py</code> in the same directory as <code>MODELS.md</code>:
-<code>exercises/module3/a-14b-model-on-card/check_models.py</code>.</p>
-<p>Here is what it enforces, in order:</p>
+                        <h1 id="quantization-tradeoffs"><a class="header" href="#quantization-tradeoffs">Quantization Tradeoffs</a></h1>
+<p>Module 3 read a quant tag at face value and asked only one question: does it fit the card? This lesson is the reasoning under that tag. The choice of quantization is the single lever that decides whether a model fits in VRAM at all, and making that choice deliberately is what keeps you off the system bus.</p>
+<h2 id="step-1-bits-per-weight"><a class="header" href="#step-1-bits-per-weight">Step 1: Bits per Weight</a></h2>
+<p>A model’s on-disk size follows a simple rule: multiply the parameter count by the bits per weight, then divide by eight to convert to bytes. The bits-per-weight value is determined by the quantization scheme.</p>
+<p>According to the llama.cpp quantization table, the common schemes land at roughly:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Scheme</th><th>Bits per Weight</th></tr>
+</thead>
+<tbody>
+<tr><td>Q4_K_M</td><td>4.9</td></tr>
+<tr><td>Q8_0</td><td>8.5</td></tr>
+<tr><td>F16</td><td>16.0</td></tr>
+</tbody>
+</table>
+</div>
+<p>For a 32B model, those figures produce:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Scheme</th><th>Estimated Size</th></tr>
+</thead>
+<tbody>
+<tr><td>Q4_K_M</td><td>~20 GB</td></tr>
+<tr><td>Q8_0</td><td>~34 GB</td></tr>
+<tr><td>F16</td><td>~64 GB</td></tr>
+</tbody>
+</table>
+</div>
+<p>Ollama lists the Q4_K_M variant of <code>qwen2.5-coder:32b</code> at 20 GB, which confirms the estimate. Lower bit depth, smaller file, and more of it fits on the card.</p>
+<h2 id="step-2-the-quality-cost"><a class="header" href="#step-2-the-quality-cost">Step 2: The Quality Cost</a></h2>
+<p>Fewer bits per weight means coarser weight representation and some quality loss. The standard measure is perplexity: a lower perplexity means the model is more confident and more accurate on held-out text. Q4_K_M lands around 1% higher perplexity than F16, meaning it delivers roughly 98% of the quality at about a quarter of the size. Q8_0 is near-lossless.</p>
+<p>The practical reading: Q4_K_M is the standard sweet spot for local serving. The difference from full precision shows up as occasional wording variation, not factual errors. For a coding or chat use case, it is rarely perceptible.</p>
+<p>Why does Q4_K_M hold quality so well for a four-bit scheme? K-quants use mixed precision inside a fixed-size super-block. Attention and output layers, which are more sensitive to rounding, get more bits; feed-forward layers, which are more redundant, get fewer. That structure is what makes K-quants outperform a naive flat four-bit quantization at the same average bit depth.</p>
+<h2 id="step-3-choosing-the-level-for-your-card"><a class="header" href="#step-3-choosing-the-level-for-your-card">Step 3: Choosing the Level for Your Card</a></h2>
+<p>The decision rule is: pick the highest quantization that still fits the model fully in VRAM with room for context.</p>
+<p>On the 16 GB RTX 4060 Ti, consider two models:</p>
 <ul>
-<li>All three sections present (<code>## Serving Layer</code>, <code>## Models</code>, <code>## Sample Response</code>).</li>
-<li>Every key-value field filled: <code>Ollama version</code>, <code>Docker version</code>, <code>Endpoint</code> in the serving
-layer; <code>Prompt</code> and <code>Model</code> in the sample response.</li>
-<li>No placeholder tokens (<code>TODO</code>, <code>TBD</code>, <code>xxx</code>, angle brackets, ellipses).</li>
-<li>At least one model row with all five columns: Model, Quantization, Size on Disk, VRAM Used,
-VRAM Total. Every cell filled.</li>
-<li>The key invariant: VRAM Used must be less than or equal to VRAM Total. This is not a style
-check; it is the zero-overflow proof, now enforced as code. A model that violates it fails
-immediately and names the offender.</li>
-<li>A non-empty reply in the <code>## Sample Response</code> fenced block (at least ten characters).</li>
+<li>A 14B model at Q4_K_M is roughly 9 GB on disk and loads to about 10 to 12 GB in VRAM. That leaves several gigabytes for the KV cache. Q8_0 for the same 14B model would cost about 16 GB, consuming the entire card before a single token of context fits.</li>
+<li>A 32B model at Q4_K_M is roughly 20 GB. It exceeds the 16 GB card outright, which is exactly why it spilled in the previous lesson. Q8_0 would reach 34 GB, and F16 would reach 64 GB; neither fits at all.</li>
 </ul>
-<p>The complete validator:</p>
-<pre><code class="language-python">#!/usr/bin/env python3
-"""
-check_models.py: validate MODELS.md for the Local Metal module-3 throughline.
-
-Usage: python check_models.py [path/to/MODELS.md]
-Exits 0 when the record is complete and the model fits on-card; exits 1 and names
-the first gap found.
-"""
-
-import re
-import sys
-from pathlib import Path
-
-MODELS_PATH = Path(__file__).parent / "MODELS.md"
-
-REQUIRED_SECTIONS = [
-    "## Serving Layer",
-    "## Models",
-    "## Sample Response",
-]
-
-SERVING_FIELDS = ["Ollama version", "Docker version", "Endpoint"]
-SAMPLE_FIELDS = ["Prompt", "Model"]
-
-PLACEHOLDERS = {"TODO", "TBD", "xxx", "fill in", "&lt;", "&gt;", "..."}
-
-
-def fail(message: str) -&gt; None:
-    print(f"MODELS.md incomplete: {message}")
-    sys.exit(1)
-
-
-def load(path: Path) -&gt; str:
-    if not path.exists():
-        fail(f"{path} not found")
-    return path.read_text(encoding="utf-8")
-
-
-def check_sections(text: str) -&gt; None:
-    for section in REQUIRED_SECTIONS:
-        if section not in text:
-            fail(f'section "{section}" missing from MODELS.md')
-
-
-def check_no_placeholders(text: str) -&gt; None:
-    for token in PLACEHOLDERS:
-        if token in text:
-            fail(f'placeholder token "{token}" still present; fill in the real value')
-
-
-def extract_section(text: str, heading: str) -&gt; str:
-    match = re.search(rf"{re.escape(heading)}\n(.*?)(?=\n## |\Z)", text, re.DOTALL)
-    if not match:
-        fail(f'"{heading}" section has no content')
-    return match.group(1)
-
-
-def check_fields(section_text: str, fields: list, section_name: str) -&gt; None:
-    for field in fields:
-        # [^\S\n] is horizontal whitespace only: it must not span the newline,
-        # or a blank field would capture the next line's value.
-        match = re.search(rf"{re.escape(field)}[^\S\n]*:[^\S\n]*([^\n]+)", section_text)
-        if not match:
-            fail(f'field "{field}" not found in {section_name}')
-        if not match.group(1).strip():
-            fail(f'field "{field}" in {section_name} is empty')
-
-
-def parse_gb(cell: str):
-    """Extract a float number of GB from a table cell like '10.8 GB'."""
-    match = re.search(r"([\d.]+)", cell)
-    if not match:
-        return None
-    return float(match.group(1))
-
-
-def check_models_table(section_text: str) -&gt; None:
-    rows = []
-    for line in section_text.splitlines():
-        line = line.strip()
-        if not line.startswith("|"):
-            continue
-        cells = [c.strip() for c in line.strip("|").split("|")]
-        if any("---" in c for c in cells):
-            continue  # separator row
-        if "Model" in cells and "Quantization" in cells:
-            continue  # header row
-        rows.append(cells)
-    if not rows:
-        fail('"## Models" has no model rows; add at least one model to the table')
-    for cells in rows:
-        if len(cells) &lt; 5:
-            fail(f'model row "{" | ".join(cells)}" is missing columns '
-                 "(need Model, Quantization, Size on Disk, VRAM Used, VRAM Total)")
-        if any(not c for c in cells[:5]):
-            fail(f'model row "{" | ".join(cells)}" has an empty cell; fill every column')
-        used = parse_gb(cells[3])
-        total = parse_gb(cells[4])
-        if used is None or total is None:
-            fail(f'model row "{cells[0]}" has a non-numeric VRAM value; use figures like "10.8 GB"')
-        if used &gt; total:
-            fail(f'model "{cells[0]}" overflows VRAM: {used} GB used &gt; {total} GB total. '
-                 "Pick a smaller model or a tighter quantization so it fits on-card.")
-
-
-def check_sample_response(section_text: str) -&gt; None:
-    blocks = re.findall(r"```[^\n]*\n(.*?)```", section_text, re.DOTALL)
-    if not blocks:
-        fail('"## Sample Response" has no fenced code block; paste the model reply in a ``` block')
-    if not any(len(block.strip()) &gt;= 10 for block in blocks):
-        fail('the fenced block in "## Sample Response" is empty; paste a real model reply')
-
-
-def main() -&gt; None:
-    path = Path(sys.argv[1]) if len(sys.argv) &gt; 1 else MODELS_PATH
-    text = load(path)
-    check_sections(text)
-    check_no_placeholders(text)
-    check_fields(extract_section(text, "## Serving Layer"), SERVING_FIELDS, "## Serving Layer")
-    check_models_table(extract_section(text, "## Models"))
-    sample = extract_section(text, "## Sample Response")
-    check_fields(sample, SAMPLE_FIELDS, "## Sample Response")
-    check_sample_response(sample)
-    print("MODELS.md complete")
-    sys.exit(0)
-
-
-if __name__ == "__main__":
-    main()
-</code></pre>
-<p>One regex detail worth knowing: <code>[^\S\n]</code> matches horizontal whitespace only (spaces and tabs). It
-does not span the newline. A field line with nothing after the colon correctly fails the non-empty
-check because the regex cannot reach the next line’s content to satisfy itself.</p>
-<h2 id="step-4-the-live-vs-expected-rule"><a class="header" href="#step-4-the-live-vs-expected-rule">Step 4: The Live-vs-Expected Rule</a></h2>
-<p>The validator checks completeness and the fits-on-card invariant, not live truth. That distinction
-matters: readers with the rig paste their real <code>ollama ps</code> and <code>nvidia-smi</code> figures; readers without
-it paste the reference figures from Step 2. Either way, the validator passes as long as every section
-is present, every field is filled, the model row has five columns, and VRAM Used sits at or below
-VRAM Total. The reference build satisfies all four.</p>
-<p>Run it to confirm:</p>
-<pre><code class="language-bash">python exercises/module3/a-14b-model-on-card/check_models.py
-</code></pre>
-<p>You should see <code>MODELS.md complete</code> and exit 0. Then test the invariant directly: temporarily raise
-VRAM Used above VRAM Total in the table and run the validator again. It exits 1 and names the
-overflowing model. Restore the original value before continuing.</p>
-<p>The validator catches the overflow because it matters: a model that exceeds total VRAM spills onto
-the system bus and serves at a fraction of on-card speed. The number in MODELS.md is not decorative;
-it is a constraint the validator now holds you to.</p>
-<p>The metal got documented in Module 1, the runtime in Module 2, and the model stack now in Module 3.
-<code>ollama_client.py</code> sits in the same repository, already calling the endpoint; the routing layer in
-Module 5 wraps it, and the Claude Code wiring in Module 6 exposes it. What you leave this module
-with is not just a working stack: it is a portfolio artifact with a validator that will tell the
-next module, and anyone reading the repo, exactly what is on the card and whether it fits.</p>
+<p>Quantization is how you slide a large model down to a size the card can hold. You work from the best quality downward until the model fits with context headroom remaining. When you reach the lowest reasonable scheme and the model still does not fit, you face a genuine choice: accept the GPU/CPU split and pay the speed penalty, or switch to a smaller model that fits entirely on the card.</p>
+<h2 id="step-4-the-deeper-tuning-is-later"><a class="header" href="#step-4-the-deeper-tuning-is-later">Step 4: The Deeper Tuning Is Later</a></h2>
+<p>Choosing a model and quant that fit on the card is a one-time decision per model; it is not the last word on performance. KV-cache quantization, layer offload tuning, and profiling tokens per second under realistic load are Module 7. The goal here is to enter that module with a model that fits, so the profiling numbers reflect GPU throughput rather than system-bus drag.</p>
+<p>Once you know how to read a quant tag, size a model, and apply the highest-that-fits rule, the mechanical part of the decision is fast. The rest is measuring what the choice actually costs in tokens per second.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>The completeness gate is the contract: <code>check_models.py</code> exits 0 only when all three sections
-exist, every field is filled, and the fenced reply block contains real content.</li>
-<li>The VRAM Used &lt;= VRAM Total invariant is a real acceptance check: a model that violates it exits 1
-and names the offender, because overflow is a performance failure, not a style gap.</li>
-<li>A portfolio artifact is one a validator can verify: a human can skim a Markdown file, but code
-is the gatekeeper that makes the claim stick.</li>
-<li>The throughline now carries a runnable client forward: <code>ollama_client.py</code> is not a one-lesson
-artifact; it is the call layer the routing module will wrap.</li>
+<li>A model’s on-disk size equals its parameter count times bits-per-weight divided by eight; Q4_K_M at 4.9 bits/weight, Q8_0 at 8.5, and F16 at 16 set the three common anchors.</li>
+<li>Lower bit depth degrades quality, measured as perplexity; Q4_K_M lands around 1% higher perplexity than F16 (roughly 98% of the quality) while K-quants’ mixed-precision super-blocks hold quality better than flat four-bit schemes.</li>
+<li>Q4_K_M is the standard sweet spot for local serving: near-indistinguishable output, a quarter of the full-precision size, and the default that Ollama pulls when no tag is specified.</li>
+<li>The selection rule is highest-that-fits: start from the best quantization and step down until the model fits in VRAM with context headroom; when none fit, either accept the split or choose a smaller model.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module3/record-the-stack/">
-<p><strong>Build It in Claude Code</strong>: Add the <code>## Sample Response</code> section to <code>exercises/module3/a-14b-model-on-card/MODELS.md</code>, then create <code>check_models.py</code> beside it so it exits 0 only when all three sections are complete, every field is filled, the model row’s VRAM Used is at or below VRAM Total, and the Sample Response holds a real reply.</p>
+<div class="claude-handoff" data-exercise="exercises/module4/quantization-tradeoffs/">
+<p><strong>Build It in Claude Code</strong>: Create <code>exercises/module4/quantization-tradeoffs/vram_fit.py</code>, a stdlib-only planner that estimates a model’s VRAM footprint from its parameter count and bits-per-weight, then prints whether it FITS or SPILLS against your card’s VRAM budget.</p>
 </div>
 
-<!-- SOURCES: https://ollama.com/library/qwen2.5-coder:14b | https://github.com/ollama/ollama/issues/9704 -->
+<!-- SOURCES: https://github.com/ggml-org/llama.cpp/blob/master/tools/quantize/README.md | https://ollama.com/library/qwen2.5-coder/tags | https://willitrunai.com/blog/quantization-guide-gguf-explained | https://www.promptquorum.com/local-llms/llm-quantization-explained -->
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module3/the-openai-compatible-api.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module4/when-a-model-doesnt-fit.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module4/00-overview.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module4/measure-latency.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -438,11 +254,11 @@ artifact; it is the call layer the routing module will wrap.</li>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module3/the-openai-compatible-api.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module4/when-a-model-doesnt-fit.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module4/00-overview.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module4/measure-latency.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

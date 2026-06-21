@@ -13,11 +13,13 @@ the other books are ingested.
 (the SPEC's BOM), not a machine; this book is the curriculum that takes a reader from buying the
 parts to managing a networked local-model host. It is authored from grounded sources (the SPEC +
 the aipe ore + vendor/NVIDIA + Ollama/distro docs); the reader confirms outputs on their own
-build. **Modules 1-3 shipped 2026-06-21** (`GATE-APPROVE-SHIP`): M1 "The Build" (`HARDWARE.md` +
+build. **Modules 1-4 shipped 2026-06-21** (`GATE-APPROVE-SHIP`): M1 "The Build" (`HARDWARE.md` +
 `check_hardware.py` + `breakeven.py`), M2 "Linux and CUDA" (`SETUP.md` + `check_setup.py` +
-`partition_plan.py`), and M3 "The Model Stack" (`MODELS.md` + `check_models.py` + the runnable
-`ollama_client.py` M5/M6 seed + `stack_check.py`). See `build-log/local-metal/build-progress.md`.
-Next: M4 (Unified Memory) via the pipeline.
+`partition_plan.py`), M3 "The Model Stack" (`MODELS.md` + `check_models.py` + the runnable
+`ollama_client.py` M5/M6 seed + `stack_check.py`), and M4 "Unified Memory" (`LATENCY.md` +
+`check_latency.py` + `bench.py` + `vram_fit.py`; big models split across GPU+DDR5, the latency
+baseline M7 tunes against). See `build-log/local-metal/build-progress.md`. Next: M5 (The Routing
+Layer) via the pipeline.
 
 ## Ore (primary source + vault depth)
 

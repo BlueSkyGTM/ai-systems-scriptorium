@@ -31,3 +31,13 @@
 - [A 14B Model on the Card](module3/a-14b-model-on-card.md)
 - [The OpenAI-Compatible API](module3/the-openai-compatible-api.md)
 - [Record the Stack](module3/record-the-stack.md)
+
+---
+
+# Module 4: Unified Memory
+
+- [Overview](module4/00-overview.md)
+- [When a Model Doesn't Fit](module4/when-a-model-doesnt-fit.md)
+- [Quantization Tradeoffs](module4/quantization-tradeoffs.md)
+- [Measure Latency](module4/measure-latency.md)
+- [Record the Baseline](module4/record-the-baseline.md)

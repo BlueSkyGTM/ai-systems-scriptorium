@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Record the Stack - Local Metal — Build and Network Your Own AI Inference Server</title>
+        <title>Measure Latency - Local Metal — Build and Network Your Own AI Inference Server</title>
 
 
         <!-- Custom HTML head -->
@@ -177,258 +177,219 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="record-the-stack"><a class="header" href="#record-the-stack">Record the Stack</a></h1>
-<p>You have a model on the card and a client that calls it. The stack is real and nothing about it is
-written down. This lesson closes Module 3 the same way Module 2 closed: record what you have, then
-gate the record with a validator that will not let you move on with a gap.</p>
-<h2 id="step-1-capture-a-sample-response"><a class="header" href="#step-1-capture-a-sample-response">Step 1: Capture a Sample Response</a></h2>
-<p>Run the client you built in the last lesson:</p>
-<pre><code class="language-bash">python ollama_client.py "explain a Python decorator in one sentence"
+                        <h1 id="measure-latency"><a class="header" href="#measure-latency">Measure Latency</a></h1>
+<p>A model that splits onto system RAM is slower. “Slower” is not a decision until it is a number.
+Two numbers make it one: tokens per second (how fast the model generates once it starts) and time
+to first token (how long you wait before anything arrives). You will build <code>bench.py</code>, a stdlib
+tool that reads those numbers from Ollama’s own response fields, so “smarter but slower” becomes
+something you can actually weigh.</p>
+<h2 id="where-the-numbers-come-from"><a class="header" href="#where-the-numbers-come-from">Where the Numbers Come From</a></h2>
+<p>Ollama’s native <code>/api/generate</code> endpoint embeds timing data directly in its response body. You do
+not wire up a stopwatch: the server already did the accounting. The relevant fields, all in
+nanoseconds:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Field</th><th>What It Measures</th></tr>
+</thead>
+<tbody>
+<tr><td><code>total_duration</code></td><td>wall clock for the whole request</td></tr>
+<tr><td><code>load_duration</code></td><td>time to load the model into memory</td></tr>
+<tr><td><code>prompt_eval_count</code></td><td>tokens in the prompt</td></tr>
+<tr><td><code>prompt_eval_duration</code></td><td>time to process the prompt</td></tr>
+<tr><td><code>eval_count</code></td><td>tokens generated</td></tr>
+<tr><td><code>eval_duration</code></td><td>time spent generating</td></tr>
+</tbody>
+</table>
+</div>
+<p>The Ollama API documentation includes a sample response body that shows every field
+(<a href="https://github.com/ollama/ollama/blob/main/docs/api.md">github.com/ollama/ollama/blob/main/docs/api.md</a>).
+Using the numbers from that sample: <code>eval_count: 290</code>, <code>eval_duration: 4709213000</code> nanoseconds.
+Tokens per second:</p>
+<pre><code>290 / (4709213000 / 1e9) = 290 / 4.709 ≈ 61.6 tok/s
 </code></pre>
-<p>Copy the reply. Open <code>exercises/module3/a-14b-model-on-card/MODELS.md</code> and add a <code>## Sample Response</code>
-section after the <code>## Models</code> table. The section takes two key-value lines and the reply in a fenced
-block.</p>
-<p>What you should see, on the reference build (shown wrapped in a four-backtick outer fence so the
-inner triple-backtick reply block renders):</p>
-<pre><code class="language-markdown">## Sample Response
-
-Prompt: explain a Python decorator in one sentence
-Model: qwen2.5-coder:14b
-
-```
-A decorator is a function that takes another function and extends its behavior
-without modifying the original function's source code.
-```
-</code></pre>
-<p>Fill in <code>Prompt:</code> with your exact prompt and <code>Model:</code> with the model tag you ran. If you have the
-rig, paste your real reply; if not, paste the reference reply above.</p>
-<h2 id="step-2-the-complete-modelsmd"><a class="header" href="#step-2-the-complete-modelsmd">Step 2: The Complete MODELS.md</a></h2>
-<p>Here is the full file with all three sections. Compare yours to it before running the validator.</p>
-<pre><code class="language-markdown"># Model Stack
-
-The serving layer and the models on the rig, with their VRAM footprint. Read by check_models.py.
-
-## Serving Layer
-
-Ollama version: 0.30.10
-Docker version: 27.3.1
-Endpoint: http://localhost:11434
-
-## Models
-
-| Model | Quantization | Size on Disk | VRAM Used | VRAM Total |
-|-------|--------------|--------------|-----------|------------|
-| qwen2.5-coder:14b | Q4_K_M | 9.0 GB | 11.0 GB | 16.0 GB |
-
-## Sample Response
-
-Prompt: explain a Python decorator in one sentence
-Model: qwen2.5-coder:14b
-
-```
-A decorator is a function that takes another function and extends its behavior
-without modifying the original function's source code.
-```
-</code></pre>
-<p>Readers with the rig: fill in your real Ollama and Docker versions, your actual VRAM numbers from
-<code>ollama ps</code> and <code>nvidia-smi</code>, and your real model reply. Readers pre-hardware: the reference figures
-above satisfy every invariant the validator enforces.</p>
-<h2 id="step-3-ship-the-validator"><a class="header" href="#step-3-ship-the-validator">Step 3: Ship the Validator</a></h2>
-<p>Create <code>check_models.py</code> in the same directory as <code>MODELS.md</code>:
-<code>exercises/module3/a-14b-model-on-card/check_models.py</code>.</p>
-<p>Here is what it enforces, in order:</p>
-<ul>
-<li>All three sections present (<code>## Serving Layer</code>, <code>## Models</code>, <code>## Sample Response</code>).</li>
-<li>Every key-value field filled: <code>Ollama version</code>, <code>Docker version</code>, <code>Endpoint</code> in the serving
-layer; <code>Prompt</code> and <code>Model</code> in the sample response.</li>
-<li>No placeholder tokens (<code>TODO</code>, <code>TBD</code>, <code>xxx</code>, angle brackets, ellipses).</li>
-<li>At least one model row with all five columns: Model, Quantization, Size on Disk, VRAM Used,
-VRAM Total. Every cell filled.</li>
-<li>The key invariant: VRAM Used must be less than or equal to VRAM Total. This is not a style
-check; it is the zero-overflow proof, now enforced as code. A model that violates it fails
-immediately and names the offender.</li>
-<li>A non-empty reply in the <code>## Sample Response</code> fenced block (at least ten characters).</li>
-</ul>
-<p>The complete validator:</p>
+<p>The formula is always <code>eval_count / (eval_duration / 1e9)</code>. That is it.</p>
+<p>Time to first token (TTFT) is harder to read from the final body alone. The body gives you
+<code>load_duration + prompt_eval_duration</code>, which approximates the pre-generation wait, but it misses
+any network or queueing time between your client and the server. The real TTFT is the wall-clock
+interval from the moment you send the request to the moment the first generated token arrives.
+You measure that with a streaming request.</p>
+<h2 id="ttft-by-streaming"><a class="header" href="#ttft-by-streaming">TTFT by Streaming</a></h2>
+<p>Setting <code>"stream": true</code> in the request body changes the response from a single blocking JSON
+object to a sequence of newline-delimited JSON chunks
+(<a href="https://docs.ollama.com/api/usage">docs.ollama.com/api/usage</a>). Each chunk carries a partial
+<code>response</code> string as the model generates. The final chunk sets <code>"done": true</code> and includes all
+the timing fields listed above.</p>
+<p>The TTFT measurement is simple: start a timer when you send the request, read chunks line by line,
+and stop the timer when the first chunk arrives that contains a non-empty <code>response</code>. The <code>done</code>
+chunk at the end gives you <code>eval_count</code> and <code>eval_duration</code> for the tokens-per-second calculation.</p>
+<p>Two measurements, one streaming pass.</p>
+<h2 id="build-the-tool"><a class="header" href="#build-the-tool">Build the Tool</a></h2>
+<p>Create <code>exercises/module4/measure-latency/bench.py</code> with this exact code. It uses only the
+standard library: <code>urllib</code>, <code>json</code>, <code>argparse</code>, <code>sys</code>, and <code>time</code>.</p>
 <pre><code class="language-python">#!/usr/bin/env python3
 """
-check_models.py: validate MODELS.md for the Local Metal module-3 throughline.
+bench.py: measure local model latency from Ollama's own timing fields.
 
-Usage: python check_models.py [path/to/MODELS.md]
-Exits 0 when the record is complete and the model fits on-card; exits 1 and names
-the first gap found.
+Reports tokens/second (generation rate) and time to first token (TTFT) for a
+model served by Ollama, reading the timing fields in the /api/generate response.
+
+Usage:
+  python bench.py "write a haiku about latency"          # live: benchmark the default model
+  python bench.py --model qwen2.5-coder:32b "a prompt"   # live: benchmark a specific model
+  python bench.py --selftest                              # offline: validate the metric math
 """
 
-import re
+import argparse
+import json
 import sys
-from pathlib import Path
+import time
+import urllib.error
+import urllib.request
 
-MODELS_PATH = Path(__file__).parent / "MODELS.md"
-
-REQUIRED_SECTIONS = [
-    "## Serving Layer",
-    "## Models",
-    "## Sample Response",
-]
-
-SERVING_FIELDS = ["Ollama version", "Docker version", "Endpoint"]
-SAMPLE_FIELDS = ["Prompt", "Model"]
-
-PLACEHOLDERS = {"TODO", "TBD", "xxx", "fill in", "&lt;", "&gt;", "..."}
+DEFAULT_MODEL = "qwen2.5-coder:14b"
+GENERATE_URL = "http://localhost:11434/api/generate"
 
 
-def fail(message: str) -&gt; None:
-    print(f"MODELS.md incomplete: {message}")
-    sys.exit(1)
+def tokens_per_second(eval_count, eval_duration_ns):
+    """tok/s = generated tokens / generation time. eval_duration is nanoseconds."""
+    if eval_duration_ns &lt;= 0:
+        raise ValueError("eval_duration must be positive")
+    return eval_count / (eval_duration_ns / 1e9)
 
 
-def load(path: Path) -&gt; str:
-    if not path.exists():
-        fail(f"{path} not found")
-    return path.read_text(encoding="utf-8")
+def metrics_from_response(body, ttft_s):
+    """Extract tok/s and TTFT (ms) from an /api/generate body plus a measured TTFT."""
+    eval_count = body["eval_count"]
+    eval_duration = body["eval_duration"]
+    return {
+        "model": body.get("model", "unknown"),
+        "tokens_per_second": round(tokens_per_second(eval_count, eval_duration), 1),
+        "ttft_ms": round(ttft_s * 1000, 1),
+        "eval_count": eval_count,
+    }
 
 
-def check_sections(text: str) -&gt; None:
-    for section in REQUIRED_SECTIONS:
-        if section not in text:
-            fail(f'section "{section}" missing from MODELS.md')
+def bench(prompt, model=DEFAULT_MODEL, url=GENERATE_URL):
+    """Stream a generation, time the first token, and return latency metrics."""
+    payload = json.dumps({"model": model, "prompt": prompt, "stream": True}).encode("utf-8")
+    request = urllib.request.Request(
+        url, data=payload, headers={"Content-Type": "application/json"}, method="POST"
+    )
+    start = time.perf_counter()
+    ttft_s = None
+    final = {}
+    with urllib.request.urlopen(request) as response:
+        for line in response:
+            chunk = json.loads(line.decode("utf-8"))
+            if ttft_s is None and chunk.get("response"):
+                ttft_s = time.perf_counter() - start
+            if chunk.get("done"):
+                final = chunk
+    if ttft_s is None:
+        ttft_s = time.perf_counter() - start
+    return metrics_from_response(final, ttft_s)
 
 
-def check_no_placeholders(text: str) -&gt; None:
-    for token in PLACEHOLDERS:
-        if token in text:
-            fail(f'placeholder token "{token}" still present; fill in the real value')
+def selftest():
+    """Validate the metric math offline against a sample /api/generate response."""
+    sample = {
+        "model": "qwen2.5-coder:14b",
+        "eval_count": 240,
+        "eval_duration": 6_000_000_000,  # 6.0 s expressed in nanoseconds
+        "done": True,
+    }
+    m = metrics_from_response(sample, ttft_s=0.250)
+    assert m["tokens_per_second"] == 40.0, f"tok/s math wrong: {m['tokens_per_second']}"
+    assert m["ttft_ms"] == 250.0, f"ttft math wrong: {m['ttft_ms']}"
+    assert tokens_per_second(100, 1_000_000_000) == 100.0, "tok/s helper wrong"
+    print("selftest passed: tok/s and TTFT math are correct")
+    return 0
 
 
-def extract_section(text: str, heading: str) -&gt; str:
-    match = re.search(rf"{re.escape(heading)}\n(.*?)(?=\n## |\Z)", text, re.DOTALL)
-    if not match:
-        fail(f'"{heading}" section has no content')
-    return match.group(1)
+def main():
+    parser = argparse.ArgumentParser(description="Benchmark a local Ollama model's latency.")
+    parser.add_argument("prompt", nargs="?", help="the prompt to benchmark with")
+    parser.add_argument("--model", default=DEFAULT_MODEL, help="model tag to benchmark")
+    parser.add_argument("--selftest", action="store_true", help="validate the metric math offline")
+    args = parser.parse_args()
 
+    if args.selftest:
+        sys.exit(selftest())
 
-def check_fields(section_text: str, fields: list, section_name: str) -&gt; None:
-    for field in fields:
-        # [^\S\n] is horizontal whitespace only: it must not span the newline,
-        # or a blank field would capture the next line's value.
-        match = re.search(rf"{re.escape(field)}[^\S\n]*:[^\S\n]*([^\n]+)", section_text)
-        if not match:
-            fail(f'field "{field}" not found in {section_name}')
-        if not match.group(1).strip():
-            fail(f'field "{field}" in {section_name} is empty')
+    if not args.prompt:
+        parser.error("provide a prompt, or use --selftest")
 
-
-def parse_gb(cell: str):
-    """Extract a float number of GB from a table cell like '10.8 GB'."""
-    match = re.search(r"([\d.]+)", cell)
-    if not match:
-        return None
-    return float(match.group(1))
-
-
-def check_models_table(section_text: str) -&gt; None:
-    rows = []
-    for line in section_text.splitlines():
-        line = line.strip()
-        if not line.startswith("|"):
-            continue
-        cells = [c.strip() for c in line.strip("|").split("|")]
-        if any("---" in c for c in cells):
-            continue  # separator row
-        if "Model" in cells and "Quantization" in cells:
-            continue  # header row
-        rows.append(cells)
-    if not rows:
-        fail('"## Models" has no model rows; add at least one model to the table')
-    for cells in rows:
-        if len(cells) &lt; 5:
-            fail(f'model row "{" | ".join(cells)}" is missing columns '
-                 "(need Model, Quantization, Size on Disk, VRAM Used, VRAM Total)")
-        if any(not c for c in cells[:5]):
-            fail(f'model row "{" | ".join(cells)}" has an empty cell; fill every column')
-        used = parse_gb(cells[3])
-        total = parse_gb(cells[4])
-        if used is None or total is None:
-            fail(f'model row "{cells[0]}" has a non-numeric VRAM value; use figures like "10.8 GB"')
-        if used &gt; total:
-            fail(f'model "{cells[0]}" overflows VRAM: {used} GB used &gt; {total} GB total. '
-                 "Pick a smaller model or a tighter quantization so it fits on-card.")
-
-
-def check_sample_response(section_text: str) -&gt; None:
-    blocks = re.findall(r"```[^\n]*\n(.*?)```", section_text, re.DOTALL)
-    if not blocks:
-        fail('"## Sample Response" has no fenced code block; paste the model reply in a ``` block')
-    if not any(len(block.strip()) &gt;= 10 for block in blocks):
-        fail('the fenced block in "## Sample Response" is empty; paste a real model reply')
-
-
-def main() -&gt; None:
-    path = Path(sys.argv[1]) if len(sys.argv) &gt; 1 else MODELS_PATH
-    text = load(path)
-    check_sections(text)
-    check_no_placeholders(text)
-    check_fields(extract_section(text, "## Serving Layer"), SERVING_FIELDS, "## Serving Layer")
-    check_models_table(extract_section(text, "## Models"))
-    sample = extract_section(text, "## Sample Response")
-    check_fields(sample, SAMPLE_FIELDS, "## Sample Response")
-    check_sample_response(sample)
-    print("MODELS.md complete")
-    sys.exit(0)
+    try:
+        m = bench(args.prompt, model=args.model)
+    except urllib.error.URLError as exc:
+        print(f"could not reach Ollama at {GENERATE_URL}: {exc}", file=sys.stderr)
+        sys.exit(1)
+    print(f"model:  {m['model']}")
+    print(f"tok/s:  {m['tokens_per_second']}")
+    print(f"TTFT:   {m['ttft_ms']} ms")
+    print(f"tokens: {m['eval_count']}")
 
 
 if __name__ == "__main__":
     main()
 </code></pre>
-<p>One regex detail worth knowing: <code>[^\S\n]</code> matches horizontal whitespace only (spaces and tabs). It
-does not span the newline. A field line with nothing after the colon correctly fails the non-empty
-check because the regex cannot reach the next line’s content to satisfy itself.</p>
-<h2 id="step-4-the-live-vs-expected-rule"><a class="header" href="#step-4-the-live-vs-expected-rule">Step 4: The Live-vs-Expected Rule</a></h2>
-<p>The validator checks completeness and the fits-on-card invariant, not live truth. That distinction
-matters: readers with the rig paste their real <code>ollama ps</code> and <code>nvidia-smi</code> figures; readers without
-it paste the reference figures from Step 2. Either way, the validator passes as long as every section
-is present, every field is filled, the model row has five columns, and VRAM Used sits at or below
-VRAM Total. The reference build satisfies all four.</p>
-<p>Run it to confirm:</p>
-<pre><code class="language-bash">python exercises/module3/a-14b-model-on-card/check_models.py
+<p>Three functions do the real work. <code>tokens_per_second</code> contains the formula: nanoseconds to seconds,
+then divide into token count. <code>metrics_from_response</code> pulls <code>eval_count</code> and <code>eval_duration</code> from
+the final <code>done</code> chunk and combines them with the wall-clock TTFT your caller measured.
+<code>selftest</code> runs the math against a fixed sample response and asserts exact values, so you have a
+machine-checkable done-when before the rig is online: 240 tokens over 6.0 seconds is 40.0 tok/s,
+and a 250 ms measured wall-clock is 250.0 ms TTFT.</p>
+<h2 id="run-it"><a class="header" href="#run-it">Run It</a></h2>
+<p>No rig needed for the first check. Validate the math offline:</p>
+<pre><code class="language-bash">python bench.py --selftest
 </code></pre>
-<p>You should see <code>MODELS.md complete</code> and exit 0. Then test the invariant directly: temporarily raise
-VRAM Used above VRAM Total in the table and run the validator again. It exits 1 and names the
-overflowing model. Restore the original value before continuing.</p>
-<p>The validator catches the overflow because it matters: a model that exceeds total VRAM spills onto
-the system bus and serves at a fraction of on-card speed. The number in MODELS.md is not decorative;
-it is a constraint the validator now holds you to.</p>
-<p>The metal got documented in Module 1, the runtime in Module 2, and the model stack now in Module 3.
-<code>ollama_client.py</code> sits in the same repository, already calling the endpoint; the routing layer in
-Module 5 wraps it, and the Claude Code wiring in Module 6 exposes it. What you leave this module
-with is not just a working stack: it is a portfolio artifact with a validator that will tell the
-next module, and anyone reading the repo, exactly what is on the card and whether it fits.</p>
+<p>What you should see:</p>
+<pre><code>selftest passed: tok/s and TTFT math are correct
+</code></pre>
+<p>With the rig running and a model pulled, benchmark a live generation:</p>
+<pre><code class="language-bash">python bench.py "write a haiku about latency"
+</code></pre>
+<p>What you should see (representative output; exact numbers vary by hardware and prompt):</p>
+<pre><code>model:  qwen2.5-coder:14b
+tok/s:  31.4
+TTFT:   214.7 ms
+tokens: 38
+</code></pre>
+<p>A 14B model running entirely on the RTX 4060 Ti’s 16GB typically lands in the 25-34 tok/s range
+with TTFT under 250 ms. Benchmark the same prompt against <code>qwen2.5-coder:32b</code> and the tok/s will
+drop: part of that model lives in system RAM, and every layer that crosses the PCIe bus costs time.
+That drop is the number this tool exists to show you.</p>
+<p>The next lesson records these measurements for each model in <code>LATENCY.md</code>, the baseline that every
+tuning decision in Module 7 is measured against. Run <code>bench.py</code> for each model before you build
+that file; the output lines paste in directly.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>The completeness gate is the contract: <code>check_models.py</code> exits 0 only when all three sections
-exist, every field is filled, and the fenced reply block contains real content.</li>
-<li>The VRAM Used &lt;= VRAM Total invariant is a real acceptance check: a model that violates it exits 1
-and names the offender, because overflow is a performance failure, not a style gap.</li>
-<li>A portfolio artifact is one a validator can verify: a human can skim a Markdown file, but code
-is the gatekeeper that makes the claim stick.</li>
-<li>The throughline now carries a runnable client forward: <code>ollama_client.py</code> is not a one-lesson
-artifact; it is the call layer the routing module will wrap.</li>
+<li>Tokens per second is throughput; time to first token is responsiveness. They are different problems:
+a model can be fast once it starts yet still feel slow if it makes you wait 2 seconds for the
+first word.</li>
+<li>The numbers come from the server’s own timing fields in the <code>/api/generate</code> response, not a
+stopwatch you bolt on. <code>eval_count / (eval_duration / 1e9)</code> is the complete formula for tok/s.</li>
+<li>The offline selftest is the machine-checkable done-when: it asserts exact values against a fixed
+sample, so the math is proven before the rig is online.</li>
+<li>A measured baseline is what converts “smarter but slower” into a decision: without a number,
+the tradeoff is a guess; with one, it is a policy.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module3/record-the-stack/">
-<p><strong>Build It in Claude Code</strong>: Add the <code>## Sample Response</code> section to <code>exercises/module3/a-14b-model-on-card/MODELS.md</code>, then create <code>check_models.py</code> beside it so it exits 0 only when all three sections are complete, every field is filled, the model row’s VRAM Used is at or below VRAM Total, and the Sample Response holds a real reply.</p>
+<div class="claude-handoff" data-exercise="exercises/module4/measure-latency/">
+<p><strong>Build It in Claude Code</strong>: Create <code>exercises/module4/measure-latency/bench.py</code>, a stdlib-only tool that streams a generation from <code>http://localhost:11434/api/generate</code>, times the first token, and reports tokens per second and TTFT from the response’s timing fields, with a <code>--selftest</code> mode that validates the math offline.</p>
 </div>
 
-<!-- SOURCES: https://ollama.com/library/qwen2.5-coder:14b | https://github.com/ollama/ollama/issues/9704 -->
+<!-- SOURCES: https://github.com/ollama/ollama/blob/main/docs/api.md | https://docs.ollama.com/api/usage | https://github.com/ollama/ollama/blob/main/docs/faq.mdx -->
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module3/the-openai-compatible-api.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module4/quantization-tradeoffs.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module4/00-overview.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module4/record-the-baseline.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -438,11 +399,11 @@ artifact; it is the call layer the routing module will wrap.</li>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module3/the-openai-compatible-api.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module4/quantization-tradeoffs.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module4/00-overview.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module4/record-the-baseline.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
