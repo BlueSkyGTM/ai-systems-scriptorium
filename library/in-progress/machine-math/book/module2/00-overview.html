@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Feature Vectors and the Space They Live In - Machine Math — Classic ML and the Math It Requires</title>
+        <title>Overview - Machine Math — Classic ML and the Math It Requires</title>
 
 
         <!-- Custom HTML head -->
@@ -177,158 +177,62 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="feature-vectors-and-the-space-they-live-in"><a class="header" href="#feature-vectors-and-the-space-they-live-in">Feature Vectors and the Space They Live In</a></h1>
-<p>Every row in your dataset is a point in space. That reframing converts a table of numbers into a
-geometry problem, and it is the foundation every distance-based ML algorithm stands on.</p>
-<h2 id="the-row-is-a-point"><a class="header" href="#the-row-is-a-point">The Row Is a Point</a></h2>
-<p>Measure an iris flower: sepal length 5.1, sepal width 3.5, petal length 1.4, petal width 0.2. That
-observation is one point in four-dimensional space, written as a row vector:</p>
-<pre><code>x = [5.1, 3.5, 1.4, 0.2]
-</code></pre>
-<p>Stack 150 such rows into a matrix <code>X</code> of shape (150, 4). Each column is a feature axis; each row is
-one point in four-dimensional feature space. Every classic ML algorithm accepts a matrix in exactly
-this shape.</p>
-<p>The dimensionality is the number of features. Four-dimensional data is the same geometric object
-as two-dimensional data; you have lost the picture, not the geometry.</p>
-<p>A vector has two properties that matter in ML: magnitude and direction. The magnitude (L2 norm) is:</p>
-<pre><code>||x|| = sqrt(x1² + x2² + ... + xn²)
-</code></pre>
-<p>For the iris row: <code>sqrt(5.1² + 3.5² + 1.4² + 0.2²) = sqrt(40.26) ≈ 6.35</code>. Dividing by the
-magnitude gives a unit vector: same direction, magnitude 1. That normalization step is what makes
-cosine similarity meaningful.</p>
-<h2 id="the-dot-product-as-a-similarity-probe"><a class="header" href="#the-dot-product-as-a-similarity-probe">The Dot Product as a Similarity Probe</a></h2>
-<p>The dot product of two vectors <code>a</code> and <code>b</code> is:</p>
-<pre><code>a · b = a1*b1 + a2*b2 + ... + an*bn
-</code></pre>
-<p>Its geometric meaning: <code>a · b = ||a|| * ||b|| * cos(θ)</code>, where <code>θ</code> is the angle between them. Same
-direction: <code>cos(θ) = 1</code>. Orthogonal: <code>cos(θ) = 0</code>. Opposite: <code>cos(θ) = -1</code>.</p>
-<p>In NumPy, the dot product is one call:</p>
-<pre><code class="language-python">import numpy as np
-
-a = np.array([1.0, 2.0, 3.0])
-b = np.array([4.0, 5.0, 6.0])
-print(np.dot(a, b))   # 32.0  (1*4 + 2*5 + 3*6)
-</code></pre>
-<p>The dot product is the engine behind cosine similarity, attention scores in transformers, and linear
-regression scoring. Azure AI Search documents it as one of three vector similarity metrics, alongside
-cosine and Euclidean, and notes that for normalized vectors dot product is identical to cosine
-similarity but slightly more performant
-(learn.microsoft.com/azure/search/vector-search-ranking#similarity-metrics-used-to-measure-nearness).</p>
-<h2 id="three-distance-metrics-three-different-questions"><a class="header" href="#three-distance-metrics-three-different-questions">Three Distance Metrics, Three Different Questions</a></h2>
-<p>“How far apart are these two points?” has three common answers in ML. Each encodes a different
-assumption about what “far” means.</p>
-<h3 id="euclidean-distance-l2"><a class="header" href="#euclidean-distance-l2">Euclidean Distance (L2)</a></h3>
-<p>Straight-line distance, Pythagoras in n dimensions:</p>
-<pre><code>euclidean(a, b) = sqrt((a1-b1)² + (a2-b2)² + ... + (an-bn)²)
-</code></pre>
-<p>Use it when absolute magnitude matters: a point far away in raw coordinate space is genuinely
-dissimilar. It is the natural metric for tabular data where features are on comparable scales after
-normalization. Azure Cosmos DB’s distance function reference describes Euclidean as “the straight-line
-distance between two points” and recommends it for spatial data where magnitude matters
-(learn.microsoft.com/azure/cosmos-db/gen-ai/distance-functions).</p>
-<h3 id="cosine-distance"><a class="header" href="#cosine-distance">Cosine Distance</a></h3>
-<p>Cosine similarity measures the angle between two vectors, ignoring their lengths:</p>
-<pre><code>cos_sim(a, b)      = (a · b) / (||a|| * ||b||)
-cosine_distance(a, b) = 1 - cos_sim(a, b)
-</code></pre>
-<p>Result ranges from 0 (identical direction) to 2 (opposite direction). Use cosine distance when
-magnitude is noise. A short document and a long document about the same topic point in the same
-direction in term-frequency space; their Euclidean distance is large, their cosine distance is near
-zero. Azure AI Foundry’s embeddings documentation puts it precisely: “two documents might be far
-apart by Euclidean distance because of size, they could still have a smaller angle between them and
-therefore higher cosine similarity”
-(learn.microsoft.com/azure/ai-foundry/openai/concepts/understand-embeddings). Azure OpenAI embedding
-models use cosine as their default metric, and Azure AI Search recommends specifying <code>cosine</code> in the
-vector configuration when indexing Azure OpenAI embeddings
-(learn.microsoft.com/azure/search/vector-search-ranking#similarity-metrics-used-to-measure-nearness).</p>
-<h3 id="manhattan-distance-l1"><a class="header" href="#manhattan-distance-l1">Manhattan Distance (L1)</a></h3>
-<p>Sum the absolute differences along each axis:</p>
-<pre><code>manhattan(a, b) = |a1-b1| + |a2-b2| + ... + |an-bn|
-</code></pre>
-<p>The name is the grid-city analogy: you walk north-south and east-west, never diagonally. Azure Cosmos
-DB’s distance function reference describes it as “the distance between two points by adding up the
-absolute differences between their coordinates”
-(learn.microsoft.com/azure/cosmos-db/gen-ai/distance-functions). Because large per-axis differences
-are not squared, Manhattan distance is more robust to outliers than Euclidean; in high-dimensional
-sparse data it often outperforms L2.</p>
-<h3 id="the-three-metrics-on-one-example"><a class="header" href="#the-three-metrics-on-one-example">The Three Metrics on One Example</a></h3>
-<pre><code>A = [1, 2, 3]
-B = [4, 0, 6]
-
-euclidean       = sqrt((4-1)² + (0-2)² + (6-3)²) = sqrt(9 + 4 + 9) = sqrt(22) ≈ 4.69
-manhattan       = |4-1| + |0-2| + |6-3|           = 3 + 2 + 3       = 8
-cosine_distance = 1 - (a·b)/(||a||·||b||)
-                = 1 - (1*4 + 2*0 + 3*6) / (sqrt(14) * sqrt(52))
-                = 1 - 22 / (3.742 * 7.211)
-                ≈ 1 - 0.815                        ≈ 0.18
-</code></pre>
-<p>Manhattan (8) exceeds Euclidean (4.69) here because summing raw per-axis gaps can never
-undercut the straight-line distance: the diagonal path is always the shortest one. Cosine (0.18)
-reads these same two points as fairly similar in direction even though they sit nearly 5 units
-apart in space, because A and B point in roughly the same angular neighborhood. Each metric weighs
-the axes differently; the right choice depends on the geometry of your data, not convention.</p>
-<h2 id="why-scaling-changes-everything"><a class="header" href="#why-scaling-changes-everything">Why Scaling Changes Everything</a></h2>
-<p>Consider age (range 20–80) and annual income (range 20,000–200,000). Raw Euclidean distance treats
-one unit of age and one unit of income as equally important. One dollar of income is irrelevant; twenty
-years of age is enormous. The metric measures income and nearly ignores age.</p>
-<p>The fix is scaling before any distance computation. Two standard forms:</p>
-<p><strong>Min-max scaling</strong> rescales each feature to [0, 1]:</p>
-<pre><code>x_scaled = (x - x_min) / (x_max - x_min)
-</code></pre>
-<p><strong>Z-score standardization</strong> centers each feature to mean 0, standard deviation 1:</p>
-<pre><code>x_scaled = (x - mean) / std
-</code></pre>
-<p>Azure Machine Learning’s Normalize Data component documents both exactly: “ZScore: Converts all
-values to a z-score” and “MinMax: The min-max normalizer linearly rescales every feature to the
-[0,1] interval”
-(learn.microsoft.com/azure/machine-learning/component-reference/normalize-data). The two methods have
-different shapes: min-max bounds the output to a fixed range and preserves the distribution; z-score
-centers the data and is unbounded, which makes it more stable for algorithms sensitive to extreme
-values.</p>
-<p>The function signatures you will implement match these definitions exactly:</p>
-<pre><code class="language-python">minmax_scale(X)   # rescale each column to [0, 1]
-zscore(X)         # center each column to mean 0, std 1
-</code></pre>
-<p>After scaling, every feature axis contributes equally to the distance calculation. That is not a
-preprocessing nicety; it is the precondition for any distance-based algorithm to work correctly.
-k-NN is the most exposed: the entire prediction is a distance vote, and unscaled features hand that
-vote entirely to whichever column has the largest raw range.</p>
-<h2 id="what-the-geometry-buys-you"><a class="header" href="#what-the-geometry-buys-you">What the Geometry Buys You</a></h2>
-<p>The matrix <code>X</code> of shape (n_samples, n_features) encodes a neighborhood structure. Points close in
-feature space share similar feature combinations; points far apart do not. Setting up that geometry
-correctly, choosing the right metric and applying the right scale, is the work that happens before any
-model sees the data.</p>
-<p>The same math runs at production scale. Azure AI Search resolves a vector query by computing cosine
-similarity between an incoming embedding and every indexed document vector; Azure Cosmos DB stores
-that index alongside your data and returns the nearest neighbors by whichever distance function you
-configure. The retrieval system and the k-NN classifier are solving identical problems at different
-scales. Getting the metric wrong costs the same either way.</p>
-<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
-<ul>
-<li>A dataset row is a vector; the full dataset is a matrix of shape (n_samples, n_features); every
-classic ML algorithm reads this shape and reasons about its geometry.</li>
-<li>The dot product <code>a · b = ||a|| * ||b|| * cos(θ)</code> measures directional alignment; cosine
-similarity normalizes it by magnitude so that vector length does not affect the score.</li>
-<li>Euclidean distance measures straight-line separation (use when magnitude matters); cosine distance
-measures angle (use when magnitude is noise); Manhattan distance sums absolute per-axis differences
-(use for robustness or sparse high-dimensional data).</li>
-<li>Feature scaling (min-max or z-score) is required before any distance-based algorithm: without it,
-the highest-range column casts all the votes.</li>
-</ul>
-<div class="claude-handoff" data-exercise="exercises/module1/feature-vectors/">
-<p><strong>Build It in Claude Code</strong>: Load the Iris dataset with scikit-learn, then build five functions from scratch in NumPy inside <code>ml/distances.py</code>: <code>euclidean(a, b)</code> (straight-line L2 distance, returns float), <code>manhattan(a, b)</code> (sum of absolute per-axis differences), <code>cosine_distance(a, b)</code> (1 minus cosine similarity; raises <code>ValueError</code> on a zero vector), <code>minmax_scale(X)</code> (rescale each column to [0, 1]), and <code>zscore(X)</code> (center each column to mean 0, std 1). Compute pairwise Euclidean and cosine distance between the first five rows and print both matrices. Write one sentence per metric explaining why they disagree on at least one pair.</p>
-</div>
-
+                        <h1 id="module-2-fitting-a-line-and-its-limits"><a class="header" href="#module-2-fitting-a-line-and-its-limits">Module 2: Fitting a Line (and Its Limits)</a></h1>
+<p>Module 1 stored the data. Every prediction in k-NN required the full training set at query
+time: measure distance, rank neighbors, take a vote. No parameters were ever learned.
+This module changes that. You will fit parameters by minimizing a loss, and you will
+understand the engine that does the fitting.</p>
+<p>That engine is gradient descent. The derivative of a loss surface tells you which direction
+is uphill; the optimizer takes a step the opposite way, scaled by a learning rate. Do that
+enough times on a convex loss and you reach the bottom. The bottom is where your model
+lives.</p>
+<h2 id="four-lessons-one-thread"><a class="header" href="#four-lessons-one-thread">Four Lessons, One Thread</a></h2>
+<p>The module runs in order. Each lesson stands on the one before it.</p>
+<p><strong>Gradient Descent: Rolling Downhill</strong> builds the optimizer itself. One clean function,
+<code>gradient_descent</code>, accepts any gradient function and any starting point. You verify it on
+<code>f(theta) = (theta - 3)^2</code>, a bowl with one bottom at <code>theta = 3</code>. The exercise produces
+<code>ml/gradient_descent.py</code>, the shared optimizer every subsequent model in this package reuses.</p>
+<p><strong>Linear Regression: Fitting the Line</strong> puts the first model on top of the optimizer.
+The model is <code>y = w^T x + b</code>; the loss is mean squared error; the gradient is the descent
+signal. You verify the gradient-descent solution against the normal equation (the
+closed-form shortcut) and against scikit-learn, and confirm all three land at the same
+coefficients. The exercise produces <code>ml/linreg.py</code>, which imports the optimizer from
+<code>ml.gradient_descent</code> directly.</p>
+<p><strong>Logistic Regression</strong> swaps the output for a sigmoid and the loss for binary
+cross-entropy. The gradient update rule looks identical to linear regression; the
+nonlinearity lives entirely in the output. Gradient descent generalizes to this case
+without any change to the optimizer.</p>
+<p><strong>The Bias-Variance Tradeoff</strong> names the limit. Lower training error is not the goal.
+A model that fits the training data too well fails on new data. The lesson measures
+bias and variance separately on polynomial regressors and shows the U-shaped error
+curve that defines the sweet spot.</p>
+<h2 id="the-thread"><a class="header" href="#the-thread">The Thread</a></h2>
+<p>Gradient descent is the engine. Linear and logistic regression are the first two models
+that ride it. Bias-variance is the limit: the noise floor in your data is irreducible, and
+the model that chases training error past that floor is learning noise, not signal.</p>
+<h2 id="what-is-given"><a class="header" href="#what-is-given">What Is Given</a></h2>
+<p>Small, clean synthetic datasets generated with a fixed seed, so your numbers match the
+lesson’s exactly. scikit-learn loads data and serves as the oracle in acceptance tests:
+your from-scratch implementation must agree with it numerically. All algorithm logic
+is NumPy.</p>
+<h2 id="what-is-deliberately-out-of-scope"><a class="header" href="#what-is-deliberately-out-of-scope">What Is Deliberately Out of Scope</a></h2>
+<p><strong>Regularization depth</strong> is held for later. Ridge and Lasso appear briefly at the
+end of the bias-variance lesson to name the mechanism, but the full treatment belongs
+in the module that covers regularized linear models and cross-validation together.</p>
+<p><strong>Neural network training</strong> uses gradient descent through a computation graph, with
+the chain rule threading gradients back through every layer. That story is a separate
+book. This module covers the same optimizer on a single linear output so the mechanics
+are clear before the graph grows deep.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module1/00-overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module1/knn-voting.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module1/knn-voting.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module2/gradient-descent.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -338,11 +242,11 @@ the highest-range column casts all the votes.</li>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module1/00-overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module1/knn-voting.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module1/knn-voting.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module2/gradient-descent.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

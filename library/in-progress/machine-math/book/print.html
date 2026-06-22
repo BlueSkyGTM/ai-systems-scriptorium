@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-3463e170.js";
+            window.path_to_searchindex_js = "searchindex-b8061175.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-c87d2913.js"></script>
+        <script src="toc-613293fd.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -521,6 +521,635 @@ out. The point either way: scale before you measure distance.</p>
 </ul>
 <div class="claude-handoff" data-exercise="exercises/module1/knn-voting/">
 <p><strong>Build It in Claude Code</strong>: Implement <code>ml/knn.py</code> from scratch, reusing the <code>METRICS</code> dispatch table you built in <code>ml/distances.py</code>. Fit a <code>KNNClassifier</code> on 80% of z-scored Iris (stratified split, <code>random_state=0</code>), then evaluate held-out accuracy for k in {1, 3, 5, 11, 21} with Euclidean distance; compare Euclidean vs cosine at k=5 on the same split. Report which combination wins, explain why in terms of what the metric assumes about the data, and note where the k=21 accuracy drop shows up and what it tells you about the bias side of the tradeoff.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-2-fitting-a-line-and-its-limits"><a class="header" href="#module-2-fitting-a-line-and-its-limits">Module 2: Fitting a Line (and Its Limits)</a></h1>
+<p>Module 1 stored the data. Every prediction in k-NN required the full training set at query
+time: measure distance, rank neighbors, take a vote. No parameters were ever learned.
+This module changes that. You will fit parameters by minimizing a loss, and you will
+understand the engine that does the fitting.</p>
+<p>That engine is gradient descent. The derivative of a loss surface tells you which direction
+is uphill; the optimizer takes a step the opposite way, scaled by a learning rate. Do that
+enough times on a convex loss and you reach the bottom. The bottom is where your model
+lives.</p>
+<h2 id="four-lessons-one-thread"><a class="header" href="#four-lessons-one-thread">Four Lessons, One Thread</a></h2>
+<p>The module runs in order. Each lesson stands on the one before it.</p>
+<p><strong>Gradient Descent: Rolling Downhill</strong> builds the optimizer itself. One clean function,
+<code>gradient_descent</code>, accepts any gradient function and any starting point. You verify it on
+<code>f(theta) = (theta - 3)^2</code>, a bowl with one bottom at <code>theta = 3</code>. The exercise produces
+<code>ml/gradient_descent.py</code>, the shared optimizer every subsequent model in this package reuses.</p>
+<p><strong>Linear Regression: Fitting the Line</strong> puts the first model on top of the optimizer.
+The model is <code>y = w^T x + b</code>; the loss is mean squared error; the gradient is the descent
+signal. You verify the gradient-descent solution against the normal equation (the
+closed-form shortcut) and against scikit-learn, and confirm all three land at the same
+coefficients. The exercise produces <code>ml/linreg.py</code>, which imports the optimizer from
+<code>ml.gradient_descent</code> directly.</p>
+<p><strong>Logistic Regression</strong> swaps the output for a sigmoid and the loss for binary
+cross-entropy. The gradient update rule looks identical to linear regression; the
+nonlinearity lives entirely in the output. Gradient descent generalizes to this case
+without any change to the optimizer.</p>
+<p><strong>The Bias-Variance Tradeoff</strong> names the limit. Lower training error is not the goal.
+A model that fits the training data too well fails on new data. The lesson measures
+bias and variance separately on polynomial regressors and shows the U-shaped error
+curve that defines the sweet spot.</p>
+<h2 id="the-thread"><a class="header" href="#the-thread">The Thread</a></h2>
+<p>Gradient descent is the engine. Linear and logistic regression are the first two models
+that ride it. Bias-variance is the limit: the noise floor in your data is irreducible, and
+the model that chases training error past that floor is learning noise, not signal.</p>
+<h2 id="what-is-given-1"><a class="header" href="#what-is-given-1">What Is Given</a></h2>
+<p>Small, clean synthetic datasets generated with a fixed seed, so your numbers match the
+lesson’s exactly. scikit-learn loads data and serves as the oracle in acceptance tests:
+your from-scratch implementation must agree with it numerically. All algorithm logic
+is NumPy.</p>
+<h2 id="what-is-deliberately-out-of-scope-1"><a class="header" href="#what-is-deliberately-out-of-scope-1">What Is Deliberately Out of Scope</a></h2>
+<p><strong>Regularization depth</strong> is held for later. Ridge and Lasso appear briefly at the
+end of the bias-variance lesson to name the mechanism, but the full treatment belongs
+in the module that covers regularized linear models and cross-validation together.</p>
+<p><strong>Neural network training</strong> uses gradient descent through a computation graph, with
+the chain rule threading gradients back through every layer. That story is a separate
+book. This module covers the same optimizer on a single linear output so the mechanics
+are clear before the graph grows deep.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="gradient-descent-rolling-downhill"><a class="header" href="#gradient-descent-rolling-downhill">Gradient Descent: Rolling Downhill</a></h1>
+<p>The derivative of a function at a point tells you the slope. A positive slope means the
+function is rising to the right; a negative slope means it is falling. The optimizer’s
+only job is to read that slope and step the opposite way. That is gradient descent.</p>
+<h2 id="the-update-rule"><a class="header" href="#the-update-rule">The Update Rule</a></h2>
+<p>For a scalar parameter <code>theta</code> and a loss <code>L(theta)</code>, the gradient descent update is:</p>
+<pre><code>theta_new = theta_old - lr * dL/dtheta
+</code></pre>
+<p>The learning rate <code>lr</code> controls how far you step. The gradient <code>dL/dtheta</code> tells you
+which direction is uphill; subtracting it points you downhill. Repeat until the gradient
+is near zero.</p>
+<p>For a vector of parameters the rule is identical, component by component:</p>
+<pre><code>theta_new = theta_old - lr * grad L(theta)
+</code></pre>
+<p>The gradient is a vector: each component is the partial derivative of the loss with
+respect to one parameter. The negative gradient points toward the steepest descent across
+all parameters simultaneously.</p>
+<h2 id="why-convexity-guarantees-the-bottom"><a class="header" href="#why-convexity-guarantees-the-bottom">Why Convexity Guarantees the Bottom</a></h2>
+<p>A convex function has only one valley. The second-derivative test makes this precise:
+if <code>f''(theta) &gt;= 0</code> everywhere, the function curves upward everywhere, and every local
+minimum is the global minimum. For multivariate functions, the Hessian matrix (the matrix
+of second partial derivatives) must be positive semidefinite everywhere.</p>
+<p>Mean squared error for a linear model is convex in the weights. That means gradient
+descent on MSE cannot get stuck in a bad local minimum. Follow the slope long enough
+with a sensible learning rate and you reach the global optimum.</p>
+<p>Non-convex losses, like those in neural networks, have many local minima and saddle
+points. The same optimizer still runs; convexity just removes the guarantee. The engine
+here is the same one that trains transformers; this lesson is where you understand it.</p>
+<h2 id="the-learning-rate-tradeoff"><a class="header" href="#the-learning-rate-tradeoff">The Learning Rate Tradeoff</a></h2>
+<p>Pick <code>lr</code> too small and convergence is slow: you take thousands of tiny steps toward a
+bottom you could reach in dozens. Pick <code>lr</code> too large and the step overshoots the valley:
+instead of landing near the minimum, you bounce off the far wall and the loss grows. The
+Azure Machine Learning Linear Regression component, which offers online gradient descent
+as a training method alongside ordinary least squares, exposes this knob directly: “For
+<strong>Learning rate</strong>, specify the initial learning rate for the stochastic gradient descent
+optimizer” and notes that larger datasets with fewer variables converge better with a
+small fixed rate, while complex problems benefit from the option to decrease the learning
+rate as training progresses
+(learn.microsoft.com/azure/machine-learning/component-reference/linear-regression).</p>
+<p>The ingredient data confirms the pattern numerically: on the Rosenbrock function, <code>lr=0.0001</code>
+barely moves the parameters, <code>lr=0.0005</code> converges to the true minimum, and <code>lr=0.001</code>
+overshoots and diverges. For the convex case you build here, <code>lr=0.1</code> is safe and fast.</p>
+<h2 id="the-locked-optimizer"><a class="header" href="#the-locked-optimizer">The Locked Optimizer</a></h2>
+<p>The function below is the optimizer you build in the exercise and that every later model
+in this package imports. Read the docstring before the code: the design decision is that
+<code>grad_fn</code> and <code>loss_fn</code> are kept separate so the function works for any differentiable
+objective without modification.</p>
+<pre><code class="language-python">"""Gradient descent optimizer, from scratch in NumPy.
+
+One idea: the derivative points uphill; step the opposite way, scaled by a learning rate.
+For a convex loss there is exactly one bottom -- gradient descent finds it by following
+the slope. For a non-convex loss it finds a local minimum; the learning rate and the number
+of iterations are the two knobs you tune.
+"""
+import numpy as np
+
+
+def gradient_descent(grad_fn, theta0, lr=0.1, n_iters=1000, loss_fn=None):
+    """Minimize an objective by iterative gradient steps.
+
+    Parameters
+    ----------
+    grad_fn : callable
+        grad_fn(theta) -&gt; gradient array with the same shape as theta.
+    theta0 : array-like
+        Starting parameters.
+    lr : float
+        Learning rate (step size). Default 0.1.
+    n_iters : int
+        Number of gradient steps to take. Default 1000.
+    loss_fn : callable or None
+        loss_fn(theta) -&gt; scalar. When provided, history records loss values per
+        iteration. When None, history records the L2 gradient norm -- a proxy that
+        decreases as the optimizer converges.
+
+    Returns
+    -------
+    theta : np.ndarray
+        Parameter values after n_iters steps.
+    history : list of float
+        One value per iteration: the loss (if loss_fn given) or gradient norm.
+    """
+    theta = np.asarray(theta0, dtype=float).copy()
+    history = []
+    for _ in range(n_iters):
+        grad = grad_fn(theta)
+        if loss_fn is not None:
+            history.append(float(loss_fn(theta)))
+        else:
+            history.append(float(np.linalg.norm(grad)))
+        theta = theta - lr * grad
+    return theta, history
+</code></pre>
+<h2 id="a-measured-run"><a class="header" href="#a-measured-run">A Measured Run</a></h2>
+<p>On <code>f(theta) = (theta - 3)^2</code>, the gradient is <code>2 * (theta - 3)</code>. From <code>theta = 0</code> with
+<code>lr = 0.1</code>, the measured result is:</p>
+<ul>
+<li>Starting loss: <code>(0 - 3)^2 = 9.0</code></li>
+<li>After 50 iterations: loss near <code>0.0</code>, <code>theta</code> within <code>0.01</code> of <code>3.0</code></li>
+<li>After 200 iterations: <code>theta = 2.999...</code>, loss indistinguishable from <code>0</code></li>
+</ul>
+<p>The loss history is strictly non-increasing, which the acceptance gate verifies directly.
+That monotone property is the signature of a well-chosen learning rate on a convex loss.</p>
+<h2 id="core-concepts-2"><a class="header" href="#core-concepts-2">Core Concepts</a></h2>
+<ul>
+<li>The gradient points toward steepest ascent; the negative gradient points toward
+steepest descent; subtracting <code>lr * gradient</code> from the current parameters is the
+entire update.</li>
+<li>A convex loss has exactly one minimum; gradient descent on a convex loss reaches
+the global optimum regardless of starting point, given a learning rate small enough
+to avoid overshooting.</li>
+<li>The learning rate trades convergence speed against stability: too small is slow, too
+large diverges; for convex problems a fixed moderate rate (here <code>0.1</code>) works reliably.</li>
+<li>The optimizer accepts any <code>grad_fn</code>; the loss surface determines the difficulty, not
+the optimizer code.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module2/gradient-descent/">
+<p><strong>Build It in Claude Code</strong>: Build <code>exercises/ml/gradient_descent.py</code> with the <code>gradient_descent</code> function exactly as shown above. Then verify it with the locked acceptance gate at <code>exercises/module2/gradient-descent/test_gradient_descent.py</code>. The gate tests convergence on a known convex function (<code>f(theta) = (theta-3)^2</code>), confirms the loss history is non-increasing, checks that gradient-norm history works when no <code>loss_fn</code> is given, and verifies multi-dimensional convergence. Done when <code>python -m pytest exercises/module2/gradient-descent</code> is green.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="linear-regression-fitting-the-line"><a class="header" href="#linear-regression-fitting-the-line">Linear Regression: Fitting the Line</a></h1>
+<p>k-NN never learns anything: at prediction time it scans the full training set. Linear
+regression does the opposite. It compresses everything about the training data into a
+weight vector <code>w</code> and a bias <code>b</code>, then discards the raw rows. Predicting a new point
+costs one matrix multiply. The question is how to find <code>w</code> and <code>b</code>.</p>
+<h2 id="the-model-and-the-loss"><a class="header" href="#the-model-and-the-loss">The Model and the Loss</a></h2>
+<p>The model is:</p>
+<pre><code>y_hat = w^T * x + b
+</code></pre>
+<p>For a dataset of <code>n</code> examples, the mean squared error (MSE) measures how badly the
+current weights miss:</p>
+<pre><code>MSE = (1/n) * sum((y_hat_i - y_i)^2)
+</code></pre>
+<p>MSE penalizes large errors quadratically. It is smooth and differentiable everywhere,
+which is the property gradient descent needs. The gradients of MSE with respect to the
+weights and bias are:</p>
+<pre><code>dMSE/dw = (2/n) * X^T (Xw - y)   (matrix form)
+dMSE/db = (2/n) * sum(y_hat - y)
+</code></pre>
+<p>Plug those into <code>gradient_descent</code> from the previous lesson and the optimizer walks
+the weights downhill until the MSE stops decreasing. The Azure Machine Learning Linear
+Regression component names this training method “Online Gradient Descent” and documents
+it alongside ordinary least squares as its two supported solution methods, noting that
+gradient descent is preferred “for models that are more complex, or that have too little
+training data given the number of variables”
+(learn.microsoft.com/azure/machine-learning/component-reference/linear-regression).</p>
+<h2 id="the-normal-equation"><a class="header" href="#the-normal-equation">The Normal Equation</a></h2>
+<p>For a small dataset there is a faster path. The normal equation solves for the optimal
+weights directly, in one step, without iteration:</p>
+<pre><code>w* = (X^T X)^{-1} X^T y
+</code></pre>
+<p>This inverts a matrix of shape <code>(p, p)</code> where <code>p</code> is the number of features. For small
+<code>p</code> that is cheap; for large <code>p</code> (thousands of features) the inversion costs <code>O(p^3)</code>
+and gradient descent wins on speed.</p>
+<p>The two methods are not competitors: they solve the same optimization problem. The
+normal equation jumps straight to the bottom; gradient descent rolls there one step at
+a time. They should agree numerically on the same data.</p>
+<h2 id="what-the-code-does"><a class="header" href="#what-the-code-does">What the Code Does</a></h2>
+<p><code>LinearRegression.fit</code> applies z-score scaling to the features before running the
+optimizer. This keeps the gradient magnitudes comparable across features and lets the
+optimizer use a single learning rate for all weights. The scaling parameters (mean and
+standard deviation per feature) are stored so <code>predict</code> can invert them transparently:
+the caller always works in original space.</p>
+<p><code>normal_equation</code> takes the same feature matrix and target vector and solves via
+<code>np.linalg.lstsq</code>, which is numerically stable for near-singular matrices.</p>
+<p>Both are in the locked <code>ml/linreg.py</code> below. Read the docstrings: the note in
+<code>LinearRegression</code> that says “the learned weights apply to the scaled space” is the
+detail most readers miss the first time.</p>
+<pre><code class="language-python">"""Linear regression, from scratch in NumPy.
+
+One idea: fit a line by minimizing mean squared error. The MSE gradient is the descent
+signal; gradient descent walks downhill one step at a time. The normal equation is the
+closed-form shortcut that jumps straight to the bottom -- useful as a cross-check and
+fast for small datasets.
+
+Reuses:
+- ml.gradient_descent.gradient_descent  (the shared optimizer)
+- ml.distances.zscore                    (feature scaling before GD)
+"""
+import numpy as np
+from ml.gradient_descent import gradient_descent
+
+
+def normal_equation(X, y):
+    """Closed-form solution: w* = (X^T X)^-1 X^T y.
+
+    Parameters
+    ----------
+    X : array-like, shape (n, p)
+        Feature matrix (NOT augmented; intercept is added internally).
+    y : array-like, shape (n,)
+        Target vector.
+
+    Returns
+    -------
+    w : np.ndarray, shape (p+1,)
+        Weights with the intercept as the last element.
+    """
+    X = np.asarray(X, dtype=float)
+    y = np.asarray(y, dtype=float)
+    ones = np.ones((X.shape[0], 1))
+    Xb = np.hstack([X, ones])
+    return np.linalg.lstsq(Xb, y, rcond=None)[0]
+
+
+class LinearRegression:
+    """Gradient-descent linear regression with an intercept term.
+
+    Scales features with z-score before descent; the predict step inverts the
+    scaling transparently so the caller works in original space.
+
+    Parameters
+    ----------
+    lr : float
+        Learning rate for gradient descent.
+    n_iters : int
+        Number of gradient steps.
+    """
+
+    def __init__(self, lr=0.01, n_iters=2000):
+        self.lr = lr
+        self.n_iters = n_iters
+        self.w_ = None
+        self.loss_history_ = None
+        self._mu = None
+        self._sd = None
+
+    def fit(self, X, y):
+        """Fit the model to training data.
+
+        Internally z-scores X; the learned weights apply to the scaled space.
+        """
+        X = np.asarray(X, dtype=float)
+        y = np.asarray(y, dtype=float)
+        n, p = X.shape
+
+        # Scale features; store moments for predict
+        self._mu = X.mean(axis=0)
+        self._sd = X.std(axis=0)
+        self._sd = np.where(self._sd == 0.0, 1.0, self._sd)
+        Xs = (X - self._mu) / self._sd
+
+        # Augment with a bias column (intercept)
+        ones = np.ones((n, 1))
+        Xb = np.hstack([Xs, ones])
+
+        # MSE gradient: dL/dw = (2/n) * X^T (Xw - y)
+        def grad_fn(w):
+            residuals = Xb @ w - y
+            return (2.0 / n) * Xb.T @ residuals
+
+        def loss_fn(w):
+            residuals = Xb @ w - y
+            return float(np.mean(residuals ** 2))
+
+        w0 = np.zeros(p + 1)
+        self.w_, self.loss_history_ = gradient_descent(
+            grad_fn, w0, lr=self.lr, n_iters=self.n_iters, loss_fn=loss_fn
+        )
+        return self
+
+    def predict(self, X):
+        """Predict targets for X (applies the stored z-score scaling)."""
+        X = np.asarray(X, dtype=float)
+        Xs = (X - self._mu) / self._sd
+        ones = np.ones((X.shape[0], 1))
+        Xb = np.hstack([Xs, ones])
+        return Xb @ self.w_
+</code></pre>
+<h2 id="measured-results"><a class="header" href="#measured-results">Measured Results</a></h2>
+<p>On a seeded synthetic dataset with true relationship <code>y = 3*x1 - 2*x2 + 5 + noise</code>
+(300 samples, noise std 0.2, 80/20 split, <code>seed=42</code>):</p>
+<ul>
+<li><code>LinearRegression(lr=0.01, n_iters=3000)</code>: R-squared on the held-out test set = <code>0.9966</code></li>
+<li><code>normal_equation</code> predictions: mean absolute error vs. GD predictions <code>&lt; 0.01</code></li>
+<li>scikit-learn <code>LinearRegression</code> predictions: mean absolute error vs. GD predictions <code>&lt; 0.01</code></li>
+<li>MSE history: starts near <code>39.1</code>, falls to <code>0.037</code> within the first few hundred iterations,
+then plateaus at the noise floor</li>
+</ul>
+<p>All three methods land at the same coefficients to roughly six decimal places. That
+agreement is the proof. The normal equation is the answer key; gradient descent arrives
+there by following the slope.</p>
+<p>The plateau matters. MSE does not go to zero because the target has irreducible noise
+(<code>noise_std=0.2</code> in the generator). No model can predict noise. The training run’s job
+is to reach the noise floor, not to drive past it. That limit is what the next lesson
+names precisely: bias and variance.</p>
+<p>Gradient descent generalizes. The optimizer that converges on MSE here is the same one
+that will update weights through a sigmoid in the next lesson, and through layer after
+layer of a neural network later. The loss surface changes; the optimizer does not.</p>
+<h2 id="core-concepts-3"><a class="header" href="#core-concepts-3">Core Concepts</a></h2>
+<ul>
+<li>Linear regression fits <code>y_hat = w^T x + b</code> by minimizing MSE; the MSE gradient
+<code>(2/n) * X^T (Xw - y)</code> is the descent signal.</li>
+<li>The normal equation <code>w* = (X^T X)^{-1} X^T y</code> is the closed-form solution; it
+jumps to the optimum in one step but costs <code>O(p^3)</code> and is impractical for large
+feature counts.</li>
+<li>Gradient descent and the normal equation reach the same weights on the same data:
+GD is not an approximation of the normal equation, it is an alternative path to the
+same minimum.</li>
+<li>Feature z-scoring before gradient descent keeps all weight gradients on a comparable
+scale; without it, the highest-variance feature dominates the update.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module2/linear-regression/">
+<p><strong>Build It in Claude Code</strong>: Read the current state of <code>exercises/ml/</code> before touching anything. Then build <code>exercises/ml/linreg.py</code> with the <code>LinearRegression</code> class and the <code>normal_equation</code> function exactly as shown above. Note that <code>linreg.py</code> imports <code>gradient_descent</code> from <code>ml.gradient_descent</code>: do not copy the optimizer, import it. Then verify with the locked acceptance gate at <code>exercises/module2/linear-regression/test_linreg.py</code>. The gate checks that R-squared clears <code>0.95</code> on held-out data, that GD and the normal equation predictions agree within MAE <code>0.3</code>, and that GD and scikit-learn predictions agree within MAE <code>0.3</code>. Done when <code>python -m pytest exercises/module2/linear-regression</code> is green.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="logistic-regression"><a class="header" href="#logistic-regression">Logistic Regression</a></h1>
+<p>Linear regression predicts a number. When your label is a binary category, that number becomes a
+probability, and a bare linear score has no business being one: it is unbounded, and cross-entropy
+loss needs something in [0, 1]. The sigmoid function is the fix, and everything else follows from it.</p>
+<h2 id="the-sigmoid-squashes-a-score-to-a-probability"><a class="header" href="#the-sigmoid-squashes-a-score-to-a-probability">The Sigmoid Squashes a Score to a Probability</a></h2>
+<p>The linear score <code>z = w^T x + b</code> can be any real number. Apply sigmoid and it lands in (0, 1):</p>
+<pre><code>sigmoid(z) = 1 / (1 + exp(-z))
+</code></pre>
+<p>When <code>z</code> is large and positive, sigmoid approaches 1. When <code>z</code> is large and negative, it approaches
+0. When <code>z = 0</code>, sigmoid returns exactly 0.5, and that is the decision boundary: wherever the linear
+score crosses zero, the model is maximally uncertain.</p>
+<p>Azure Machine Learning’s Two-Class Logistic Regression component describes the same mechanism: the
+algorithm “predicts the probability of occurrence of an event by fitting data to a logistic
+function” (<a href="https://learn.microsoft.com/en-us/azure/machine-learning/component-reference/two-class-logistic-regression">learn.microsoft.com</a>).</p>
+<h2 id="cross-entropy-is-the-right-loss-for-probabilities"><a class="header" href="#cross-entropy-is-the-right-loss-for-probabilities">Cross-Entropy Is the Right Loss for Probabilities</a></h2>
+<p>Mean squared error on a sigmoid output creates a non-convex loss surface with many local minima.
+Binary cross-entropy solves this. It is convex, which means gradient descent finds the global
+minimum. The formula:</p>
+<pre><code>Loss = -(1/n) * sum( y * log(p) + (1-y) * log(1-p) )
+</code></pre>
+<p>where <code>p = sigmoid(z)</code> and <code>y</code> is the true binary label. Read it from both directions. When <code>y=1</code>
+and <code>p</code> is close to 1, <code>log(1) ~ 0</code>, the loss is nearly zero: correct prediction, no penalty. When
+<code>y=1</code> and <code>p</code> is close to 0, <code>log(0)</code> diverges to negative infinity: wrong prediction, enormous
+penalty. The loss is symmetric for <code>y=0</code>.</p>
+<p>A useful sanity check: at initialization with <code>w = 0</code>, every prediction is <code>sigmoid(0) = 0.5</code>.
+Cross-entropy of a perfectly uncertain binary classifier is <code>log(2) ≈ 0.693</code>. That is where your
+<code>loss_history_[0]</code> starts. After 1000 steps on z-scored breast-cancer, it reaches 0.056.</p>
+<h2 id="the-gradient-has-the-same-shape-as-linear-regression"><a class="header" href="#the-gradient-has-the-same-shape-as-linear-regression">The Gradient Has the Same Shape as Linear Regression</a></h2>
+<p>The gradient of cross-entropy with respect to the weight vector is:</p>
+<pre><code>dL/dw = (1/n) * X^T (sigmoid(Xw) - y)
+dL/db = (1/n) * sum( sigmoid(Xw) - y )
+</code></pre>
+<p>Compare this to the MSE gradient for linear regression:</p>
+<pre><code>dMSE/dw = (1/n) * X^T (Xw - y)
+</code></pre>
+<p>The structure is identical. The only difference is that <code>Xw</code> is replaced by <code>sigmoid(Xw)</code>. The same
+<code>gradient_descent</code> function that fit your linear model fits this one. The sigmoid introduces the
+nonlinearity; the optimizer sees the same interface.</p>
+<h2 id="the-implementation-1"><a class="header" href="#the-implementation-1">The Implementation</a></h2>
+<p><code>ml/logreg.py</code> imports <code>gradient_descent</code> from the previous lesson. The only new pieces are
+<code>_sigmoid</code> and the two closures <code>grad_fn</code> and <code>loss_fn</code>. Everything else, including the fit
+interface and the weight update loop, comes from the shared optimizer.</p>
+<pre><code class="language-python">"""Logistic regression, from scratch in NumPy.
+
+One idea: the sigmoid squashes a linear score to a probability; cross-entropy is the right
+loss for probabilities; the gradient has the same elegant shape as linear regression's.
+Binary only; reuses gradient_descent from M2 and zscore from M1.
+
+Reuses:
+- ml.gradient_descent.gradient_descent  (the shared optimizer)
+- ml.distances.zscore                    (feature scaling before GD)
+"""
+import numpy as np
+from ml.gradient_descent import gradient_descent
+
+
+def _sigmoid(z):
+    """Numerically stable sigmoid: clips z to avoid exp overflow."""
+    z = np.clip(z, -500, 500)
+    return 1.0 / (1.0 + np.exp(-z))
+
+
+class LogisticRegression:
+    """Gradient-descent logistic regression (binary, with intercept).
+
+    Scales features with z-score before descent; predict / predict_proba work in
+    the original feature space (scaling is applied internally).
+
+    Parameters
+    ----------
+    lr : float
+        Learning rate for gradient descent.
+    n_iters : int
+        Number of gradient steps.
+    threshold : float
+        Decision threshold for predict(). Default 0.5.
+    """
+
+    def __init__(self, lr=0.1, n_iters=1000, threshold=0.5):
+        self.lr = lr
+        self.n_iters = n_iters
+        self.threshold = threshold
+        self.w_ = None
+        self.loss_history_ = None
+        self._mu = None
+        self._sd = None
+
+    def fit(self, X, y):
+        """Fit using gradient descent on binary cross-entropy loss."""
+        X = np.asarray(X, dtype=float)
+        y = np.asarray(y, dtype=float)
+        n, p = X.shape
+
+        # Scale features; store moments for inference
+        self._mu = X.mean(axis=0)
+        self._sd = X.std(axis=0)
+        self._sd = np.where(self._sd == 0.0, 1.0, self._sd)
+        Xs = (X - self._mu) / self._sd
+
+        ones = np.ones((n, 1))
+        Xb = np.hstack([Xs, ones])
+
+        # Cross-entropy gradient: dL/dw = (1/n) * X^T (sigmoid(Xw) - y)
+        def grad_fn(w):
+            probs = _sigmoid(Xb @ w)
+            return (1.0 / n) * Xb.T @ (probs - y)
+
+        def loss_fn(w):
+            probs = _sigmoid(Xb @ w)
+            # Clip to avoid log(0)
+            probs = np.clip(probs, 1e-12, 1.0 - 1e-12)
+            return float(-np.mean(y * np.log(probs) + (1 - y) * np.log(1 - probs)))
+
+        w0 = np.zeros(p + 1)
+        self.w_, self.loss_history_ = gradient_descent(
+            grad_fn, w0, lr=self.lr, n_iters=self.n_iters, loss_fn=loss_fn
+        )
+        return self
+
+    def _scaled_Xb(self, X):
+        X = np.asarray(X, dtype=float)
+        Xs = (X - self._mu) / self._sd
+        ones = np.ones((X.shape[0], 1))
+        return np.hstack([Xs, ones])
+
+    def predict_proba(self, X):
+        """Return probability of class 1 for each sample."""
+        return _sigmoid(self._scaled_Xb(X) @ self.w_)
+
+    def predict(self, X):
+        """Return binary class labels using self.threshold."""
+        return (self.predict_proba(X) &gt;= self.threshold).astype(int)
+</code></pre>
+<p>The <code>_sigmoid</code> clip at ±500 is a numerical guard: <code>exp(-500)</code> underflows to zero in float64, and
+<code>exp(500)</code> overflows to infinity. The clip is invisible at any score a gradient-descent model
+actually produces; it prevents silent NaN propagation on pathological inputs.</p>
+<h2 id="what-the-numbers-say"><a class="header" href="#what-the-numbers-say">What the Numbers Say</a></h2>
+<p>On z-scored breast-cancer (569 samples, 80/20 stratified split, <code>random_state=0</code>):</p>
+<ul>
+<li>Test accuracy: <strong>96.49%</strong></li>
+<li>Agreement with scikit-learn’s <code>LogisticRegression</code> on the same split: <strong>99.12%</strong> of labels match</li>
+<li>Cross-entropy loss: 0.693 at init (exactly <code>log 2</code>), 0.056 after 1000 steps</li>
+</ul>
+<p>The 0.51% of labels that differ from scikit-learn is expected: scikit-learn uses L-BFGS with
+L2 regularization by default, while this implementation runs plain gradient descent. The models
+converge to nearby but not identical minima. The 96.49% floor is the meaningful signal.</p>
+<h2 id="the-05-threshold-and-predict_proba"><a class="header" href="#the-05-threshold-and-predict_proba">The 0.5 Threshold and <code>predict_proba</code></a></h2>
+<p>The default threshold of 0.5 maps <code>predict_proba &gt;= 0.5</code> to class 1. Because <code>sigmoid(z) = 0.5</code>
+exactly when <code>z = 0</code>, the decision boundary is the hyperplane where the linear score is zero. That
+is a linear boundary in feature space: logistic regression is a linear classifier.</p>
+<p>The threshold is a tunable seam. Lower it (say, to 0.3) and recall rises while precision falls:
+you catch more true positives at the cost of more false positives. That tradeoff belongs to the
+business problem, not to the optimizer. <code>predict_proba</code> gives you the raw probability so you can
+draw that boundary wherever the application demands.</p>
+<p>The reuse here runs deeper than sharing an optimizer. Every piece of tooling you have from M1 and
+the start of M2, distance metrics, z-score scaling, gradient descent, snaps into a production-grade
+binary classifier with one new function: <code>_sigmoid</code>.</p>
+<h2 id="core-concepts-4"><a class="header" href="#core-concepts-4">Core Concepts</a></h2>
+<ul>
+<li>The sigmoid function maps any real-valued linear score to (0, 1), making it a valid probability;
+the decision boundary is the hyperplane where the linear score equals zero.</li>
+<li>Binary cross-entropy is the correct loss for probability outputs; it is convex, guarantees a
+single global minimum, and starts at <code>log(2) ≈ 0.693</code> for an uninformed model.</li>
+<li>The cross-entropy gradient has the same shape as the MSE gradient; the same <code>gradient_descent</code>
+optimizer fits both, with only the loss and the sigmoid differing.</li>
+<li><code>predict_proba</code> returns the raw sigmoid output; the 0.5 threshold is a tunable seam, not a
+fixed law, and the right threshold depends on the cost of false positives versus false negatives.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module2/logistic-regression/">
+<p><strong>Build It in Claude Code</strong>: Add <code>exercises/ml/logreg.py</code> to the throughline package, reusing
+<code>ml.gradient_descent</code> and <code>ml.distances.zscore</code>. Fit a <code>LogisticRegression</code> on 80% of z-scored
+breast-cancer (stratified, <code>random_state=0</code>) and confirm test accuracy clears 0.95, agreement with
+scikit-learn clears 0.95, <code>predict_proba</code> stays in [0, 1], and cross-entropy decreases over
+training. Gate: <code>python -m pytest exercises/module2/logistic-regression</code> green.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-bias-variance-tradeoff"><a class="header" href="#the-bias-variance-tradeoff">The Bias-Variance Tradeoff</a></h1>
+<p>The lowest training error you can achieve is not the goal. A model that memorizes training noise
+will always beat a reasonable model on its own training data, and will fail on everything else.
+The question is not “how low can train error go?” but “how large is the gap between train and test
+error?” That gap is the variance, and learning to read it is the skill.</p>
+<h2 id="bias-and-variance-are-opposite-failure-modes"><a class="header" href="#bias-and-variance-are-opposite-failure-modes">Bias and Variance Are Opposite Failure Modes</a></h2>
+<p><strong>Bias</strong> is the systematic error that comes from a model too rigid to capture the true pattern.
+At the extreme, a degree-1 polynomial fit to a sinusoidal signal cannot bend; it is underfitting.
+Train error and test error are both high. The gap between them is small, because the model is
+underfitting everywhere, not just on training data.</p>
+<p><strong>Variance</strong> is the sensitivity to which training samples you happened to see. At the extreme, a
+degree-15 polynomial fit to 45 noisy points will chase every kink and outlier in those 45 points.
+Train error is very low. Test error is high. The gap is the signal: the model is fitting noise, and
+noise does not generalize.</p>
+<p>The decomposition is exact. For squared loss, expected prediction error at any point splits into:</p>
+<pre><code>Expected Error = Bias^2 + Variance + Irreducible Noise
+</code></pre>
+<p>The noise floor is fixed by the data generation process. No model beats it. Everything above it
+is either bias or variance, and pushing one down tends to push the other up.</p>
+<h2 id="the-experiment-train-a-line-then-a-degree-15-polynomial"><a class="header" href="#the-experiment-train-a-line-then-a-degree-15-polynomial">The Experiment: Train a Line, Then a Degree-15 Polynomial</a></h2>
+<p>The setup: 60 points drawn from <code>y = sin(x) + noise</code> (noise std 0.3), split 75/25 into 45
+training points and 15 test points. Fit <code>ml.linreg.LinearRegression</code> on polynomial features of
+rising degree. Measure train MSE and test MSE.</p>
+<p>The results:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Degree</th><th>Train MSE</th><th>Test MSE</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>0.272</td><td>0.611</td></tr>
+<tr><td>3</td><td>0.066</td><td>2.549</td></tr>
+<tr><td>5</td><td>0.062</td><td>3.207</td></tr>
+<tr><td>9</td><td>0.067</td><td>4.573</td></tr>
+<tr><td>15</td><td>0.057</td><td>4.795</td></tr>
+</tbody>
+</table>
+</div>
+<p>Train error falls from 0.272 at degree 1 to 0.057 at degree 15: a 79% reduction. Test error climbs
+from 0.611 at degree 1 to 4.795 at degree 15: a 685% increase, or 7.8x the degree-1 baseline. The
+gap at degree 15 is not an accident; it is a direct measurement of the model fitting training noise.</p>
+<p>At degree 1 (underfitting): the gap is 0.339. The model is too rigid; both errors are elevated.
+The high train error is the tell.</p>
+<p>At degree 15 (overfitting): the gap is 4.738. Train error is at its lowest. The model has memorized
+the 45 training points so thoroughly that it has nothing useful to say about the 15 held-out ones.
+The high test error is the tell.</p>
+<p>Somewhere between degree 1 and degree 15 is the sweet spot. You find it by reading test error on
+held-out data, not by watching train error fall.</p>
+<h2 id="the-gap-is-the-diagnostic"><a class="header" href="#the-gap-is-the-diagnostic">The Gap Is the Diagnostic</a></h2>
+<p>Azure Machine Learning’s AutoML evaluation guidance makes this operational: <code>log_loss</code> (cross-entropy)
+is defined as the “loss function used in (multinomial) logistic regression” and its objective is
+“closer to 0 the better” (<a href="https://learn.microsoft.com/en-us/azure/machine-learning/how-to-understand-automated-ml">learn.microsoft.com</a>).
+The same principle applies to regression: you evaluate on a held-out set, not the training set,
+because the training set cannot tell you anything about generalization.</p>
+<p>The diagnostic map is direct:</p>
+<ul>
+<li><strong>Both errors high, small gap:</strong> high bias. The model cannot represent the pattern. Adding more
+data does not help; adding model capacity does.</li>
+<li><strong>Low train error, high test error, large gap:</strong> high variance. The model memorizes training
+noise. More data helps (it dilutes the noise); less capacity also helps.</li>
+<li><strong>Both errors low, small gap:</strong> good fit. Stop here.</li>
+</ul>
+<h2 id="the-same-knob-you-saw-in-module-1"><a class="header" href="#the-same-knob-you-saw-in-module-1">The Same Knob You Saw in Module 1</a></h2>
+<p>k-NN’s <code>k</code> is a bias-variance lever. At <code>k=1</code>, the model traces every kink in the training data:
+low bias, high variance, the decision boundary fits every outlier. At <code>k=N</code> (all training
+points), the boundary is a flat majority vote: high bias, zero variance. The right <code>k</code> is the one
+where test error is lowest on a held-out validation set.</p>
+<p>Polynomial degree is the same knob. So is the regularization strength <code>lambda</code> in Ridge regression:
+higher <code>lambda</code> shrinks weights toward zero, trading variance for bias. The underlying tradeoff is
+the same across all three. What changes is the parameter name and the model family.</p>
+<p>This is the practical test that every model faces. Lower training error is always achievable:
+add capacity, add features, remove regularization. But the model that ships is the one that
+generalizes, and generalization is read from the gap, not from the training curve.</p>
+<h2 id="core-concepts-5"><a class="header" href="#core-concepts-5">Core Concepts</a></h2>
+<ul>
+<li>Bias and variance are opposite failure modes: high bias means train and test error are both high
+(the model is too rigid); high variance means train error is low but test error is high (the
+model fits noise).</li>
+<li>The gap between training error and test error is the direct measurement of variance: a 7.8x rise
+in test error from degree 1 to degree 15 is not a theoretical concern, it is a number in your
+output table.</li>
+<li>The sweet spot is found by reading held-out error across model complexity: you cannot see it
+from the training curve alone, because training error falls monotonically with capacity.</li>
+<li>The same tradeoff governs k-NN’s k, polynomial degree, and regularization strength; the
+parameter changes but the diagnostic does not.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module2/bias-variance/">
+<p><strong>Build It in Claude Code</strong>: Write the overfitting experiment in <code>exercises/module2/bias-variance/</code>.
+Use <code>ml.linreg.LinearRegression</code> to fit rising polynomial degrees (1, 3, 5, 9, 15) on a 1-D
+noisy sinusoid (60 points, 75/25 split). Assert that degree-15 train error is lower than degree-1
+train error and that degree-15 test error is higher than degree-1 test error. The gate at
+<code>exercises/module2/bias-variance/test_bias_variance.py</code> must pass green with
+<code>python -m pytest exercises/module2/bias-variance</code>. No new <code>ml/</code> package file is needed; this
+exercise uses <code>ml.linreg</code> directly.</p>
 </div>
 
 

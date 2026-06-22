@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Feature Vectors and the Space They Live In - Machine Math — Classic ML and the Math It Requires</title>
+        <title>The Bias-Variance Tradeoff - Machine Math — Classic ML and the Math It Requires</title>
 
 
         <!-- Custom HTML head -->
@@ -177,146 +177,100 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="feature-vectors-and-the-space-they-live-in"><a class="header" href="#feature-vectors-and-the-space-they-live-in">Feature Vectors and the Space They Live In</a></h1>
-<p>Every row in your dataset is a point in space. That reframing converts a table of numbers into a
-geometry problem, and it is the foundation every distance-based ML algorithm stands on.</p>
-<h2 id="the-row-is-a-point"><a class="header" href="#the-row-is-a-point">The Row Is a Point</a></h2>
-<p>Measure an iris flower: sepal length 5.1, sepal width 3.5, petal length 1.4, petal width 0.2. That
-observation is one point in four-dimensional space, written as a row vector:</p>
-<pre><code>x = [5.1, 3.5, 1.4, 0.2]
+                        <h1 id="the-bias-variance-tradeoff"><a class="header" href="#the-bias-variance-tradeoff">The Bias-Variance Tradeoff</a></h1>
+<p>The lowest training error you can achieve is not the goal. A model that memorizes training noise
+will always beat a reasonable model on its own training data, and will fail on everything else.
+The question is not “how low can train error go?” but “how large is the gap between train and test
+error?” That gap is the variance, and learning to read it is the skill.</p>
+<h2 id="bias-and-variance-are-opposite-failure-modes"><a class="header" href="#bias-and-variance-are-opposite-failure-modes">Bias and Variance Are Opposite Failure Modes</a></h2>
+<p><strong>Bias</strong> is the systematic error that comes from a model too rigid to capture the true pattern.
+At the extreme, a degree-1 polynomial fit to a sinusoidal signal cannot bend; it is underfitting.
+Train error and test error are both high. The gap between them is small, because the model is
+underfitting everywhere, not just on training data.</p>
+<p><strong>Variance</strong> is the sensitivity to which training samples you happened to see. At the extreme, a
+degree-15 polynomial fit to 45 noisy points will chase every kink and outlier in those 45 points.
+Train error is very low. Test error is high. The gap is the signal: the model is fitting noise, and
+noise does not generalize.</p>
+<p>The decomposition is exact. For squared loss, expected prediction error at any point splits into:</p>
+<pre><code>Expected Error = Bias^2 + Variance + Irreducible Noise
 </code></pre>
-<p>Stack 150 such rows into a matrix <code>X</code> of shape (150, 4). Each column is a feature axis; each row is
-one point in four-dimensional feature space. Every classic ML algorithm accepts a matrix in exactly
-this shape.</p>
-<p>The dimensionality is the number of features. Four-dimensional data is the same geometric object
-as two-dimensional data; you have lost the picture, not the geometry.</p>
-<p>A vector has two properties that matter in ML: magnitude and direction. The magnitude (L2 norm) is:</p>
-<pre><code>||x|| = sqrt(x1² + x2² + ... + xn²)
-</code></pre>
-<p>For the iris row: <code>sqrt(5.1² + 3.5² + 1.4² + 0.2²) = sqrt(40.26) ≈ 6.35</code>. Dividing by the
-magnitude gives a unit vector: same direction, magnitude 1. That normalization step is what makes
-cosine similarity meaningful.</p>
-<h2 id="the-dot-product-as-a-similarity-probe"><a class="header" href="#the-dot-product-as-a-similarity-probe">The Dot Product as a Similarity Probe</a></h2>
-<p>The dot product of two vectors <code>a</code> and <code>b</code> is:</p>
-<pre><code>a · b = a1*b1 + a2*b2 + ... + an*bn
-</code></pre>
-<p>Its geometric meaning: <code>a · b = ||a|| * ||b|| * cos(θ)</code>, where <code>θ</code> is the angle between them. Same
-direction: <code>cos(θ) = 1</code>. Orthogonal: <code>cos(θ) = 0</code>. Opposite: <code>cos(θ) = -1</code>.</p>
-<p>In NumPy, the dot product is one call:</p>
-<pre><code class="language-python">import numpy as np
-
-a = np.array([1.0, 2.0, 3.0])
-b = np.array([4.0, 5.0, 6.0])
-print(np.dot(a, b))   # 32.0  (1*4 + 2*5 + 3*6)
-</code></pre>
-<p>The dot product is the engine behind cosine similarity, attention scores in transformers, and linear
-regression scoring. Azure AI Search documents it as one of three vector similarity metrics, alongside
-cosine and Euclidean, and notes that for normalized vectors dot product is identical to cosine
-similarity but slightly more performant
-(learn.microsoft.com/azure/search/vector-search-ranking#similarity-metrics-used-to-measure-nearness).</p>
-<h2 id="three-distance-metrics-three-different-questions"><a class="header" href="#three-distance-metrics-three-different-questions">Three Distance Metrics, Three Different Questions</a></h2>
-<p>“How far apart are these two points?” has three common answers in ML. Each encodes a different
-assumption about what “far” means.</p>
-<h3 id="euclidean-distance-l2"><a class="header" href="#euclidean-distance-l2">Euclidean Distance (L2)</a></h3>
-<p>Straight-line distance, Pythagoras in n dimensions:</p>
-<pre><code>euclidean(a, b) = sqrt((a1-b1)² + (a2-b2)² + ... + (an-bn)²)
-</code></pre>
-<p>Use it when absolute magnitude matters: a point far away in raw coordinate space is genuinely
-dissimilar. It is the natural metric for tabular data where features are on comparable scales after
-normalization. Azure Cosmos DB’s distance function reference describes Euclidean as “the straight-line
-distance between two points” and recommends it for spatial data where magnitude matters
-(learn.microsoft.com/azure/cosmos-db/gen-ai/distance-functions).</p>
-<h3 id="cosine-distance"><a class="header" href="#cosine-distance">Cosine Distance</a></h3>
-<p>Cosine similarity measures the angle between two vectors, ignoring their lengths:</p>
-<pre><code>cos_sim(a, b)      = (a · b) / (||a|| * ||b||)
-cosine_distance(a, b) = 1 - cos_sim(a, b)
-</code></pre>
-<p>Result ranges from 0 (identical direction) to 2 (opposite direction). Use cosine distance when
-magnitude is noise. A short document and a long document about the same topic point in the same
-direction in term-frequency space; their Euclidean distance is large, their cosine distance is near
-zero. Azure AI Foundry’s embeddings documentation puts it precisely: “two documents might be far
-apart by Euclidean distance because of size, they could still have a smaller angle between them and
-therefore higher cosine similarity”
-(learn.microsoft.com/azure/ai-foundry/openai/concepts/understand-embeddings). Azure OpenAI embedding
-models use cosine as their default metric, and Azure AI Search recommends specifying <code>cosine</code> in the
-vector configuration when indexing Azure OpenAI embeddings
-(learn.microsoft.com/azure/search/vector-search-ranking#similarity-metrics-used-to-measure-nearness).</p>
-<h3 id="manhattan-distance-l1"><a class="header" href="#manhattan-distance-l1">Manhattan Distance (L1)</a></h3>
-<p>Sum the absolute differences along each axis:</p>
-<pre><code>manhattan(a, b) = |a1-b1| + |a2-b2| + ... + |an-bn|
-</code></pre>
-<p>The name is the grid-city analogy: you walk north-south and east-west, never diagonally. Azure Cosmos
-DB’s distance function reference describes it as “the distance between two points by adding up the
-absolute differences between their coordinates”
-(learn.microsoft.com/azure/cosmos-db/gen-ai/distance-functions). Because large per-axis differences
-are not squared, Manhattan distance is more robust to outliers than Euclidean; in high-dimensional
-sparse data it often outperforms L2.</p>
-<h3 id="the-three-metrics-on-one-example"><a class="header" href="#the-three-metrics-on-one-example">The Three Metrics on One Example</a></h3>
-<pre><code>A = [1, 2, 3]
-B = [4, 0, 6]
-
-euclidean       = sqrt((4-1)² + (0-2)² + (6-3)²) = sqrt(9 + 4 + 9) = sqrt(22) ≈ 4.69
-manhattan       = |4-1| + |0-2| + |6-3|           = 3 + 2 + 3       = 8
-cosine_distance = 1 - (a·b)/(||a||·||b||)
-                = 1 - (1*4 + 2*0 + 3*6) / (sqrt(14) * sqrt(52))
-                = 1 - 22 / (3.742 * 7.211)
-                ≈ 1 - 0.815                        ≈ 0.18
-</code></pre>
-<p>Manhattan (8) exceeds Euclidean (4.69) here because summing raw per-axis gaps can never
-undercut the straight-line distance: the diagonal path is always the shortest one. Cosine (0.18)
-reads these same two points as fairly similar in direction even though they sit nearly 5 units
-apart in space, because A and B point in roughly the same angular neighborhood. Each metric weighs
-the axes differently; the right choice depends on the geometry of your data, not convention.</p>
-<h2 id="why-scaling-changes-everything"><a class="header" href="#why-scaling-changes-everything">Why Scaling Changes Everything</a></h2>
-<p>Consider age (range 20–80) and annual income (range 20,000–200,000). Raw Euclidean distance treats
-one unit of age and one unit of income as equally important. One dollar of income is irrelevant; twenty
-years of age is enormous. The metric measures income and nearly ignores age.</p>
-<p>The fix is scaling before any distance computation. Two standard forms:</p>
-<p><strong>Min-max scaling</strong> rescales each feature to [0, 1]:</p>
-<pre><code>x_scaled = (x - x_min) / (x_max - x_min)
-</code></pre>
-<p><strong>Z-score standardization</strong> centers each feature to mean 0, standard deviation 1:</p>
-<pre><code>x_scaled = (x - mean) / std
-</code></pre>
-<p>Azure Machine Learning’s Normalize Data component documents both exactly: “ZScore: Converts all
-values to a z-score” and “MinMax: The min-max normalizer linearly rescales every feature to the
-[0,1] interval”
-(learn.microsoft.com/azure/machine-learning/component-reference/normalize-data). The two methods have
-different shapes: min-max bounds the output to a fixed range and preserves the distribution; z-score
-centers the data and is unbounded, which makes it more stable for algorithms sensitive to extreme
-values.</p>
-<p>The function signatures you will implement match these definitions exactly:</p>
-<pre><code class="language-python">minmax_scale(X)   # rescale each column to [0, 1]
-zscore(X)         # center each column to mean 0, std 1
-</code></pre>
-<p>After scaling, every feature axis contributes equally to the distance calculation. That is not a
-preprocessing nicety; it is the precondition for any distance-based algorithm to work correctly.
-k-NN is the most exposed: the entire prediction is a distance vote, and unscaled features hand that
-vote entirely to whichever column has the largest raw range.</p>
-<h2 id="what-the-geometry-buys-you"><a class="header" href="#what-the-geometry-buys-you">What the Geometry Buys You</a></h2>
-<p>The matrix <code>X</code> of shape (n_samples, n_features) encodes a neighborhood structure. Points close in
-feature space share similar feature combinations; points far apart do not. Setting up that geometry
-correctly, choosing the right metric and applying the right scale, is the work that happens before any
-model sees the data.</p>
-<p>The same math runs at production scale. Azure AI Search resolves a vector query by computing cosine
-similarity between an incoming embedding and every indexed document vector; Azure Cosmos DB stores
-that index alongside your data and returns the nearest neighbors by whichever distance function you
-configure. The retrieval system and the k-NN classifier are solving identical problems at different
-scales. Getting the metric wrong costs the same either way.</p>
+<p>The noise floor is fixed by the data generation process. No model beats it. Everything above it
+is either bias or variance, and pushing one down tends to push the other up.</p>
+<h2 id="the-experiment-train-a-line-then-a-degree-15-polynomial"><a class="header" href="#the-experiment-train-a-line-then-a-degree-15-polynomial">The Experiment: Train a Line, Then a Degree-15 Polynomial</a></h2>
+<p>The setup: 60 points drawn from <code>y = sin(x) + noise</code> (noise std 0.3), split 75/25 into 45
+training points and 15 test points. Fit <code>ml.linreg.LinearRegression</code> on polynomial features of
+rising degree. Measure train MSE and test MSE.</p>
+<p>The results:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Degree</th><th>Train MSE</th><th>Test MSE</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>0.272</td><td>0.611</td></tr>
+<tr><td>3</td><td>0.066</td><td>2.549</td></tr>
+<tr><td>5</td><td>0.062</td><td>3.207</td></tr>
+<tr><td>9</td><td>0.067</td><td>4.573</td></tr>
+<tr><td>15</td><td>0.057</td><td>4.795</td></tr>
+</tbody>
+</table>
+</div>
+<p>Train error falls from 0.272 at degree 1 to 0.057 at degree 15: a 79% reduction. Test error climbs
+from 0.611 at degree 1 to 4.795 at degree 15: a 685% increase, or 7.8x the degree-1 baseline. The
+gap at degree 15 is not an accident; it is a direct measurement of the model fitting training noise.</p>
+<p>At degree 1 (underfitting): the gap is 0.339. The model is too rigid; both errors are elevated.
+The high train error is the tell.</p>
+<p>At degree 15 (overfitting): the gap is 4.738. Train error is at its lowest. The model has memorized
+the 45 training points so thoroughly that it has nothing useful to say about the 15 held-out ones.
+The high test error is the tell.</p>
+<p>Somewhere between degree 1 and degree 15 is the sweet spot. You find it by reading test error on
+held-out data, not by watching train error fall.</p>
+<h2 id="the-gap-is-the-diagnostic"><a class="header" href="#the-gap-is-the-diagnostic">The Gap Is the Diagnostic</a></h2>
+<p>Azure Machine Learning’s AutoML evaluation guidance makes this operational: <code>log_loss</code> (cross-entropy)
+is defined as the “loss function used in (multinomial) logistic regression” and its objective is
+“closer to 0 the better” (<a href="https://learn.microsoft.com/en-us/azure/machine-learning/how-to-understand-automated-ml">learn.microsoft.com</a>).
+The same principle applies to regression: you evaluate on a held-out set, not the training set,
+because the training set cannot tell you anything about generalization.</p>
+<p>The diagnostic map is direct:</p>
+<ul>
+<li><strong>Both errors high, small gap:</strong> high bias. The model cannot represent the pattern. Adding more
+data does not help; adding model capacity does.</li>
+<li><strong>Low train error, high test error, large gap:</strong> high variance. The model memorizes training
+noise. More data helps (it dilutes the noise); less capacity also helps.</li>
+<li><strong>Both errors low, small gap:</strong> good fit. Stop here.</li>
+</ul>
+<h2 id="the-same-knob-you-saw-in-module-1"><a class="header" href="#the-same-knob-you-saw-in-module-1">The Same Knob You Saw in Module 1</a></h2>
+<p>k-NN’s <code>k</code> is a bias-variance lever. At <code>k=1</code>, the model traces every kink in the training data:
+low bias, high variance, the decision boundary fits every outlier. At <code>k=N</code> (all training
+points), the boundary is a flat majority vote: high bias, zero variance. The right <code>k</code> is the one
+where test error is lowest on a held-out validation set.</p>
+<p>Polynomial degree is the same knob. So is the regularization strength <code>lambda</code> in Ridge regression:
+higher <code>lambda</code> shrinks weights toward zero, trading variance for bias. The underlying tradeoff is
+the same across all three. What changes is the parameter name and the model family.</p>
+<p>This is the practical test that every model faces. Lower training error is always achievable:
+add capacity, add features, remove regularization. But the model that ships is the one that
+generalizes, and generalization is read from the gap, not from the training curve.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>A dataset row is a vector; the full dataset is a matrix of shape (n_samples, n_features); every
-classic ML algorithm reads this shape and reasons about its geometry.</li>
-<li>The dot product <code>a · b = ||a|| * ||b|| * cos(θ)</code> measures directional alignment; cosine
-similarity normalizes it by magnitude so that vector length does not affect the score.</li>
-<li>Euclidean distance measures straight-line separation (use when magnitude matters); cosine distance
-measures angle (use when magnitude is noise); Manhattan distance sums absolute per-axis differences
-(use for robustness or sparse high-dimensional data).</li>
-<li>Feature scaling (min-max or z-score) is required before any distance-based algorithm: without it,
-the highest-range column casts all the votes.</li>
+<li>Bias and variance are opposite failure modes: high bias means train and test error are both high
+(the model is too rigid); high variance means train error is low but test error is high (the
+model fits noise).</li>
+<li>The gap between training error and test error is the direct measurement of variance: a 7.8x rise
+in test error from degree 1 to degree 15 is not a theoretical concern, it is a number in your
+output table.</li>
+<li>The sweet spot is found by reading held-out error across model complexity: you cannot see it
+from the training curve alone, because training error falls monotonically with capacity.</li>
+<li>The same tradeoff governs k-NN’s k, polynomial degree, and regularization strength; the
+parameter changes but the diagnostic does not.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module1/feature-vectors/">
-<p><strong>Build It in Claude Code</strong>: Load the Iris dataset with scikit-learn, then build five functions from scratch in NumPy inside <code>ml/distances.py</code>: <code>euclidean(a, b)</code> (straight-line L2 distance, returns float), <code>manhattan(a, b)</code> (sum of absolute per-axis differences), <code>cosine_distance(a, b)</code> (1 minus cosine similarity; raises <code>ValueError</code> on a zero vector), <code>minmax_scale(X)</code> (rescale each column to [0, 1]), and <code>zscore(X)</code> (center each column to mean 0, std 1). Compute pairwise Euclidean and cosine distance between the first five rows and print both matrices. Write one sentence per metric explaining why they disagree on at least one pair.</p>
+<div class="claude-handoff" data-exercise="exercises/module2/bias-variance/">
+<p><strong>Build It in Claude Code</strong>: Write the overfitting experiment in <code>exercises/module2/bias-variance/</code>.
+Use <code>ml.linreg.LinearRegression</code> to fit rising polynomial degrees (1, 3, 5, 9, 15) on a 1-D
+noisy sinusoid (60 points, 75/25 split). Assert that degree-15 train error is lower than degree-1
+train error and that degree-15 test error is higher than degree-1 test error. The gate at
+<code>exercises/module2/bias-variance/test_bias_variance.py</code> must pass green with
+<code>python -m pytest exercises/module2/bias-variance</code>. No new <code>ml/</code> package file is needed; this
+exercise uses <code>ml.linreg</code> directly.</p>
 </div>
 
 
@@ -324,13 +278,10 @@ the highest-range column casts all the votes.</li>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module1/00-overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module2/logistic-regression.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module1/knn-voting.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -338,13 +289,10 @@ the highest-range column casts all the votes.</li>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module1/00-overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module2/logistic-regression.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module1/knn-voting.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                    </a>
             </nav>
 
         </div>

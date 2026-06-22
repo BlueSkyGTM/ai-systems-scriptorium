@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Feature Vectors and the Space They Live In - Machine Math — Classic ML and the Math It Requires</title>
+        <title>Logistic Regression - Machine Math — Classic ML and the Math It Requires</title>
 
 
         <!-- Custom HTML head -->
@@ -177,146 +177,180 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="feature-vectors-and-the-space-they-live-in"><a class="header" href="#feature-vectors-and-the-space-they-live-in">Feature Vectors and the Space They Live In</a></h1>
-<p>Every row in your dataset is a point in space. That reframing converts a table of numbers into a
-geometry problem, and it is the foundation every distance-based ML algorithm stands on.</p>
-<h2 id="the-row-is-a-point"><a class="header" href="#the-row-is-a-point">The Row Is a Point</a></h2>
-<p>Measure an iris flower: sepal length 5.1, sepal width 3.5, petal length 1.4, petal width 0.2. That
-observation is one point in four-dimensional space, written as a row vector:</p>
-<pre><code>x = [5.1, 3.5, 1.4, 0.2]
+                        <h1 id="logistic-regression"><a class="header" href="#logistic-regression">Logistic Regression</a></h1>
+<p>Linear regression predicts a number. When your label is a binary category, that number becomes a
+probability, and a bare linear score has no business being one: it is unbounded, and cross-entropy
+loss needs something in [0, 1]. The sigmoid function is the fix, and everything else follows from it.</p>
+<h2 id="the-sigmoid-squashes-a-score-to-a-probability"><a class="header" href="#the-sigmoid-squashes-a-score-to-a-probability">The Sigmoid Squashes a Score to a Probability</a></h2>
+<p>The linear score <code>z = w^T x + b</code> can be any real number. Apply sigmoid and it lands in (0, 1):</p>
+<pre><code>sigmoid(z) = 1 / (1 + exp(-z))
 </code></pre>
-<p>Stack 150 such rows into a matrix <code>X</code> of shape (150, 4). Each column is a feature axis; each row is
-one point in four-dimensional feature space. Every classic ML algorithm accepts a matrix in exactly
-this shape.</p>
-<p>The dimensionality is the number of features. Four-dimensional data is the same geometric object
-as two-dimensional data; you have lost the picture, not the geometry.</p>
-<p>A vector has two properties that matter in ML: magnitude and direction. The magnitude (L2 norm) is:</p>
-<pre><code>||x|| = sqrt(x1² + x2² + ... + xn²)
+<p>When <code>z</code> is large and positive, sigmoid approaches 1. When <code>z</code> is large and negative, it approaches
+0. When <code>z = 0</code>, sigmoid returns exactly 0.5, and that is the decision boundary: wherever the linear
+score crosses zero, the model is maximally uncertain.</p>
+<p>Azure Machine Learning’s Two-Class Logistic Regression component describes the same mechanism: the
+algorithm “predicts the probability of occurrence of an event by fitting data to a logistic
+function” (<a href="https://learn.microsoft.com/en-us/azure/machine-learning/component-reference/two-class-logistic-regression">learn.microsoft.com</a>).</p>
+<h2 id="cross-entropy-is-the-right-loss-for-probabilities"><a class="header" href="#cross-entropy-is-the-right-loss-for-probabilities">Cross-Entropy Is the Right Loss for Probabilities</a></h2>
+<p>Mean squared error on a sigmoid output creates a non-convex loss surface with many local minima.
+Binary cross-entropy solves this. It is convex, which means gradient descent finds the global
+minimum. The formula:</p>
+<pre><code>Loss = -(1/n) * sum( y * log(p) + (1-y) * log(1-p) )
 </code></pre>
-<p>For the iris row: <code>sqrt(5.1² + 3.5² + 1.4² + 0.2²) = sqrt(40.26) ≈ 6.35</code>. Dividing by the
-magnitude gives a unit vector: same direction, magnitude 1. That normalization step is what makes
-cosine similarity meaningful.</p>
-<h2 id="the-dot-product-as-a-similarity-probe"><a class="header" href="#the-dot-product-as-a-similarity-probe">The Dot Product as a Similarity Probe</a></h2>
-<p>The dot product of two vectors <code>a</code> and <code>b</code> is:</p>
-<pre><code>a · b = a1*b1 + a2*b2 + ... + an*bn
+<p>where <code>p = sigmoid(z)</code> and <code>y</code> is the true binary label. Read it from both directions. When <code>y=1</code>
+and <code>p</code> is close to 1, <code>log(1) ~ 0</code>, the loss is nearly zero: correct prediction, no penalty. When
+<code>y=1</code> and <code>p</code> is close to 0, <code>log(0)</code> diverges to negative infinity: wrong prediction, enormous
+penalty. The loss is symmetric for <code>y=0</code>.</p>
+<p>A useful sanity check: at initialization with <code>w = 0</code>, every prediction is <code>sigmoid(0) = 0.5</code>.
+Cross-entropy of a perfectly uncertain binary classifier is <code>log(2) ≈ 0.693</code>. That is where your
+<code>loss_history_[0]</code> starts. After 1000 steps on z-scored breast-cancer, it reaches 0.056.</p>
+<h2 id="the-gradient-has-the-same-shape-as-linear-regression"><a class="header" href="#the-gradient-has-the-same-shape-as-linear-regression">The Gradient Has the Same Shape as Linear Regression</a></h2>
+<p>The gradient of cross-entropy with respect to the weight vector is:</p>
+<pre><code>dL/dw = (1/n) * X^T (sigmoid(Xw) - y)
+dL/db = (1/n) * sum( sigmoid(Xw) - y )
 </code></pre>
-<p>Its geometric meaning: <code>a · b = ||a|| * ||b|| * cos(θ)</code>, where <code>θ</code> is the angle between them. Same
-direction: <code>cos(θ) = 1</code>. Orthogonal: <code>cos(θ) = 0</code>. Opposite: <code>cos(θ) = -1</code>.</p>
-<p>In NumPy, the dot product is one call:</p>
-<pre><code class="language-python">import numpy as np
+<p>Compare this to the MSE gradient for linear regression:</p>
+<pre><code>dMSE/dw = (1/n) * X^T (Xw - y)
+</code></pre>
+<p>The structure is identical. The only difference is that <code>Xw</code> is replaced by <code>sigmoid(Xw)</code>. The same
+<code>gradient_descent</code> function that fit your linear model fits this one. The sigmoid introduces the
+nonlinearity; the optimizer sees the same interface.</p>
+<h2 id="the-implementation"><a class="header" href="#the-implementation">The Implementation</a></h2>
+<p><code>ml/logreg.py</code> imports <code>gradient_descent</code> from the previous lesson. The only new pieces are
+<code>_sigmoid</code> and the two closures <code>grad_fn</code> and <code>loss_fn</code>. Everything else, including the fit
+interface and the weight update loop, comes from the shared optimizer.</p>
+<pre><code class="language-python">"""Logistic regression, from scratch in NumPy.
 
-a = np.array([1.0, 2.0, 3.0])
-b = np.array([4.0, 5.0, 6.0])
-print(np.dot(a, b))   # 32.0  (1*4 + 2*5 + 3*6)
-</code></pre>
-<p>The dot product is the engine behind cosine similarity, attention scores in transformers, and linear
-regression scoring. Azure AI Search documents it as one of three vector similarity metrics, alongside
-cosine and Euclidean, and notes that for normalized vectors dot product is identical to cosine
-similarity but slightly more performant
-(learn.microsoft.com/azure/search/vector-search-ranking#similarity-metrics-used-to-measure-nearness).</p>
-<h2 id="three-distance-metrics-three-different-questions"><a class="header" href="#three-distance-metrics-three-different-questions">Three Distance Metrics, Three Different Questions</a></h2>
-<p>“How far apart are these two points?” has three common answers in ML. Each encodes a different
-assumption about what “far” means.</p>
-<h3 id="euclidean-distance-l2"><a class="header" href="#euclidean-distance-l2">Euclidean Distance (L2)</a></h3>
-<p>Straight-line distance, Pythagoras in n dimensions:</p>
-<pre><code>euclidean(a, b) = sqrt((a1-b1)² + (a2-b2)² + ... + (an-bn)²)
-</code></pre>
-<p>Use it when absolute magnitude matters: a point far away in raw coordinate space is genuinely
-dissimilar. It is the natural metric for tabular data where features are on comparable scales after
-normalization. Azure Cosmos DB’s distance function reference describes Euclidean as “the straight-line
-distance between two points” and recommends it for spatial data where magnitude matters
-(learn.microsoft.com/azure/cosmos-db/gen-ai/distance-functions).</p>
-<h3 id="cosine-distance"><a class="header" href="#cosine-distance">Cosine Distance</a></h3>
-<p>Cosine similarity measures the angle between two vectors, ignoring their lengths:</p>
-<pre><code>cos_sim(a, b)      = (a · b) / (||a|| * ||b||)
-cosine_distance(a, b) = 1 - cos_sim(a, b)
-</code></pre>
-<p>Result ranges from 0 (identical direction) to 2 (opposite direction). Use cosine distance when
-magnitude is noise. A short document and a long document about the same topic point in the same
-direction in term-frequency space; their Euclidean distance is large, their cosine distance is near
-zero. Azure AI Foundry’s embeddings documentation puts it precisely: “two documents might be far
-apart by Euclidean distance because of size, they could still have a smaller angle between them and
-therefore higher cosine similarity”
-(learn.microsoft.com/azure/ai-foundry/openai/concepts/understand-embeddings). Azure OpenAI embedding
-models use cosine as their default metric, and Azure AI Search recommends specifying <code>cosine</code> in the
-vector configuration when indexing Azure OpenAI embeddings
-(learn.microsoft.com/azure/search/vector-search-ranking#similarity-metrics-used-to-measure-nearness).</p>
-<h3 id="manhattan-distance-l1"><a class="header" href="#manhattan-distance-l1">Manhattan Distance (L1)</a></h3>
-<p>Sum the absolute differences along each axis:</p>
-<pre><code>manhattan(a, b) = |a1-b1| + |a2-b2| + ... + |an-bn|
-</code></pre>
-<p>The name is the grid-city analogy: you walk north-south and east-west, never diagonally. Azure Cosmos
-DB’s distance function reference describes it as “the distance between two points by adding up the
-absolute differences between their coordinates”
-(learn.microsoft.com/azure/cosmos-db/gen-ai/distance-functions). Because large per-axis differences
-are not squared, Manhattan distance is more robust to outliers than Euclidean; in high-dimensional
-sparse data it often outperforms L2.</p>
-<h3 id="the-three-metrics-on-one-example"><a class="header" href="#the-three-metrics-on-one-example">The Three Metrics on One Example</a></h3>
-<pre><code>A = [1, 2, 3]
-B = [4, 0, 6]
+One idea: the sigmoid squashes a linear score to a probability; cross-entropy is the right
+loss for probabilities; the gradient has the same elegant shape as linear regression's.
+Binary only; reuses gradient_descent from M2 and zscore from M1.
 
-euclidean       = sqrt((4-1)² + (0-2)² + (6-3)²) = sqrt(9 + 4 + 9) = sqrt(22) ≈ 4.69
-manhattan       = |4-1| + |0-2| + |6-3|           = 3 + 2 + 3       = 8
-cosine_distance = 1 - (a·b)/(||a||·||b||)
-                = 1 - (1*4 + 2*0 + 3*6) / (sqrt(14) * sqrt(52))
-                = 1 - 22 / (3.742 * 7.211)
-                ≈ 1 - 0.815                        ≈ 0.18
+Reuses:
+- ml.gradient_descent.gradient_descent  (the shared optimizer)
+- ml.distances.zscore                    (feature scaling before GD)
+"""
+import numpy as np
+from ml.gradient_descent import gradient_descent
+
+
+def _sigmoid(z):
+    """Numerically stable sigmoid: clips z to avoid exp overflow."""
+    z = np.clip(z, -500, 500)
+    return 1.0 / (1.0 + np.exp(-z))
+
+
+class LogisticRegression:
+    """Gradient-descent logistic regression (binary, with intercept).
+
+    Scales features with z-score before descent; predict / predict_proba work in
+    the original feature space (scaling is applied internally).
+
+    Parameters
+    ----------
+    lr : float
+        Learning rate for gradient descent.
+    n_iters : int
+        Number of gradient steps.
+    threshold : float
+        Decision threshold for predict(). Default 0.5.
+    """
+
+    def __init__(self, lr=0.1, n_iters=1000, threshold=0.5):
+        self.lr = lr
+        self.n_iters = n_iters
+        self.threshold = threshold
+        self.w_ = None
+        self.loss_history_ = None
+        self._mu = None
+        self._sd = None
+
+    def fit(self, X, y):
+        """Fit using gradient descent on binary cross-entropy loss."""
+        X = np.asarray(X, dtype=float)
+        y = np.asarray(y, dtype=float)
+        n, p = X.shape
+
+        # Scale features; store moments for inference
+        self._mu = X.mean(axis=0)
+        self._sd = X.std(axis=0)
+        self._sd = np.where(self._sd == 0.0, 1.0, self._sd)
+        Xs = (X - self._mu) / self._sd
+
+        ones = np.ones((n, 1))
+        Xb = np.hstack([Xs, ones])
+
+        # Cross-entropy gradient: dL/dw = (1/n) * X^T (sigmoid(Xw) - y)
+        def grad_fn(w):
+            probs = _sigmoid(Xb @ w)
+            return (1.0 / n) * Xb.T @ (probs - y)
+
+        def loss_fn(w):
+            probs = _sigmoid(Xb @ w)
+            # Clip to avoid log(0)
+            probs = np.clip(probs, 1e-12, 1.0 - 1e-12)
+            return float(-np.mean(y * np.log(probs) + (1 - y) * np.log(1 - probs)))
+
+        w0 = np.zeros(p + 1)
+        self.w_, self.loss_history_ = gradient_descent(
+            grad_fn, w0, lr=self.lr, n_iters=self.n_iters, loss_fn=loss_fn
+        )
+        return self
+
+    def _scaled_Xb(self, X):
+        X = np.asarray(X, dtype=float)
+        Xs = (X - self._mu) / self._sd
+        ones = np.ones((X.shape[0], 1))
+        return np.hstack([Xs, ones])
+
+    def predict_proba(self, X):
+        """Return probability of class 1 for each sample."""
+        return _sigmoid(self._scaled_Xb(X) @ self.w_)
+
+    def predict(self, X):
+        """Return binary class labels using self.threshold."""
+        return (self.predict_proba(X) &gt;= self.threshold).astype(int)
 </code></pre>
-<p>Manhattan (8) exceeds Euclidean (4.69) here because summing raw per-axis gaps can never
-undercut the straight-line distance: the diagonal path is always the shortest one. Cosine (0.18)
-reads these same two points as fairly similar in direction even though they sit nearly 5 units
-apart in space, because A and B point in roughly the same angular neighborhood. Each metric weighs
-the axes differently; the right choice depends on the geometry of your data, not convention.</p>
-<h2 id="why-scaling-changes-everything"><a class="header" href="#why-scaling-changes-everything">Why Scaling Changes Everything</a></h2>
-<p>Consider age (range 20–80) and annual income (range 20,000–200,000). Raw Euclidean distance treats
-one unit of age and one unit of income as equally important. One dollar of income is irrelevant; twenty
-years of age is enormous. The metric measures income and nearly ignores age.</p>
-<p>The fix is scaling before any distance computation. Two standard forms:</p>
-<p><strong>Min-max scaling</strong> rescales each feature to [0, 1]:</p>
-<pre><code>x_scaled = (x - x_min) / (x_max - x_min)
-</code></pre>
-<p><strong>Z-score standardization</strong> centers each feature to mean 0, standard deviation 1:</p>
-<pre><code>x_scaled = (x - mean) / std
-</code></pre>
-<p>Azure Machine Learning’s Normalize Data component documents both exactly: “ZScore: Converts all
-values to a z-score” and “MinMax: The min-max normalizer linearly rescales every feature to the
-[0,1] interval”
-(learn.microsoft.com/azure/machine-learning/component-reference/normalize-data). The two methods have
-different shapes: min-max bounds the output to a fixed range and preserves the distribution; z-score
-centers the data and is unbounded, which makes it more stable for algorithms sensitive to extreme
-values.</p>
-<p>The function signatures you will implement match these definitions exactly:</p>
-<pre><code class="language-python">minmax_scale(X)   # rescale each column to [0, 1]
-zscore(X)         # center each column to mean 0, std 1
-</code></pre>
-<p>After scaling, every feature axis contributes equally to the distance calculation. That is not a
-preprocessing nicety; it is the precondition for any distance-based algorithm to work correctly.
-k-NN is the most exposed: the entire prediction is a distance vote, and unscaled features hand that
-vote entirely to whichever column has the largest raw range.</p>
-<h2 id="what-the-geometry-buys-you"><a class="header" href="#what-the-geometry-buys-you">What the Geometry Buys You</a></h2>
-<p>The matrix <code>X</code> of shape (n_samples, n_features) encodes a neighborhood structure. Points close in
-feature space share similar feature combinations; points far apart do not. Setting up that geometry
-correctly, choosing the right metric and applying the right scale, is the work that happens before any
-model sees the data.</p>
-<p>The same math runs at production scale. Azure AI Search resolves a vector query by computing cosine
-similarity between an incoming embedding and every indexed document vector; Azure Cosmos DB stores
-that index alongside your data and returns the nearest neighbors by whichever distance function you
-configure. The retrieval system and the k-NN classifier are solving identical problems at different
-scales. Getting the metric wrong costs the same either way.</p>
+<p>The <code>_sigmoid</code> clip at ±500 is a numerical guard: <code>exp(-500)</code> underflows to zero in float64, and
+<code>exp(500)</code> overflows to infinity. The clip is invisible at any score a gradient-descent model
+actually produces; it prevents silent NaN propagation on pathological inputs.</p>
+<h2 id="what-the-numbers-say"><a class="header" href="#what-the-numbers-say">What the Numbers Say</a></h2>
+<p>On z-scored breast-cancer (569 samples, 80/20 stratified split, <code>random_state=0</code>):</p>
+<ul>
+<li>Test accuracy: <strong>96.49%</strong></li>
+<li>Agreement with scikit-learn’s <code>LogisticRegression</code> on the same split: <strong>99.12%</strong> of labels match</li>
+<li>Cross-entropy loss: 0.693 at init (exactly <code>log 2</code>), 0.056 after 1000 steps</li>
+</ul>
+<p>The 0.51% of labels that differ from scikit-learn is expected: scikit-learn uses L-BFGS with
+L2 regularization by default, while this implementation runs plain gradient descent. The models
+converge to nearby but not identical minima. The 96.49% floor is the meaningful signal.</p>
+<h2 id="the-05-threshold-and-predict_proba"><a class="header" href="#the-05-threshold-and-predict_proba">The 0.5 Threshold and <code>predict_proba</code></a></h2>
+<p>The default threshold of 0.5 maps <code>predict_proba &gt;= 0.5</code> to class 1. Because <code>sigmoid(z) = 0.5</code>
+exactly when <code>z = 0</code>, the decision boundary is the hyperplane where the linear score is zero. That
+is a linear boundary in feature space: logistic regression is a linear classifier.</p>
+<p>The threshold is a tunable seam. Lower it (say, to 0.3) and recall rises while precision falls:
+you catch more true positives at the cost of more false positives. That tradeoff belongs to the
+business problem, not to the optimizer. <code>predict_proba</code> gives you the raw probability so you can
+draw that boundary wherever the application demands.</p>
+<p>The reuse here runs deeper than sharing an optimizer. Every piece of tooling you have from M1 and
+the start of M2, distance metrics, z-score scaling, gradient descent, snaps into a production-grade
+binary classifier with one new function: <code>_sigmoid</code>.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>A dataset row is a vector; the full dataset is a matrix of shape (n_samples, n_features); every
-classic ML algorithm reads this shape and reasons about its geometry.</li>
-<li>The dot product <code>a · b = ||a|| * ||b|| * cos(θ)</code> measures directional alignment; cosine
-similarity normalizes it by magnitude so that vector length does not affect the score.</li>
-<li>Euclidean distance measures straight-line separation (use when magnitude matters); cosine distance
-measures angle (use when magnitude is noise); Manhattan distance sums absolute per-axis differences
-(use for robustness or sparse high-dimensional data).</li>
-<li>Feature scaling (min-max or z-score) is required before any distance-based algorithm: without it,
-the highest-range column casts all the votes.</li>
+<li>The sigmoid function maps any real-valued linear score to (0, 1), making it a valid probability;
+the decision boundary is the hyperplane where the linear score equals zero.</li>
+<li>Binary cross-entropy is the correct loss for probability outputs; it is convex, guarantees a
+single global minimum, and starts at <code>log(2) ≈ 0.693</code> for an uninformed model.</li>
+<li>The cross-entropy gradient has the same shape as the MSE gradient; the same <code>gradient_descent</code>
+optimizer fits both, with only the loss and the sigmoid differing.</li>
+<li><code>predict_proba</code> returns the raw sigmoid output; the 0.5 threshold is a tunable seam, not a
+fixed law, and the right threshold depends on the cost of false positives versus false negatives.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module1/feature-vectors/">
-<p><strong>Build It in Claude Code</strong>: Load the Iris dataset with scikit-learn, then build five functions from scratch in NumPy inside <code>ml/distances.py</code>: <code>euclidean(a, b)</code> (straight-line L2 distance, returns float), <code>manhattan(a, b)</code> (sum of absolute per-axis differences), <code>cosine_distance(a, b)</code> (1 minus cosine similarity; raises <code>ValueError</code> on a zero vector), <code>minmax_scale(X)</code> (rescale each column to [0, 1]), and <code>zscore(X)</code> (center each column to mean 0, std 1). Compute pairwise Euclidean and cosine distance between the first five rows and print both matrices. Write one sentence per metric explaining why they disagree on at least one pair.</p>
+<div class="claude-handoff" data-exercise="exercises/module2/logistic-regression/">
+<p><strong>Build It in Claude Code</strong>: Add <code>exercises/ml/logreg.py</code> to the throughline package, reusing
+<code>ml.gradient_descent</code> and <code>ml.distances.zscore</code>. Fit a <code>LogisticRegression</code> on 80% of z-scored
+breast-cancer (stratified, <code>random_state=0</code>) and confirm test accuracy clears 0.95, agreement with
+scikit-learn clears 0.95, <code>predict_proba</code> stays in [0, 1], and cross-entropy decreases over
+training. Gate: <code>python -m pytest exercises/module2/logistic-regression</code> green.</p>
 </div>
 
 
@@ -324,11 +358,11 @@ the highest-range column casts all the votes.</li>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module1/00-overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module2/linear-regression.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module1/knn-voting.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module2/bias-variance.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -338,11 +372,11 @@ the highest-range column casts all the votes.</li>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module1/00-overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module2/linear-regression.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module1/knn-voting.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module2/bias-variance.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
