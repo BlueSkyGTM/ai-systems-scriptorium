@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>k-Nearest Neighbors: Voting in Feature Space - Machine Math — Classic ML and the Math It Requires</title>
+        <title>Decision Trees: Recursive Partitioning - Machine Math — Classic ML and the Math It Requires</title>
 
 
         <!-- Custom HTML head -->
@@ -177,126 +177,217 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="k-nearest-neighbors-voting-in-feature-space"><a class="header" href="#k-nearest-neighbors-voting-in-feature-space">k-Nearest Neighbors: Voting in Feature Space</a></h1>
-<p>Distance is a decision. Before any vote is cast, you choose a metric, and that choice encodes a hypothesis about what “similar” means in your data. Get the metric wrong and the votes are meaningless, no matter how many neighbors you consult.</p>
-<h2 id="the-algorithm-exactly"><a class="header" href="#the-algorithm-exactly">The Algorithm, Exactly</a></h2>
-<p>k-NN does three things at prediction time: measure, rank, vote. There is no model to fit, no loss to minimize, no parameters to learn. “Training” is storing the labeled dataset.</p>
-<p>Given a query point <code>x</code>:</p>
-<ol>
-<li>Compute the distance from <code>x</code> to every point in the training set.</li>
-<li>Sort those distances ascending.</li>
-<li>Take the <code>k</code> closest points.</li>
-<li>Return the majority label among those <code>k</code> neighbors (classification) or their mean target value (regression).</li>
-</ol>
-<p>The algorithm is called a <strong>lazy learner</strong> because it defers all computation to prediction time. Training is O(1); each prediction costs O(n * d) distance computations, where <code>n</code> is the number of training points and <code>d</code> is the number of features. That cost is fine at small scale and brutal at large scale, which is exactly why approximate nearest-neighbor methods exist.</p>
-<p>Azure Machine Learning’s AutoML SDK formalizes this: <code>ClassificationModels.KNN</code> and <code>RegressionModels.KNN</code> are both defined as an algorithm that “uses feature similarity to predict the values of new datapoints, meaning the new data point will be assigned a value based on how closely it matches the points in the training set” (<a href="https://learn.microsoft.com/dotnet/api/microsoft.azure.powershell.cmdlets.machinelearningservices.support.classificationmodels.knn?view=az-ps-latest">learn.microsoft.com</a>).</p>
-<h2 id="the-implementation"><a class="header" href="#the-implementation">The Implementation</a></h2>
-<p>The <code>ml/knn.py</code> below imports the distance functions you built in the previous lesson. Every line maps to one of the three steps: measure, rank, vote. Reading it is the point.</p>
-<pre><code class="language-python">"""k-nearest neighbors, from scratch in NumPy.
+                        <h1 id="decision-trees-recursive-partitioning"><a class="header" href="#decision-trees-recursive-partitioning">Decision Trees: Recursive Partitioning</a></h1>
+<p>The impurity functions from the previous lesson answer one question at a time: how much
+does this split help? A decision tree is just that question asked greedily, over and
+over, until there is nothing left to split.</p>
+<h2 id="the-algorithm"><a class="header" href="#the-algorithm">The Algorithm</a></h2>
+<p>At every node the tree does the same thing: try every (feature, threshold) pair, compute
+the information gain for each, pick the best one, split the data along it, and recurse.
+Stop when the node is pure, too small to split, or at the depth limit.</p>
+<p>Prediction reverses the process. You walk the tree from root to leaf. At each internal
+node you check the stored feature against the stored threshold and go left or right. At
+the leaf you return the majority class among the training samples that ended up there.</p>
+<p>This is a greedy algorithm. It picks the locally best split at each node without any
+knowledge of what splits further down would look like. Finding the globally optimal tree
+is NP-hard; greedy is the practical path, and it works well enough that the Azure Machine
+Learning designer wraps exactly this strategy in its classification components. The
+Two-Class Decision Forest and Multiclass Decision Forest both document that “decision
+trees perform integrated feature selection and classification” through this greedy
+split search, and that trees can “represent non-linear decision boundaries” precisely
+because each split can operate on any feature, not just a linear combination
+(<a href="https://learn.microsoft.com/azure/machine-learning/component-reference/two-class-decision-forest?view=azureml-api-2">Two-Class Decision Forest component</a>,
+<a href="https://learn.microsoft.com/azure/machine-learning/component-reference/multiclass-decision-forest?view=azureml-api-2">Multiclass Decision Forest component</a>).</p>
+<h2 id="the-code"><a class="header" href="#the-code">The Code</a></h2>
+<p>The locked <code>_Node</code> dataclass and <code>DecisionTreeClassifier</code> below are the exact code the
+acceptance gate imports. The impurity functions (<code>entropy</code>, <code>gini</code>, <code>information_gain</code>)
+come from the same <code>ml/tree.py</code> file you built in the previous lesson: they are called,
+not copied.</p>
+<pre><code class="language-python"># ---------------------------------------------------------------------------
+# Node structure
+# ---------------------------------------------------------------------------
 
-A lazy learner: "training" is storing the data; all the work is at prediction time. Every line maps
-to one of three steps -- measure distance to every training point, rank, vote. The metric is pluggable
-because choosing it is a modeling decision, not a default.
-"""
-import numpy as np
-from collections import Counter
+@dataclass
+class _Node:
+    """A node in the fitted tree. Either an internal split or a leaf."""
+    # Internal split fields (None on a leaf)
+    feature: Optional[int] = None
+    threshold: Optional[float] = None
+    left: Optional["_Node"] = None
+    right: Optional["_Node"] = None
+    # Leaf field
+    prediction: Optional[int] = None
 
-from ml.distances import METRICS
+    @property
+    def is_leaf(self) -&gt; bool:
+        return self.prediction is not None
 
 
-class KNNClassifier:
-    def __init__(self, k=5, metric="euclidean"):
-        if metric not in METRICS:
-            raise ValueError(f"Unknown metric: {metric!r}; choose one of {sorted(METRICS)}")
-        self.k = k
-        self.metric = metric
+# ---------------------------------------------------------------------------
+# Classifier
+# ---------------------------------------------------------------------------
 
-    def fit(self, X, y):
-        """Store the labeled training set. No parameters are fit; this is the whole 'training' phase."""
-        self.X_train = np.asarray(X, dtype=float)
-        self.y_train = np.asarray(y)
+class DecisionTreeClassifier:
+    """Greedy, axis-aligned decision tree classifier.
+
+    Parameters
+    ----------
+    max_depth : int or None
+        Maximum depth of the tree. None means grow until pure or too few samples.
+    criterion : "gini" or "entropy"
+        Impurity measure used to choose splits.
+    min_samples_split : int
+        Do not split a node that has fewer than this many samples.
+    """
+
+    def __init__(
+        self,
+        max_depth: Optional[int] = None,
+        criterion: str = "gini",
+        min_samples_split: int = 2,
+    ):
+        self.max_depth = max_depth
+        self.criterion = criterion
+        self.min_samples_split = min_samples_split
+        self.root_: Optional[_Node] = None
+        self.n_classes_: int = 0
+
+    # ------------------------------------------------------------------
+    # fit
+    # ------------------------------------------------------------------
+
+    def fit(self, X: np.ndarray, y: np.ndarray) -&gt; "DecisionTreeClassifier":
+        X = np.asarray(X, dtype=float)
+        y = np.asarray(y, dtype=int)
+        self.n_classes_ = int(y.max()) + 1
+        self.root_ = self._grow(X, y, depth=0)
         return self
 
-    def predict(self, X):
+    def _grow(self, X: np.ndarray, y: np.ndarray, depth: int) -&gt; _Node:
+        n_samples, n_features = X.shape
+
+        # Stopping conditions -&gt; leaf
+        pure = len(np.unique(y)) == 1
+        too_small = n_samples &lt; self.min_samples_split
+        at_max = (self.max_depth is not None) and (depth &gt;= self.max_depth)
+
+        if pure or too_small or at_max:
+            return _Node(prediction=self._majority(y))
+
+        # Find the best split
+        best_gain = -1.0
+        best_feat: Optional[int] = None
+        best_thresh: Optional[float] = None
+
+        for feat in range(n_features):
+            col = X[:, feat]
+            unique_vals = np.unique(col)
+            if len(unique_vals) &lt; 2:
+                continue
+            # Candidate thresholds: midpoints between consecutive unique values
+            thresholds = (unique_vals[:-1] + unique_vals[1:]) / 2.0
+
+            for thresh in thresholds:
+                mask = col &lt;= thresh
+                left_y, right_y = y[mask], y[~mask]
+                if len(left_y) == 0 or len(right_y) == 0:
+                    continue
+                gain = information_gain(y, left_y, right_y, criterion=self.criterion)
+                if gain &gt; best_gain:
+                    best_gain = gain
+                    best_feat = feat
+                    best_thresh = thresh
+
+        # No beneficial split found -&gt; leaf
+        if best_feat is None or best_gain &lt;= 0.0:
+            return _Node(prediction=self._majority(y))
+
+        mask = X[:, best_feat] &lt;= best_thresh
+        left_node = self._grow(X[mask], y[mask], depth + 1)
+        right_node = self._grow(X[~mask], y[~mask], depth + 1)
+
+        return _Node(
+            feature=best_feat,
+            threshold=best_thresh,
+            left=left_node,
+            right=right_node,
+        )
+
+    # ------------------------------------------------------------------
+    # predict
+    # ------------------------------------------------------------------
+
+    def predict(self, X: np.ndarray) -&gt; np.ndarray:
         X = np.asarray(X, dtype=float)
-        return np.array([self._predict_one(x) for x in X])
+        return np.array([self._traverse(self.root_, row) for row in X])
 
-    def _predict_one(self, x):
-        distance = METRICS[self.metric]
-        distances = [distance(x, row) for row in self.X_train]
-        k_idx = np.argsort(distances)[: self.k]
-        votes = Counter(self.y_train[i] for i in k_idx)
-        return votes.most_common(1)[0][0]
-</code></pre>
-<p>Note: the module docstring uses <code>--</code> (two hyphens) as a list separator inside the string literal. That is a code artifact, not prose; the style rule against em-dashes applies only to prose you read, not to characters inside string literals.</p>
-<p>The <code>METRICS</code> dispatch table lives in <code>ml/distances.py</code>, the file you built last lesson. The classifier borrows it with one import. No distance logic is duplicated; extending the metric list means editing one file.</p>
-<h2 id="k-is-the-bias-variance-knob"><a class="header" href="#k-is-the-bias-variance-knob">k Is the Bias-Variance Knob</a></h2>
-<p><code>k</code> controls the smoothness of the decision boundary with no indirection between the parameter and its geometric effect.</p>
-<p>At <code>k=1</code>, every query point’s prediction is determined by its single nearest neighbor. The decision boundary traces every kink and outlier in the training data: zero training error, high variance, severe overfitting. One mislabeled point in the training set can corrupt an entire neighborhood.</p>
-<p>At <code>k=N</code> (all training points), every query gets the global majority class. The boundary is a flat line: zero variance, maximum bias, complete underfitting.</p>
-<p>On Iris (150 samples, 80/20 stratified split, z-scored features, Euclidean distance), you see this tradeoff directly:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>k</th><th>Accuracy</th></tr>
-</thead>
-<tbody>
-<tr><td>1</td><td>0.967</td></tr>
-<tr><td>3</td><td>0.967</td></tr>
-<tr><td>5</td><td>1.000</td></tr>
-<tr><td>11</td><td>1.000</td></tr>
-<tr><td>21</td><td>0.900</td></tr>
-</tbody>
-</table>
-</div>
-<p>The drop at <code>k=21</code> is the high-bias end arriving: the neighborhood has grown large enough to smooth away class boundaries that Iris actually has. This is a held-out set of 30 samples, so treat these numbers as directional, not definitive. The shape of the curve, not any single value, is the lesson.</p>
-<p>The conventional starting range is odd values near the square root of the training set size: odd to avoid ties in binary classification, near <code>sqrt(n)</code> to keep neighborhoods local without chasing every outlier.</p>
-<h2 id="the-metric-is-a-hypothesis"><a class="header" href="#the-metric-is-a-hypothesis">The Metric Is a Hypothesis</a></h2>
-<p>The distance function defines what “near” means. Different metrics encode different assumptions about the geometry of your data.</p>
-<p><strong>Euclidean</strong> (L2) is the right default when all features are on comparable scales and a large absolute difference on any dimension genuinely means far apart. It squares differences, so a single large gap dominates. After z-scoring, Euclidean is usually the correct first choice for tabular data.</p>
-<p><strong>Manhattan</strong> (L1) sums absolute differences without squaring. It is more robust when features have heavy tails or when one outlier dimension would otherwise blow up the distance.</p>
-<p><strong>Cosine</strong> measures the angle between two vectors, ignoring magnitude. It is the correct choice when scale varies across observations but the proportional mix of features is what matters: a document with 30 mentions of “neural” and one with 3 mentions should be considered similar if the rest of their vocabulary profile matches. Text embeddings and high-dimensional sparse data both reward cosine.</p>
-<p>On the same Iris held-out set at <code>k=5</code>:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Metric</th><th>Accuracy</th></tr>
-</thead>
-<tbody>
-<tr><td>euclidean</td><td>1.000</td></tr>
-<tr><td>manhattan</td><td>1.000</td></tr>
-<tr><td>cosine</td><td>0.933</td></tr>
-</tbody>
-</table>
-</div>
-<p>Cosine’s lower accuracy here reflects that Iris features are spatial measurements (petal length, petal width), not frequency profiles: direction alone misses information that absolute magnitude carries. The metric that matches the data geometry wins.</p>
-<h2 id="scaling-is-not-optional"><a class="header" href="#scaling-is-not-optional">Scaling Is Not Optional</a></h2>
-<p>Distance functions are sensitive to the units of each feature. A raw feature measured in thousands (salary) will dominate a feature measured in tens (age), regardless of their actual predictive power. The classifier ends up voting on whichever feature has the largest numerical range, not the most signal.</p>
-<p>With the weakest Iris feature (sepal width) artificially inflated by a factor of 1000, unscaled accuracy on the same split is 0.800. Z-scoring restores it to 1.000. One column hijacked the distance calculation; z-scoring returned a fair vote.</p>
-<p>The fix is always the same:</p>
-<pre><code class="language-python">from ml.distances import zscore
+    def _traverse(self, node: _Node, row: np.ndarray) -&gt; int:
+        if node.is_leaf:
+            return node.prediction
+        if row[node.feature] &lt;= node.threshold:
+            return self._traverse(node.left, row)
+        return self._traverse(node.right, row)
 
-X_train_scaled = zscore(X_train)
-X_test_scaled  = zscore(X_test)
+    # ------------------------------------------------------------------
+    # helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _majority(y: np.ndarray) -&gt; int:
+        counts = np.bincount(y)
+        return int(np.argmax(counts))
 </code></pre>
-<p>Here you z-score each set to its own column statistics, which is enough for this module. Production
-pipelines fit the scaler on training data only and apply that fixed transform to the test set so
-the test statistics never leak into training, a discipline the feature-engineering module builds
-out. The point either way: scale before you measure distance.</p>
-<h2 id="the-curse-of-dimensionality"><a class="header" href="#the-curse-of-dimensionality">The Curse of Dimensionality</a></h2>
-<p>k-NN degrades predictably as feature count grows. In high-dimensional spaces, the ratio of the maximum pairwise distance to the minimum pairwise distance converges toward 1.0. Every point becomes approximately equidistant from every other point. The concept of “nearest neighbor” loses its meaning: if the 1st nearest neighbor and the 1000th nearest neighbor are effectively the same distance away, the ranking carries no signal.</p>
-<p>The practical ceiling is roughly 20 to 50 features. Beyond that, k-NN on raw feature vectors stops working reliably. The fix is dimensionality reduction before the distance calculation, not during it. This is why embeddings exist: a model trained on millions of examples compresses hundreds of raw dimensions into a dense vector where the distances are semantically meaningful. You run k-NN on the embedding, not on the raw features.</p>
-<p>That is also the bridge to production vector search. Azure Cosmos DB’s comparison of kNN and ANN states it directly: “kNN is precise but computationally intensive, making it less suitable for large datasets. ANN offers a balance between accuracy and efficiency, making it better suited for large-scale applications” (<a href="https://learn.microsoft.com/azure/cosmos-db/gen-ai/knn-vs-ann">learn.microsoft.com</a>). At scale, exact k-NN becomes approximate nearest-neighbor search (HNSW, DiskANN, IVF). Azure AI Search supports both exhaustive KNN for small corpora and HNSW for production workloads (<a href="https://learn.microsoft.com/azure/search/vector-search-ranking#algorithms-used-in-vector-search">learn.microsoft.com</a>). The geometry is identical to the loop in the classifier above; the only thing that changes is the data structure that makes the search fast enough to serve at query time.</p>
-<p>When you build a RAG pipeline, the “retrieve relevant chunks” step is k-NN over embeddings. You are running the same algorithm. The production system has replaced the brute-force loop with a graph index, but the question it answers is unchanged: which stored vectors are nearest to this query vector?</p>
+<p>The split loop in <code>_grow</code> iterates over every feature, computes candidate thresholds as
+midpoints between consecutive unique values, and calls <code>information_gain</code> from the
+previous lesson for each one. That is the throughline: the tree reuses the impurity
+functions; it does not re-implement them.</p>
+<p>The <code>_Node</code> dataclass stores either a split (feature index, threshold, left child, right
+child) or a leaf (majority class prediction). The <code>is_leaf</code> property checks which by
+asking whether <code>prediction</code> is set. A walk from root to leaf is two or three dozen lines
+of code total. That is the interpretability advantage: you can read every decision the
+model makes.</p>
+<h2 id="measured-results"><a class="header" href="#measured-results">Measured Results</a></h2>
+<p>On Iris (150 samples, 3 classes, 4 features), with a stratified 80/20 split and
+<code>random_state=0</code>:</p>
+<ul>
+<li><code>DecisionTreeClassifier(max_depth=4, criterion="gini")</code>: test accuracy <code>0.9667</code>.</li>
+<li>scikit-learn’s <code>DecisionTreeClassifier(max_depth=4, criterion="gini", random_state=0)</code>:
+test accuracy <code>0.9667</code>.</li>
+<li>Label-by-label agreement between the two on the 30 test samples: 100%. Both predict
+the same class for every point.</li>
+</ul>
+<p>The agreement is not a coincidence. Both implementations search midpoints between
+consecutive unique values and pick the split with the highest Gini gain. The same data
+plus the same algorithm equals the same tree, which equals the same predictions. The
+scikit-learn tree is the oracle; the agreement is the proof.</p>
+<p>There is a catch worth naming. Greedy does not mean wrong; it means locally optimal.
+The tree that maximizes information gain at each node is not guaranteed to be the
+globally smallest or most accurate tree. On datasets where the best first split obscures
+a better second split, greedy will miss. For the problems where this matters, Module 4
+covers ensembles: train many trees on overlapping subsets of the data and take a vote.
+The vote is more accurate than any single greedy tree.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>k-NN is a lazy learner: training is storing the data; each prediction is O(n * d) distance computations, a neighbor ranking, and a majority vote.</li>
-<li><code>k</code> is a direct bias-variance lever: small k traces every training-set kink (high variance); large k smooths the boundary to the global majority (high bias); the right k is found by cross-validation on held-out data.</li>
-<li>The distance metric encodes a hypothesis about the data’s geometry: Euclidean for scaled absolute differences, cosine for directional profiles, Manhattan when single large differences should not dominate.</li>
-<li>The curse of dimensionality collapses k-NN’s signal in high-dimensional raw feature spaces; embedding models are the fix, compressing dimensions into vectors where distances remain meaningful.</li>
+<li>A decision tree fits by greedily selecting the (feature, threshold) pair with the
+highest information gain at each node, then recursing; it is not globally optimal but
+works well in practice.</li>
+<li>Prediction is a walk from root to leaf: at each node you branch on the stored feature
+and threshold; at the leaf you return the majority class of the training samples that
+landed there.</li>
+<li><code>max_depth</code>, <code>min_samples_split</code>, and related stopping conditions control the
+bias-variance tradeoff; a tree with no limit memorizes the training set.</li>
+<li>A from-scratch tree and scikit-learn’s tree agree on all 30 Iris test labels at
+<code>max_depth=4</code>, confirming that the greedy algorithm is deterministic given identical
+data and split logic.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module1/knn-voting/">
-<p><strong>Build It in Claude Code</strong>: Implement <code>ml/knn.py</code> from scratch, reusing the <code>METRICS</code> dispatch table you built in <code>ml/distances.py</code>. Fit a <code>KNNClassifier</code> on 80% of z-scored Iris (stratified split, <code>random_state=0</code>), then evaluate held-out accuracy for k in {1, 3, 5, 11, 21} with Euclidean distance; compare Euclidean vs cosine at k=5 on the same split. Report which combination wins, explain why in terms of what the metric assumes about the data, and note where the k=21 accuracy drop shows up and what it tells you about the bias side of the tradeoff.</p>
+<div class="claude-handoff" data-exercise="exercises/module3/decision-trees/">
+<p><strong>Build It in Claude Code</strong>: Read the current state of <code>exercises/ml/tree.py</code> before
+touching anything. The previous lesson already added <code>entropy</code>, <code>gini</code>, and
+<code>information_gain</code> to that file. You are adding <code>_Node</code> and <code>DecisionTreeClassifier</code>
+to the same file. Do not re-implement the impurity functions; call them.
+Implement the classifier exactly as shown above. Then verify with the locked acceptance
+gate at <code>exercises/module3/decision-trees/test_tree.py</code>. Done when
+<code>python -m pytest exercises/module3/decision-trees</code> is green.</p>
 </div>
 
 
@@ -304,11 +395,11 @@ out. The point either way: scale before you measure distance.</p>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module1/feature-vectors.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module3/entropy-and-information-gain.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module2/00-overview.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module3/overfitting-and-cross-validation.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -318,11 +409,11 @@ out. The point either way: scale before you measure distance.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module1/feature-vectors.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module3/entropy-and-information-gain.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module2/00-overview.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module3/overfitting-and-cross-validation.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
