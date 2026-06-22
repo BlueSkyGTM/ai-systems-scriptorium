@@ -23,7 +23,7 @@ routed_boundaries:
   book_answer_engineering: library/completed/answer-engineering
   in_progress_machine_math: library/in-progress/machine-math
   in_progress_data_currents: library/in-progress/data-currents
-  planned_tasteful_tuning: library/planned/tasteful-tuning
+  in_progress_weights_and_measures: library/in-progress/weights-and-measures
   platform: platform
   platform_pipeline: platform/pipeline
   platform_conventions: platform/conventions
