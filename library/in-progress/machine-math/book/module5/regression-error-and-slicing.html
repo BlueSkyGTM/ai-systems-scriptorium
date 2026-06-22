@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Boosting and the Gradient - Machine Math — Classic ML and the Math It Requires</title>
+        <title>Regression Error and Slicing - Machine Math — Classic ML and the Math It Requires</title>
 
 
         <!-- Custom HTML head -->
@@ -177,331 +177,206 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="boosting-and-the-gradient"><a class="header" href="#boosting-and-the-gradient">Boosting and the Gradient</a></h1>
-<p>Bagging cuts variance by averaging independent trees. Boosting attacks the other side of
-the tradeoff: it cuts bias by fitting the errors the ensemble keeps making. The two
-methods are not competing; they fix different problems.</p>
-<h2 id="the-algorithm"><a class="header" href="#the-algorithm">The Algorithm</a></h2>
-<p>Start with a constant prediction: the mean of the training targets. Call it <code>F_0(x)</code>.
-Compute the residuals: for every training sample <code>i</code>, the residual is <code>y_i - F_0(x_i)</code>.
-Fit a shallow regression tree to those residuals. Add a fraction of that tree’s
-predictions to your ensemble:</p>
-<pre><code>F_1(x) = F_0(x) + learning_rate * h_1(x)
+                        <h1 id="regression-error-and-slicing"><a class="header" href="#regression-error-and-slicing">Regression Error and Slicing</a></h1>
+<p>A model that looks fine on the overall test set can be broken on a specific group of
+users, a product category, or a time window. The aggregate metric hides it. Your job is
+to find it before it ships.</p>
+<h2 id="two-ways-to-measure-a-miss"><a class="header" href="#two-ways-to-measure-a-miss">Two Ways to Measure a Miss</a></h2>
+<p>When your model predicts a continuous value, the error on sample <code>i</code> is <code>y_true - y_pred</code>.
+Every regression metric starts from that residual; the difference is how it treats large misses.</p>
+<p><strong>MAE</strong> (Mean Absolute Error) treats every unit of error the same:</p>
+<pre><code>MAE = mean(|y_true - y_pred|)
 </code></pre>
-<p>where <code>h_1</code> is the tree fitted to the residuals. Compute the new residuals against
-<code>F_1</code>, fit another tree, add another shrunken contribution. Repeat for <code>n_estimators</code>
-rounds.</p>
-<p>The learning rate, also called shrinkage, controls how much each tree contributes. A
-smaller rate requires more rounds to reach the same training error, but the ensemble
-generalizes better because no single tree dominates. Typical values run from 0.01 to 0.1
-in production.</p>
-<h2 id="the-gradient-connection"><a class="header" href="#the-gradient-connection">The Gradient Connection</a></h2>
-<p>For squared-error loss, <code>L(y, F) = (1/2)(y - F)^2</code>, the negative gradient with respect
-to <code>F</code> at sample <code>i</code> is:</p>
-<pre><code>-dL/dF = y_i - F(x_i)
+<p>An error of 2.0 contributes exactly 2.0 to the average. Ten small errors of 0.2 and one
+large error of 2.0 are weighted equally by magnitude. That linearity makes MAE robust: a
+single outlier prediction barely moves the needle.</p>
+<p><strong>RMSE</strong> (Root Mean Squared Error) squares the residuals before averaging, then takes the
+square root to return to the same units:</p>
+<pre><code>RMSE = sqrt( mean((y_true - y_pred)^2) )
 </code></pre>
-<p>That is exactly the residual. Fitting a tree to the residuals is fitting a tree to the
-negative gradient of the loss. The ensemble update rule, <code>F_m = F_{m-1} + lr * h_m</code>, is
-a gradient descent step: not in the space of model weights (as in Module 2’s linear
-regression), but in the space of functions. You are descending the loss surface by adding
-a function that locally points downhill.</p>
-<p>Module 2 showed you gradient descent with a fixed parametric form (a line). Gradient
-boosting lifts the same idea to a non-parametric setting: the model is an additive sum of
-trees, and each tree is chosen to reduce the loss as much as a shallow learner can in one
-step. The learning rate plays the same role as the step size in parameter-space gradient
-descent; too large and you overshoot, too small and convergence is slow.</p>
-<p>This generalization is what makes gradient boosting powerful for arbitrary loss functions.
-Swap the loss and you swap only the residual formula; the tree-fitting and update
-mechanics stay identical. The Azure Machine Learning designer’s Boosted Decision Tree
-Regression component builds on exactly this algorithm: its documentation describes how
-“the algorithm learns by fitting the residual of the trees that preceded it” using the
-MART gradient boosting algorithm, backed by LightGBM. The Two-Class Boosted Decision Tree
-component uses the same sequential residual-fitting mechanics for classification by
-reducing it to regression with a suitable loss. See the
-<a href="https://learn.microsoft.com/azure/machine-learning/component-reference/boosted-decision-tree-regression?view=azureml-api-2">Boosted Decision Tree Regression component reference</a>
-and the
-<a href="https://learn.microsoft.com/azure/machine-learning/component-reference/two-class-boosted-decision-tree?view=azureml-api-2">Two-Class Boosted Decision Tree component reference</a>
-for the designer-level knobs (number of trees, learning rate, leaves per tree), which map
-one-to-one onto <code>n_estimators</code>, <code>learning_rate</code>, and <code>max_depth</code> in the code below.</p>
+<p>The squaring step punishes large misses geometrically. A single error of 2.0 contributes
+4.0 to the sum inside the square root; two errors of 1.0 contribute only 2.0. RMSE
+amplifies the big miss far beyond what MAE would show for the same residual set.</p>
+<p><strong>R^2</strong> (Coefficient of Determination) shifts the question from absolute error to explained
+variance:</p>
+<pre><code>R^2 = 1 - SS_res / SS_tot
+</code></pre>
+<p>where <code>SS_res</code> is the sum of squared residuals and <code>SS_tot</code> is the total variance of the
+targets. R^2 = 1.0 means the model explains all variance; R^2 = 0.0 means predicting the
+training mean would do just as well; R^2 &lt; 0.0 means the model is worse than that baseline.</p>
+<p>Azure Machine Learning’s Evaluate Model component reports all three. The official component
+reference notes that RMSE “creates a single value that summarizes the error in the model”
+and that “by squaring the difference, the metric disregards the difference between
+over-prediction and under-prediction,” while MAE “measures how close the predictions are to
+the actual outcomes.” The AutoML evaluation page adds that R^2 “measures the proportional
+reduction in mean squared error (MSE) relative to the total variance of the observed data.”
+See the
+<a href="https://learn.microsoft.com/en-us/azure/machine-learning/component-reference/evaluate-model?view=azureml-api-2">Evaluate Model component reference</a>
+and
+<a href="https://learn.microsoft.com/en-us/azure/machine-learning/how-to-understand-automated-ml?view=azureml-api-2">Evaluate AutoML experiment results</a>
+for the full metric tables and normalization rules.</p>
 <h2 id="the-code"><a class="header" href="#the-code">The Code</a></h2>
-<p>Two classes go in. First, add <code>DecisionTreeRegressor</code> to <code>exercises/ml/tree.py</code>. This is
-the M4 addition to that file: a regressor that splits on variance reduction and predicts
-the mean of the target values in each leaf. The impurity functions from Module 3 already
-handle classification; <code>DecisionTreeRegressor</code> uses the same greedy axis-aligned split
-search, but the gain criterion is weighted MSE, not Gini or entropy.</p>
+<p>These four functions go in <code>exercises/ml/metrics.py</code>. They are the M5 additions to that
+package: pure NumPy, no sklearn dependency at runtime.</p>
 <pre><code class="language-python"># ---------------------------------------------------------------------------
-# Regressor node + tree (added M4)
+# Regression metrics
 # ---------------------------------------------------------------------------
 
-@dataclass
-class _NodeReg:
-    """A node in a regression tree. Either an internal split or a leaf."""
-    feature: Optional[int] = None
-    threshold: Optional[float] = None
-    left: Optional["_NodeReg"] = None
-    right: Optional["_NodeReg"] = None
-    # Leaf value: mean of target in the region
-    value: Optional[float] = None
-
-    @property
-    def is_leaf(self) -&gt; bool:
-        return self.value is not None
+def mae(y_true, y_pred):
+    """Mean Absolute Error."""
+    y_true = np.asarray(y_true, dtype=float)
+    y_pred = np.asarray(y_pred, dtype=float)
+    return float(np.mean(np.abs(y_true - y_pred)))
 
 
-class DecisionTreeRegressor:
-    """Greedy, axis-aligned decision tree regressor.
+def rmse(y_true, y_pred):
+    """Root Mean Squared Error."""
+    y_true = np.asarray(y_true, dtype=float)
+    y_pred = np.asarray(y_pred, dtype=float)
+    return float(np.sqrt(np.mean((y_true - y_pred) ** 2)))
 
-    Split criterion: variance reduction (weighted MSE). A leaf predicts the mean
-    of the training targets that fell into it.
+
+def r2(y_true, y_pred):
+    """Coefficient of determination R^2 = 1 - SS_res / SS_tot."""
+    y_true = np.asarray(y_true, dtype=float)
+    y_pred = np.asarray(y_pred, dtype=float)
+    ss_res = float(np.sum((y_true - y_pred) ** 2))
+    ss_tot = float(np.sum((y_true - np.mean(y_true)) ** 2))
+    if ss_tot == 0.0:
+        return 1.0 if ss_res == 0.0 else 0.0
+    return float(1.0 - ss_res / ss_tot)
+
+
+# ---------------------------------------------------------------------------
+# Slice metric
+# ---------------------------------------------------------------------------
+
+def slice_metric(y_true, y_pred, groups, metric_fn):
+    """Evaluate metric_fn per unique group.
 
     Parameters
     ----------
-    max_depth : int or None
-        Maximum depth of the tree. None means grow until too few samples remain.
-    min_samples_split : int
-        Do not split a node that has fewer than this many samples.
+    y_true : array-like
+    y_pred : array-like
+    groups : array-like, same length as y_true
+        Group label for each sample (any hashable dtype).
+    metric_fn : callable(y_true_slice, y_pred_slice) -&gt; float
+
+    Returns
+    -------
+    dict mapping each unique group label to its metric score.
     """
-
-    def __init__(
-        self,
-        max_depth: Optional[int] = None,
-        min_samples_split: int = 2,
-    ):
-        self.max_depth = max_depth
-        self.min_samples_split = min_samples_split
-        self.root_: Optional[_NodeReg] = None
-
-    # ------------------------------------------------------------------
-    # fit
-    # ------------------------------------------------------------------
-
-    def fit(self, X: np.ndarray, y: np.ndarray) -&gt; "DecisionTreeRegressor":
-        X = np.asarray(X, dtype=float)
-        y = np.asarray(y, dtype=float)
-        self.root_ = self._grow(X, y, depth=0)
-        return self
-
-    def _grow(self, X: np.ndarray, y: np.ndarray, depth: int) -&gt; _NodeReg:
-        n_samples, n_features = X.shape
-
-        # Stopping conditions -&gt; leaf
-        too_small = n_samples &lt; self.min_samples_split
-        at_max = (self.max_depth is not None) and (depth &gt;= self.max_depth)
-
-        if too_small or at_max:
-            return _NodeReg(value=float(np.mean(y)))
-
-        # Find the best split by maximum variance reduction
-        parent_var = float(np.var(y)) * n_samples   # proportional to MSE * n
-
-        best_reduction = -1.0
-        best_feat: Optional[int] = None
-        best_thresh: Optional[float] = None
-
-        for feat in range(n_features):
-            col = X[:, feat]
-            unique_vals = np.unique(col)
-            if len(unique_vals) &lt; 2:
-                continue
-            thresholds = (unique_vals[:-1] + unique_vals[1:]) / 2.0
-
-            for thresh in thresholds:
-                mask = col &lt;= thresh
-                left_y, right_y = y[mask], y[~mask]
-                if len(left_y) == 0 or len(right_y) == 0:
-                    continue
-                # Weighted MSE of children
-                child_var = (
-                    float(np.var(left_y)) * len(left_y)
-                    + float(np.var(right_y)) * len(right_y)
-                )
-                reduction = parent_var - child_var
-                if reduction &gt; best_reduction:
-                    best_reduction = reduction
-                    best_feat = feat
-                    best_thresh = thresh
-
-        # No beneficial split -&gt; leaf
-        if best_feat is None or best_reduction &lt;= 0.0:
-            return _NodeReg(value=float(np.mean(y)))
-
-        mask = X[:, best_feat] &lt;= best_thresh
-        left_node = self._grow(X[mask], y[mask], depth + 1)
-        right_node = self._grow(X[~mask], y[~mask], depth + 1)
-
-        return _NodeReg(
-            feature=best_feat,
-            threshold=best_thresh,
-            left=left_node,
-            right=right_node,
-        )
-
-    # ------------------------------------------------------------------
-    # predict
-    # ------------------------------------------------------------------
-
-    def predict(self, X: np.ndarray) -&gt; np.ndarray:
-        X = np.asarray(X, dtype=float)
-        return np.array([self._traverse(self.root_, row) for row in X])
-
-    def _traverse(self, node: _NodeReg, row: np.ndarray) -&gt; float:
-        if node.is_leaf:
-            return node.value
-        if row[node.feature] &lt;= node.threshold:
-            return self._traverse(node.left, row)
-        return self._traverse(node.right, row)
+    y_true = np.asarray(y_true)
+    y_pred = np.asarray(y_pred)
+    groups = np.asarray(groups)
+    result = {}
+    for label in np.unique(groups):
+        mask = groups == label
+        result[label] = metric_fn(y_true[mask], y_pred[mask])
+    return result
 </code></pre>
-<p>The gain criterion is the only structural difference from <code>DecisionTreeClassifier</code>. Where
-the classifier measured Gini or entropy, <code>_grow</code> here computes <code>parent_var - child_var</code>,
-where each variance term is scaled by sample count. Maximum variance reduction is
-equivalent to minimizing weighted child MSE: the split that explains the most variance
-wins.</p>
-<p>Second, add <code>GradientBoostingRegressor</code> to <code>exercises/ml/ensemble.py</code>. It imports
-<code>DecisionTreeRegressor</code> from <code>ml.tree</code> alongside <code>DecisionTreeClassifier</code>.</p>
-<pre><code class="language-python"># ---------------------------------------------------------------------------
-# GradientBoostingRegressor
-# ---------------------------------------------------------------------------
-
-class GradientBoostingRegressor:
-    """Gradient boosting for regression (MSE loss), from scratch.
-
-    Builds an additive ensemble of shallow DecisionTreeRegressors:
-        F_0(x) = mean(y)
-        F_m(x) = F_{m-1}(x) + learning_rate * h_m(x)
-    where h_m is fit to the residuals r_m = y - F_{m-1}(x).
-
-    Parameters
-    ----------
-    n_estimators : int
-        Number of boosting rounds.
-    learning_rate : float
-        Shrinkage applied to each tree's contribution.
-    max_depth : int
-        Maximum depth for each weak learner.
-    """
-
-    def __init__(
-        self,
-        n_estimators: int = 100,
-        learning_rate: float = 0.1,
-        max_depth: int = 3,
-    ):
-        self.n_estimators = n_estimators
-        self.learning_rate = learning_rate
-        self.max_depth = max_depth
-
-        self.base_: float = 0.0
-        self.estimators_: List[DecisionTreeRegressor] = []
-        self.train_losses_: List[float] = []
-
-    # ------------------------------------------------------------------
-    # fit
-    # ------------------------------------------------------------------
-
-    def fit(self, X: np.ndarray, y: np.ndarray) -&gt; "GradientBoostingRegressor":
-        X = np.asarray(X, dtype=float)
-        y = np.asarray(y, dtype=float)
-
-        # F_0: constant prediction = mean(y)
-        self.base_ = float(np.mean(y))
-        current = np.full_like(y, self.base_)
-
-        self.estimators_ = []
-        self.train_losses_ = []
-
-        for _ in range(self.n_estimators):
-            residuals = y - current
-
-            tree = DecisionTreeRegressor(
-                max_depth=self.max_depth,
-                min_samples_split=2,
-            )
-            tree.fit(X, residuals)
-
-            current = current + self.learning_rate * tree.predict(X)
-
-            self.estimators_.append(tree)
-            mse = float(np.mean((y - current) ** 2))
-            self.train_losses_.append(mse)
-
-        return self
-
-    # ------------------------------------------------------------------
-    # predict
-    # ------------------------------------------------------------------
-
-    def predict(self, X: np.ndarray) -&gt; np.ndarray:
-        X = np.asarray(X, dtype=float)
-        result = np.full(X.shape[0], self.base_)
-        for tree in self.estimators_:
-            result = result + self.learning_rate * tree.predict(X)
-        return result
-</code></pre>
-<p>The <code>fit</code> loop is the algorithm made literal. <code>self.base_</code> is <code>F_0</code>. <code>current</code> tracks
-<code>F_m(x)</code> for the training set. <code>residuals = y - current</code> computes the negative gradient.
-<code>current = current + self.learning_rate * tree.predict(X)</code> is the update step.
-<code>self.train_losses_</code> stores the per-round training MSE so the acceptance gate can verify
-that loss is monotonically non-increasing.</p>
-<h2 id="measured-results"><a class="header" href="#measured-results">Measured Results</a></h2>
-<p>On the Friedman-1 regression dataset (500 samples, 10 features, <code>noise=1.0</code>), with an
-80/20 split and <code>random_state=0</code>, using <code>n_estimators=100, learning_rate=0.1, max_depth=3</code>:</p>
-<ul>
-<li>From-scratch <code>GradientBoostingRegressor</code>: test R-squared <code>0.9038</code>.</li>
-<li>Scikit-learn <code>GradientBoostingRegressor</code> (same hyperparameters): test R-squared
-<code>0.9045</code>.</li>
-<li>Pearson correlation between the two on the 100 test samples: <code>0.9999</code>.</li>
-</ul>
-<p>Training MSE falls monotonically across all 100 rounds. A sample of the descent:</p>
+<h2 id="outlier-penalty-the-numbers"><a class="header" href="#outlier-penalty-the-numbers">Outlier Penalty: The Numbers</a></h2>
+<p>The difference between MAE and RMSE is not theoretical. Here is the measured gap on a
+controlled experiment (20 samples, small Gaussian noise, seed 7), using the functions
+above.</p>
+<p><strong>Clean baseline</strong> (no injected error):</p>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th style="text-align: right">Round</th><th style="text-align: right">Training MSE</th></tr>
+<tr><th>Metric</th><th>Value</th></tr>
 </thead>
 <tbody>
-<tr><td style="text-align: right">1</td><td style="text-align: right">22.57</td></tr>
-<tr><td style="text-align: right">10</td><td style="text-align: right">9.39</td></tr>
-<tr><td style="text-align: right">50</td><td style="text-align: right">1.21</td></tr>
-<tr><td style="text-align: right">100</td><td style="text-align: right">0.47</td></tr>
+<tr><td>MAE</td><td>0.217</td></tr>
+<tr><td>RMSE</td><td>0.292</td></tr>
 </tbody>
 </table>
 </div>
-<p>Each round the residuals shrink. By round 100, the training error is about 2% of what
-it was at round 1. The agreement with scikit-learn (0.9999 correlation) confirms that
-the residual-fitting mechanics are correct.</p>
-<h2 id="what-this-cost"><a class="header" href="#what-this-cost">What This Cost</a></h2>
-<p>Monotone training loss is a guarantee of gradient boosting. Every new tree reduces the
-training MSE by at least as much as the learning rate allows; training error cannot
-increase. Test error is a different story. Run too many rounds with a high learning rate
-and the ensemble memorizes the training set: training MSE keeps falling, test MSE starts
-climbing. The learning rate is a regularizer, not just a step size. A smaller rate
-demands more trees for the same training error, but the ensemble stays closer to the true
-function. That tension is exactly the subject of the next lesson.</p>
+<p><strong>After injecting one large error (+50.0 on the last sample)</strong>:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Metric</th><th>Value</th><th>Ratio vs. clean</th></tr>
+</thead>
+<tbody>
+<tr><td>MAE</td><td>2.717</td><td>12.5x</td></tr>
+<tr><td>RMSE</td><td>11.194</td><td>38.3x</td></tr>
+</tbody>
+</table>
+</div>
+<p>MAE rose 12.5 times. RMSE rose 38.3 times. The single large miss moved both metrics, but
+RMSE reacted more than three times as hard as MAE. That is the squaring step working as
+designed: it scales the penalty with the square of the error, so a miss of magnitude 50
+receives 2,500 times the weight a miss of magnitude 1 would carry.</p>
+<p>The practical consequence: if your production dataset has occasional gross errors (a sensor
+spike, a mis-labeled batch, an imputed value 10 standard deviations out), MAE will report
+those without alarming you, while RMSE will flag them loudly. Which you want depends on
+whether those large misses matter. In a safety-critical system they probably do; in a demand
+forecast with occasional data glitches, they might not.</p>
+<h2 id="slicing-where-the-aggregate-lies"><a class="header" href="#slicing-where-the-aggregate-lies">Slicing: Where the Aggregate Lies</a></h2>
+<p>A single aggregate metric is a claim that a model works on the full population. It often
+does not tell you anything about subpopulations.</p>
+<p>Here is the measured breakdown on a four-group synthetic dataset (120 total samples: three
+“good” groups with small residuals, one “BAD” group with noise scaled 25 times larger):</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Group</th><th>MAE</th></tr>
+</thead>
+<tbody>
+<tr><td>G1</td><td>~0.15</td></tr>
+<tr><td>G2</td><td>~0.15</td></tr>
+<tr><td>G3</td><td>~0.15</td></tr>
+<tr><td>BAD</td><td>3.83</td></tr>
+<tr><td><strong>Aggregate</strong></td><td><strong>1.08</strong></td></tr>
+</tbody>
+</table>
+</div>
+<p>The aggregate MAE of 1.08 looks mediocre; not alarming. The slice tells a different story:
+three groups sit near 0.15, and one group has an MAE of 3.83, which is 3.55 times worse
+than the aggregate and roughly 25 times worse than the well-behaved groups. The aggregate
+hid the failure entirely. If “BAD” maps to a real user cohort, a product line, or a
+geographic region, the model is not just mediocre there: it is broken.</p>
+<p>The <code>slice_metric</code> function makes this transparent. It takes any metric function and any
+group label array and returns per-group scores. The worst subgroup is one <code>max()</code> call away.</p>
+<p>This is exactly what Azure Machine Learning’s error analysis component automates at
+production scale. The Responsible AI dashboard documentation describes the goal directly:
+“Model accuracy might not be uniform across subgroups of data, and there might be input
+cohorts for which the model fails more often.” It exposes error rates by cohort through a
+decision tree and heatmap so practitioners can “break down the aggregate performance metrics
+to automatically discover erroneous cohorts.” See
+<a href="https://learn.microsoft.com/en-us/azure/machine-learning/concept-error-analysis?view=azureml-api-2">Assess errors in machine learning models</a>
+for the full component description. The <code>slice_metric</code> function you are building is the
+from-scratch equivalent of that cohort-filtering step.</p>
+<h2 id="why-this-matters-for-a-production-ai-engineer"><a class="header" href="#why-this-matters-for-a-production-ai-engineer">Why This Matters for a Production AI Engineer</a></h2>
+<p>The M7 portfolio capstone evaluates a real model with slice metrics: you will compute
+per-group performance, identify the worst-performing cohort, and report the gap between the
+worst slice and the aggregate. That is a standard deliverable in a model evaluation memo.
+Getting comfortable with <code>slice_metric</code> here means you arrive at the capstone with one more
+production tool already built.</p>
+<p>Shipping aggregate metrics alone is an audit risk. The aggregate looked fine; one slice was
+broken. The engineer who finds that in testing, not in production, is the one who keeps the
+job.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>Gradient boosting builds an additive ensemble by fitting each new tree to the residuals
-of the current ensemble; for squared-error loss, residuals are the negative gradient of
-the loss with respect to the current prediction.</li>
-<li>The update rule <code>F_m = F_{m-1} + lr * h_m</code> is gradient descent in function space: each
-tree is a step downhill on the loss surface, with <code>learning_rate</code> playing the role of
-step size.</li>
-<li>Training MSE is guaranteed to be monotonically non-increasing across rounds; test error
-can increase if learning rate is too high or rounds are too many.</li>
-<li>A from-scratch <code>GradientBoostingRegressor</code> and scikit-learn’s equivalent agree to a
-Pearson correlation of 0.9999 on the Friedman-1 test set, confirming the residual loop
-is mechanically correct.</li>
+<li>MAE penalizes errors linearly, so each unit of miss contributes equally regardless of
+size; injecting one large outlier raised MAE 12.5x on the test set.</li>
+<li>RMSE penalizes errors quadratically before taking the root, making it far more sensitive
+to large misses; the same outlier raised RMSE 38.3x, more than three times the MAE ratio.</li>
+<li>R^2 measures the fraction of target variance the model explains; a score of 0.0 means the
+model is no better than predicting the training mean, and a negative score means it is
+worse.</li>
+<li>Aggregate metrics hide subgroup failures: an aggregate MAE of 1.08 masked a “BAD” cohort
+with MAE 3.83, a 3.55x gap that only <code>slice_metric</code> surfaced.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module4/boosting-and-the-gradient/">
-<p><strong>Build It in Claude Code</strong>: Read the current state of <code>exercises/ml/tree.py</code> and
-<code>exercises/ml/ensemble.py</code> before touching anything. Module 3 placed
-<code>DecisionTreeClassifier</code> in <code>ml/tree.py</code>; the previous M4 lesson placed
-<code>RandomForestClassifier</code> in <code>ml/ensemble.py</code>. You are adding two things: append
-<code>_NodeReg</code> and <code>DecisionTreeRegressor</code> to <code>exercises/ml/tree.py</code>, then add
-<code>GradientBoostingRegressor</code> to <code>exercises/ml/ensemble.py</code>. The regressor imports
-<code>DecisionTreeRegressor</code> from <code>ml.tree</code>; do not copy the class. Implement both exactly as
-shown above. Then verify with the locked acceptance gate at
-<code>exercises/module4/boosting-and-the-gradient/test_boosting.py</code>. Note: the gate runs
-several hundred from-scratch trees; expect a minute or two. Done when
-<code>python -m pytest exercises/module4/boosting-and-the-gradient</code> is green.</p>
+<div class="claude-handoff" data-exercise="exercises/module5/regression-error-and-slicing/">
+<p><strong>Build It in Claude Code</strong>: Read <code>exercises/CLAUDE.md</code> first, then the current state of
+<code>exercises/ml/metrics.py</code>. Module 4 did not add to that file, but earlier modules may have;
+confirm what is already there before writing anything. Your task for this module is to add
+<code>mae</code>, <code>rmse</code>, <code>r2</code>, and <code>slice_metric</code> to <code>exercises/ml/metrics.py</code> exactly as shown
+above. Do not copy any function that already exists. Then place the locked acceptance gate
+verbatim at <code>exercises/module5/regression-error-and-slicing/test_regression_and_slicing.py</code>
+(the full test file is in the exercise README). Done when
+<code>python -m pytest exercises/module5/regression-error-and-slicing</code> is green.</p>
 </div>
 
 
@@ -509,13 +384,10 @@ several hundred from-scratch trees; expect a minute or two. Done when
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module4/bagging-and-random-forests.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module5/auc-roc-the-math-of-ranking.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module4/hyperparameters-and-the-tradeoff.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -523,13 +395,10 @@ several hundred from-scratch trees; expect a minute or two. Done when
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module4/bagging-and-random-forests.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module5/auc-roc-the-math-of-ranking.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module4/hyperparameters-and-the-tradeoff.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                    </a>
             </nav>
 
         </div>

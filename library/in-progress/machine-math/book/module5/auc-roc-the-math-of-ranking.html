@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Boosting and the Gradient - Machine Math — Classic ML and the Math It Requires</title>
+        <title>AUC-ROC: The Math of Ranking - Machine Math — Classic ML and the Math It Requires</title>
 
 
         <!-- Custom HTML head -->
@@ -177,331 +177,177 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="boosting-and-the-gradient"><a class="header" href="#boosting-and-the-gradient">Boosting and the Gradient</a></h1>
-<p>Bagging cuts variance by averaging independent trees. Boosting attacks the other side of
-the tradeoff: it cuts bias by fitting the errors the ensemble keeps making. The two
-methods are not competing; they fix different problems.</p>
-<h2 id="the-algorithm"><a class="header" href="#the-algorithm">The Algorithm</a></h2>
-<p>Start with a constant prediction: the mean of the training targets. Call it <code>F_0(x)</code>.
-Compute the residuals: for every training sample <code>i</code>, the residual is <code>y_i - F_0(x_i)</code>.
-Fit a shallow regression tree to those residuals. Add a fraction of that tree’s
-predictions to your ensemble:</p>
-<pre><code>F_1(x) = F_0(x) + learning_rate * h_1(x)
-</code></pre>
-<p>where <code>h_1</code> is the tree fitted to the residuals. Compute the new residuals against
-<code>F_1</code>, fit another tree, add another shrunken contribution. Repeat for <code>n_estimators</code>
-rounds.</p>
-<p>The learning rate, also called shrinkage, controls how much each tree contributes. A
-smaller rate requires more rounds to reach the same training error, but the ensemble
-generalizes better because no single tree dominates. Typical values run from 0.01 to 0.1
-in production.</p>
-<h2 id="the-gradient-connection"><a class="header" href="#the-gradient-connection">The Gradient Connection</a></h2>
-<p>For squared-error loss, <code>L(y, F) = (1/2)(y - F)^2</code>, the negative gradient with respect
-to <code>F</code> at sample <code>i</code> is:</p>
-<pre><code>-dL/dF = y_i - F(x_i)
-</code></pre>
-<p>That is exactly the residual. Fitting a tree to the residuals is fitting a tree to the
-negative gradient of the loss. The ensemble update rule, <code>F_m = F_{m-1} + lr * h_m</code>, is
-a gradient descent step: not in the space of model weights (as in Module 2’s linear
-regression), but in the space of functions. You are descending the loss surface by adding
-a function that locally points downhill.</p>
-<p>Module 2 showed you gradient descent with a fixed parametric form (a line). Gradient
-boosting lifts the same idea to a non-parametric setting: the model is an additive sum of
-trees, and each tree is chosen to reduce the loss as much as a shallow learner can in one
-step. The learning rate plays the same role as the step size in parameter-space gradient
-descent; too large and you overshoot, too small and convergence is slow.</p>
-<p>This generalization is what makes gradient boosting powerful for arbitrary loss functions.
-Swap the loss and you swap only the residual formula; the tree-fitting and update
-mechanics stay identical. The Azure Machine Learning designer’s Boosted Decision Tree
-Regression component builds on exactly this algorithm: its documentation describes how
-“the algorithm learns by fitting the residual of the trees that preceded it” using the
-MART gradient boosting algorithm, backed by LightGBM. The Two-Class Boosted Decision Tree
-component uses the same sequential residual-fitting mechanics for classification by
-reducing it to regression with a suitable loss. See the
-<a href="https://learn.microsoft.com/azure/machine-learning/component-reference/boosted-decision-tree-regression?view=azureml-api-2">Boosted Decision Tree Regression component reference</a>
-and the
-<a href="https://learn.microsoft.com/azure/machine-learning/component-reference/two-class-boosted-decision-tree?view=azureml-api-2">Two-Class Boosted Decision Tree component reference</a>
-for the designer-level knobs (number of trees, learning rate, leaves per tree), which map
-one-to-one onto <code>n_estimators</code>, <code>learning_rate</code>, and <code>max_depth</code> in the code below.</p>
+                        <h1 id="auc-roc-the-math-of-ranking"><a class="header" href="#auc-roc-the-math-of-ranking">AUC-ROC: The Math of Ranking</a></h1>
+<p>Precision and recall answer “how is the model doing at threshold tau?” AUC answers a
+different question: “how well does the model rank positives above negatives, regardless of
+where tau sits?” That shift in question is the shift in thinking.</p>
+<h2 id="the-roc-curve"><a class="header" href="#the-roc-curve">The ROC Curve</a></h2>
+<p>The Receiver Operating Characteristic curve plots two rates against each other as the
+threshold sweeps from high to low.</p>
+<p>True Positive Rate (TPR), also called recall or sensitivity, is TP / (TP + FN): the
+fraction of actual positives the model catches. False Positive Rate (FPR) is
+FP / (FP + TN): the fraction of actual negatives the model falsely calls positive. Both
+rates move as the threshold moves.</p>
+<p>Start with tau above the highest score: the model predicts positive for nothing. TPR = 0,
+FPR = 0. Lower the threshold. The first sample to cross it gets a positive prediction; if
+it is actually positive, TPR ticks up; if it is actually negative, FPR ticks up. Lower tau
+all the way to zero: the model predicts positive for every sample. TPR = 1, FPR = 1.</p>
+<p>Plot (FPR, TPR) at every threshold and you get the ROC curve. It starts at (0, 0) and ends
+at (1, 1). A perfect ranker reaches the top-left corner, (0, 1), before touching the FPR
+axis: it catches all positives without any false alarms. A random scorer hugs the diagonal.
+Azure Machine Learning AutoML generates the ROC curve for every classification experiment;
+see the <a href="https://learn.microsoft.com/en-us/azure/machine-learning/how-to-understand-automated-ml">AutoML evaluation guide</a>
+for the visual and the interpretation of models above and below the diagonal.</p>
+<h2 id="auc-as-a-probability"><a class="header" href="#auc-as-a-probability">AUC as a Probability</a></h2>
+<p>The area under the ROC curve has a clean probabilistic meaning: AUC is the probability
+that a randomly chosen positive example receives a higher predicted score than a randomly
+chosen negative example. A perfect ranker scores 1.0; a random scorer scores 0.5 on
+average.</p>
+<p>That interpretation comes directly from the Mann-Whitney U statistic. Count every
+(positive, negative) pair where the positive outranks the negative; add half a point for
+each tie. Divide by the total number of pairs. The result is identical to the trapezoidal
+area under the ROC curve, without any discretization error.</p>
 <h2 id="the-code"><a class="header" href="#the-code">The Code</a></h2>
-<p>Two classes go in. First, add <code>DecisionTreeRegressor</code> to <code>exercises/ml/tree.py</code>. This is
-the M4 addition to that file: a regressor that splits on variance reduction and predicts
-the mean of the target values in each leaf. The impurity functions from Module 3 already
-handle classification; <code>DecisionTreeRegressor</code> uses the same greedy axis-aligned split
-search, but the gain criterion is weighted MSE, not Gini or entropy.</p>
+<p>The locked <code>roc_curve</code> and <code>roc_auc</code> functions below belong in <code>exercises/ml/metrics.py</code>
+alongside the classification metrics from the previous lesson.</p>
 <pre><code class="language-python"># ---------------------------------------------------------------------------
-# Regressor node + tree (added M4)
+# ROC curve and AUC
 # ---------------------------------------------------------------------------
 
-@dataclass
-class _NodeReg:
-    """A node in a regression tree. Either an internal split or a leaf."""
-    feature: Optional[int] = None
-    threshold: Optional[float] = None
-    left: Optional["_NodeReg"] = None
-    right: Optional["_NodeReg"] = None
-    # Leaf value: mean of target in the region
-    value: Optional[float] = None
+def roc_curve(y_true, y_score):
+    """Sweep score thresholds and return (fpr, tpr, thresholds).
 
-    @property
-    def is_leaf(self) -&gt; bool:
-        return self.value is not None
+    Thresholds are the unique score values in descending order, with an
+    extra sentinel above the maximum (so the first operating point is (0,0)).
+    Ties (multiple samples with the same score) are resolved by grouping
+    them: all tied samples flip together when the threshold crosses their
+    shared score value.  This ensures each unique score produces exactly
+    one ROC point, matching sklearn's tie-handling convention.
 
-
-class DecisionTreeRegressor:
-    """Greedy, axis-aligned decision tree regressor.
-
-    Split criterion: variance reduction (weighted MSE). A leaf predicts the mean
-    of the training targets that fell into it.
-
-    Parameters
-    ----------
-    max_depth : int or None
-        Maximum depth of the tree. None means grow until too few samples remain.
-    min_samples_split : int
-        Do not split a node that has fewer than this many samples.
+    Arrays are aligned: fpr[i], tpr[i] is the rate state when predicting
+    positive for every sample with score &gt;= thresholds[i].
     """
+    y_true = np.asarray(y_true, dtype=int)
+    y_score = np.asarray(y_score, dtype=float)
 
-    def __init__(
-        self,
-        max_depth: Optional[int] = None,
-        min_samples_split: int = 2,
-    ):
-        self.max_depth = max_depth
-        self.min_samples_split = min_samples_split
-        self.root_: Optional[_NodeReg] = None
+    n_pos = int(np.sum(y_true == 1))
+    n_neg = int(np.sum(y_true == 0))
 
-    # ------------------------------------------------------------------
-    # fit
-    # ------------------------------------------------------------------
+    # Sort all samples by score descending (ties broken arbitrarily — they
+    # will be grouped together below).
+    desc_idx = np.argsort(y_score)[::-1]
+    sorted_scores = y_score[desc_idx]
+    sorted_labels = y_true[desc_idx]
 
-    def fit(self, X: np.ndarray, y: np.ndarray) -&gt; "DecisionTreeRegressor":
-        X = np.asarray(X, dtype=float)
-        y = np.asarray(y, dtype=float)
-        self.root_ = self._grow(X, y, depth=0)
-        return self
+    # Walk through sorted samples, accumulating TP and FP.
+    # Each time we encounter a new (lower) score we emit an ROC point first,
+    # then process all samples sharing the previous score level.
+    fprs = [0.0]
+    tprs = [0.0]
+    # Collect threshold values corresponding to each emitted point.
+    # The sentinel "above max" corresponds to the (0,0) starting point.
+    thresh_vals = [sorted_scores[0] + 1.0]
 
-    def _grow(self, X: np.ndarray, y: np.ndarray, depth: int) -&gt; _NodeReg:
-        n_samples, n_features = X.shape
+    tp = 0
+    fp = 0
+    i = 0
+    n = len(sorted_labels)
+    while i &lt; n:
+        # Find the run of samples that share the current score value.
+        current_score = sorted_scores[i]
+        j = i
+        while j &lt; n and sorted_scores[j] == current_score:
+            if sorted_labels[j] == 1:
+                tp += 1
+            else:
+                fp += 1
+            j += 1
+        # Emit one ROC point for this score level.
+        fprs.append(fp / n_neg if n_neg &gt; 0 else 0.0)
+        tprs.append(tp / n_pos if n_pos &gt; 0 else 0.0)
+        thresh_vals.append(current_score)
+        i = j
 
-        # Stopping conditions -&gt; leaf
-        too_small = n_samples &lt; self.min_samples_split
-        at_max = (self.max_depth is not None) and (depth &gt;= self.max_depth)
+    return np.array(fprs), np.array(tprs), np.array(thresh_vals)
 
-        if too_small or at_max:
-            return _NodeReg(value=float(np.mean(y)))
 
-        # Find the best split by maximum variance reduction
-        parent_var = float(np.var(y)) * n_samples   # proportional to MSE * n
+def roc_auc(y_true, y_score):
+    """Area under the ROC curve.
 
-        best_reduction = -1.0
-        best_feat: Optional[int] = None
-        best_thresh: Optional[float] = None
-
-        for feat in range(n_features):
-            col = X[:, feat]
-            unique_vals = np.unique(col)
-            if len(unique_vals) &lt; 2:
-                continue
-            thresholds = (unique_vals[:-1] + unique_vals[1:]) / 2.0
-
-            for thresh in thresholds:
-                mask = col &lt;= thresh
-                left_y, right_y = y[mask], y[~mask]
-                if len(left_y) == 0 or len(right_y) == 0:
-                    continue
-                # Weighted MSE of children
-                child_var = (
-                    float(np.var(left_y)) * len(left_y)
-                    + float(np.var(right_y)) * len(right_y)
-                )
-                reduction = parent_var - child_var
-                if reduction &gt; best_reduction:
-                    best_reduction = reduction
-                    best_feat = feat
-                    best_thresh = thresh
-
-        # No beneficial split -&gt; leaf
-        if best_feat is None or best_reduction &lt;= 0.0:
-            return _NodeReg(value=float(np.mean(y)))
-
-        mask = X[:, best_feat] &lt;= best_thresh
-        left_node = self._grow(X[mask], y[mask], depth + 1)
-        right_node = self._grow(X[~mask], y[~mask], depth + 1)
-
-        return _NodeReg(
-            feature=best_feat,
-            threshold=best_thresh,
-            left=left_node,
-            right=right_node,
-        )
-
-    # ------------------------------------------------------------------
-    # predict
-    # ------------------------------------------------------------------
-
-    def predict(self, X: np.ndarray) -&gt; np.ndarray:
-        X = np.asarray(X, dtype=float)
-        return np.array([self._traverse(self.root_, row) for row in X])
-
-    def _traverse(self, node: _NodeReg, row: np.ndarray) -&gt; float:
-        if node.is_leaf:
-            return node.value
-        if row[node.feature] &lt;= node.threshold:
-            return self._traverse(node.left, row)
-        return self._traverse(node.right, row)
-</code></pre>
-<p>The gain criterion is the only structural difference from <code>DecisionTreeClassifier</code>. Where
-the classifier measured Gini or entropy, <code>_grow</code> here computes <code>parent_var - child_var</code>,
-where each variance term is scaled by sample count. Maximum variance reduction is
-equivalent to minimizing weighted child MSE: the split that explains the most variance
-wins.</p>
-<p>Second, add <code>GradientBoostingRegressor</code> to <code>exercises/ml/ensemble.py</code>. It imports
-<code>DecisionTreeRegressor</code> from <code>ml.tree</code> alongside <code>DecisionTreeClassifier</code>.</p>
-<pre><code class="language-python"># ---------------------------------------------------------------------------
-# GradientBoostingRegressor
-# ---------------------------------------------------------------------------
-
-class GradientBoostingRegressor:
-    """Gradient boosting for regression (MSE loss), from scratch.
-
-    Builds an additive ensemble of shallow DecisionTreeRegressors:
-        F_0(x) = mean(y)
-        F_m(x) = F_{m-1}(x) + learning_rate * h_m(x)
-    where h_m is fit to the residuals r_m = y - F_{m-1}(x).
-
-    Parameters
-    ----------
-    n_estimators : int
-        Number of boosting rounds.
-    learning_rate : float
-        Shrinkage applied to each tree's contribution.
-    max_depth : int
-        Maximum depth for each weak learner.
+    Uses the rank-based Mann-Whitney U formula, which is equivalent to the
+    trapezoidal area but handles ties exactly (no discretization gap).
+    Agrees with sklearn.metrics.roc_auc_score to floating-point precision.
     """
+    y_true = np.asarray(y_true, dtype=int)
+    y_score = np.asarray(y_score, dtype=float)
 
-    def __init__(
-        self,
-        n_estimators: int = 100,
-        learning_rate: float = 0.1,
-        max_depth: int = 3,
-    ):
-        self.n_estimators = n_estimators
-        self.learning_rate = learning_rate
-        self.max_depth = max_depth
+    n_pos = int(np.sum(y_true == 1))
+    n_neg = int(np.sum(y_true == 0))
+    if n_pos == 0 or n_neg == 0:
+        raise ValueError("roc_auc requires at least one positive and one negative sample.")
 
-        self.base_: float = 0.0
-        self.estimators_: List[DecisionTreeRegressor] = []
-        self.train_losses_: List[float] = []
+    pos_scores = y_score[y_true == 1]
+    neg_scores = y_score[y_true == 0]
 
-    # ------------------------------------------------------------------
-    # fit
-    # ------------------------------------------------------------------
-
-    def fit(self, X: np.ndarray, y: np.ndarray) -&gt; "GradientBoostingRegressor":
-        X = np.asarray(X, dtype=float)
-        y = np.asarray(y, dtype=float)
-
-        # F_0: constant prediction = mean(y)
-        self.base_ = float(np.mean(y))
-        current = np.full_like(y, self.base_)
-
-        self.estimators_ = []
-        self.train_losses_ = []
-
-        for _ in range(self.n_estimators):
-            residuals = y - current
-
-            tree = DecisionTreeRegressor(
-                max_depth=self.max_depth,
-                min_samples_split=2,
-            )
-            tree.fit(X, residuals)
-
-            current = current + self.learning_rate * tree.predict(X)
-
-            self.estimators_.append(tree)
-            mse = float(np.mean((y - current) ** 2))
-            self.train_losses_.append(mse)
-
-        return self
-
-    # ------------------------------------------------------------------
-    # predict
-    # ------------------------------------------------------------------
-
-    def predict(self, X: np.ndarray) -&gt; np.ndarray:
-        X = np.asarray(X, dtype=float)
-        result = np.full(X.shape[0], self.base_)
-        for tree in self.estimators_:
-            result = result + self.learning_rate * tree.predict(X)
-        return result
+    # U statistic: count (pos &gt; neg) pairs + 0.5 * (pos == neg) pairs.
+    # Broadcasting: shape (n_pos, n_neg)
+    diff = pos_scores[:, None] - neg_scores[None, :]
+    u = float(np.sum(diff &gt; 0) + 0.5 * np.sum(diff == 0))
+    return u / (n_pos * n_neg)
 </code></pre>
-<p>The <code>fit</code> loop is the algorithm made literal. <code>self.base_</code> is <code>F_0</code>. <code>current</code> tracks
-<code>F_m(x)</code> for the training set. <code>residuals = y - current</code> computes the negative gradient.
-<code>current = current + self.learning_rate * tree.predict(X)</code> is the update step.
-<code>self.train_losses_</code> stores the per-round training MSE so the acceptance gate can verify
-that loss is monotonically non-increasing.</p>
-<h2 id="measured-results"><a class="header" href="#measured-results">Measured Results</a></h2>
-<p>On the Friedman-1 regression dataset (500 samples, 10 features, <code>noise=1.0</code>), with an
-80/20 split and <code>random_state=0</code>, using <code>n_estimators=100, learning_rate=0.1, max_depth=3</code>:</p>
-<ul>
-<li>From-scratch <code>GradientBoostingRegressor</code>: test R-squared <code>0.9038</code>.</li>
-<li>Scikit-learn <code>GradientBoostingRegressor</code> (same hyperparameters): test R-squared
-<code>0.9045</code>.</li>
-<li>Pearson correlation between the two on the 100 test samples: <code>0.9999</code>.</li>
-</ul>
-<p>Training MSE falls monotonically across all 100 rounds. A sample of the descent:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th style="text-align: right">Round</th><th style="text-align: right">Training MSE</th></tr>
-</thead>
-<tbody>
-<tr><td style="text-align: right">1</td><td style="text-align: right">22.57</td></tr>
-<tr><td style="text-align: right">10</td><td style="text-align: right">9.39</td></tr>
-<tr><td style="text-align: right">50</td><td style="text-align: right">1.21</td></tr>
-<tr><td style="text-align: right">100</td><td style="text-align: right">0.47</td></tr>
-</tbody>
-</table>
-</div>
-<p>Each round the residuals shrink. By round 100, the training error is about 2% of what
-it was at round 1. The agreement with scikit-learn (0.9999 correlation) confirms that
-the residual-fitting mechanics are correct.</p>
-<h2 id="what-this-cost"><a class="header" href="#what-this-cost">What This Cost</a></h2>
-<p>Monotone training loss is a guarantee of gradient boosting. Every new tree reduces the
-training MSE by at least as much as the learning rate allows; training error cannot
-increase. Test error is a different story. Run too many rounds with a high learning rate
-and the ensemble memorizes the training set: training MSE keeps falling, test MSE starts
-climbing. The learning rate is a regularizer, not just a step size. A smaller rate
-demands more trees for the same training error, but the ensemble stays closer to the true
-function. That tension is exactly the subject of the next lesson.</p>
+<p><code>roc_curve</code> sorts samples by score descending, then walks the sorted list and groups ties.
+Each unique score level produces exactly one (FPR, TPR) point; the (0, 0) sentinel is
+prepended with a threshold one unit above the maximum. <code>roc_auc</code> skips the curve entirely
+and computes the U statistic by broadcasting: <code>pos_scores[:, None] - neg_scores[None, :]</code>
+produces an (n_pos, n_neg) matrix of differences; count the positives, add half for ties,
+divide by the total pair count.</p>
+<h2 id="measured-what-the-numbers-show"><a class="header" href="#measured-what-the-numbers-show">Measured: What the Numbers Show</a></h2>
+<p>On a seeded random sample (<code>n=200, seed=42</code>), the from-scratch <code>roc_auc</code> matches
+scikit-learn’s <code>roc_auc_score</code> to 1e-6 tolerance. For example, both return <code>0.49925</code>
+(to five decimal places) on the same random labels and scores: the result is near 0.5
+because random labels and random scores produce a random ranker, which is exactly what the
+theory predicts.</p>
+<p>A perfect ranker, where every positive receives a higher score than every negative:</p>
+<pre><code class="language-python">y_true  = np.array([0, 0, 0, 1, 1, 1])
+y_score = np.array([0.1, 0.2, 0.3, 0.7, 0.8, 0.9])
+</code></pre>
+<p>scores AUC = <strong>1.0</strong>. A constant scorer (all scores identical) scores AUC = <strong>0.5</strong>:
+with no ranking information, the result is chance.</p>
+<h2 id="why-auc-and-when-the-pr-curve-is-better"><a class="header" href="#why-auc-and-when-the-pr-curve-is-better">Why AUC, and When the PR Curve Is Better</a></h2>
+<p>AUC is threshold-independent. You do not need to decide on a tau before evaluating the
+model. That makes it the right metric for model selection and for the primary metric in
+Azure AutoML classification experiments, where the best model needs to be chosen before
+the deployment threshold is tuned. The AutoML evaluation table lists <code>AUC_weighted</code> as the
+primary optimized metric for binary classification.</p>
+<p>One limitation matters on imbalanced data. FPR involves TN: when the negative class is
+large, even a high absolute number of false positives produces a small FPR, making the
+ROC curve look better than it is. The Precision-Recall curve replaces FPR with precision,
+which involves only positives and false positives: it is blind to TN and therefore more
+honest when negatives dominate. If your positive class is rare, use the PR curve. If
+classes are roughly balanced or you need a ranking summary for model selection, AUC is the
+right tool. Azure AutoML generates both; the <a href="https://learn.microsoft.com/en-us/azure/machine-learning/how-to-understand-automated-ml">AutoML evaluation guide</a>
+presents the ROC and PR curves side by side for exactly this reason.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>Gradient boosting builds an additive ensemble by fitting each new tree to the residuals
-of the current ensemble; for squared-error loss, residuals are the negative gradient of
-the loss with respect to the current prediction.</li>
-<li>The update rule <code>F_m = F_{m-1} + lr * h_m</code> is gradient descent in function space: each
-tree is a step downhill on the loss surface, with <code>learning_rate</code> playing the role of
-step size.</li>
-<li>Training MSE is guaranteed to be monotonically non-increasing across rounds; test error
-can increase if learning rate is too high or rounds are too many.</li>
-<li>A from-scratch <code>GradientBoostingRegressor</code> and scikit-learn’s equivalent agree to a
-Pearson correlation of 0.9999 on the Friedman-1 test set, confirming the residual loop
-is mechanically correct.</li>
+<li>The ROC curve plots TPR against FPR as the classification threshold sweeps from high to
+low; AUC is the area under that curve, ranging from 0.5 (random) to 1.0 (perfect).</li>
+<li>AUC equals the probability that the model assigns a higher score to a randomly chosen
+positive than to a randomly chosen negative: it is a ranking metric, not a threshold
+metric.</li>
+<li>The from-scratch <code>roc_auc</code> uses the Mann-Whitney U formula, which handles ties exactly
+and matches scikit-learn’s <code>roc_auc_score</code> to floating-point tolerance.</li>
+<li>On imbalanced data the PR curve is more informative than ROC because it replaces FPR
+(which involves the dominant negative class) with precision (which focuses only on
+predicted positives).</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module4/boosting-and-the-gradient/">
-<p><strong>Build It in Claude Code</strong>: Read the current state of <code>exercises/ml/tree.py</code> and
-<code>exercises/ml/ensemble.py</code> before touching anything. Module 3 placed
-<code>DecisionTreeClassifier</code> in <code>ml/tree.py</code>; the previous M4 lesson placed
-<code>RandomForestClassifier</code> in <code>ml/ensemble.py</code>. You are adding two things: append
-<code>_NodeReg</code> and <code>DecisionTreeRegressor</code> to <code>exercises/ml/tree.py</code>, then add
-<code>GradientBoostingRegressor</code> to <code>exercises/ml/ensemble.py</code>. The regressor imports
-<code>DecisionTreeRegressor</code> from <code>ml.tree</code>; do not copy the class. Implement both exactly as
-shown above. Then verify with the locked acceptance gate at
-<code>exercises/module4/boosting-and-the-gradient/test_boosting.py</code>. Note: the gate runs
-several hundred from-scratch trees; expect a minute or two. Done when
-<code>python -m pytest exercises/module4/boosting-and-the-gradient</code> is green.</p>
+<div class="claude-handoff" data-exercise="exercises/module5/auc-roc-the-math-of-ranking/">
+<p><strong>Build It in Claude Code</strong>: Read the current state of <code>exercises/ml/metrics.py</code> before
+touching anything. The previous lesson added <code>confusion_matrix</code>, <code>accuracy</code>, <code>precision</code>,
+<code>recall</code>, and <code>f1</code>. You are now adding <code>roc_curve</code> and <code>roc_auc</code> to the same file. Add
+the two functions exactly as shown above, after the <code>f1</code> function and before any regression
+metrics. Then verify with the locked acceptance gate at
+<code>exercises/module5/auc-roc-the-math-of-ranking/test_auc.py</code>. Done when
+<code>python -m pytest exercises/module5/auc-roc-the-math-of-ranking</code> is green.</p>
 </div>
 
 
@@ -509,11 +355,11 @@ several hundred from-scratch trees; expect a minute or two. Done when
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module4/bagging-and-random-forests.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module5/confusion-matrix-and-thresholds.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module4/hyperparameters-and-the-tradeoff.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module5/regression-error-and-slicing.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -523,11 +369,11 @@ several hundred from-scratch trees; expect a minute or two. Done when
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module4/bagging-and-random-forests.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module5/confusion-matrix-and-thresholds.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module4/hyperparameters-and-the-tradeoff.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module5/regression-error-and-slicing.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

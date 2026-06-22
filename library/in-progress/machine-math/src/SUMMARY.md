@@ -29,3 +29,10 @@
 - [Bagging and Random Forests](module4/bagging-and-random-forests.md)
 - [Boosting and the Gradient](module4/boosting-and-the-gradient.md)
 - [Hyperparameters and the Tradeoff](module4/hyperparameters-and-the-tradeoff.md)
+
+## Module 5: What "Good" Means
+
+- [Overview](module5/00-overview.md)
+- [The Confusion Matrix and Thresholds](module5/confusion-matrix-and-thresholds.md)
+- [AUC-ROC: The Math of Ranking](module5/auc-roc-the-math-of-ranking.md)
+- [Regression Error and Slicing](module5/regression-error-and-slicing.md)
