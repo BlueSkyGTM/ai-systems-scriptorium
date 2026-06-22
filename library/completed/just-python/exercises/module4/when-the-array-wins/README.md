@@ -6,7 +6,7 @@
 
 ## Before You Touch Code
 
-1. Read the lesson at `library/in-progress/just-python/src/module4/when-the-array-wins.md` for the full reasoning behind the benchmark.
+1. Read the lesson at `library/completed/just-python/src/module4/when-the-array-wins.md` for the full reasoning behind the benchmark.
 2. Find `vectorization_report.py` in `exercises/module4/` and read its current state. You are extending a build already in progress, not starting a new file.
 3. Find `exercises/module1/the-cost-of-a-python-list/measure.py` and read its current state. It exports `time_sum` (and possibly `time_contiguous_vs_strided`). You will import from it; do not rewrite it.
 

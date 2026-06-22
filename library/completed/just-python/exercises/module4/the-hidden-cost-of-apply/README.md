@@ -6,7 +6,7 @@
 
 ## Before You Touch Code
 
-1. Read the lesson at `library/in-progress/just-python/src/module4/the-hidden-cost-of-apply.md`.
+1. Read the lesson at `library/completed/just-python/src/module4/the-hidden-cost-of-apply.md`.
 2. Find `exercises/module4/vectorization_report.py` and read its current state. You are adding to a file that already has a speedup benchmark from earlier M4 exercises. Do not reset or remove what is already there.
 3. Find `exercises/module1/the-cost-of-a-python-list/measure.py` and read it. You need `time_sum`; import it, do not copy it.
 

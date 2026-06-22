@@ -18,7 +18,7 @@ routed_boundaries:
   root: .
   library: library
   book_sans_python: library/completed/sans-python
-  in_progress_just_python: library/in-progress/just-python
+  book_just_python: library/completed/just-python
   in_progress_answer_engineering: library/in-progress/answer-engineering
   in_progress_local_metal: library/in-progress/local-metal
   planned_ml_in_proportion: library/planned/ml-in-proportion

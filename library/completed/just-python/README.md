@@ -172,4 +172,4 @@ kept as the record of the decision.
 | **Applied Python for AI Engineers** | Descriptive and SEO-clear for standalone readers who did not read Sans Python. Trades resonance for discoverability. |
 | **Python, Properly** | Captures the "finally drill it correctly" feeling; signals opinion and confidence. Less explicit about AI-engineering scope. |
 
-Decision: **Just Python**. The book has graduated to `library/in-progress/just-python`.
+Decision: **Just Python**. The book has graduated to `library/completed/just-python`.
