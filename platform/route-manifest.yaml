@@ -21,8 +21,8 @@ routed_boundaries:
   book_just_python: library/completed/just-python
   book_local_metal: library/completed/local-metal
   in_progress_answer_engineering: library/in-progress/answer-engineering
-  planned_ml_in_proportion: library/planned/ml-in-proportion
-  planned_upstream: library/planned/upstream
+  in_progress_machine_math: library/in-progress/machine-math
+  in_progress_data_currents: library/in-progress/data-currents
   planned_tasteful_tuning: library/planned/tasteful-tuning
   platform: platform
   platform_pipeline: platform/pipeline

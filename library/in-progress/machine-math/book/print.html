@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-422ad01d.js";
+            window.path_to_searchindex_js = "searchindex-af29d0fb.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-ed5891a6.js"></script>
+        <script src="toc-1b1245a3.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -1692,6 +1692,730 @@ that train accuracy climbs to 1.000 while held-out test accuracy peaks at a mode
 does not keep improving. The gate at
 <code>exercises/module3/overfitting-and-cross-validation/test_overfitting.py</code> must pass green with
 <code>python -m pytest exercises/module3/overfitting-and-cross-validation</code>.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-4-ensembles-and-the-gradient"><a class="header" href="#module-4-ensembles-and-the-gradient">Module 4: Ensembles and the Gradient</a></h1>
+<p>Module 3 gave you one tree. One tree is a weak, high-variance learner: fit it deeply and
+it memorizes the training set; constrain it with <code>max_depth</code> and it misses real signal.
+Module 4 asks what happens when you run many trees together, and finds two completely
+opposite answers.</p>
+<h2 id="two-strategies-one-building-block"><a class="header" href="#two-strategies-one-building-block">Two Strategies, One Building Block</a></h2>
+<p>The M3 <code>DecisionTreeClassifier</code> is the building block both strategies share. What changes
+is how the trees relate to each other.</p>
+<p><strong>Bagging</strong> runs trees independently. You draw a bootstrap sample (sampling rows with
+replacement), train a full tree on it, and repeat. Because each tree sees a slightly
+different dataset, the trees make different mistakes. Average their predictions and the
+random errors cancel, cutting variance without meaningfully raising bias. Random forests
+add one more twist: at each split, each tree considers only a random subset of features,
+forcing even more diversity. The result is an ensemble that is systematically more
+accurate than any single tree it contains.</p>
+<p><strong>Boosting</strong> runs trees sequentially, and each tree’s job is to fix the last tree’s
+mistakes. Start with a constant prediction (the mean for regression). Compute the
+difference between the truth and what the ensemble predicts so far: those are the
+residuals. Fit a new, shallow tree to the residuals. Add a shrunken version of that
+tree to the ensemble. Repeat. For squared-error loss, the residuals are the negative
+gradient of the loss with respect to the current prediction, so each stage is a step
+of gradient descent: not in the space of model weights, but in the space of functions.</p>
+<p>The two strategies are not just implementation choices. They fix different problems.
+Bagging cuts variance while keeping bias roughly flat. Boosting cuts bias by iteratively
+correcting systematic errors, at the risk of overfitting if you run too many rounds.</p>
+<h2 id="three-lessons"><a class="header" href="#three-lessons">Three Lessons</a></h2>
+<p>The module runs in order. Each lesson builds on the one before it.</p>
+<p><strong>Bagging and Random Forests</strong> shows how averaging many independent high-variance trees
+cuts their collective variance. You build <code>RandomForestClassifier</code> in <code>exercises/ml/ensemble.py</code>,
+directly reusing the <code>DecisionTreeClassifier</code> from <code>ml/tree.py</code>. Measured on breast
+cancer classification, the 100-tree forest outperforms any single tree.</p>
+<p><strong>Boosting and the Gradient</strong> shows how sequential residual fitting becomes gradient
+descent in function space. You first add <code>DecisionTreeRegressor</code> to <code>exercises/ml/tree.py</code>,
+then build <code>GradientBoostingRegressor</code> in <code>exercises/ml/ensemble.py</code>. The Friedman-1
+regression dataset serves as the acceptance gate.</p>
+<p><strong>Hyperparameters and the Tradeoff</strong> closes the module by naming the levers on both
+ensembles: <code>n_estimators</code>, <code>learning_rate</code>, <code>max_depth</code>, <code>max_features</code>. You measure the
+bias-variance tradeoff directly: what happens to test error as you vary each knob while
+holding the others fixed?</p>
+<h2 id="what-is-given-3"><a class="header" href="#what-is-given-3">What Is Given</a></h2>
+<p>Scikit-learn provides datasets (<code>load_breast_cancer</code>, <code>make_friedman1</code>) and serves as the
+oracle in both acceptance gates: your from-scratch ensembles must agree with scikit-learn’s
+equivalents on held-out data. All algorithm logic is NumPy plus the <code>ml.tree</code> classes you
+have already built.</p>
+<h2 id="what-is-deliberately-out-of-scope-3"><a class="header" href="#what-is-deliberately-out-of-scope-3">What Is Deliberately Out of Scope</a></h2>
+<p><strong>Evaluation metrics</strong> (precision, recall, F1, ROC-AUC) are held for Module 5. The
+acceptance gates in this module use raw accuracy or R-squared as sanity checks only.</p>
+<p><strong>Feature engineering</strong> is held for Module 6. Both ensembles here receive clean, numeric
+features from scikit-learn datasets.</p>
+<p><strong>XGBoost and LightGBM</strong> are the production successors to the from-scratch gradient
+booster you build here. They add second-order gradient approximations, column
+subsampling, and cache-aware block structures. The Azure Machine Learning designer’s
+Boosted Decision Tree Regression and Two-Class Boosted Decision Tree components are
+backed by LightGBM and expose the same three levers: number of trees, learning rate, and
+tree depth. Module 4’s from-scratch version teaches the same mechanics those components
+implement.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="bagging-and-random-forests"><a class="header" href="#bagging-and-random-forests">Bagging and Random Forests</a></h1>
+<p>A single decision tree is unstable. Change a handful of training samples and the tree can
+look completely different at every split below the root. That instability is variance, and
+variance is the enemy bagging is designed to kill.</p>
+<h2 id="the-bagging-idea"><a class="header" href="#the-bagging-idea">The Bagging Idea</a></h2>
+<p>Bootstrap aggregating, shortened to bagging, is the simplest variance reduction technique
+for high-variance learners. Draw a bootstrap sample: sample <code>n</code> rows from your training
+set with replacement, where <code>n</code> is the original size. About 63.2% of unique rows appear
+in each sample; the rest are left out. Train a full, unpruned tree on that sample. Repeat
+for each of your <code>n_estimators</code> trees. At prediction time, collect every tree’s vote and
+return the majority class.</p>
+<p>Why does it work? Each tree overfits, but to a different bootstrap sample, so the
+overfitting is incoherent. When you average incoherent noise, it cancels. The signal
+component, shared across all trees, survives the averaging. Bias barely moves because
+each tree trains on a full-sized sample; variance falls roughly in proportion to the
+number of trees, up to the point where the trees become correlated and further averaging
+stops helping.</p>
+<p>Random forests push the idea one step further. At each split, instead of searching all
+features, each tree draws a random subset of features of size <code>sqrt(n_features)</code> for
+classification and considers only those. That random feature subset forces the trees to
+differ even when they see similar bootstrap samples. The result is a forest of trees that
+are diverse in two independent ways: different rows, different features.</p>
+<p>The Azure Machine Learning designer’s Decision Forest Regression component exposes this
+directly. It offers both a <strong>Bagging</strong> resampling method (bootstrap aggregating with
+aggregation over the resulting tree predictions) and a <strong>Replicate</strong> method (same input
+data, random split predicates). The bagging path is the same bootstrap-and-average
+mechanism you build here; see the <a href="https://learn.microsoft.com/azure/machine-learning/component-reference/decision-forest-regression?view=azureml-api-2">Decision Forest Regression component
+reference</a>
+for the designer-level parameters.</p>
+<h2 id="the-code-2"><a class="header" href="#the-code-2">The Code</a></h2>
+<p>The locked <code>RandomForestClassifier</code> below is the exact code the acceptance gate imports.
+Add it to <code>exercises/ml/ensemble.py</code>. It imports <code>DecisionTreeClassifier</code> directly from
+<code>ml.tree</code>, the file you built in Module 3: real reuse, no copy.</p>
+<pre><code class="language-python">"""Ensemble methods, from scratch in NumPy.
+
+Two ideas housed here:
+
+1. Bagging + random feature subsets -&gt; RandomForestClassifier.
+   Each tree sees a bootstrap sample of rows and a random subset of features.
+   Prediction is majority vote. Variance falls; bias stays flat.
+
+2. Gradient boosting -&gt; GradientBoostingRegressor.
+   Fit weak regressors (shallow trees) sequentially to the residuals of the
+   ensemble so far. Each stage nudges the prediction in the direction of
+   steepest descent of MSE. The ensemble is additive:
+       F_m(x) = base + lr * sum_{i=1}^{m} h_i(x)
+   where h_i is trained on y - F_{i-1}(x).
+
+No sklearn inside the algorithms. Pure NumPy + ml.tree.
+"""
+from __future__ import annotations
+
+from typing import List, Optional, Union
+
+import numpy as np
+
+from ml.tree import DecisionTreeClassifier, DecisionTreeRegressor
+
+
+# ---------------------------------------------------------------------------
+# RandomForestClassifier
+# ---------------------------------------------------------------------------
+
+class RandomForestClassifier:
+    """Bootstrap-aggregated ensemble of DecisionTreeClassifiers with random
+    feature subsets.
+
+    Parameters
+    ----------
+    n_estimators : int
+        Number of trees in the forest.
+    max_depth : int or None
+        Maximum depth for each tree.
+    max_features : "sqrt" or int
+        Number of features to consider at each tree. "sqrt" -&gt; int(sqrt(n_features)).
+    min_samples_split : int
+        Passed through to each tree.
+    random_state : int or None
+        Seeds a numpy Generator for reproducibility.
+    """
+
+    def __init__(
+        self,
+        n_estimators: int = 100,
+        max_depth: Optional[int] = None,
+        max_features: Union[str, int] = "sqrt",
+        min_samples_split: int = 2,
+        random_state: Optional[int] = None,
+    ):
+        self.n_estimators = n_estimators
+        self.max_depth = max_depth
+        self.max_features = max_features
+        self.min_samples_split = min_samples_split
+        self.random_state = random_state
+
+        self.estimators_: List[DecisionTreeClassifier] = []
+        self.feature_indices_: List[np.ndarray] = []
+        self.n_classes_: int = 0
+
+    # ------------------------------------------------------------------
+    # fit
+    # ------------------------------------------------------------------
+
+    def fit(self, X: np.ndarray, y: np.ndarray) -&gt; "RandomForestClassifier":
+        X = np.asarray(X, dtype=float)
+        y = np.asarray(y, dtype=int)
+        n_samples, n_features = X.shape
+        self.n_classes_ = int(y.max()) + 1
+
+        rng = np.random.default_rng(self.random_state)
+
+        # Resolve max_features to an integer count
+        if self.max_features == "sqrt":
+            k = max(1, int(np.sqrt(n_features)))
+        elif isinstance(self.max_features, int):
+            k = min(self.max_features, n_features)
+        else:
+            raise ValueError(f"max_features must be 'sqrt' or int, got {self.max_features!r}")
+
+        self.estimators_ = []
+        self.feature_indices_ = []
+
+        for _ in range(self.n_estimators):
+            # Bootstrap sample (rows with replacement)
+            row_idx = rng.integers(0, n_samples, size=n_samples)
+            # Random feature subset (without replacement)
+            feat_idx = rng.choice(n_features, size=k, replace=False)
+            feat_idx.sort()   # stable column order; purely cosmetic
+
+            X_boot = X[row_idx][:, feat_idx]
+            y_boot = y[row_idx]
+
+            tree = DecisionTreeClassifier(
+                max_depth=self.max_depth,
+                min_samples_split=self.min_samples_split,
+            )
+            tree.fit(X_boot, y_boot)
+
+            self.estimators_.append(tree)
+            self.feature_indices_.append(feat_idx)
+
+        return self
+
+    # ------------------------------------------------------------------
+    # predict
+    # ------------------------------------------------------------------
+
+    def predict(self, X: np.ndarray) -&gt; np.ndarray:
+        X = np.asarray(X, dtype=float)
+        # Collect votes: shape (n_estimators, n_samples)
+        votes = np.stack(
+            [
+                tree.predict(X[:, feat_idx])
+                for tree, feat_idx in zip(self.estimators_, self.feature_indices_)
+            ],
+            axis=0,
+        )   # shape: (n_estimators, n_samples)
+
+        n_samples = X.shape[0]
+        # Majority vote per sample
+        preds = np.zeros(n_samples, dtype=int)
+        for i in range(n_samples):
+            counts = np.bincount(votes[:, i], minlength=self.n_classes_)
+            preds[i] = int(np.argmax(counts))
+        return preds
+</code></pre>
+<p>Follow the <code>fit</code> loop carefully. <code>rng.integers(0, n_samples, size=n_samples)</code> draws the
+bootstrap row indices with replacement. <code>rng.choice(n_features, size=k, replace=False)</code>
+draws the feature subset without replacement. The tree then trains on the sliced
+submatrix: <code>X[row_idx][:, feat_idx]</code>. At prediction time, each tree receives only the
+columns it was trained on: <code>X[:, feat_idx]</code>. The majority vote over all <code>n_estimators</code>
+trees is the forest’s answer.</p>
+<h2 id="measured-results-2"><a class="header" href="#measured-results-2">Measured Results</a></h2>
+<p>On the breast cancer dataset (569 samples, 30 features, 2 classes), with a stratified
+80/20 split and <code>random_state=0</code>:</p>
+<ul>
+<li><code>DecisionTreeClassifier(max_depth=6)</code>: test accuracy <code>0.9123</code>.</li>
+<li><code>RandomForestClassifier(n_estimators=100, max_depth=6, random_state=0)</code>: test accuracy
+<code>0.9386</code>.</li>
+<li>Label-by-label agreement between the from-scratch forest and scikit-learn’s
+<code>RandomForestClassifier</code> on the same 114 test samples: <code>99.12%</code>.</li>
+</ul>
+<p>The forest clears the single-tree score by more than two percentage points. The agreement
+with scikit-learn confirms that the bootstrap-and-vote mechanics are correct: the same
+algorithm on the same data produces the same predictions.</p>
+<h2 id="why-variance-falls"><a class="header" href="#why-variance-falls">Why Variance Falls</a></h2>
+<p>Think of it this way. Each tree predicts <code>signal + noise_i</code>, where <code>noise_i</code> is the
+idiosyncratic overfitting noise that tree <code>i</code> picked up from its bootstrap sample. When
+you average 100 such trees, the signal terms add coherently; the noise terms, being
+independent of each other, cancel. The variance of the average is <code>variance_of_one_tree / n_estimators</code> when the trees are uncorrelated. The random feature subset keeps the trees
+uncorrelated even when the dataset has a few dominant features; without it, every tree
+would split on the same feature at the root, and the votes would tell you almost nothing
+new about each other.</p>
+<p>Bias is mostly untouched because each tree still trains on a full-sized sample. You are
+not undersampling data; you are resampling it. The tree’s capacity to fit the underlying
+function is unchanged.</p>
+<p>Adding more trees past a certain point gives diminishing returns but never makes things
+worse. That is a sharp difference from boosting, where too many rounds can overfit.</p>
+<h2 id="core-concepts-9"><a class="header" href="#core-concepts-9">Core Concepts</a></h2>
+<ul>
+<li>Bagging trains each tree on a bootstrap sample (rows sampled with replacement, same
+size as original) and aggregates predictions by majority vote; independent overfitting
+noise cancels on average.</li>
+<li>Random forests add random feature subsampling at each split (<code>sqrt(n_features)</code> for
+classification), forcing diversity even when one feature dominates.</li>
+<li>Averaging <code>k</code> independent learners reduces variance by roughly a factor of <code>k</code>; bias
+stays flat because each learner trains on a full-sized sample.</li>
+<li>From-scratch and scikit-learn forests agree on 99.12% of breast cancer test labels at
+100 trees and <code>max_depth=6</code>, confirming the bootstrap-and-vote logic is correct.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module4/bagging-and-random-forests/">
+<p><strong>Build It in Claude Code</strong>: Read the current state of <code>exercises/ml/tree.py</code> before
+touching anything. Module 3 already placed <code>DecisionTreeClassifier</code> there. You are now
+creating <code>exercises/ml/ensemble.py</code> and adding <code>RandomForestClassifier</code> to it. Import
+<code>DecisionTreeClassifier</code> from <code>ml.tree</code>; do not copy it. Implement the class exactly as
+shown above. Then verify with the locked acceptance gate at
+<code>exercises/module4/bagging-and-random-forests/test_forest.py</code>. Done when
+<code>python -m pytest exercises/module4/bagging-and-random-forests</code> is green.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="boosting-and-the-gradient"><a class="header" href="#boosting-and-the-gradient">Boosting and the Gradient</a></h1>
+<p>Bagging cuts variance by averaging independent trees. Boosting attacks the other side of
+the tradeoff: it cuts bias by fitting the errors the ensemble keeps making. The two
+methods are not competing; they fix different problems.</p>
+<h2 id="the-algorithm-1"><a class="header" href="#the-algorithm-1">The Algorithm</a></h2>
+<p>Start with a constant prediction: the mean of the training targets. Call it <code>F_0(x)</code>.
+Compute the residuals: for every training sample <code>i</code>, the residual is <code>y_i - F_0(x_i)</code>.
+Fit a shallow regression tree to those residuals. Add a fraction of that tree’s
+predictions to your ensemble:</p>
+<pre><code>F_1(x) = F_0(x) + learning_rate * h_1(x)
+</code></pre>
+<p>where <code>h_1</code> is the tree fitted to the residuals. Compute the new residuals against
+<code>F_1</code>, fit another tree, add another shrunken contribution. Repeat for <code>n_estimators</code>
+rounds.</p>
+<p>The learning rate, also called shrinkage, controls how much each tree contributes. A
+smaller rate requires more rounds to reach the same training error, but the ensemble
+generalizes better because no single tree dominates. Typical values run from 0.01 to 0.1
+in production.</p>
+<h2 id="the-gradient-connection"><a class="header" href="#the-gradient-connection">The Gradient Connection</a></h2>
+<p>For squared-error loss, <code>L(y, F) = (1/2)(y - F)^2</code>, the negative gradient with respect
+to <code>F</code> at sample <code>i</code> is:</p>
+<pre><code>-dL/dF = y_i - F(x_i)
+</code></pre>
+<p>That is exactly the residual. Fitting a tree to the residuals is fitting a tree to the
+negative gradient of the loss. The ensemble update rule, <code>F_m = F_{m-1} + lr * h_m</code>, is
+a gradient descent step: not in the space of model weights (as in Module 2’s linear
+regression), but in the space of functions. You are descending the loss surface by adding
+a function that locally points downhill.</p>
+<p>Module 2 showed you gradient descent with a fixed parametric form (a line). Gradient
+boosting lifts the same idea to a non-parametric setting: the model is an additive sum of
+trees, and each tree is chosen to reduce the loss as much as a shallow learner can in one
+step. The learning rate plays the same role as the step size in parameter-space gradient
+descent; too large and you overshoot, too small and convergence is slow.</p>
+<p>This generalization is what makes gradient boosting powerful for arbitrary loss functions.
+Swap the loss and you swap only the residual formula; the tree-fitting and update
+mechanics stay identical. The Azure Machine Learning designer’s Boosted Decision Tree
+Regression component builds on exactly this algorithm: its documentation describes how
+“the algorithm learns by fitting the residual of the trees that preceded it” using the
+MART gradient boosting algorithm, backed by LightGBM. The Two-Class Boosted Decision Tree
+component uses the same sequential residual-fitting mechanics for classification by
+reducing it to regression with a suitable loss. See the
+<a href="https://learn.microsoft.com/azure/machine-learning/component-reference/boosted-decision-tree-regression?view=azureml-api-2">Boosted Decision Tree Regression component reference</a>
+and the
+<a href="https://learn.microsoft.com/azure/machine-learning/component-reference/two-class-boosted-decision-tree?view=azureml-api-2">Two-Class Boosted Decision Tree component reference</a>
+for the designer-level knobs (number of trees, learning rate, leaves per tree), which map
+one-to-one onto <code>n_estimators</code>, <code>learning_rate</code>, and <code>max_depth</code> in the code below.</p>
+<h2 id="the-code-3"><a class="header" href="#the-code-3">The Code</a></h2>
+<p>Two classes go in. First, add <code>DecisionTreeRegressor</code> to <code>exercises/ml/tree.py</code>. This is
+the M4 addition to that file: a regressor that splits on variance reduction and predicts
+the mean of the target values in each leaf. The impurity functions from Module 3 already
+handle classification; <code>DecisionTreeRegressor</code> uses the same greedy axis-aligned split
+search, but the gain criterion is weighted MSE, not Gini or entropy.</p>
+<pre><code class="language-python"># ---------------------------------------------------------------------------
+# Regressor node + tree (added M4)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class _NodeReg:
+    """A node in a regression tree. Either an internal split or a leaf."""
+    feature: Optional[int] = None
+    threshold: Optional[float] = None
+    left: Optional["_NodeReg"] = None
+    right: Optional["_NodeReg"] = None
+    # Leaf value: mean of target in the region
+    value: Optional[float] = None
+
+    @property
+    def is_leaf(self) -&gt; bool:
+        return self.value is not None
+
+
+class DecisionTreeRegressor:
+    """Greedy, axis-aligned decision tree regressor.
+
+    Split criterion: variance reduction (weighted MSE). A leaf predicts the mean
+    of the training targets that fell into it.
+
+    Parameters
+    ----------
+    max_depth : int or None
+        Maximum depth of the tree. None means grow until too few samples remain.
+    min_samples_split : int
+        Do not split a node that has fewer than this many samples.
+    """
+
+    def __init__(
+        self,
+        max_depth: Optional[int] = None,
+        min_samples_split: int = 2,
+    ):
+        self.max_depth = max_depth
+        self.min_samples_split = min_samples_split
+        self.root_: Optional[_NodeReg] = None
+
+    # ------------------------------------------------------------------
+    # fit
+    # ------------------------------------------------------------------
+
+    def fit(self, X: np.ndarray, y: np.ndarray) -&gt; "DecisionTreeRegressor":
+        X = np.asarray(X, dtype=float)
+        y = np.asarray(y, dtype=float)
+        self.root_ = self._grow(X, y, depth=0)
+        return self
+
+    def _grow(self, X: np.ndarray, y: np.ndarray, depth: int) -&gt; _NodeReg:
+        n_samples, n_features = X.shape
+
+        # Stopping conditions -&gt; leaf
+        too_small = n_samples &lt; self.min_samples_split
+        at_max = (self.max_depth is not None) and (depth &gt;= self.max_depth)
+
+        if too_small or at_max:
+            return _NodeReg(value=float(np.mean(y)))
+
+        # Find the best split by maximum variance reduction
+        parent_var = float(np.var(y)) * n_samples   # proportional to MSE * n
+
+        best_reduction = -1.0
+        best_feat: Optional[int] = None
+        best_thresh: Optional[float] = None
+
+        for feat in range(n_features):
+            col = X[:, feat]
+            unique_vals = np.unique(col)
+            if len(unique_vals) &lt; 2:
+                continue
+            thresholds = (unique_vals[:-1] + unique_vals[1:]) / 2.0
+
+            for thresh in thresholds:
+                mask = col &lt;= thresh
+                left_y, right_y = y[mask], y[~mask]
+                if len(left_y) == 0 or len(right_y) == 0:
+                    continue
+                # Weighted MSE of children
+                child_var = (
+                    float(np.var(left_y)) * len(left_y)
+                    + float(np.var(right_y)) * len(right_y)
+                )
+                reduction = parent_var - child_var
+                if reduction &gt; best_reduction:
+                    best_reduction = reduction
+                    best_feat = feat
+                    best_thresh = thresh
+
+        # No beneficial split -&gt; leaf
+        if best_feat is None or best_reduction &lt;= 0.0:
+            return _NodeReg(value=float(np.mean(y)))
+
+        mask = X[:, best_feat] &lt;= best_thresh
+        left_node = self._grow(X[mask], y[mask], depth + 1)
+        right_node = self._grow(X[~mask], y[~mask], depth + 1)
+
+        return _NodeReg(
+            feature=best_feat,
+            threshold=best_thresh,
+            left=left_node,
+            right=right_node,
+        )
+
+    # ------------------------------------------------------------------
+    # predict
+    # ------------------------------------------------------------------
+
+    def predict(self, X: np.ndarray) -&gt; np.ndarray:
+        X = np.asarray(X, dtype=float)
+        return np.array([self._traverse(self.root_, row) for row in X])
+
+    def _traverse(self, node: _NodeReg, row: np.ndarray) -&gt; float:
+        if node.is_leaf:
+            return node.value
+        if row[node.feature] &lt;= node.threshold:
+            return self._traverse(node.left, row)
+        return self._traverse(node.right, row)
+</code></pre>
+<p>The gain criterion is the only structural difference from <code>DecisionTreeClassifier</code>. Where
+the classifier measured Gini or entropy, <code>_grow</code> here computes <code>parent_var - child_var</code>,
+where each variance term is scaled by sample count. Maximum variance reduction is
+equivalent to minimizing weighted child MSE: the split that explains the most variance
+wins.</p>
+<p>Second, add <code>GradientBoostingRegressor</code> to <code>exercises/ml/ensemble.py</code>. It imports
+<code>DecisionTreeRegressor</code> from <code>ml.tree</code> alongside <code>DecisionTreeClassifier</code>.</p>
+<pre><code class="language-python"># ---------------------------------------------------------------------------
+# GradientBoostingRegressor
+# ---------------------------------------------------------------------------
+
+class GradientBoostingRegressor:
+    """Gradient boosting for regression (MSE loss), from scratch.
+
+    Builds an additive ensemble of shallow DecisionTreeRegressors:
+        F_0(x) = mean(y)
+        F_m(x) = F_{m-1}(x) + learning_rate * h_m(x)
+    where h_m is fit to the residuals r_m = y - F_{m-1}(x).
+
+    Parameters
+    ----------
+    n_estimators : int
+        Number of boosting rounds.
+    learning_rate : float
+        Shrinkage applied to each tree's contribution.
+    max_depth : int
+        Maximum depth for each weak learner.
+    """
+
+    def __init__(
+        self,
+        n_estimators: int = 100,
+        learning_rate: float = 0.1,
+        max_depth: int = 3,
+    ):
+        self.n_estimators = n_estimators
+        self.learning_rate = learning_rate
+        self.max_depth = max_depth
+
+        self.base_: float = 0.0
+        self.estimators_: List[DecisionTreeRegressor] = []
+        self.train_losses_: List[float] = []
+
+    # ------------------------------------------------------------------
+    # fit
+    # ------------------------------------------------------------------
+
+    def fit(self, X: np.ndarray, y: np.ndarray) -&gt; "GradientBoostingRegressor":
+        X = np.asarray(X, dtype=float)
+        y = np.asarray(y, dtype=float)
+
+        # F_0: constant prediction = mean(y)
+        self.base_ = float(np.mean(y))
+        current = np.full_like(y, self.base_)
+
+        self.estimators_ = []
+        self.train_losses_ = []
+
+        for _ in range(self.n_estimators):
+            residuals = y - current
+
+            tree = DecisionTreeRegressor(
+                max_depth=self.max_depth,
+                min_samples_split=2,
+            )
+            tree.fit(X, residuals)
+
+            current = current + self.learning_rate * tree.predict(X)
+
+            self.estimators_.append(tree)
+            mse = float(np.mean((y - current) ** 2))
+            self.train_losses_.append(mse)
+
+        return self
+
+    # ------------------------------------------------------------------
+    # predict
+    # ------------------------------------------------------------------
+
+    def predict(self, X: np.ndarray) -&gt; np.ndarray:
+        X = np.asarray(X, dtype=float)
+        result = np.full(X.shape[0], self.base_)
+        for tree in self.estimators_:
+            result = result + self.learning_rate * tree.predict(X)
+        return result
+</code></pre>
+<p>The <code>fit</code> loop is the algorithm made literal. <code>self.base_</code> is <code>F_0</code>. <code>current</code> tracks
+<code>F_m(x)</code> for the training set. <code>residuals = y - current</code> computes the negative gradient.
+<code>current = current + self.learning_rate * tree.predict(X)</code> is the update step.
+<code>self.train_losses_</code> stores the per-round training MSE so the acceptance gate can verify
+that loss is monotonically non-increasing.</p>
+<h2 id="measured-results-3"><a class="header" href="#measured-results-3">Measured Results</a></h2>
+<p>On the Friedman-1 regression dataset (500 samples, 10 features, <code>noise=1.0</code>), with an
+80/20 split and <code>random_state=0</code>, using <code>n_estimators=100, learning_rate=0.1, max_depth=3</code>:</p>
+<ul>
+<li>From-scratch <code>GradientBoostingRegressor</code>: test R-squared <code>0.9038</code>.</li>
+<li>Scikit-learn <code>GradientBoostingRegressor</code> (same hyperparameters): test R-squared
+<code>0.9045</code>.</li>
+<li>Pearson correlation between the two on the 100 test samples: <code>0.9999</code>.</li>
+</ul>
+<p>Training MSE falls monotonically across all 100 rounds. A sample of the descent:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: right">Round</th><th style="text-align: right">Training MSE</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: right">1</td><td style="text-align: right">22.57</td></tr>
+<tr><td style="text-align: right">10</td><td style="text-align: right">9.39</td></tr>
+<tr><td style="text-align: right">50</td><td style="text-align: right">1.21</td></tr>
+<tr><td style="text-align: right">100</td><td style="text-align: right">0.47</td></tr>
+</tbody>
+</table>
+</div>
+<p>Each round the residuals shrink. By round 100, the training error is about 2% of what
+it was at round 1. The agreement with scikit-learn (0.9999 correlation) confirms that
+the residual-fitting mechanics are correct.</p>
+<h2 id="what-this-cost"><a class="header" href="#what-this-cost">What This Cost</a></h2>
+<p>Monotone training loss is a guarantee of gradient boosting. Every new tree reduces the
+training MSE by at least as much as the learning rate allows; training error cannot
+increase. Test error is a different story. Run too many rounds with a high learning rate
+and the ensemble memorizes the training set: training MSE keeps falling, test MSE starts
+climbing. The learning rate is a regularizer, not just a step size. A smaller rate
+demands more trees for the same training error, but the ensemble stays closer to the true
+function. That tension is exactly the subject of the next lesson.</p>
+<h2 id="core-concepts-10"><a class="header" href="#core-concepts-10">Core Concepts</a></h2>
+<ul>
+<li>Gradient boosting builds an additive ensemble by fitting each new tree to the residuals
+of the current ensemble; for squared-error loss, residuals are the negative gradient of
+the loss with respect to the current prediction.</li>
+<li>The update rule <code>F_m = F_{m-1} + lr * h_m</code> is gradient descent in function space: each
+tree is a step downhill on the loss surface, with <code>learning_rate</code> playing the role of
+step size.</li>
+<li>Training MSE is guaranteed to be monotonically non-increasing across rounds; test error
+can increase if learning rate is too high or rounds are too many.</li>
+<li>A from-scratch <code>GradientBoostingRegressor</code> and scikit-learn’s equivalent agree to a
+Pearson correlation of 0.9999 on the Friedman-1 test set, confirming the residual loop
+is mechanically correct.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module4/boosting-and-the-gradient/">
+<p><strong>Build It in Claude Code</strong>: Read the current state of <code>exercises/ml/tree.py</code> and
+<code>exercises/ml/ensemble.py</code> before touching anything. Module 3 placed
+<code>DecisionTreeClassifier</code> in <code>ml/tree.py</code>; the previous M4 lesson placed
+<code>RandomForestClassifier</code> in <code>ml/ensemble.py</code>. You are adding two things: append
+<code>_NodeReg</code> and <code>DecisionTreeRegressor</code> to <code>exercises/ml/tree.py</code>, then add
+<code>GradientBoostingRegressor</code> to <code>exercises/ml/ensemble.py</code>. The regressor imports
+<code>DecisionTreeRegressor</code> from <code>ml.tree</code>; do not copy the class. Implement both exactly as
+shown above. Then verify with the locked acceptance gate at
+<code>exercises/module4/boosting-and-the-gradient/test_boosting.py</code>. Note: the gate runs
+several hundred from-scratch trees; expect a minute or two. Done when
+<code>python -m pytest exercises/module4/boosting-and-the-gradient</code> is green.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="hyperparameters-and-the-tradeoff"><a class="header" href="#hyperparameters-and-the-tradeoff">Hyperparameters and the Tradeoff</a></h1>
+<p>Zero training error is a warning, not a win.</p>
+<p>A gradient boosting model has three knobs that matter: how many trees you build, how much each
+tree contributes, and how deep each tree grows. Turn them all the way up and the model drives
+training error to zero. Turn them up too far and the model memorizes noise, and test error
+climbs. This is not a new story: you measured it with polynomial degree in M2, with <code>max_depth</code>
+in M3, and with <code>k</code> in M1. Gradient boosting gives you three knobs instead of one, and getting
+any of them wrong overfits even a strong model.</p>
+<h2 id="the-experiment-1"><a class="header" href="#the-experiment-1">The Experiment</a></h2>
+<p>The dataset is the Friedman-1 regression benchmark: 300 samples, 10 features, the true signal
+coming from only five of them. Split 80/20. Train <code>ml.ensemble.GradientBoostingRegressor</code> at
+two configurations and measure train MSE and test MSE.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Config</th><th>Final Train MSE</th><th>Test MSE</th><th>Test R^2</th></tr>
+</thead>
+<tbody>
+<tr><td>Tuned (n=50, lr=0.05, depth=3)</td><td>3.06</td><td>7.29</td><td>0.665</td></tr>
+<tr><td>Overfit (n=200, lr=0.5, depth=8)</td><td>0.00</td><td>11.52</td><td>0.471</td></tr>
+</tbody>
+</table>
+</div>
+<p>The overfit configuration drives training error to zero: deep trees, a large learning rate, and
+many rounds combine to fit every quirk in the training data. Test error is 58% worse than the
+tuned configuration. More capacity is not better.</p>
+<h2 id="the-three-knobs"><a class="header" href="#the-three-knobs">The Three Knobs</a></h2>
+<p><strong><code>n_estimators</code>: rounds of boosting.</strong> Each round adds one more tree that corrects the
+residuals left by the previous ensemble. More rounds mean more capacity. Azure Machine Learning’s
+Boosted Decision Tree Regression component exposes this as “Number of trees constructed,” and
+its documentation states directly that “by creating more decision trees, you can potentially get
+better coverage, but training time increases” (<a href="https://learn.microsoft.com/en-us/azure/machine-learning/component-reference/boosted-decision-tree-regression?view=azureml-api-2">learn.microsoft.com/azure/machine-learning/component-reference/boosted-decision-tree-regression</a>).
+With a large learning rate, each tree is trusted fully, so a few hundred rounds can saturate the
+training set. With early stopping, you can let <code>n_estimators</code> run high and halt when the
+validation error stops improving.</p>
+<p><strong><code>learning_rate</code>: shrinkage.</strong> Each tree’s output is multiplied by this factor before being
+added to the ensemble. A smaller factor means each tree contributes less, so the ensemble needs
+more rounds to fit the same signal. The Azure ML component’s parameter description captures the
+tradeoff: “if the step size is too big, you might overshoot the optimal solution; if the step
+size is too small, training takes longer to converge on the best solution” (<a href="https://learn.microsoft.com/en-us/azure/machine-learning/component-reference/boosted-decision-tree-regression?view=azureml-api-2">learn.microsoft.com/azure/machine-learning/component-reference/boosted-decision-tree-regression</a>).
+In practice, small <code>learning_rate</code> paired with more <code>n_estimators</code> generalizes better than a
+large rate with few rounds: both can hit similar training error, but the slow learner smooths out
+the path to the solution. The source data (<code>aefs-ensembles.md</code>) records this explicitly: configs
+at lr=0.5/n=20, lr=0.1/n=100, lr=0.05/n=200, and lr=0.01/n=500 all converge to similar test
+MSE, confirming that <code>learning_rate</code> and <code>n_estimators</code> are a coupled pair, not two independent
+choices.</p>
+<p><strong><code>max_depth</code>: tree depth.</strong> This is the same knob you controlled in M3, now applied to each
+base learner in the ensemble. Gradient boosting works best with shallow trees: the ingredient
+source notes a default range of 3 to 8 for boosting, much shallower than standalone trees.
+A depth-3 tree can capture up to three-way feature interactions. A depth-8 tree can fit 256
+distinct leaf patterns per round: at 200 rounds, the overfit configuration has enormous capacity.
+The Azure ML component uses “Maximum number of leaves per tree” to control the same thing,
+and warns that “by increasing this value, you potentially increase the size of the tree and get
+better precision, at the risk of overfitting and longer training time.”</p>
+<h2 id="why-three-knobs-overfit-together"><a class="header" href="#why-three-knobs-overfit-together">Why Three Knobs Overfit Together</a></h2>
+<p>The table tells the story cleanly. The overfit configuration does not fail at one knob: it fails
+at all three simultaneously. A large learning rate means every tree is trusted in full. Deep
+trees give each tree high variance on its own. Many rounds let that variance accumulate over 200
+iterations. The result is a training error of 0.00, which means the ensemble has fit not just
+the signal but every residual, including the ones generated by the noise term.</p>
+<p>The tuned configuration restricts all three: shallower trees (depth=3), smaller learning rate
+(0.05, trusting each tree at 5% of its output), and fewer rounds (50). It leaves some training
+error on the table (3.06 final train MSE) because it is not trying to fit the noise. That
+restraint pays off: 7.29 test MSE versus 11.52.</p>
+<p>Azure Machine Learning’s Automated ML documentation describes the same pattern at the system
+level. Its guidance on preventing overfitting notes that “Automated ML also implements explicit
+model complexity limitations to prevent overfitting. In most cases, this implementation is
+specifically for decision tree or forest algorithms. Individual tree max-depth is limited, and
+the total number of trees used in forest or ensemble techniques are limited” (<a href="https://learn.microsoft.com/en-us/azure/machine-learning/concept-manage-ml-pitfalls?view=azureml-api-2">learn.microsoft.com/azure/machine-learning/concept-manage-ml-pitfalls</a>).
+AutoML is enforcing the same discipline by policy that you must enforce by hand.</p>
+<h2 id="the-thread-running-through-m1-to-m4"><a class="header" href="#the-thread-running-through-m1-to-m4">The Thread Running Through M1 to M4</a></h2>
+<p>Every module has introduced one version of the bias-variance tradeoff:</p>
+<ul>
+<li><strong>M1</strong>: <code>k</code> in k-NN. At <code>k=1</code>, the boundary traces every training point: high variance. At
+large <code>k</code>, it smooths to a broad region: high bias.</li>
+<li><strong>M2</strong>: Polynomial degree. Degree 1 underfits the curve: high bias. Degree 10 fits the noise:
+high variance.</li>
+<li><strong>M3</strong>: <code>max_depth</code> in a single decision tree. No limit: 1.000 train accuracy, noise
+memorized.</li>
+<li><strong>M4</strong>: Three coupled knobs in gradient boosting. Any one of them turned up too far, or all
+three together, produces the same signature: training error falls, test error climbs.</li>
+</ul>
+<p>The parameter changes across modules. The tradeoff does not.</p>
+<h2 id="what-this-means-at-scale"><a class="header" href="#what-this-means-at-scale">What This Means at Scale</a></h2>
+<p>XGBoost and LightGBM expose the same three parameters under slightly different names. At
+production scale, the standard practice is to fix a small <code>learning_rate</code> (0.01 to 0.05), set
+<code>n_estimators</code> high enough that it would not be the binding constraint, and use early stopping
+against a held-out validation set to find the actual stopping round. Then <code>max_depth</code> (or
+<code>num_leaves</code> in LightGBM) is swept by cross-validation. The configuration that minimizes
+validation error is the one that ships. This is a cross-validation search over a coupled
+parameter space: the same search you will write in the exercise.</p>
+<p>The hiring test for this is not naming the parameters. It is explaining what happens to train
+error and test error when you change them, and knowing which direction each knob should move
+when the model is overfitting.</p>
+<h2 id="core-concepts-11"><a class="header" href="#core-concepts-11">Core Concepts</a></h2>
+<ul>
+<li><code>n_estimators</code>, <code>learning_rate</code>, and <code>max_depth</code> are coupled: large learning rate trusts each
+tree fully, deep trees make each tree high-variance, and many rounds let both effects compound
+into a model that memorizes the training set.</li>
+<li>Shrinkage (<code>learning_rate</code>) and <code>n_estimators</code> are a matched pair: a smaller rate needs more
+rounds to fit the same signal, but the slower path generalizes better because it averages over
+more small corrections rather than committing to a few large ones.</li>
+<li>The overfit signature is a number: the experiment above shows a training MSE of 0.00 and a
+test MSE of 11.52 versus 7.29 for the tuned config, a 58% penalty for extra capacity.</li>
+<li>This is the same bias-variance tradeoff from M1 (k-NN <code>k</code>), M2 (polynomial degree), and M3
+(tree <code>max_depth</code>): the algorithm changes, the tradeoff does not.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module4/hyperparameters-and-the-tradeoff/">
+<p><strong>Build It in Claude Code</strong>: Write the hyperparameter sweep and its gate at
+<code>exercises/module4/hyperparameters-and-the-tradeoff/</code>. Use <code>ml.ensemble.GradientBoostingRegressor</code>
+on the Friedman-1 benchmark to show that a high-variance configuration (large <code>learning_rate</code>,
+many deep estimators) overfits relative to a tuned configuration: lower training error, but
+worse test error. The gate at
+<code>exercises/module4/hyperparameters-and-the-tradeoff/test_tradeoff.py</code> must pass green with
+<code>python -m pytest exercises/module4/hyperparameters-and-the-tradeoff</code>.</p>
 </div>
 
 

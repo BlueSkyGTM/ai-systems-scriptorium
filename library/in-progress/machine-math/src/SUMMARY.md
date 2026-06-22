@@ -22,3 +22,10 @@
 - [Entropy and Information Gain](module3/entropy-and-information-gain.md)
 - [Decision Trees: Recursive Partitioning](module3/decision-trees.md)
 - [Overfitting and Cross-Validation](module3/overfitting-and-cross-validation.md)
+
+## Module 4: Ensembles and the Gradient
+
+- [Overview](module4/00-overview.md)
+- [Bagging and Random Forests](module4/bagging-and-random-forests.md)
+- [Boosting and the Gradient](module4/boosting-and-the-gradient.md)
+- [Hyperparameters and the Tradeoff](module4/hyperparameters-and-the-tradeoff.md)

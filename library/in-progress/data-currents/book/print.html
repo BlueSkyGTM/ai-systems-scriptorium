@@ -1,0 +1,750 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Data Currents — SQL and the Data Platform for AI Systems</title>
+        <meta name="robots" content="noindex">
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="favicon-8114d1fc.png">
+        <link rel="stylesheet" href="css/variables-8adf115d.css">
+        <link rel="stylesheet" href="css/general-0392ca55.css">
+        <link rel="stylesheet" href="css/chrome-fc474251.css">
+        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/copy-to-claude-45921320.css">
+        <link rel="stylesheet" href="theme/syntax-polish-53c427bd.css">
+        <link rel="stylesheet" href="theme/readability-9f9ae6ec.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "rust";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "searchindex-29089131.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc-72a266be.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Data Currents — SQL and the Data Platform for AI Systems</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="data-currents"><a class="header" href="#data-currents">Data Currents</a></h1>
+<p>SQL and the data platform, taught as the AI engineer’s operational instruments.</p>
+<p><em>Sans Python</em> ends at the data seam. Module 5 Lesson 14 names the boundary precisely: you own the
+query, the freshness SLO, and the lineage contract into the data platform; you do not build the
+platform. This book is what comes next. It is the deep build of everything that lesson named and
+deferred.</p>
+<p>The gap it closes is concrete. Data engineering and SQL show up in roughly half of AI Engineer
+postings, yet most curricula hand you a single ingestion front door and call the data layer covered.
+The interview screen is real and the coverage is thin. Here you learn to sit down at a trace store,
+a corpus table, or a feature warehouse and answer the question yourself: where did the latency, the
+cost, or the quality go, and what changed upstream to cause it.</p>
+<h2 id="the-thesis"><a class="header" href="#the-thesis">The Thesis</a></h2>
+<p>SQL is not a reporting language here. It is the interface to the corpus, the trace store, the
+feature table, and the eval warehouse. Ingestion is not a data-ops abstraction; it is the mechanism
+that decides whether your retrieval index is fresh enough to answer correctly. Lineage is not a
+compliance checkbox; it is the chain that explains why an answer changed, running from the document
+version that produced the chunk, through the embedding that placed it, to the eval verdict that
+graded it.</p>
+<p>You learn the data platform from the AI engineer’s seat: querying telemetry, ingesting a corpus on a
+freshness SLO, orchestrating the pipeline that moves it, choosing batch against streaming, landing it
+in a warehouse or a lakehouse, and tracing every indexed document back to its source version. The
+point is never the tool for its own sake. The point is the production question the tool answers.</p>
+<h2 id="who-this-is-for"><a class="header" href="#who-this-is-for">Who This Is For</a></h2>
+<p>You have shipped a governed multi-agent fleet in <em>Sans Python</em> M7, traced its cost and quality, and
+run your first seam queries in M5 L14. You can write a <code>SELECT</code> and a <code>WHERE</code>. This book brings you
+to the fluency a Production AI Engineer needs on the job: not DBA depth, but the ability to own the
+platform side of the seam instead of only contracting with it.</p>
+<p>It is not a data engineering degree. Standing up Kafka, sizing a Spark cluster, and designing star
+schemas stay out of scope; you use those as services, not as the engineer who operates them. The
+frame stays tight on the AI engineer’s data seam at depth.</p>
+<h2 id="what-you-will-build"><a class="header" href="#what-you-will-build">What You Will Build</a></h2>
+<p>The book closes on a runnable, GitHub-postable proof, in the mold of the <em>Sans Python</em> capstones: a
+multi-source ingestion pipeline that feeds an AI retrieval system. A batch source (a document corpus,
+nightly transformed) and a streaming source (a live feed of updates) both flow through a medallion
+lakehouse to a vector index. The pipeline carries a documented freshness SLO on each source leg and
+writes a lineage row for every indexed document, so a single query resolves any answer back to the
+exact source version that produced it.</p>
+<p>Then you prove you can operate it. The final exam hands you a broken pipeline and a degraded
+retrieval system; you diagnose the failure with SQL, identify the freshness breach, walk the lineage
+to the document that changed the answer, and ship the fix. The artifact is the graded solution plus
+the diagnostic query set, judged by a rubric expressed in code.</p>
+<h2 id="how-to-read-this-book"><a class="header" href="#how-to-read-this-book">How to Read This Book</a></h2>
+<p>Work the modules in order. Each one takes a layer of the platform and turns it into a running
+artifact; the artifacts compound, so the telemetry store you build in Module 1 becomes the thing the
+later modules query, transform, and trace. Every lesson ends with a “Build It in Claude Code”
+exercise that hands the work to your editor and resumes the throughline where the last lesson left
+it. Read the lesson, run the exercise, then move upstream.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-1-sql-as-an-operator-skill"><a class="header" href="#module-1-sql-as-an-operator-skill">Module 1: SQL as an Operator Skill</a></h1>
+<p>Every production question a Production AI Engineer asks about their system lands in data first. Why
+did retrieval quality drop for one tenant on Thursday? Why did cost spike between the 2 a.m. and 6
+a.m. batches? Which routes are blowing the p95 SLO this week, and did any evals move with them? The
+answers live in rows, not dashboards. This module teaches you to reach them with a query.</p>
+<p>SQL is not the point; the production questions are. SQL is the language the data platform speaks, and
+without it you are reading someone else’s summary of your own system instead of querying it directly.
+By the end of this module you can sit down at any trace store, warehouse, or local file and answer the
+questions that come up in an incident or a hiring screen.</p>
+<h2 id="what-this-module-covers"><a class="header" href="#what-this-module-covers">What This Module Covers</a></h2>
+<p><strong>Your Telemetry Is a Table</strong> establishes the operational mindset: every span, eval verdict, and cost
+stamp your AI system emits is a queryable row. You build the three-table telemetry store and the
+foundational <code>GROUP BY</code> queries that answer the first round of any incident, p95 latency by route,
+cost by tenant, and eval pass-rate over a window.</p>
+<p><strong>Window Functions</strong> moves to the questions a plain <code>GROUP BY</code> cannot answer: the rolling pass-rate
+that smooths daily noise, and the per-tenant cost rank this week against last. A window function
+computes over a partition and keeps every row, which is exactly what a trend or a rank needs.</p>
+<p><strong>CTEs and the Diagnostic Chain</strong> turns a multi-step diagnosis into named steps that read
+top-to-bottom. You write the freshness-breach chain and the deployment latency delta as common table
+expressions instead of a nested pyramid of subqueries.</p>
+<p><strong>The Lineage Walk</strong> closes the module with the query that resolves an answer back to the exact
+source-document version that produced it. It is the manual shape of the provenance Module 6 later
+automates, and it finalizes the module’s smoke gate and test suite.</p>
+<h2 id="who-this-is-for-1"><a class="header" href="#who-this-is-for-1">Who This Is For</a></h2>
+<p>You have shipped a governed multi-agent fleet (Sans Python M7) and run your first seam queries (M5
+L14). You can write a <code>SELECT</code> and a <code>WHERE</code>. This module brings you to the SQL fluency a Production
+AI Engineer needs on the job: not DBA depth, but the ability to answer production questions
+independently, with a query, not a guess.</p>
+<h2 id="the-artifact"><a class="header" href="#the-artifact">The Artifact</a></h2>
+<p>Each lesson extends one artifact, <code>module1-sql/</code>: a local telemetry store, the query library that
+reads it, and a deterministic smoke gate plus a <code>pytest</code> suite that assert the answers. By the end you
+have the store, eight operator queries, and a green gate. Module 2 (Batch Ingestion) extends this same
+store into a warehouse target and adds a dbt transformation layer on top.</p>
+<h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
+<ul>
+<li>Sans Python complete through M5 L14 (The Data Seam)</li>
+<li>Python 3.11+, <code>sqlite3</code> (standard library), and <code>duckdb</code> (one pip install) for the analytic queries</li>
+<li>Comfort with <code>SELECT</code>, <code>FROM</code>, <code>WHERE</code>, and <code>GROUP BY</code> at the level of M5 L14</li>
+</ul>
+<h2 id="time-estimate"><a class="header" href="#time-estimate">Time Estimate</a></h2>
+<p>Each lesson runs 60 to 105 minutes including its exercise. The whole module fits a focused weekend.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="your-telemetry-is-a-table"><a class="header" href="#your-telemetry-is-a-table">Your Telemetry Is a Table</a></h1>
+<p>The on-call alert fires at 3 a.m. p95 latency on <code>/summarize</code> is up 40%, and the dashboard tells you
+something happened but not which tenants are hit, whether quality moved with it, or what it is costing
+per hour. For those answers you need a query, not a chart, and if you cannot write one you are waiting
+for whoever built the dashboard to wake up.</p>
+<p>Your observability layer is already emitting rows. Every span your tracing library records, every
+verdict your LLM judge returns, every cost stamp your billing layer writes: those are tables. You build
+the query that answers the 3 a.m. question in ten minutes.</p>
+<h2 id="the-three-tables"><a class="header" href="#the-three-tables">The Three Tables</a></h2>
+<p>Production AI telemetry compresses into three tables that recur in every incident.</p>
+<pre><code class="language-sql">CREATE TABLE spans (
+    trace_id      TEXT PRIMARY KEY,
+    route         TEXT NOT NULL,
+    tenant_id     TEXT NOT NULL,
+    latency_ms    INTEGER NOT NULL,
+    input_tokens  INTEGER,
+    output_tokens INTEGER,
+    ts            TIMESTAMP NOT NULL
+);
+CREATE TABLE eval_verdicts (
+    id         INTEGER PRIMARY KEY,
+    trace_id   TEXT NOT NULL REFERENCES spans(trace_id),
+    criterion  TEXT NOT NULL,   -- 'groundedness' | 'relevance'
+    verdict    TEXT NOT NULL,   -- 'pass' | 'fail'
+    score      REAL,
+    created_at TIMESTAMP NOT NULL
+);
+CREATE TABLE cost_stamps (
+    id             INTEGER PRIMARY KEY,
+    trace_id       TEXT NOT NULL REFERENCES spans(trace_id),
+    tenant_id      TEXT NOT NULL,
+    total_cost_usd REAL NOT NULL,
+    input_tokens   INTEGER,
+    output_tokens  INTEGER,
+    billed_at      TIMESTAMP NOT NULL
+);
+</code></pre>
+<p><code>spans</code> is one row per request: route, tenant, latency, token counts, timestamp. This is what your
+tracing library (LangWatch, Arize Phoenix, Langfuse) emits at the span level.</p>
+<p><code>eval_verdicts</code> is one row per evaluated output: the trace it grades, the criterion (groundedness,
+relevance), and the pass/fail verdict with an optional score. Your LLM-as-judge pipeline writes here
+after each evaluation run.</p>
+<p><code>cost_stamps</code> is one row per request: the tenant, token counts, and total cost in USD. When a
+tenant’s bill doubles, the query starts here.</p>
+<p>The three tables join on <code>trace_id</code>. That join is the reflex. Know it before anything else.</p>
+<h2 id="read-only-is-the-point"><a class="header" href="#read-only-is-the-point">Read-Only Is the Point</a></h2>
+<p>You query telemetry you do not own. The data team designed the schema, manages the indexes, and
+controls write access. Your role gives you a read replica or a read-only role against the warehouse,
+and that is enough. Warehouses serve this pattern with role-based access and read scale-out: your
+query does not touch the write path. The operator skill is writing the query, not designing the
+schema. [Azure SQL Database read scale-out: https://learn.microsoft.com/azure/azure-sql/database/read-scale-out]</p>
+<h2 id="three-queries-that-answer-the-incident"><a class="header" href="#three-queries-that-answer-the-incident">Three Queries That Answer the Incident</a></h2>
+<h3 id="p95-latency-by-route"><a class="header" href="#p95-latency-by-route">P95 Latency by Route</a></h3>
+<p>The first question in every latency incident: which routes are slow, and how slow at the tail?</p>
+<pre><code class="language-sql">SELECT
+    route,
+    COUNT(*)                          AS request_count,
+    ROUND(AVG(latency_ms), 1)         AS avg_latency_ms,
+    ROUND(QUANTILE_CONT(latency_ms, 0.95), 1) AS p95_latency_ms
+FROM spans
+WHERE ts &gt;= NOW() - INTERVAL '24 hours'
+GROUP BY route
+ORDER BY p95_latency_ms DESC;
+</code></pre>
+<p>The first row is the answer to “which route is blowing the SLO.”</p>
+<p><strong>Dialect note.</strong> In a warehouse (Azure SQL, Microsoft Fabric), p95 is:</p>
+<pre><code class="language-sql">PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY latency_ms)
+</code></pre>
+<p>DuckDB, which runs the exercise offline, uses <code>QUANTILE_CONT(latency_ms, 0.95)</code> instead.
+[T-SQL PERCENTILE_CONT: https://learn.microsoft.com/sql/t-sql/functions/percentile-cont-transact-sql]</p>
+<h3 id="cost-by-tenant"><a class="header" href="#cost-by-tenant">Cost by Tenant</a></h3>
+<p>When a cost spike hits, the question is: who, and is it volume or per-call expense?</p>
+<pre><code class="language-sql">SELECT
+    tenant_id,
+    ROUND(SUM(total_cost_usd), 6)   AS total_cost_usd,
+    SUM(input_tokens)               AS total_input_tokens,
+    SUM(output_tokens)              AS total_output_tokens,
+    COUNT(*)                        AS request_count,
+    ROUND(AVG(total_cost_usd), 6)   AS avg_cost_per_request
+FROM cost_stamps
+WHERE billed_at &gt;= DATE_TRUNC('week', NOW())
+GROUP BY tenant_id
+ORDER BY total_cost_usd DESC;
+</code></pre>
+<p>The <code>avg_cost_per_request</code> column splits the diagnosis: high count with low average means volume;
+low count with high average means expensive model calls. Those are different fixes.</p>
+<p><strong>Dialect note.</strong> <code>DATE_TRUNC('week', NOW())</code> runs in DuckDB and Postgres. T-SQL uses <code>DATETRUNC</code>
+or <code>DATE_BUCKET</code>.
+[T-SQL DATE_BUCKET: https://learn.microsoft.com/sql/t-sql/functions/date-bucket-transact-sql]</p>
+<h3 id="eval-pass-rate-by-day-and-criterion"><a class="header" href="#eval-pass-rate-by-day-and-criterion">Eval Pass-Rate by Day and Criterion</a></h3>
+<p>Quality questions need a window, not a point. Two weeks of daily pass-rate tells you whether a drop
+is a blip or a trend.</p>
+<pre><code class="language-sql">SELECT
+    DATE_TRUNC('day', ev.created_at)  AS eval_day,
+    ev.criterion,
+    COUNT(*)                          AS total_evals,
+    SUM(CASE WHEN ev.verdict = 'pass' THEN 1 ELSE 0 END) AS passes,
+    ROUND(100.0 * SUM(CASE WHEN ev.verdict = 'pass' THEN 1 ELSE 0 END) / COUNT(*), 1) AS pass_rate_pct
+FROM eval_verdicts ev
+WHERE ev.created_at &gt;= NOW() - INTERVAL '14 days'
+GROUP BY eval_day, ev.criterion
+ORDER BY eval_day, ev.criterion;
+</code></pre>
+<p>The <code>CASE WHEN</code> conditional sum is the standard pattern for computing a rate inside a <code>GROUP BY</code>.
+Read it as: count the rows where verdict is ‘pass’, divide by total rows, multiply by 100.</p>
+<h2 id="the-join-that-connects-all-three"><a class="header" href="#the-join-that-connects-all-three">The Join That Connects All Three</a></h2>
+<p>When quality fails, you want to know whether it correlates with latency or cost. One query reaches
+all three tables.</p>
+<pre><code class="language-sql">SELECT s.route, s.tenant_id, s.latency_ms, c.total_cost_usd, ev.criterion, ev.verdict
+FROM spans s
+JOIN cost_stamps c    ON s.trace_id = c.trace_id
+JOIN eval_verdicts ev ON s.trace_id = ev.trace_id
+WHERE s.ts &gt;= NOW() - INTERVAL '1 hour'
+  AND ev.verdict = 'fail';
+</code></pre>
+<p>The row that comes back is the full picture: this route, this tenant, this latency, this cost, this
+criterion failed. The join key is <code>trace_id</code> on every leg. That is why it is the one thing to
+memorize.</p>
+<p>Knowing this join cold is what separates the engineer who can read an incident from the one who is
+waiting for the dashboard team.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>AI telemetry is three tables: <code>spans</code> (latency, route, tenant), <code>eval_verdicts</code> (criterion and
+verdict, joined by <code>trace_id</code>), and <code>cost_stamps</code> (tenant, tokens, cost). They join on <code>trace_id</code>.</li>
+<li><code>GROUP BY</code> with <code>COUNT</code>, <code>SUM</code>, and <code>ROUND(AVG(...))</code> answers the first-round questions in a
+latency, cost, or quality incident; window functions and CTEs come in later lessons.</li>
+<li>The warehouse standard for p95 latency is <code>PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY latency_ms)</code>; DuckDB’s offline equivalent is <code>QUANTILE_CONT(latency_ms, 0.95)</code>.</li>
+<li>The AI engineer queries telemetry read-only against a schema the data team owns; the skill is
+writing the query, not designing the schema or managing the index.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module1/your-telemetry-is-a-table/">
+<p><strong>Build It in Claude Code</strong>: Create the <code>module1-sql/</code> artifact: write <code>db/schema.sql</code> with the
+three core tables (<code>spans</code>, <code>eval_verdicts</code>, <code>cost_stamps</code>), write <code>db/seed.py</code> to deterministically
+populate it with synthetic telemetry (4 routes, 3 tenants, ~140 spans over 14 days, with <code>/summarize</code>
+carrying the highest p95, <code>tenant_a</code> the highest weekly cost, and <code>tenant_b</code> groundedness pass-rate
+near 60%), then place the three foundational queries in <code>queries/</code>, wire a <code>runner.py</code> that runs them
+via DuckDB over the SQLite file, and write a <code>smoke.py</code> that resets, seeds, queries, asserts the
+seeded outliers, and exits non-zero on failure.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="window-functions"><a class="header" href="#window-functions">Window Functions</a></h1>
+<p>The daily pass-rate query from the last lesson tells you the number for today. What it cannot tell you is whether the trend is improving or collapsing: “is it getting worse or better?” needs a rolling average, not a point. “Did this tenant rank high last week too?” needs a rank comparison across two time windows, not a single aggregate. These are the questions <code>GROUP BY</code> cannot answer, and they are the ones that drive the real follow-up work.</p>
+<h2 id="what-a-window-function-is"><a class="header" href="#what-a-window-function-is">What a Window Function Is</a></h2>
+<p>A <code>GROUP BY</code> collapses rows: one group becomes one output row. A window function computes over a partition of rows and keeps every input row in the result. The source data is preserved; the computed column rides alongside it.</p>
+<p>The generic form:</p>
+<pre><code class="language-sql">&lt;function&gt;(&lt;column&gt;)
+OVER (
+    PARTITION BY &lt;group_column&gt;
+    ORDER BY &lt;sort_column&gt;
+    ROWS BETWEEN &lt;n&gt; PRECEDING AND CURRENT ROW
+)
+</code></pre>
+<p><code>PARTITION BY</code> defines the group, the way <code>GROUP BY</code> does. <code>ORDER BY</code> sorts rows within the partition before the computation runs. <code>ROWS BETWEEN</code> sets the frame: which preceding and following rows to include in each computation. Leave the frame out and the engine uses a default that depends on whether you specified <code>ORDER BY</code>; always state it explicitly for rolling aggregates so the behavior is unambiguous.
+[MS-Learn OVER clause: https://learn.microsoft.com/sql/t-sql/queries/select-over-clause-transact-sql]</p>
+<h2 id="query-4-rolling-7-day-eval-pass-rate"><a class="header" href="#query-4-rolling-7-day-eval-pass-rate">Query 4: Rolling 7-Day Eval Pass-Rate</a></h2>
+<p>The daily pass-rate chart is noisy. One low-traffic day with two failures swings the number; one high-traffic day with perfect results pulls it back. The rolling seven-day average removes that noise: it always covers a full week’s traffic pattern, so a genuine regression shows up as a sustained drop rather than a spike.</p>
+<pre><code class="language-sql">SELECT
+    eval_day, criterion, pass_rate_pct,
+    AVG(pass_rate_pct) OVER (
+        PARTITION BY criterion
+        ORDER BY eval_day
+        ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+    ) AS rolling_7d_pass_rate
+FROM (
+    SELECT
+        DATE_TRUNC('day', created_at)  AS eval_day,
+        criterion,
+        ROUND(100.0 * SUM(CASE WHEN verdict = 'pass' THEN 1 ELSE 0 END) / COUNT(*), 1) AS pass_rate_pct
+    FROM eval_verdicts
+    GROUP BY eval_day, criterion
+) daily
+ORDER BY eval_day, criterion;
+</code></pre>
+<p>The inner subquery is the daily aggregate from the last lesson: one row per <code>(eval_day, criterion)</code> with a <code>pass_rate_pct</code>. The outer query adds <code>rolling_7d_pass_rate</code> via a window function. <code>PARTITION BY criterion</code> keeps <code>groundedness</code> and <code>relevance</code> in separate windows so their averages never mix. <code>ROWS BETWEEN 6 PRECEDING AND CURRENT ROW</code> is seven rows total: the six days before today, plus today.</p>
+<p>The result set has the same number of rows as the inner subquery. Both the raw daily rate and the smoothed rate sit on every row, so you can compare them directly.</p>
+<p><strong>Dialect note.</strong> This query runs identically in DuckDB and standard warehouse SQL. The only dialect differences in this module are the percentile and date helpers from lesson 1; window function syntax is standard.</p>
+<h2 id="query-5-per-tenant-cost-rank-this-week-vs-last-week"><a class="header" href="#query-5-per-tenant-cost-rank-this-week-vs-last-week">Query 5: Per-Tenant Cost Rank, This Week vs. Last Week</a></h2>
+<p>When a tenant’s bill is flagged, the first question is simple: how does their rank now compare to last week? A tenant that ranked first last week and first again this week has not changed; something that changed around them may explain the absolute cost movement. A tenant that jumped from eighth to first in a single week is the investigation.</p>
+<pre><code class="language-sql">WITH weekly_cost AS (
+    SELECT tenant_id, DATE_TRUNC('week', billed_at) AS cost_week, SUM(total_cost_usd) AS weekly_cost_usd
+    FROM cost_stamps
+    WHERE billed_at &gt;= NOW() - INTERVAL '14 days'
+    GROUP BY tenant_id, cost_week
+),
+ranked AS (
+    SELECT tenant_id, cost_week, weekly_cost_usd,
+        RANK() OVER (PARTITION BY cost_week ORDER BY weekly_cost_usd DESC) AS cost_rank
+    FROM weekly_cost
+)
+SELECT
+    this_week.tenant_id,
+    this_week.cost_rank        AS rank_this_week,
+    last_week.cost_rank        AS rank_last_week,
+    this_week.weekly_cost_usd  AS cost_this_week,
+    last_week.weekly_cost_usd  AS cost_last_week
+FROM ranked this_week
+LEFT JOIN ranked last_week
+    ON this_week.tenant_id = last_week.tenant_id
+   AND last_week.cost_week = this_week.cost_week - INTERVAL '1 week'
+WHERE this_week.cost_week = DATE_TRUNC('week', NOW())
+ORDER BY this_week.cost_rank;
+</code></pre>
+<p>This query uses a CTE to stage the work: <code>weekly_cost</code> builds the per-tenant, per-week aggregate; <code>ranked</code> applies <code>RANK()</code> within each week’s partition; the final <code>SELECT</code> self-joins on tenant and a one-week offset to get both weeks in one row. CTEs are the subject of the next lesson; for now, read them as named subqueries that let you break a multi-step computation into legible parts.</p>
+<p><code>RANK()</code> assigns the same rank to ties and leaves a gap after them: two tenants tied for first both get rank 1, and the next tenant gets rank 3. <code>DENSE_RANK()</code> fills that gap, assigning rank 2 instead. Know which you want before you write the query: cost reporting usually wants <code>RANK()</code> so the gap signals the tie; leaderboards often want <code>DENSE_RANK()</code> so no rank is skipped.
+[MS-Learn DENSE_RANK: https://learn.microsoft.com/sql/t-sql/functions/dense-rank-transact-sql]</p>
+<p>The <code>LEFT JOIN</code> on the <code>ranked</code> CTE is what pulls both weeks onto one row. The <code>WHERE</code> clause filters to the current week on the left side; the join condition shifts the right side back one week. A tenant with <code>rank_last_week IS NULL</code> was not in the top cost drivers two weeks ago; the <code>LEFT JOIN</code> preserves them anyway so they appear in the current-week result.</p>
+<h2 id="core-concepts-1"><a class="header" href="#core-concepts-1">Core Concepts</a></h2>
+<ul>
+<li>A window function computes over a partition of rows and keeps every input row in the result; <code>GROUP BY</code> collapses them. <code>PARTITION BY</code> sets the group, <code>ORDER BY</code> sorts within it, and <code>ROWS BETWEEN</code> defines the sliding frame.</li>
+<li><code>ROWS BETWEEN 6 PRECEDING AND CURRENT ROW</code> is the standard frame for a seven-day rolling average; always state the frame explicitly for rolling aggregates.</li>
+<li><code>RANK()</code> assigns the same rank to ties and leaves gaps; <code>DENSE_RANK()</code> fills those gaps. For cost or quality leaderboards, choose before you write the query.</li>
+<li>The rank-comparison pattern self-joins a ranked CTE on tenant and a one-week offset, so both weeks appear on one row; a <code>LEFT JOIN</code> preserves tenants present only in the current week.</li>
+</ul>
+<p>Knowing a tenant’s rank today is a fact. Knowing whether that rank moved is the signal that drives action: the rolling average and the rank delta are what separate reactive incident response from the early pattern recognition that stops incidents before they reach the pager.</p>
+<div class="claude-handoff" data-exercise="exercises/module1/window-functions/">
+<p><strong>Build It in Claude Code</strong>: Extend <code>module1-sql/</code> with two new query files and two new smoke assertions: add <code>queries/04_rolling_7d_pass_rate.sql</code> (the <code>AVG ... OVER ... ROWS BETWEEN 6 PRECEDING AND CURRENT ROW</code> query partitioned by criterion) and <code>queries/05_cost_rank_week_over_week.sql</code> (the <code>RANK() OVER (PARTITION BY cost_week ...)</code> self-join query), then extend <code>smoke.py</code> to assert that the rolling 7-day average matches a known sequence for one criterion and that <code>tenant_a</code> ranks first in the current week.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="ctes-and-the-diagnostic-chain"><a class="header" href="#ctes-and-the-diagnostic-chain">CTEs and the Diagnostic Chain</a></h1>
+<p>The freshness alert fires at 2 a.m. You know the breach happened; you need to know when the last
+successful corpus load ran and how wide the gap is. That question has three steps: find the last good
+load per source, compute the current age, compare it to the SLO, and return only the breached sources.
+You can write those steps as a pyramid of nested subqueries, or you can name each step and read them
+top to bottom. The second form is the one you can actually debug at 2 a.m.</p>
+<p>A common table expression (CTE) names an intermediate result at the top of a query so you can
+reference it below like a table. You build the diagnostic chain once, and the shape is obvious to
+anyone who reads it six months later, including you.</p>
+<h2 id="two-new-tables"><a class="header" href="#two-new-tables">Two New Tables</a></h2>
+<p>This lesson extends <code>module1-sql/</code> with two tables your ingestion pipeline owns.</p>
+<pre><code class="language-sql">CREATE TABLE corpus_loads (
+    id        INTEGER PRIMARY KEY,
+    source_id TEXT NOT NULL,
+    status    TEXT NOT NULL,   -- 'success' | 'failure'
+    loaded_at TIMESTAMP NOT NULL
+);
+CREATE TABLE freshness_slos (
+    source_id     TEXT PRIMARY KEY,
+    max_age_hours INTEGER NOT NULL
+);
+</code></pre>
+<p><code>corpus_loads</code> records every load attempt: one row per run, with the source, the outcome, and the
+timestamp. <code>freshness_slos</code> records your team’s tolerance per source: how many hours old is too old.
+These two tables are the inputs to the freshness breach diagnosis.</p>
+<h2 id="the-cte-syntax"><a class="header" href="#the-cte-syntax">The CTE Syntax</a></h2>
+<p>Before looking at the full query, see the skeleton.</p>
+<pre><code class="language-sql">WITH cte_name AS (
+    SELECT ...
+),
+second_cte AS (
+    SELECT ... FROM cte_name ...
+)
+SELECT ... FROM second_cte ...;
+</code></pre>
+<p>Each CTE is a named block inside the <code>WITH</code> clause, separated by commas. A CTE can reference any CTE
+defined above it in the same <code>WITH</code> block. The final <code>SELECT</code> sees all of them as if they were tables.
+[Common table expressions in T-SQL: https://learn.microsoft.com/sql/t-sql/queries/with-common-table-expression-transact-sql]</p>
+<p>One thing CTEs do not do: change how the query runs. The planner decides whether to materialize a CTE
+or inline it. What CTEs guarantee is that the human reading the query can understand it. Clarity is
+the feature.</p>
+<h2 id="the-freshness-breach-diagnosis"><a class="header" href="#the-freshness-breach-diagnosis">The Freshness Breach Diagnosis</a></h2>
+<p>Q7 is the query you run after the alert fires.</p>
+<pre><code class="language-sql">WITH last_successful_load AS (
+    SELECT source_id, MAX(loaded_at) AS last_load_ts
+    FROM corpus_loads
+    WHERE status = 'success'
+    GROUP BY source_id
+),
+freshness_status AS (
+    SELECT
+        s.source_id, s.last_load_ts,
+        NOW() - s.last_load_ts AS index_age,
+        f.max_age_hours,
+        (NOW() - s.last_load_ts) &gt; (f.max_age_hours * INTERVAL '1 hour') AS is_stale
+    FROM last_successful_load s
+    JOIN freshness_slos f ON s.source_id = f.source_id
+)
+SELECT source_id, last_load_ts, index_age, max_age_hours, is_stale
+FROM freshness_status
+WHERE is_stale
+ORDER BY index_age DESC;
+</code></pre>
+<p>Read the chain step by step. <code>last_successful_load</code> filters to successful rows only and takes the most
+recent one per source. <code>freshness_status</code> joins that result against <code>freshness_slos</code> to compute the
+current age and evaluate the boolean breach flag. The final <code>SELECT</code> filters to the breached sources
+and sorts by age, putting the most overdue source first.</p>
+<p>If you wrote this as nested subqueries, the breach comparison would be buried three levels deep. Named
+as CTEs, each step is legible on its own. That is the diagnostic chain: a series of named steps that
+build on each other, reading top to bottom.</p>
+<p>Note that only successful loads count. A source whose most recent load failed is still judged by its
+last <em>successful</em> load, not by the failure timestamp. That is the semantically correct behavior: a
+failed reload did not refresh the index.</p>
+<h2 id="the-deploy-delta-pattern"><a class="header" href="#the-deploy-delta-pattern">The Deploy-Delta Pattern</a></h2>
+<p>Q6 uses the same two-CTE structure, this time to isolate before and after windows around a deploy
+timestamp.</p>
+<pre><code class="language-sql">WITH before_deploy AS (
+    SELECT route, QUANTILE_CONT(latency_ms, 0.95) AS p95_ms
+    FROM spans
+    WHERE ts BETWEEN $deploy_ts::TIMESTAMP - INTERVAL '2 hours' AND $deploy_ts::TIMESTAMP
+    GROUP BY route
+),
+after_deploy AS (
+    SELECT route, QUANTILE_CONT(latency_ms, 0.95) AS p95_ms
+    FROM spans
+    WHERE ts BETWEEN $deploy_ts::TIMESTAMP AND $deploy_ts::TIMESTAMP + INTERVAL '2 hours'
+    GROUP BY route
+)
+SELECT
+    b.route, b.p95_ms AS p95_before, a.p95_ms AS p95_after,
+    a.p95_ms - b.p95_ms AS delta_ms,
+    ROUND(100.0 * (a.p95_ms - b.p95_ms) / b.p95_ms, 1) AS delta_pct
+FROM before_deploy b
+JOIN after_deploy a ON b.route = a.route
+ORDER BY delta_ms DESC;
+</code></pre>
+<p><code>before_deploy</code> computes the p95 for each route in the two hours leading up to the deploy.
+<code>after_deploy</code> computes the same for the two hours following it. The final <code>SELECT</code> joins on route and
+computes the delta in absolute milliseconds and percentage. The route at the top of the result is the
+one that regressed the most.</p>
+<p>The <code>$deploy_ts</code> is a bound parameter you supply at runtime with the exact deploy timestamp. The
+syntax is DuckDB’s form; a warehouse using T-SQL uses <code>@deploy_ts</code>, and Python’s standard library
+<code>sqlite3</code> module uses <code>?</code>. The pattern is the same across dialects.</p>
+<p>The <code>QUANTILE_CONT</code> call is the same function the prior lesson taught for p95 latency. You are not
+learning a new function here; you are seeing how CTEs let you compose a function you already know into
+a before/after comparison without repeating the window logic or nesting it inside itself.</p>
+<h2 id="core-concepts-2"><a class="header" href="#core-concepts-2">Core Concepts</a></h2>
+<ul>
+<li>A CTE names an intermediate result at the top of a query; later CTEs and the final <code>SELECT</code> see it
+as a table. A chain of named CTEs makes a multi-step diagnosis readable top to bottom rather than
+inside out.</li>
+<li>CTEs are a clarity feature, not a performance feature. The query planner decides whether to
+materialize them; what they guarantee is that the query is legible.</li>
+<li>The freshness breach chain (<code>last_successful_load</code> then <code>freshness_status</code>) isolates only successful
+loads before computing the age, so a source with a recent failure is still judged by its last good
+load.</li>
+<li>The deploy-delta pattern (<code>before_deploy</code> / <code>after_deploy</code>) uses two CTEs to isolate two time
+windows and join them on route; <code>delta_ms</code> and <code>delta_pct</code> show exactly which routes regressed and
+by how much.</li>
+</ul>
+<p>The breach fires, you run the chain, you see the gap. Every minute you spend on nested subquery
+archaeology is a minute the index is serving stale results to your retrieval system.</p>
+<div class="claude-handoff" data-exercise="exercises/module1/ctes-and-the-diagnostic-chain/">
+<p><strong>Build It in Claude Code</strong>: Add <code>corpus_loads</code> and <code>freshness_slos</code> to <code>db/schema.sql</code>; extend
+<code>db/seed.py</code> to insert one source whose last successful load exceeds its SLO (stale) and one whose
+last successful load is recent (fresh); write <code>queries/07_freshness_breach.sql</code> and
+<code>queries/06_latency_delta_around_deploy.sql</code> using the verbatim CTE forms from the lesson; and extend
+<code>smoke.py</code> to assert that the freshness breach query returns exactly the stale source and that the
+deploy-delta query returns rows for every route present on both sides of the seeded deploy timestamp.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-lineage-walk"><a class="header" href="#the-lineage-walk">The Lineage Walk</a></h1>
+<p>Eval pass-rate dropped for the <code>/compliance</code> route Tuesday. You suspect a corpus reload swapped the paragraph the model cited. The only way to prove it is to walk backward: from the answer, through the chunks it retrieved, to the exact document version and content hash that produced them.</p>
+<p>That walk is a query. You build it here.</p>
+<h2 id="three-tables-one-chain"><a class="header" href="#three-tables-one-chain">Three Tables, One Chain</a></h2>
+<p>The telemetry store already tracks what your system did. Lineage tracks what it read. Three tables extend the schema.</p>
+<pre><code class="language-sql">-- retrieved_chunk_ids stored as a comma-separated list (SQLite has no array type)
+CREATE TABLE answers (
+    answer_id           TEXT PRIMARY KEY,
+    trace_id            TEXT NOT NULL REFERENCES spans(trace_id),
+    retrieved_chunk_ids TEXT NOT NULL   -- e.g. 'chunk_001,chunk_002'
+);
+CREATE TABLE chunks (
+    chunk_id           TEXT PRIMARY KEY,
+    corpus_version     TEXT NOT NULL,
+    source_doc_id      TEXT NOT NULL,
+    source_doc_version TEXT NOT NULL
+);
+CREATE TABLE source_documents (
+    doc_id           TEXT NOT NULL,
+    version_id       TEXT NOT NULL,
+    last_modified_at TIMESTAMP NOT NULL,
+    content_hash     TEXT NOT NULL,
+    PRIMARY KEY (doc_id, version_id)
+);
+</code></pre>
+<p><code>answers</code> links a trace to the chunks the retriever pulled. <code>chunks</code> links each chunk to the corpus version and source document version it came from. <code>source_documents</code> is the version ledger: every document reload writes a new row with a new <code>content_hash</code>, and old rows stay. The <code>PRIMARY KEY (doc_id, version_id)</code> enforces that.</p>
+<p>This is a minimal lineage schema. It records enough to answer the question: did the document change between the load that produced this answer and the one before it?</p>
+<h2 id="the-storage-seam-comma-lists-vs-arrays"><a class="header" href="#the-storage-seam-comma-lists-vs-arrays">The Storage Seam: Comma Lists vs. Arrays</a></h2>
+<p>The artifact stores <code>retrieved_chunk_ids</code> as a comma-separated TEXT column because SQLite has no array type. DuckDB reads it with <code>string_split(..., ',')</code> and <code>list_contains(...)</code>. A Postgres column would use <code>= ANY(array_column)</code>; a warehouse without arrays uses a bridge table, one row per answer-chunk pair.</p>
+<h2 id="query-8-walk-an-answer-back-to-its-source-version"><a class="header" href="#query-8-walk-an-answer-back-to-its-source-version">Query 8: Walk an Answer Back to Its Source Version</a></h2>
+<pre><code class="language-sql">WITH answer_context AS (
+    SELECT a.answer_id, a.trace_id, a.retrieved_chunk_ids
+    FROM answers a
+    WHERE a.answer_id = $target_answer_id
+),
+chunk_sources AS (
+    SELECT ac.answer_id, c.chunk_id, c.corpus_version, c.source_doc_id, c.source_doc_version
+    FROM answer_context ac
+    JOIN chunks c ON list_contains(string_split(ac.retrieved_chunk_ids, ','), c.chunk_id)
+),
+doc_versions AS (
+    SELECT cs.answer_id, cs.chunk_id, cs.source_doc_id, cs.source_doc_version,
+        d.last_modified_at, d.content_hash
+    FROM chunk_sources cs
+    JOIN source_documents d ON d.doc_id = cs.source_doc_id AND d.version_id = cs.source_doc_version
+)
+SELECT * FROM doc_versions ORDER BY chunk_id;
+</code></pre>
+<p>Read it as three steps named in order. <code>answer_context</code> pins the target answer and pulls its chunk list. <code>chunk_sources</code> joins that list to the <code>chunks</code> table, resolving each chunk ID to the corpus version and document version it belongs to. <code>doc_versions</code> joins to <code>source_documents</code> to retrieve the content hash for that exact version.</p>
+<p>Each row in the result is one chunk the answer drew on, with the document version and content hash that produced it. Compare Tuesday’s hash to Monday’s: if they differ, the corpus reload swapped the paragraph. That is the answer.</p>
+<p>This is the lineage lookup Module 6 will automate into a full lineage store. Here you write it by hand, so you understand the data shape before the automation hides it.</p>
+<h2 id="the-module-1-diagnostic-playbook"><a class="header" href="#the-module-1-diagnostic-playbook">The Module 1 Diagnostic Playbook</a></h2>
+<p>These eight queries are the ones you run in order during a production incident. Lessons 1 and 2 built them; this lesson closes the set.</p>
+<ol>
+<li>P95 latency by route (current window)</li>
+<li>Cost by tenant (current week)</li>
+<li>Eval pass-rate by day and criterion (rolling 14 days)</li>
+<li>Rolling seven-day pass-rate to smooth noise</li>
+<li>Per-tenant cost rank, this week versus last week</li>
+<li>Latency delta around a deployment timestamp</li>
+<li>Freshness breach: which sources are stale and by how much</li>
+<li>Lineage walk: answer back to source document version and content hash</li>
+</ol>
+<p>Run them in this order and you cover the full surface of what can go wrong: latency, cost, quality trend, quality smoothed, cost attribution shift, deploy regression, corpus staleness, and corpus content change. The eight queries together are the operator’s toolkit for a production AI system.</p>
+<p>Module 2 extends this same <code>module1-sql/</code> store: you land its tables as warehouse targets and write dbt models that transform the raw telemetry into the query layer a data team can build dashboards on.</p>
+<h2 id="core-concepts-3"><a class="header" href="#core-concepts-3">Core Concepts</a></h2>
+<ul>
+<li>Lineage resolves an answer to the exact source-document version and content hash that produced it; a changed content hash between two loads is the evidence that a corpus reload altered what the model cited.</li>
+<li>The lineage CTE chain runs in three named steps: isolate the target answer, join its chunk IDs to the <code>chunks</code> table, then join to <code>source_documents</code> for the version record and content hash.</li>
+<li><code>retrieved_chunk_ids</code> is stored as comma-separated TEXT in SQLite (no array type); DuckDB reads it with <code>string_split(..., ',')</code> and <code>list_contains(...)</code>; Postgres uses <code>= ANY(array_column)</code>.</li>
+<li>The eight-query diagnostic playbook (latency, cost, pass-rate, rolling pass-rate, cost rank delta, deploy delta, freshness breach, lineage walk) covers the full incident surface for a production AI system.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module1/the-lineage-walk/">
+<p><strong>Build It in Claude Code</strong>: Add the three lineage tables (<code>answers</code>, <code>chunks</code>, <code>source_documents</code>) to <code>db/schema.sql</code>; extend <code>db/seed.py</code> to seed one target answer whose retrieved chunk resolves to a document with a changed <code>content_hash</code> (seed two versions of the same <code>source_doc_id</code> so the walk lands on the newer, changed hash); add <code>queries/08_lineage_walk.sql</code> using the locked CTE chain from this lesson; then finalize <code>smoke.py</code> to run and assert all eight queries (exit non-zero on any failure) and write a <code>tests/test_queries.py</code> pytest suite that mirrors every smoke assertion as a named test.</p>
+</div>
+
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr-ef4e11c1.min.js"></script>
+        <script src="mark-09e88c2c.min.js"></script>
+        <script src="searcher-09f2665d.js"></script>
+
+        <script src="clipboard-1626706a.min.js"></script>
+        <script src="highlight-abc7f01d.js"></script>
+        <script src="book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="theme/copy-to-claude-6912ec05.js"></script>
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+
+    </div>
+    </body>
+</html>

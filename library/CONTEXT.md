@@ -5,11 +5,10 @@ self-contained (`src/` + `exercises/` + `theme/` + `book.toml`) so a single one 
 
 ## Buckets
 
-- `library/completed/` — shipped books. Currently: `sans-python`.
-- `library/in-progress/` — actively authoring. Currently: `just-python`, `answer-engineering`,
-  `local-metal`.
-- `library/planned/` — dossier/ore identified, not started. Currently: `ml-in-proportion`,
-  `upstream`, `tasteful-tuning`.
+- `library/completed/` — shipped books. Currently: `sans-python`, `just-python`, `local-metal`.
+- `library/in-progress/` — actively authoring. Currently: `answer-engineering`, `machine-math`,
+  `data-currents`.
+- `library/planned/` — dossier/ore identified, not started. Currently: `tasteful-tuning`.
 
 ## Route in
 

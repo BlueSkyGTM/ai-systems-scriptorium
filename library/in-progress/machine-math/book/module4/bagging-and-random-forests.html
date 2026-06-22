@@ -1,0 +1,458 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Bagging and Random Forests - Machine Math — Classic ML and the Math It Requires</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/copy-to-claude-45921320.css">
+        <link rel="stylesheet" href="../theme/syntax-polish-53c427bd.css">
+        <link rel="stylesheet" href="../theme/readability-9f9ae6ec.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "rust";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "../searchindex-af29d0fb.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-1b1245a3.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Machine Math — Classic ML and the Math It Requires</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="bagging-and-random-forests"><a class="header" href="#bagging-and-random-forests">Bagging and Random Forests</a></h1>
+<p>A single decision tree is unstable. Change a handful of training samples and the tree can
+look completely different at every split below the root. That instability is variance, and
+variance is the enemy bagging is designed to kill.</p>
+<h2 id="the-bagging-idea"><a class="header" href="#the-bagging-idea">The Bagging Idea</a></h2>
+<p>Bootstrap aggregating, shortened to bagging, is the simplest variance reduction technique
+for high-variance learners. Draw a bootstrap sample: sample <code>n</code> rows from your training
+set with replacement, where <code>n</code> is the original size. About 63.2% of unique rows appear
+in each sample; the rest are left out. Train a full, unpruned tree on that sample. Repeat
+for each of your <code>n_estimators</code> trees. At prediction time, collect every tree’s vote and
+return the majority class.</p>
+<p>Why does it work? Each tree overfits, but to a different bootstrap sample, so the
+overfitting is incoherent. When you average incoherent noise, it cancels. The signal
+component, shared across all trees, survives the averaging. Bias barely moves because
+each tree trains on a full-sized sample; variance falls roughly in proportion to the
+number of trees, up to the point where the trees become correlated and further averaging
+stops helping.</p>
+<p>Random forests push the idea one step further. At each split, instead of searching all
+features, each tree draws a random subset of features of size <code>sqrt(n_features)</code> for
+classification and considers only those. That random feature subset forces the trees to
+differ even when they see similar bootstrap samples. The result is a forest of trees that
+are diverse in two independent ways: different rows, different features.</p>
+<p>The Azure Machine Learning designer’s Decision Forest Regression component exposes this
+directly. It offers both a <strong>Bagging</strong> resampling method (bootstrap aggregating with
+aggregation over the resulting tree predictions) and a <strong>Replicate</strong> method (same input
+data, random split predicates). The bagging path is the same bootstrap-and-average
+mechanism you build here; see the <a href="https://learn.microsoft.com/azure/machine-learning/component-reference/decision-forest-regression?view=azureml-api-2">Decision Forest Regression component
+reference</a>
+for the designer-level parameters.</p>
+<h2 id="the-code"><a class="header" href="#the-code">The Code</a></h2>
+<p>The locked <code>RandomForestClassifier</code> below is the exact code the acceptance gate imports.
+Add it to <code>exercises/ml/ensemble.py</code>. It imports <code>DecisionTreeClassifier</code> directly from
+<code>ml.tree</code>, the file you built in Module 3: real reuse, no copy.</p>
+<pre><code class="language-python">"""Ensemble methods, from scratch in NumPy.
+
+Two ideas housed here:
+
+1. Bagging + random feature subsets -&gt; RandomForestClassifier.
+   Each tree sees a bootstrap sample of rows and a random subset of features.
+   Prediction is majority vote. Variance falls; bias stays flat.
+
+2. Gradient boosting -&gt; GradientBoostingRegressor.
+   Fit weak regressors (shallow trees) sequentially to the residuals of the
+   ensemble so far. Each stage nudges the prediction in the direction of
+   steepest descent of MSE. The ensemble is additive:
+       F_m(x) = base + lr * sum_{i=1}^{m} h_i(x)
+   where h_i is trained on y - F_{i-1}(x).
+
+No sklearn inside the algorithms. Pure NumPy + ml.tree.
+"""
+from __future__ import annotations
+
+from typing import List, Optional, Union
+
+import numpy as np
+
+from ml.tree import DecisionTreeClassifier, DecisionTreeRegressor
+
+
+# ---------------------------------------------------------------------------
+# RandomForestClassifier
+# ---------------------------------------------------------------------------
+
+class RandomForestClassifier:
+    """Bootstrap-aggregated ensemble of DecisionTreeClassifiers with random
+    feature subsets.
+
+    Parameters
+    ----------
+    n_estimators : int
+        Number of trees in the forest.
+    max_depth : int or None
+        Maximum depth for each tree.
+    max_features : "sqrt" or int
+        Number of features to consider at each tree. "sqrt" -&gt; int(sqrt(n_features)).
+    min_samples_split : int
+        Passed through to each tree.
+    random_state : int or None
+        Seeds a numpy Generator for reproducibility.
+    """
+
+    def __init__(
+        self,
+        n_estimators: int = 100,
+        max_depth: Optional[int] = None,
+        max_features: Union[str, int] = "sqrt",
+        min_samples_split: int = 2,
+        random_state: Optional[int] = None,
+    ):
+        self.n_estimators = n_estimators
+        self.max_depth = max_depth
+        self.max_features = max_features
+        self.min_samples_split = min_samples_split
+        self.random_state = random_state
+
+        self.estimators_: List[DecisionTreeClassifier] = []
+        self.feature_indices_: List[np.ndarray] = []
+        self.n_classes_: int = 0
+
+    # ------------------------------------------------------------------
+    # fit
+    # ------------------------------------------------------------------
+
+    def fit(self, X: np.ndarray, y: np.ndarray) -&gt; "RandomForestClassifier":
+        X = np.asarray(X, dtype=float)
+        y = np.asarray(y, dtype=int)
+        n_samples, n_features = X.shape
+        self.n_classes_ = int(y.max()) + 1
+
+        rng = np.random.default_rng(self.random_state)
+
+        # Resolve max_features to an integer count
+        if self.max_features == "sqrt":
+            k = max(1, int(np.sqrt(n_features)))
+        elif isinstance(self.max_features, int):
+            k = min(self.max_features, n_features)
+        else:
+            raise ValueError(f"max_features must be 'sqrt' or int, got {self.max_features!r}")
+
+        self.estimators_ = []
+        self.feature_indices_ = []
+
+        for _ in range(self.n_estimators):
+            # Bootstrap sample (rows with replacement)
+            row_idx = rng.integers(0, n_samples, size=n_samples)
+            # Random feature subset (without replacement)
+            feat_idx = rng.choice(n_features, size=k, replace=False)
+            feat_idx.sort()   # stable column order; purely cosmetic
+
+            X_boot = X[row_idx][:, feat_idx]
+            y_boot = y[row_idx]
+
+            tree = DecisionTreeClassifier(
+                max_depth=self.max_depth,
+                min_samples_split=self.min_samples_split,
+            )
+            tree.fit(X_boot, y_boot)
+
+            self.estimators_.append(tree)
+            self.feature_indices_.append(feat_idx)
+
+        return self
+
+    # ------------------------------------------------------------------
+    # predict
+    # ------------------------------------------------------------------
+
+    def predict(self, X: np.ndarray) -&gt; np.ndarray:
+        X = np.asarray(X, dtype=float)
+        # Collect votes: shape (n_estimators, n_samples)
+        votes = np.stack(
+            [
+                tree.predict(X[:, feat_idx])
+                for tree, feat_idx in zip(self.estimators_, self.feature_indices_)
+            ],
+            axis=0,
+        )   # shape: (n_estimators, n_samples)
+
+        n_samples = X.shape[0]
+        # Majority vote per sample
+        preds = np.zeros(n_samples, dtype=int)
+        for i in range(n_samples):
+            counts = np.bincount(votes[:, i], minlength=self.n_classes_)
+            preds[i] = int(np.argmax(counts))
+        return preds
+</code></pre>
+<p>Follow the <code>fit</code> loop carefully. <code>rng.integers(0, n_samples, size=n_samples)</code> draws the
+bootstrap row indices with replacement. <code>rng.choice(n_features, size=k, replace=False)</code>
+draws the feature subset without replacement. The tree then trains on the sliced
+submatrix: <code>X[row_idx][:, feat_idx]</code>. At prediction time, each tree receives only the
+columns it was trained on: <code>X[:, feat_idx]</code>. The majority vote over all <code>n_estimators</code>
+trees is the forest’s answer.</p>
+<h2 id="measured-results"><a class="header" href="#measured-results">Measured Results</a></h2>
+<p>On the breast cancer dataset (569 samples, 30 features, 2 classes), with a stratified
+80/20 split and <code>random_state=0</code>:</p>
+<ul>
+<li><code>DecisionTreeClassifier(max_depth=6)</code>: test accuracy <code>0.9123</code>.</li>
+<li><code>RandomForestClassifier(n_estimators=100, max_depth=6, random_state=0)</code>: test accuracy
+<code>0.9386</code>.</li>
+<li>Label-by-label agreement between the from-scratch forest and scikit-learn’s
+<code>RandomForestClassifier</code> on the same 114 test samples: <code>99.12%</code>.</li>
+</ul>
+<p>The forest clears the single-tree score by more than two percentage points. The agreement
+with scikit-learn confirms that the bootstrap-and-vote mechanics are correct: the same
+algorithm on the same data produces the same predictions.</p>
+<h2 id="why-variance-falls"><a class="header" href="#why-variance-falls">Why Variance Falls</a></h2>
+<p>Think of it this way. Each tree predicts <code>signal + noise_i</code>, where <code>noise_i</code> is the
+idiosyncratic overfitting noise that tree <code>i</code> picked up from its bootstrap sample. When
+you average 100 such trees, the signal terms add coherently; the noise terms, being
+independent of each other, cancel. The variance of the average is <code>variance_of_one_tree / n_estimators</code> when the trees are uncorrelated. The random feature subset keeps the trees
+uncorrelated even when the dataset has a few dominant features; without it, every tree
+would split on the same feature at the root, and the votes would tell you almost nothing
+new about each other.</p>
+<p>Bias is mostly untouched because each tree still trains on a full-sized sample. You are
+not undersampling data; you are resampling it. The tree’s capacity to fit the underlying
+function is unchanged.</p>
+<p>Adding more trees past a certain point gives diminishing returns but never makes things
+worse. That is a sharp difference from boosting, where too many rounds can overfit.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>Bagging trains each tree on a bootstrap sample (rows sampled with replacement, same
+size as original) and aggregates predictions by majority vote; independent overfitting
+noise cancels on average.</li>
+<li>Random forests add random feature subsampling at each split (<code>sqrt(n_features)</code> for
+classification), forcing diversity even when one feature dominates.</li>
+<li>Averaging <code>k</code> independent learners reduces variance by roughly a factor of <code>k</code>; bias
+stays flat because each learner trains on a full-sized sample.</li>
+<li>From-scratch and scikit-learn forests agree on 99.12% of breast cancer test labels at
+100 trees and <code>max_depth=6</code>, confirming the bootstrap-and-vote logic is correct.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module4/bagging-and-random-forests/">
+<p><strong>Build It in Claude Code</strong>: Read the current state of <code>exercises/ml/tree.py</code> before
+touching anything. Module 3 already placed <code>DecisionTreeClassifier</code> there. You are now
+creating <code>exercises/ml/ensemble.py</code> and adding <code>RandomForestClassifier</code> to it. Import
+<code>DecisionTreeClassifier</code> from <code>ml.tree</code>; do not copy it. Implement the class exactly as
+shown above. Then verify with the locked acceptance gate at
+<code>exercises/module4/bagging-and-random-forests/test_forest.py</code>. Done when
+<code>python -m pytest exercises/module4/bagging-and-random-forests</code> is green.</p>
+</div>
+
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../module4/00-overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../module4/boosting-and-the-gradient.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../module4/00-overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../module4/boosting-and-the-gradient.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/copy-to-claude-04012d3b.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

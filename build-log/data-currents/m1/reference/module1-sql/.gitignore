@@ -1,0 +1,5 @@
+# Reference-build cruft — track the source, not the generated artifacts.
+__pycache__/
+*.pyc
+.pytest_cache/
+db/telemetry.db
