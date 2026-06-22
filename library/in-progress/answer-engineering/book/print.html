@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-78f2b97b.js";
+            window.path_to_searchindex_js = "searchindex-f686a47f.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-c313bbf0.js"></script>
+        <script src="toc-2cbfa76e.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -2356,6 +2356,381 @@ in the category with a weak latest result, drill the weakest step; re-run the sc
 </ul>
 <div class="claude-handoff" data-exercise="exercises/module7/simulating-the-room/">
 <p><strong>Try It in Claude Code:</strong> run a mixed, timed practice session across all five categories, log and score each rep, then run the calibration scorer and drill whatever the verdict names until it reports READY.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-8-the-hiring-loop-end-to-end"><a class="header" href="#module-8-the-hiring-loop-end-to-end">Module 8: The Hiring Loop End-to-End</a></h1>
+<p>An interview loop is not one test. It is a sequence of rounds, each run by a different person evaluating a
+different thing: a recruiter checking that you can say what you do, a hiring manager probing how you
+operate, an engineer pulling on a system design, a panel mixing all of it. You have built a piece of
+preparation for each of those rounds across this book. This module sequences them and grades the whole.</p>
+<p>The dossier you have assembled is the preparation: the decompositions, the full Algorithm runs, the
+behavioral bank, the systems-design log, the portfolio-narrative document, the deliberate-practice reps.
+Each module built one piece and a tool to check it. The capstone closes the loop by composing all of it
+into a single graded verdict, the way the loop itself will grade you: stage by stage, with no partial
+credit for the rounds you skipped.</p>
+<h2 id="the-capstone-is-a-grader"><a class="header" href="#the-capstone-is-a-grader">The Capstone Is a Grader</a></h2>
+<p>Consistent with everything this book argues, the capstone is not an essay about feeling prepared. It is a
+grader. The grader composes the tools you already have, the completeness checker and the calibration
+scorer, and maps your dossier onto the five interview-loop stages. It marks each stage ready or not, names
+the gap when there is one, and returns a single readiness verdict. You do not decide you are ready; you
+run the grader and it tells you, against the same evidence the loop will use.</p>
+<p>This is the point the whole book has been building toward. The framework made your reasoning transferable.
+The example banks loaded it into reflex. The portfolio module turned your work into a narrative. The
+practice module calibrated you. The grader confirms the pieces hold together as one preparation, not five
+disconnected efforts.</p>
+<h2 id="the-five-stages"><a class="header" href="#the-five-stages">The Five Stages</a></h2>
+<p>The loop this module grades has five stages: the recruiter screen, the hiring-manager round, the
+systems-design round, the portfolio deep-dive, and the panel. Each evaluates something different, and each
+draws on a specific part of your dossier. One stage, the technical coding screen, is named but not graded
+here: its preparation is sourced separately, and the module is honest about that gap rather than pretending
+the dossier covers it.</p>
+<h2 id="the-four-lessons-4"><a class="header" href="#the-four-lessons-4">The Four Lessons</a></h2>
+<ol>
+<li><strong>Sequencing the Preparation</strong> maps each dossier piece to where it pays off and tells you what to build
+first when time is short.</li>
+<li><strong>The Stages of the Loop</strong> walks the five stages: what each evaluates and how to prepare it from the
+dossier you already have.</li>
+<li><strong>Grading Your Dossier</strong> runs the capstone grader, reads its readiness report, and closes the gaps it
+names.</li>
+<li><strong>Closing the Loop</strong> covers working the loop on the day and after: the readiness verdict, the offer
+stage, and the end of the book.</li>
+</ol>
+<h2 id="what-this-module-closes"><a class="header" href="#what-this-module-closes">What This Module Closes</a></h2>
+<p>By the end you have run the grader and driven it to a ready verdict, which means every stage of the loop is
+prepared with evidence behind it, not a feeling. That is the whole claim of this book made concrete: you
+walk in with a graded dossier and a method that holds under a question you have never seen. The
+preparation is finished when the grader says it is, and then the only thing left is the room.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="sequencing-the-preparation"><a class="header" href="#sequencing-the-preparation">Sequencing the Preparation</a></h1>
+<p>Preparation is not infinite. The interview loop grades you on whether the right things are ready at
+the right stages, not on how much time you spent, so the only question that matters is sequence: what
+do you build first, what has the most leverage, and what do you cut when the clock is short?</p>
+<p>The dossier you have built across this book answers that question. Each piece maps onto one or more
+stages of the loop, and the stages are not equal. The structure of the dossier tells you the order.</p>
+<h2 id="the-dossier-as-a-map"><a class="header" href="#the-dossier-as-a-map">The Dossier as a Map</a></h2>
+<p>Six artifacts, each mapping to one or more stages of the five-stage loop:</p>
+<ul>
+<li><strong>The decomposition log</strong> records your breakdown of AI Engineer job descriptions: the skills named,
+the signals behind them, the patterns across listings. It is the foundation the rest of the
+dossier rests on, not a stage artifact by itself.</li>
+<li><strong>The answers log</strong> holds your full Algorithm runs on technical and behavioral questions. It feeds
+fluency. Every stage requires you to explain something clearly; the answers log is where you have
+practiced doing that.</li>
+<li><strong>The behavioral bank</strong> is your set of structured STAR entries for ownership, influence, conflict,
+and failure categories. It directly prepares the hiring-manager round and the panel, which is two
+of the five stages.</li>
+<li><strong>The systems-design log</strong> holds your design runs: open-ended prompts you worked through under a
+clock, with production reasoning over a real architecture. It prepares one stage: the
+systems-design round.</li>
+<li><strong>The portfolio-narrative document</strong> is your written account of your best artifact, the decisions
+behind it, the tradeoffs you made, and where it falls short. It prepares the recruiter screen, the
+portfolio deep-dive, and the panel, three of the five stages.</li>
+<li><strong>The deliberate-practice reps</strong> in your calibration log feed <code>calibrate.py</code>, which scores your
+readiness category by category. Categories have to reach READY before certain stages can be graded
+as ready. The reps are not a stage artifact; they are what make the other artifacts worth trusting.</li>
+</ul>
+<p>If you have run this book in order, you have all six. If you are coming in late, the order they
+appear on that list is not the order to build them.</p>
+<h2 id="where-the-leverage-is"><a class="header" href="#where-the-leverage-is">Where the Leverage Is</a></h2>
+<p>The dossier’s leverage is unequal, and the sequencing guidance tells you exactly where it sits.</p>
+<p><strong>Build the framework and the answers log first.</strong> They feed everything. The Algorithm is how you
+think on your feet in every round; the answers log is how you have practiced that thinking. Without
+them, the rest of the dossier is decoration.</p>
+<p><strong>Build the behavioral bank next.</strong> It covers two stages: the hiring-manager round and the panel.
+That is the highest stage coverage of any single artifact, which makes it the highest-leverage thing
+you can build after the foundation is in place. Both stages require depth in specific categories:
+the hiring-manager round needs ownership and influence; the panel needs conflict and failure. Those
+four categories are the minimum viable behavioral bank.</p>
+<p><strong>Build the portfolio-narrative document third.</strong> It prepares three stages: the recruiter screen,
+the portfolio deep-dive, and the panel. One document, written once and well, earns a return in three
+different rooms. That is the best ratio of authoring effort to stage coverage in the dossier. The
+depth of the document matters: a shallow overview will not survive the portfolio deep-dive, where
+the interviewer will pull on your decisions and failure modes. Write for the deep-dive, and the
+recruiter screen gets covered as a side effect.</p>
+<p><strong>The systems-design log is last, but not because it is least important.</strong> The systems-design round
+is the single hardest stage to prepare, and it covers only one stage. That combination means it
+demands the most reps for the narrowest payoff; it is high cost and non-optional. Budget the most
+practice time to it, but build the behavioral bank and the portfolio-narrative document first so the
+high-cost artifact does not crowd out the high-leverage ones.</p>
+<p><strong>One stage is not prepared by the dossier at all.</strong> The technical coding screen, covered in Module 4,
+is sourced separately. The dossier does not grade it and this module does not pretend otherwise.
+Name it in your loop plan as a stage you are sourcing outside this book, and do not let the gap
+surprise you.</p>
+<p>The explicit priority order, from highest to lowest:</p>
+<ol>
+<li>Framework and answers log (foundation; feed all stages)</li>
+<li>Behavioral bank (highest stage coverage; two stages)</li>
+<li>Portfolio-narrative document (second-highest coverage; three stages, one document)</li>
+<li>Systems-design log (single stage, highest difficulty; plan the most reps)</li>
+<li>Deliberate-practice reps (run <code>calibrate.py</code>; drive categories to READY before you submit a stage as ready)</li>
+</ol>
+<h2 id="the-time-boxed-plan"><a class="header" href="#the-time-boxed-plan">The Time-Boxed Plan</a></h2>
+<p>The dossier does not care how you feel about your readiness. <code>check_prep.py</code> checks completeness;
+<code>calibrate.py</code> checks quality. Both produce a verdict, not a feeling. Your preparation plan should
+work the same way: set a time constraint and cut by leverage, not by comfort.</p>
+<p><strong>With two weeks:</strong> run the full priority order. Build the foundation in the first two days. Spend
+three days on the behavioral bank: four categories, real STAR entries, scored against the rubric.
+Spend two days drafting the portfolio-narrative document and one more revising it against a
+deep-dive prompt. Use the remaining time for systems-design reps, aiming for at least five logged
+runs in your systems-design log. Reserve the final two days to run <code>calibrate.py</code>, close any
+category that is not READY, and fill in <code>loop-plan.md</code> for every stage.</p>
+<p><strong>With two days:</strong> cut everything that does not directly cover a stage and cut the lowest-coverage
+artifact last. Build the foundation in the first two hours. Write the portfolio-narrative document,
+since it covers three stages and can be drafted in a few hours. Draft the behavioral bank entries
+for the two categories each stage needs at minimum: ownership and influence for the
+hiring-manager round, conflict and failure for the panel. Do one systems-design run and log it.
+Run <code>check_prep.py</code> to see what is missing. What <code>check_prep.py</code> flags as absent, you cut; do not
+invent entries to pass the check.</p>
+<p>The check, not the feeling, is the exit condition.</p>
+<h2 id="core-concepts-22"><a class="header" href="#core-concepts-22">Core Concepts</a></h2>
+<ul>
+<li>The behavioral bank has the highest stage leverage of any single dossier artifact, covering two of
+the five interview stages.</li>
+<li>The portfolio-narrative document covers three stages (recruiter screen, portfolio deep-dive,
+panel); one strong document earns that return three times.</li>
+<li>The systems-design log prepares the single most difficult stage and demands the most practice reps,
+even though it covers only one stage.</li>
+<li>When time is short, cut by stage coverage: build the framework and answers log first, then the
+behavioral bank, then the portfolio-narrative document; the systems-design log follows even if it
+gets fewer reps than it deserves.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module8/sequencing-the-preparation/">
+<p><strong>Try It in Claude Code:</strong> draft your loop plan: for each interview stage, list which dossier pieces you will draw on and your honest readiness for that stage.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-stages-of-the-loop"><a class="header" href="#the-stages-of-the-loop">The Stages of the Loop</a></h1>
+<p>Each round in an interview loop is run by a different person with a different hypothesis. They are not passing the baton; they are each collecting a different kind of evidence. One preparation strategy, applied uniformly, serves none of them well.</p>
+<p>The five graded stages that follow each evaluate something distinct, each has a failure mode that is specific to that stage, and each draws on a different piece of your dossier. Know which piece belongs in which room.</p>
+<h2 id="the-recruiter-screen"><a class="header" href="#the-recruiter-screen">The Recruiter Screen</a></h2>
+<p>The recruiter is not evaluating depth. She is running a binary filter: does this person know what they do, and does what they describe fit the role? The screen is usually thirty minutes, and the signal she is collecting is whether you can pitch yourself without friction.</p>
+<p>Two things fail here. The first is scope creep: you spend five minutes on context, two on what you built, and then the call ends without a portfolio headline. The second is hedging: “I’ve worked on a few different things” is the answer that eliminates you, because it signals that you cannot name the most compelling thing you have built and explain it in a sentence.</p>
+<p>The dossier piece that prepares this stage is the portfolio-narrative overview, a one-to-two paragraph summary of your strongest artifact that any hiring-stage reader can understand in ninety seconds. Pair it with your Algorithm fluency from the answers log: the recruiter will often ask you to describe your background or walk through what you have done with AI systems, and the answers log gives you the practiced, calibrated language to land that answer cleanly.</p>
+<p>Your preparation goal for this stage is to be able to deliver a two-minute pitch from memory: what you built, why it mattered, and one concrete outcome.</p>
+<h2 id="the-hiring-manager-round"><a class="header" href="#the-hiring-manager-round">The Hiring-Manager Round</a></h2>
+<p>The hiring manager is not listening to your project walk. She is building a model of how you operate. The questions are behavioral: tell me about a time you owned a difficult problem, tell me about a time you had to influence without authority, tell me about a decision that did not go the way you expected.</p>
+<p>The failure mode here is thinness. Candidates who prepare their WHAT (the architecture, the metrics, the stack) but not their HOW (how they decided, how they pushed back, how they recovered) sound technically competent but operationally unreadable. The hiring manager is trying to predict your behavior; she cannot do that from your technical choices.</p>
+<p>The dossier piece that prepares this stage is the behavioral bank: a structured set of stories categorized by dimension, built using the Algorithm’s decomposition method and calibrated for ownership and influence. Those two calibrate categories need to be READY before this round. Check your calibration scorecard; if ownership or influence is not clean on the latest rep, that gap is what this stage will surface.</p>
+<h2 id="the-systems-design-round"><a class="header" href="#the-systems-design-round">The Systems-Design Round</a></h2>
+<p>The systems-design round is the highest-difficulty stage in the loop. The evaluator gives you an open-ended problem, a clock, and very little structure. She is not evaluating whether you have memorized a reference architecture. She is watching how you reason under ambiguity: do you clarify scope before building, do you name the tradeoffs in your choices, do you think about failure modes before she prompts you, and do you connect your design to production constraints?</p>
+<p>The failure mode is memorized slides. A candidate who jumps to a solution and recites its components without engaging the problem space fails this round even if the components are correct. What the evaluator hears is that you do not know what you do not know, and that is the signal she is most afraid of.</p>
+<p>The dossier piece that prepares this stage is the systems-design log: a set of timed design exercises you have done with the Algorithm’s structured method, each ending with a written reasoning trace. The systems-design calibrate category must be READY here. Budget the most reps in this category across your preparation; it has the longest ramp and the most surface area to expose gaps.</p>
+<h2 id="the-portfolio-deep-dive"><a class="header" href="#the-portfolio-deep-dive">The Portfolio Deep-Dive</a></h2>
+<p>The portfolio deep-dive is the round where you walk a real artifact. The evaluator has likely read your resume and your GitHub, and she wants to understand the decisions behind what she sees. She is not evaluating the artifact; she is evaluating your relationship to it. Can you explain why you made each load-bearing choice, what you would do differently, and what the failure modes are?</p>
+<p>The failure mode here is narration without reasoning. “I used a vector store for retrieval” is a statement. “I used a vector store because the query pattern was semantic rather than keyword-based, and that tradeoff meant I had to add a relevance floor to avoid surfacing low-confidence results” is a decision. The evaluator is listening for decisions, not descriptions.</p>
+<p>The dossier piece that prepares this stage is the portfolio-narrative document: a decision-by-decision walkthrough of your strongest artifact, written to be narrated under questioning. If the document only describes what you built and not why each choice was the right one given the alternatives, go back and add the why before this round. Module 6’s tailoring lesson explains how to enter the same artifact from different decision points depending on the room; this is the stage where that skill pays off directly.</p>
+<h2 id="the-panel"><a class="header" href="#the-panel">The Panel</a></h2>
+<p>The panel is the stage that mixes everything. It often includes one behavioral question, a light portfolio walk, and at least one question about conflict or failure. The evaluators may be engineers, cross-functional peers, or both, and they are each running a slightly different lens.</p>
+<p>The failure mode is inconsistency. A story you told in the behavioral round that does not match your portfolio narrative, an answer about failure that sounds rehearsed rather than honest, or a response to conflict that is too smooth: the panel is the round where gaps between what you practiced in isolation surface as contradictions under combined pressure.</p>
+<p>The dossier pieces that prepare this stage are the behavioral bank and the portfolio-narrative document, together. The conflict and failure calibrate categories must be READY; those two dimensions are the ones the panel is most likely to probe, and they are the ones candidates most often under-prepare because they are uncomfortable to practice. Run reps explicitly on conflict and failure stories before this round.</p>
+<h2 id="the-honest-gap-the-technical-coding-screen"><a class="header" href="#the-honest-gap-the-technical-coding-screen">The Honest Gap: The Technical Coding Screen</a></h2>
+<p>Many loops include a technical coding screen: algorithm problems, data structure questions, or language-specific exercises under a timer. That stage is part of the loop but not graded here. The dossier this book builds does not prepare it; the Algorithm, the behavioral bank, the systems-design log, and the portfolio narrative are not substitutes for coding-screen practice.</p>
+<p>Source coding-screen preparation separately. LeetCode, NeetCode, and similar structured programs cover this stage directly. Do not assume your dossier readiness translates to coding-screen readiness; they are distinct skills and the loop grades them independently.</p>
+<h2 id="core-concepts-23"><a class="header" href="#core-concepts-23">Core Concepts</a></h2>
+<ul>
+<li>Each loop stage is run by a different evaluator with a different hypothesis; one preparation posture does not transfer across stages, and the failure mode at each stage is specific to what that stage is actually measuring.</li>
+<li>The behavioral bank covers two stages (hiring-manager and panel) and must have ownership, influence, conflict, and failure calibrated READY before either round.</li>
+<li>The portfolio-narrative document appears in three stages (recruiter screen, portfolio deep-dive, and panel); one strong document built from decisions and tradeoffs pays off more than any other single dossier artifact.</li>
+<li>The technical coding screen is a real loop stage that this book does not cover; source dedicated coding-screen practice separately and do not conflate dossier readiness with coding-screen readiness.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module8/the-stages-of-the-loop/">
+<p><strong>Try It in Claude Code:</strong> for each stage in your loop plan, write what it evaluates and the specific dossier piece you will lead with, and mark your readiness honestly.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="grading-your-dossier"><a class="header" href="#grading-your-dossier">Grading Your Dossier</a></h1>
+<p>The loop will grade you stage by stage, with no partial credit for the rounds you skipped. The dossier grader applies the same discipline before you walk in.</p>
+<p>You have run the completeness checker on your artifacts and the calibration scorer on your practice log. The grader composes both and maps the result onto five stages: recruiter screen, hiring manager, systems-design round, portfolio deep-dive, and panel. Each stage gets a verdict. One gap in any stage holds the overall verdict at NOT READY. Run it from the <code>exercises/prep/</code> directory:</p>
+<pre><code>python grade_dossier.py
+</code></pre>
+<h2 id="what-you-get-back"><a class="header" href="#what-you-get-back">What You Get Back</a></h2>
+<p>Here is the full report on an empty dossier:</p>
+<pre><code>Answer Engineering Dossier Readiness Report
+============================================
+
+  recruiter-screen         GAP: validator portfolio_narrative failed, validator answers failed, loop-plan entry missing or empty
+  hiring-manager           GAP: validator behavioral_bank failed, category 'ownership' not ready, category 'influence' not ready, loop-plan entry missing or empty
+  systems-design-round     GAP: validator systems_design_log failed, category 'systems-design' not ready, loop-plan entry missing or empty
+  portfolio-deep-dive      GAP: validator portfolio_narrative failed, loop-plan entry missing or empty
+  panel                    GAP: validator behavioral_bank failed, validator portfolio_narrative failed, category 'conflict' not ready, category 'failure' not ready, loop-plan entry missing or empty
+
+VERDICT: NOT READY. Close: recruiter-screen, hiring-manager, systems-design-round, portfolio-deep-dive, panel.
+</code></pre>
+<p>Read each line as a named list of work still on the table.</p>
+<h2 id="reading-the-gap-types"><a class="header" href="#reading-the-gap-types">Reading the Gap Types</a></h2>
+<p>Each gap message is one of three kinds, and each points back to a specific artifact.</p>
+<p><strong>A failed validator</strong> means a required dossier artifact is missing or incomplete. The completeness checker from Module 1 runs on each artifact and the grader collects the result. “Validator portfolio_narrative failed” means your <code>portfolio-narrative.md</code> did not pass <code>check_prep.py</code>’s test for that document: it is absent, empty, or still has placeholder text. Return to the module that owns that artifact, finish it until <code>check_prep.py</code> passes it in isolation, and re-run the grader.</p>
+<p><strong>A category not ready</strong> means the calibration scorer from Module 7 says that signal category does not yet have three reps with a clean latest rep. “Category ‘ownership’ not ready” means you have not satisfied the <code>calibrate.py</code> threshold for that category. Return to your deliberate-practice log, drill the gap, and re-run <code>calibrate.py</code> to confirm it clears before re-running the grader.</p>
+<p><strong>Loop-plan entry missing or empty</strong> means you have not written a concrete preparation plan for that stage in <code>loop-plan.md</code>. The grader looks for a filled-in <code>**Plan:**</code> field under each stage heading. A placeholder or a blank value fails the check. Open <code>loop-plan.md</code>, write a real plan for the stage, and re-run.</p>
+<p>When a stage is fully prepared, its line reads:</p>
+<pre><code>  recruiter-screen         READY
+</code></pre>
+<p>When every stage reads READY, the verdict flips:</p>
+<pre><code>VERDICT: READY. All interview stages are prepared.
+</code></pre>
+<p>And the process exits 0.</p>
+<h2 id="how-the-grader-composes-the-earlier-tools"><a class="header" href="#how-the-grader-composes-the-earlier-tools">How the Grader Composes the Earlier Tools</a></h2>
+<p>The grader does not invent a new standard. It borrows the two standards you have already applied.</p>
+<p>The completeness result for each dossier artifact comes from <code>check_prep.py</code>, the same validator you used in Module 1 to confirm each artifact was built. The calibration result for each signal category comes from <code>calibrate.py</code>, the same scorer you used in Module 7 to read your practice readiness. The grader runs both, then maps the combined results onto the five-stage structure. A gap in the report is the same gap you would have found in the individual tool; the grader just shows you which stages it blocks.</p>
+<p>This is why a gap in the report names exactly which artifact or category to fix: the source of the gap has not changed, only the stage context in which it shows up.</p>
+<h2 id="closing-the-gaps-in-the-right-order"><a class="header" href="#closing-the-gaps-in-the-right-order">Closing the Gaps in the Right Order</a></h2>
+<p>Not all gaps are equal. Some artifacts appear in a single stage; others appear in several. The portfolio-narrative artifact shows up in three stages: recruiter screen, portfolio deep-dive, and panel. Fixing it closes three gaps at once. Start there before touching a gap that blocks only one stage.</p>
+<p>Here is the leverage map, read from the empty report above:</p>
+<ul>
+<li><code>portfolio_narrative</code> blocks recruiter-screen, portfolio-deep-dive, and panel.</li>
+<li><code>behavioral_bank</code> blocks hiring-manager and panel.</li>
+<li><code>answers</code> blocks recruiter-screen only.</li>
+<li><code>systems_design_log</code> and the <code>systems-design</code> category both block systems-design-round.</li>
+<li>The <code>ownership</code> and <code>influence</code> categories block hiring-manager.</li>
+<li>The <code>conflict</code> and <code>failure</code> categories block panel.</li>
+</ul>
+<p>Fix the highest-leverage gap first, re-run the grader, and read the updated report. Do not try to fix everything in one pass; the report after each run tells you where the remaining effort is concentrated.</p>
+<p>The loop is the same discipline you used with the calibration scorer: run, read, close one gap, re-run. The grader exits 0 when the dossier earns it.</p>
+<h2 id="core-concepts-24"><a class="header" href="#core-concepts-24">Core Concepts</a></h2>
+<ul>
+<li>The dossier grader composes the completeness checker and the calibration scorer; a gap in the report is the same gap you would find running either tool individually.</li>
+<li>Each gap type names its fix: a failed validator points back to a dossier artifact; a category not ready points back to the practice log; a missing loop-plan entry points to <code>loop-plan.md</code>.</li>
+<li>Close high-leverage gaps first: fixing an artifact that appears in three stage rows eliminates three gap lines in one move.</li>
+<li>Readiness is exit 0 awarded by the grader when every stage clears all three checks; it is not a judgment call.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module8/grading-your-dossier/">
+<p><strong>Try It in Claude Code:</strong> run the dossier grader, read the readiness report, close the gap that blocks the most stages, and re-run until more stages report READY.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="closing-the-loop"><a class="header" href="#closing-the-loop">Closing the Loop</a></h1>
+<p>The preparation is finished. What follows is a performance of work you have already done.</p>
+<p>That distinction matters because the loop, as an experience, will not feel like review. It will feel like
+pressure. The recruiter is curious and fast. The hiring manager is probing something you cannot quite name
+yet. The systems-design round is timed and you are narrating aloud. The panel asks from four directions at
+once. Each round is its own event, with its own evaluator and its own signal. You do not prepare for it
+here; you run it here. The only thing left to bring is the method.</p>
+<h2 id="working-the-loop"><a class="header" href="#working-the-loop">Working the Loop</a></h2>
+<h3 id="sequencing-your-rounds"><a class="header" href="#sequencing-your-rounds">Sequencing Your Rounds</a></h3>
+<p>Loops arrive in roughly the same order: recruiter screen first, hiring-manager conversation second, then
+the technical rounds (systems design, portfolio deep-dive, coding screen), then the panel. Some companies
+compress or reorder; get the sequence from your recruiter before the day begins. Know which rounds you are
+doing and who is in each one. This takes one email.</p>
+<p>If you can, schedule the rounds with a day between each. Back-to-back rounds in a single marathon day are
+feasible but unforgiving: a weak round has no overnight to absorb before the next one starts. When you
+have no scheduling control, at least build a reset between rounds.</p>
+<h3 id="managing-energy-across-the-loop"><a class="header" href="#managing-energy-across-the-loop">Managing Energy Across the Loop</a></h3>
+<p>The loop is not won by output; it is won by consistent signal across all rounds. A strong systems design
+and a flat recruiter screen tell a confused story. You want a consistent story: a person who can say what
+they do clearly, who thinks out loud in structured ways, who has evidence behind every claim.</p>
+<p>The first practical implication is sleep. You cannot engineer your way past a tired brain. The night
+before a round is not the time for a final pass through the dossier; it is the time to stop.</p>
+<p>The second is food and water before each round, in the hour before, not the five minutes before. Cortisol
+does real things to working memory; you manage it by treating the day like an athletic event, because it
+is one.</p>
+<h3 id="the-recruiter-screen-1"><a class="header" href="#the-recruiter-screen-1">The Recruiter Screen</a></h3>
+<p>The recruiter screen is the easiest round to underestimate. It is not a warmup; it is a filter. The
+recruiter is checking that you can articulate what you do at the level needed to advance you to the people
+who care about the depth. Your answers here should be the clearest you give all loop.</p>
+<p>Prepare one version of your work narrative that runs in 90 seconds. The behavioral bank is your material;
+your STAR-L structure is how you order it. You are not telling the best story; you are telling the
+clearest one.</p>
+<p>Signal the role correctly. “I build systems that move AI into production” is more useful to a recruiter
+than a technical stack list. One sentence on what you build, one on the scale, one on what you are
+looking for next. No preamble.</p>
+<h3 id="the-hiring-manager-round-1"><a class="header" href="#the-hiring-manager-round-1">The Hiring-Manager Round</a></h3>
+<p>The hiring manager is reading one thing that the technical rounds cannot: how you operate. They want to
+know how you handle ambiguity, how you prioritize under constraint, how you talk about failure, how you
+describe the difference between your good days and your bad ones. This is behavioral territory, not
+technical.</p>
+<p>Your dossier covers this. The behavioral bank has the stories; your STAR-L structure keeps them from
+wandering. Come in knowing three stories cold: one where you handled a constraint that changed mid-project,
+one where a technical decision was yours and it cost something, one where you worked across a boundary you
+did not control.</p>
+<p>Watch the signal. If the hiring manager steers toward a specific domain (reliability, team size, roadmap
+process), they are telling you what they care about. Follow them. The question “tell me about a time you
+had to reprioritize” is an invitation to demonstrate judgment, not to recite the project timeline.</p>
+<h3 id="the-technical-and-design-rounds"><a class="header" href="#the-technical-and-design-rounds">The Technical and Design Rounds</a></h3>
+<p>The systems-design round evaluates structured reasoning under time. SPIDER is the motion. Signal intent
+before each phase, narrate the tradeoffs as you name them, call out your own weak spots before the
+interviewer does, and use the check-in at phase boundaries to keep the conversation a dialogue, not a
+lecture. The full-design run from Module 5 is the reference; run it on your own design log before the
+loop.</p>
+<p>The portfolio deep-dive round is a conversation about something you built. The portfolio-narrative
+document is your material. Expect the interviewer to pick one project and pull hard on it: why you chose
+it, what you would change, what broke, what the monitoring looked like. “I built X” is not an answer; “I
+built X, it broke in this specific way, and here is what we changed” is. The failure story is what
+demonstrates that you actually shipped it.</p>
+<p>The coding screen sits outside the dossier’s scope. Its preparation is sourced separately, and this book
+does not pretend otherwise.</p>
+<h3 id="the-panel-1"><a class="header" href="#the-panel-1">The Panel</a></h3>
+<p>The panel is not harder than the individual rounds; it is stranger. Multiple people ask from different
+angles, with different stakes in the hire. You cannot optimize for all of them simultaneously. You optimize
+for clarity and consistency instead.</p>
+<p>The discipline that holds across the panel is the same discipline that holds across every other round: one
+answer per question, structural before detail, tradeoffs named explicitly, no defensiveness when challenged.
+An interviewer who pushes back is not wrong; they are evaluating whether you can hold a technical
+disagreement without folding or stiffening. Engage the pushback, steelman the concern if you can, and
+update your position when the argument warrants it.</p>
+<p>Panel energy matters. By the time the panel arrives, you may be five hours into a loop day. The people
+asking you questions are seeing you for the first time. Give them the same signal you gave the recruiter.</p>
+<h3 id="the-post-round-reset"><a class="header" href="#the-post-round-reset">The Post-Round Reset</a></h3>
+<p>Do not let one weak round into the next room.</p>
+<p>This is the hardest discipline in a multi-round loop. You know the behavioral story landed flat; you know
+you missed a check-in during the systems design; you know the follow-up question on the panel caught you
+thin. That knowledge is useful, but only after the loop, not during it.</p>
+<p>Between rounds, you reset: a short break, water, a walk if you can manage it, five minutes away from your
+phone. You do not replay the last round. You read your notes on what the next round evaluates and who is
+in it. Then you go in.</p>
+<p>The next interviewer does not know how the previous round went. You decide what signal they see. A weak
+round that bleeds into the next one doubles the damage; a weak round that ends at the door costs only
+what it cost.</p>
+<h3 id="between-rounds-and-after"><a class="header" href="#between-rounds-and-after">Between Rounds and After</a></h3>
+<p>Write a debrief for yourself within an hour of each round while the specifics are still live. What the
+interviewer signaled, which questions you answered well, which ones ran thin, where the pushback came and
+how you handled it. This is not for the company; it is for you, for the next loop.</p>
+<p>After the full loop, send a follow-up note to the recruiter. It does not need to be long. One paragraph
+acknowledging the conversation, naming something specific from the loop that reinforced your interest,
+confirming you are still engaged. This is not a performance; it is professional closure, and its absence
+is occasionally noticed.</p>
+<h2 id="readiness-is-an-exit-code-not-a-feeling"><a class="header" href="#readiness-is-an-exit-code-not-a-feeling">Readiness Is an Exit Code, Not a Feeling</a></h2>
+<p>You will not feel ready the morning of the loop. That is not a reliable signal.</p>
+<p>The reliable signal is the grader’s verdict. You ran <code>grade_dossier.py</code> against your assembled dossier;
+it mapped each piece to the stage it covers and returned a per-stage verdict. When every stage is marked
+READY, you have evidence behind every part of the loop. The recruiter screen has your 90-second narrative
+and your behavioral bank. The hiring-manager round has three operational stories. The systems-design round
+has your design log, your SPIDER practice, and the weak-design audit habit. The portfolio round has your
+narrative document and at least one project you can discuss three levels deep.</p>
+<p>That is the standard this book set on page one and the grader enforces on the last: the preparation is
+done when the evidence is there, confirmed by a machine, not when the feeling arrives, which it may not.</p>
+<p>The feeling is not the gate. The exit code is.</p>
+<h2 id="the-books-close"><a class="header" href="#the-books-close">The Book’s Close</a></h2>
+<p>Across eight modules, this book has made one argument. You do not prepare for interviews by memorizing
+answers. You build a method that makes your answers transferable, so that a question you have never
+rehearsed still produces a structured, evidenced response, because the structure is yours now and the
+evidence was always yours.</p>
+<p>The Algorithm decomposed every question into sub-questions before answering any of them. The behavioral
+bank built a library of real work, organized so you can retrieve the right story under pressure. SPIDER
+turned systems-design problems into a repeatable motion that bends to the signal without losing its
+shape. The capstone grader turned “am I ready” from a feeling into a measurable condition with a binary
+output.</p>
+<p>The dossier you have assembled is yours. It does not belong to this loop; it belongs to every loop. You
+update it as your work deepens, as projects ship, as you build new evidence, and you bring it into every
+future search. The method transfers because it is a method, not a script.</p>
+<p>Here is the thing the book cannot do: it cannot be in the room with you. You will be asked a question
+you have not seen, on a system you have not designed, about a tradeoff you have not rehearsed. The method
+will fire. The structure will come. The evidence will come from what you have actually built.</p>
+<p>That is the only guarantee this book can offer, and it is the only one that holds. The work was always
+yours. In the room, it will be.</p>
+<h2 id="core-concepts-25"><a class="header" href="#core-concepts-25">Core Concepts</a></h2>
+<ul>
+<li>The loop is a sequence of distinct evaluations; each round evaluates a different thing, and the
+post-round reset is what keeps a weak round from costing twice.</li>
+<li>Readiness is a graded verdict against evidence in the dossier, not a feeling; the grader’s exit 0 is
+the gate, not the morning-of confidence check.</li>
+<li>The dossier is reusable across every future loop: the method transfers because it is a method, not a
+script tied to one role or one company.</li>
+<li>In a panel, optimize for consistency and clarity across all evaluators, not for the concerns of any
+single one; engage pushback directly and update your position when the argument warrants it.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module8/closing-the-loop/">
+<p><strong>Try It in Claude Code:</strong> drive your dossier to a READY verdict from the grader, then write your loop-day plan: the order of your rounds, your reset routine between them, and your follow-up.</p>
 </div>
 
 

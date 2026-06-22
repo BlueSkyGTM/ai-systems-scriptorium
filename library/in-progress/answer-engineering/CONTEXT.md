@@ -28,9 +28,11 @@ the real Sans Python portfolio artifacts; validator grown to v5 in place (`--mod
 (overview + 4 lessons + 4 exercises) is the practice engine: deliberate reps run through the Algorithm and
 self-scored, with the self-review rubric realized as code (`calibrate.py`, a calibration scorer with a
 readiness verdict); first throughline artifact that scores rather than just checks completeness; validator
-grown to v6 in place (`--module 7`). See `build-log/answer-engineering/build-progress.md`. Next: Module 8
-(the hiring loop end-to-end, a full-dossier grader in code, the capstone); Module 4 (technical screens)
-deferred.
+grown to v6 in place (`--module 7`). M8 "The Hiring Loop End-to-End" (overview + 4 lessons + 4 exercises)
+is the capstone: it sequences the dossier across the five interview-loop stages and **grades it in code**
+via `grade_dossier.py` (which composes `check_prep` + `calibrate`, exit 0 = READY); validator grown to v7
+in place (`--module 8`). **The book is content-complete: 7 of 8 modules shipped; M4 (technical screens)
+deferred until live-coding-screen ore is sourced.** See `build-log/answer-engineering/build-progress.md`.
 
 ## Ore (in the vault — not yet distilled)
 
@@ -58,7 +60,8 @@ makes it especially legible to both.
 
 ## Handoff & gates
 
-`GATE-NAME-BOOK` cleared; M1–M3 + M5 + M6 + M7 shipped (M4 deferred, see above). For the final module:
-draft its `build-log/answer-engineering/m8/PLAN.md`, stop at `GATE-LOCK-PLAN`, then the fleet authors via
-`platform/pipeline/CONTEXT.md`, and stop at `GATE-APPROVE-SHIP` per stage. See
-`platform/HUMAN-GATES.md`. After M8 the book is content-complete (M4 still deferred pending ore).
+`GATE-NAME-BOOK` cleared; M1–M3 + M5 + M6 + M7 + M8 shipped. **The book is content-complete (7 of 8
+modules; M4 deferred pending live-coding-screen ore).** Remaining options for Ray: (a) source M4's ore and
+author it (likely reframed around the real Sans Python portfolio code); (b) relocate the book to
+`library/completed/answer-engineering` once M4 is resolved or explicitly scoped out; (c) `GATE-PUBLISH` for
+a public copy. No further authoring is gated until Ray chooses. See `platform/HUMAN-GATES.md`.

@@ -1988,3 +1988,417 @@ class TestModule7Flag:
         assert result == 0, (
             f"Expected exit 0 with --module 6 when deliberate-practice.md is absent; got {result}"
         )
+
+
+# ---------------------------------------------------------------------------
+# Fixture builders: M8 loop plan
+# ---------------------------------------------------------------------------
+
+
+def _make_lp_entry(stage: str) -> str:
+    """Return one complete ### Stage <name> entry with all three required fields filled."""
+    return f"""### Stage {stage}
+
+**Dossier pieces:** answers-log.md, behavioral-bank.md
+
+**Readiness:** ready
+
+**Plan:** Review the two strongest STAR-L stories in behavioral-bank.md and confirm each
+has a concrete metric in the Result field. Re-run check_prep.py --module 8 to confirm
+the dossier is complete before this stage.
+"""
+
+
+def make_loop_plan_complete() -> str:
+    """
+    Return a loop-plan.md that passes all M8 checks: five stage entries covering
+    all five stage names, all fields filled, valid Readiness values, no placeholders.
+    """
+    stages = [
+        "recruiter-screen",
+        "hiring-manager",
+        "systems-design-round",
+        "portfolio-deep-dive",
+        "panel",
+    ]
+    entries = [_make_lp_entry(s) for s in stages]
+    return "# Loop Plan\n\n" + "\n".join(entries)
+
+
+def make_loop_plan_incomplete() -> str:
+    """
+    Return a loop-plan.md that fails: only two entries with placeholder text.
+    """
+    return """# Loop Plan
+
+### Stage recruiter-screen
+
+**Dossier pieces:** <fill in: which artifacts you draw on for this stage>
+
+**Readiness:** <fill in: ready | gap>
+
+**Plan:** <fill in: what you will do before this stage>
+
+### Stage hiring-manager
+
+**Dossier pieces:** behavioral-bank.md
+
+**Readiness:** ready
+
+**Plan:** Review the ownership and influence stories. Confirm each has a concrete result metric.
+"""
+
+
+def make_loop_plan_missing_field() -> str:
+    """
+    Return a loop-plan.md that fails because the Plan field is absent from one entry.
+    """
+    stages = [
+        "recruiter-screen",
+        "hiring-manager",
+        "systems-design-round",
+        "portfolio-deep-dive",
+        "panel",
+    ]
+    entries = []
+    for i, stage in enumerate(stages):
+        if i == 2:
+            # systems-design-round is missing the Plan field.
+            entries.append(f"""### Stage {stage}
+
+**Dossier pieces:** systems-design-log.md, deliberate-practice.md
+
+**Readiness:** gap
+""")
+        else:
+            entries.append(_make_lp_entry(stage))
+    return "# Loop Plan\n\n" + "\n".join(entries)
+
+
+def make_loop_plan_fewer_than_five() -> str:
+    """
+    Return a loop-plan.md that fails because it has only three entries.
+    """
+    stages = ["recruiter-screen", "hiring-manager", "systems-design-round"]
+    entries = [_make_lp_entry(s) for s in stages]
+    return "# Loop Plan\n\n" + "\n".join(entries)
+
+
+def make_loop_plan_missing_stage() -> str:
+    """
+    Return a loop-plan.md that fails because one required stage is absent
+    (panel is missing; recruiter-screen appears twice).
+    """
+    stages = [
+        "recruiter-screen",
+        "hiring-manager",
+        "systems-design-round",
+        "portfolio-deep-dive",
+        "recruiter-screen",  # duplicate instead of panel
+    ]
+    entries = [_make_lp_entry(s) for s in stages]
+    return "# Loop Plan\n\n" + "\n".join(entries)
+
+
+def make_loop_plan_invalid_stage_name() -> str:
+    """
+    Return a loop-plan.md that fails because one entry has an invalid stage name
+    ('technical-screen' is not in the allowed set).
+    """
+    stages = [
+        "recruiter-screen",
+        "hiring-manager",
+        "technical-screen",      # invalid name
+        "portfolio-deep-dive",
+        "panel",
+    ]
+    entries = [_make_lp_entry(s) for s in stages]
+    return "# Loop Plan\n\n" + "\n".join(entries)
+
+
+def make_loop_plan_invalid_readiness() -> str:
+    """
+    Return a loop-plan.md that fails because one entry has an invalid Readiness value
+    ('pending' is not in the allowed set).
+    """
+    stages = [
+        "recruiter-screen",
+        "hiring-manager",
+        "systems-design-round",
+        "portfolio-deep-dive",
+        "panel",
+    ]
+    entries = []
+    for i, stage in enumerate(stages):
+        if i == 3:
+            entries.append(f"""### Stage {stage}
+
+**Dossier pieces:** portfolio-narrative.md, answers-log.md
+
+**Readiness:** pending
+
+**Plan:** Review the portfolio narrative artifact walkthrough and confirm the key
+decisions field names the load-bearing tradeoffs before this stage.
+""")
+        else:
+            entries.append(_make_lp_entry(stage))
+    return "# Loop Plan\n\n" + "\n".join(entries)
+
+
+# ---------------------------------------------------------------------------
+# Tests: loop-plan.md (M8)
+# ---------------------------------------------------------------------------
+
+
+class TestLoopPlan:
+    def test_valid_loop_plan_passes(self, tmp_path: Path) -> None:
+        """A fully completed loop plan must pass M8 validation."""
+        lp = tmp_path / "loop-plan.md"
+        lp.write_text(make_loop_plan_complete(), encoding="utf-8")
+
+        passed, messages = check_prep.validate_loop_plan(lp)
+
+        assert passed, f"Expected pass; got messages:\n" + "\n".join(messages)
+
+    def test_missing_file_fails(self, tmp_path: Path) -> None:
+        """An absent loop plan must return fail with a not-started message."""
+        missing = tmp_path / "loop-plan.md"
+
+        passed, messages = check_prep.validate_loop_plan(missing)
+
+        assert not passed
+        combined = "\n".join(messages)
+        assert "NOT STARTED" in combined or "does not exist" in combined
+        assert "loop-plan.template.md" in combined
+
+    def test_missing_required_field_fails(self, tmp_path: Path) -> None:
+        """A loop plan with a missing required field in one entry must fail."""
+        lp = tmp_path / "loop-plan.md"
+        lp.write_text(make_loop_plan_missing_field(), encoding="utf-8")
+
+        passed, messages = check_prep.validate_loop_plan(lp)
+
+        assert not passed, "Expected fail when a required field is absent."
+        combined = "\n".join(messages)
+        assert "FAIL" in combined, f"Expected FAIL in messages; got:\n{combined}"
+        assert "Plan" in combined, (
+            f"Expected the missing 'Plan' field to be named; got:\n{combined}"
+        )
+
+    def test_placeholder_fails(self, tmp_path: Path) -> None:
+        """A loop plan with placeholder text in fields must fail."""
+        lp = tmp_path / "loop-plan.md"
+        lp.write_text(make_loop_plan_incomplete(), encoding="utf-8")
+
+        passed, messages = check_prep.validate_loop_plan(lp)
+
+        assert not passed, "Expected fail; validator incorrectly returned pass."
+        combined = "\n".join(messages)
+        assert "FAIL" in combined, f"Expected FAIL in messages; got:\n{combined}"
+
+    def test_fewer_than_five_entries_fails(self, tmp_path: Path) -> None:
+        """A loop plan with only three entries must fail the minimum count check."""
+        lp = tmp_path / "loop-plan.md"
+        lp.write_text(make_loop_plan_fewer_than_five(), encoding="utf-8")
+
+        passed, messages = check_prep.validate_loop_plan(lp)
+
+        assert not passed, "Expected fail when fewer than five entries present."
+        combined = "\n".join(messages)
+        assert "FAIL" in combined, f"Expected FAIL in messages; got:\n{combined}"
+
+    def test_missing_stage_fails(self, tmp_path: Path) -> None:
+        """A loop plan with five entries but a missing required stage must fail."""
+        lp = tmp_path / "loop-plan.md"
+        lp.write_text(make_loop_plan_missing_stage(), encoding="utf-8")
+
+        passed, messages = check_prep.validate_loop_plan(lp)
+
+        assert not passed, "Expected fail when a required stage is missing."
+        combined = "\n".join(messages)
+        assert "panel" in combined.lower(), (
+            f"Expected 'panel' named in failure messages; got:\n{combined}"
+        )
+
+    def test_invalid_stage_name_fails(self, tmp_path: Path) -> None:
+        """A loop plan with an unrecognized stage name must fail."""
+        lp = tmp_path / "loop-plan.md"
+        lp.write_text(make_loop_plan_invalid_stage_name(), encoding="utf-8")
+
+        passed, messages = check_prep.validate_loop_plan(lp)
+
+        assert not passed, "Expected fail when stage name is not in the allowed set."
+        combined = "\n".join(messages)
+        assert "FAIL" in combined, f"Expected FAIL in messages; got:\n{combined}"
+        assert "technical-screen" in combined.lower(), (
+            f"Expected invalid stage 'technical-screen' named in messages; got:\n{combined}"
+        )
+
+    def test_invalid_readiness_value_fails(self, tmp_path: Path) -> None:
+        """A loop plan with an invalid Readiness value must fail."""
+        lp = tmp_path / "loop-plan.md"
+        lp.write_text(make_loop_plan_invalid_readiness(), encoding="utf-8")
+
+        passed, messages = check_prep.validate_loop_plan(lp)
+
+        assert not passed, "Expected fail when Readiness value is not ready/gap."
+        combined = "\n".join(messages)
+        assert "FAIL" in combined, f"Expected FAIL in messages; got:\n{combined}"
+        assert "pending" in combined.lower(), (
+            f"Expected invalid value 'pending' named in messages; got:\n{combined}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Tests: --module 8 flag behavior (M8)
+# ---------------------------------------------------------------------------
+
+
+class TestModule8Flag:
+    def _patch_all_through_m7(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Helper: patch all M1, M2, M3, M5, M6, and M7 paths with complete content."""
+        decomp = tmp_path / "decomposition-log.md"
+        answers = tmp_path / "answers-log.md"
+        signal_map = tmp_path / "signal-map.md"
+        practice = tmp_path / "practice-log.md"
+        audit = tmp_path / "audit-log.md"
+        bank = tmp_path / "behavioral-bank.md"
+        sd_log = tmp_path / "systems-design-log.md"
+        pn = tmp_path / "portfolio-narrative.md"
+        dp = tmp_path / "deliberate-practice.md"
+
+        decomp.write_text(make_decomp_log_with_hard_cases(), encoding="utf-8")
+        answers.write_text(make_answers_log_complete(), encoding="utf-8")
+        signal_map.write_text(make_signal_map_complete(), encoding="utf-8")
+        practice.write_text(make_practice_log_complete(), encoding="utf-8")
+        audit.write_text(make_audit_log_complete(), encoding="utf-8")
+        bank.write_text(make_behavioral_bank_complete(), encoding="utf-8")
+        sd_log.write_text(make_systems_design_log_complete(), encoding="utf-8")
+        pn.write_text(make_portfolio_narrative_complete(), encoding="utf-8")
+        dp.write_text(make_deliberate_practice_complete(), encoding="utf-8")
+
+        monkeypatch.setattr(check_prep, "DECOMP_LOG", decomp)
+        monkeypatch.setattr(check_prep, "ANSWERS_LOG", answers)
+        monkeypatch.setattr(check_prep, "SIGNAL_MAP", signal_map)
+        monkeypatch.setattr(check_prep, "PRACTICE_LOG", practice)
+        monkeypatch.setattr(check_prep, "AUDIT_LOG", audit)
+        monkeypatch.setattr(check_prep, "BEHAVIORAL_BANK", bank)
+        monkeypatch.setattr(check_prep, "SYSTEMS_DESIGN_LOG", sd_log)
+        monkeypatch.setattr(check_prep, "PORTFOLIO_NARRATIVE", pn)
+        monkeypatch.setattr(check_prep, "DELIBERATE_PRACTICE", dp)
+
+    def test_module8_fails_without_loop_plan(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module 8 must exit 1 when loop-plan.md is absent, even if M1-M7 complete."""
+        self._patch_all_through_m7(tmp_path, monkeypatch)
+        monkeypatch.setattr(check_prep, "LOOP_PLAN", tmp_path / "loop-plan.md")
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "8"])
+
+        result = check_prep.main()
+        assert result == 1, (
+            f"Expected exit 1 with --module 8 and no loop-plan.md; got {result}"
+        )
+
+    def test_module8_fails_when_m7_missing(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module 8 must exit 1 when M7 (deliberate-practice.md) is absent."""
+        # Patch M1-M6 complete, loop-plan present, but deliberate-practice absent.
+        decomp = tmp_path / "decomposition-log.md"
+        answers = tmp_path / "answers-log.md"
+        signal_map = tmp_path / "signal-map.md"
+        practice = tmp_path / "practice-log.md"
+        audit = tmp_path / "audit-log.md"
+        bank = tmp_path / "behavioral-bank.md"
+        sd_log = tmp_path / "systems-design-log.md"
+        pn = tmp_path / "portfolio-narrative.md"
+        lp = tmp_path / "loop-plan.md"
+
+        decomp.write_text(make_decomp_log_with_hard_cases(), encoding="utf-8")
+        answers.write_text(make_answers_log_complete(), encoding="utf-8")
+        signal_map.write_text(make_signal_map_complete(), encoding="utf-8")
+        practice.write_text(make_practice_log_complete(), encoding="utf-8")
+        audit.write_text(make_audit_log_complete(), encoding="utf-8")
+        bank.write_text(make_behavioral_bank_complete(), encoding="utf-8")
+        sd_log.write_text(make_systems_design_log_complete(), encoding="utf-8")
+        pn.write_text(make_portfolio_narrative_complete(), encoding="utf-8")
+        lp.write_text(make_loop_plan_complete(), encoding="utf-8")
+
+        monkeypatch.setattr(check_prep, "DECOMP_LOG", decomp)
+        monkeypatch.setattr(check_prep, "ANSWERS_LOG", answers)
+        monkeypatch.setattr(check_prep, "SIGNAL_MAP", signal_map)
+        monkeypatch.setattr(check_prep, "PRACTICE_LOG", practice)
+        monkeypatch.setattr(check_prep, "AUDIT_LOG", audit)
+        monkeypatch.setattr(check_prep, "BEHAVIORAL_BANK", bank)
+        monkeypatch.setattr(check_prep, "SYSTEMS_DESIGN_LOG", sd_log)
+        monkeypatch.setattr(check_prep, "PORTFOLIO_NARRATIVE", pn)
+        monkeypatch.setattr(
+            check_prep, "DELIBERATE_PRACTICE", tmp_path / "deliberate-practice.md"
+        )
+        monkeypatch.setattr(check_prep, "LOOP_PLAN", lp)
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "8"])
+
+        result = check_prep.main()
+        assert result == 1, (
+            f"Expected exit 1 with --module 8 when deliberate-practice.md absent; got {result}"
+        )
+
+    def test_module8_passes_with_all_artifacts(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module 8 must exit 0 when all M1-M7 artifacts and loop-plan.md are complete."""
+        self._patch_all_through_m7(tmp_path, monkeypatch)
+
+        lp = tmp_path / "loop-plan.md"
+        lp.write_text(make_loop_plan_complete(), encoding="utf-8")
+        monkeypatch.setattr(check_prep, "LOOP_PLAN", lp)
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "8"])
+
+        result = check_prep.main()
+        assert result == 0, f"Expected exit 0 with --module 8 and all artifacts; got {result}"
+
+    def test_module7_passes_without_loop_plan(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module 7 must exit 0 even when loop-plan.md is absent (backward compat)."""
+        self._patch_all_through_m7(tmp_path, monkeypatch)
+        # loop-plan.md is absent; --module 7 must not require it.
+        monkeypatch.setattr(check_prep, "LOOP_PLAN", tmp_path / "loop-plan.md")
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "7"])
+
+        result = check_prep.main()
+        assert result == 0, (
+            f"Expected exit 0 with --module 7 when loop-plan.md is absent; got {result}"
+        )
+
+    def test_module_all_requires_loop_plan(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module all (default) must exit 1 when loop-plan.md is absent."""
+        self._patch_all_through_m7(tmp_path, monkeypatch)
+        monkeypatch.setattr(check_prep, "LOOP_PLAN", tmp_path / "loop-plan.md")
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "all"])
+
+        result = check_prep.main()
+        assert result == 1, (
+            f"Expected exit 1 with --module all when loop-plan.md is absent; got {result}"
+        )
+
+    def test_module_all_passes_with_loop_plan(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module all must exit 0 when all artifacts including loop-plan.md are complete."""
+        self._patch_all_through_m7(tmp_path, monkeypatch)
+
+        lp = tmp_path / "loop-plan.md"
+        lp.write_text(make_loop_plan_complete(), encoding="utf-8")
+        monkeypatch.setattr(check_prep, "LOOP_PLAN", lp)
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "all"])
+
+        result = check_prep.main()
+        assert result == 0, f"Expected exit 0 with --module all and all artifacts; got {result}"

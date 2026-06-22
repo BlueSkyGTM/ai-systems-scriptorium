@@ -5,7 +5,7 @@ check_prep.py -- Validator for the Answer Engineering prep dossier.
 Validates the logs in the same directory as this script. Module 1 established
 the two core logs; Module 2 adds four more; Module 3 adds the behavioral bank;
 Module 5 adds the systems-design log; Module 6 adds the portfolio narrative;
-Module 7 adds the deliberate-practice log.
+Module 7 adds the deliberate-practice log; Module 8 adds the loop plan.
 (Module 4 is not yet a validator choice.)
 The --module flag controls which artifacts are required for the exit code.
 
@@ -23,6 +23,8 @@ The --module flag controls which artifacts are required for the exit code.
                                   no placeholders)
   deliberate-practice.md     (M7: five practice reps across all five signal categories;
                                   step scores strong|partial|weak; no placeholders)
+  loop-plan.md               (M8: five stage entries covering all five loop stages,
+                                  Readiness ready|gap, Plan filled; no placeholders)
 
 Exits 0 only when the required logs for the selected module are complete and
 free of placeholder text. Exits 1 otherwise, with a clear per-file report.
@@ -35,7 +37,8 @@ Usage:
   python check_prep.py --module 5   Require M1 + M2 + M3 + systems-design-log.md complete.
   python check_prep.py --module 6   Require M1 + M2 + M3 + M5 + portfolio-narrative.md complete.
   python check_prep.py --module 7   Require M1 + M2 + M3 + M5 + M6 + deliberate-practice.md complete.
-  python check_prep.py --module all Same as the default (all artifacts, including M7).
+  python check_prep.py --module 8   Require M1 + M2 + M3 + M5 + M6 + M7 + loop-plan.md complete.
+  python check_prep.py --module all Same as the default (all artifacts, including M8).
   python check_prep.py --help       Show this help text.
 
 Note: --module 4 is intentionally not a choice; M4 validator is not yet built.
@@ -148,6 +151,16 @@ deliberate-practice.md (M7):
     **Verdict:**
   All five signal categories must appear across the entries.
   Minimum five entries. No placeholder text in any field.
+
+loop-plan.md (M8):
+  Each entry is headed by:  ### Stage <name>   (e.g. ### Stage recruiter-screen)
+  Required fields per entry:
+    **Dossier pieces:**
+    **Readiness:**   (must be one of: ready, gap)
+    **Plan:**
+  All five stage names must appear:
+    recruiter-screen, hiring-manager, systems-design-round, portfolio-deep-dive, panel
+  Minimum five entries. No placeholder text in any field.
 """
 
 import argparse
@@ -170,6 +183,7 @@ BEHAVIORAL_BANK = SCRIPT_DIR / "behavioral-bank.md"
 SYSTEMS_DESIGN_LOG = SCRIPT_DIR / "systems-design-log.md"
 PORTFOLIO_NARRATIVE = SCRIPT_DIR / "portfolio-narrative.md"
 DELIBERATE_PRACTICE = SCRIPT_DIR / "deliberate-practice.md"
+LOOP_PLAN = SCRIPT_DIR / "loop-plan.md"
 
 # Placeholder text patterns: any required field containing these fails.
 PLACEHOLDER_PATTERNS = re.compile(
@@ -1015,6 +1029,122 @@ def validate_deliberate_practice(path: Path) -> tuple[bool, list[str]]:
 
 
 # ---------------------------------------------------------------------------
+# Loop plan validator (M8)
+# ---------------------------------------------------------------------------
+
+# Heading pattern: ### Stage <name>
+LP_ENTRY_RE = re.compile(r"^###\s+Stage\s+(.+)$")
+
+LP_REQUIRED_FIELDS = [
+    "**Dossier pieces:**",
+    "**Readiness:**",
+    "**Plan:**",
+]
+
+# Valid stage names (must match grade_dossier.py STAGE_ORDER exactly).
+VALID_LOOP_STAGES = {
+    "recruiter-screen",
+    "hiring-manager",
+    "systems-design-round",
+    "portfolio-deep-dive",
+    "panel",
+}
+
+# Valid readiness values (case-insensitive).
+VALID_READINESS = {"ready", "gap"}
+
+MIN_LP_ENTRIES = 5
+
+
+def validate_loop_plan(path: Path) -> tuple[bool, list[str]]:
+    """
+    Validate loop-plan.md.
+
+    Checks that the file has at least five ### Stage <name> entries, each with
+    all three required fields filled in and free of placeholder text; that all
+    five stage names (recruiter-screen, hiring-manager, systems-design-round,
+    portfolio-deep-dive, panel) appear; and that each **Readiness:** value is
+    one of: ready, gap.
+
+    Returns (passed: bool, messages: list[str]).
+    """
+    messages: list[str] = []
+
+    if not path.exists():
+        messages.append(f"NOT STARTED: {path.name} does not exist yet.")
+        messages.append(
+            "  Copy loop-plan.template.md to loop-plan.md and complete it."
+        )
+        return False, messages
+
+    text = path.read_text(encoding="utf-8")
+    passed = True
+
+    entries = split_into_entries(text, LP_ENTRY_RE)
+
+    # --- Count and field checks ---
+    entry_passed = validate_entries(
+        entries, LP_REQUIRED_FIELDS, MIN_LP_ENTRIES, path.name, messages,
+    )
+    if not entry_passed:
+        passed = False
+
+    # --- Stage name check: all five must appear ---
+    stages_found: set[str] = set()
+    for heading, entry_lines in entries:
+        # Heading is "### Stage <name>"; extract the stage name.
+        m = LP_ENTRY_RE.match(heading)
+        if m:
+            stage_name = m.group(1).strip()
+            stages_found.add(stage_name.lower())
+
+    missing_stages = VALID_LOOP_STAGES - stages_found
+    if missing_stages:
+        missing_sorted = sorted(missing_stages)
+        messages.append(
+            f"FAIL: {path.name}: missing stage entries: "
+            + ", ".join(missing_sorted)
+            + ". Each of recruiter-screen, hiring-manager, systems-design-round, "
+            "portfolio-deep-dive, panel must appear."
+        )
+        passed = False
+    else:
+        messages.append(
+            f"OK:   {path.name}: all five stages present "
+            f"({', '.join(sorted(stages_found))})."
+        )
+
+    # --- Per-entry stage name validity check ---
+    for heading, entry_lines in entries:
+        m = LP_ENTRY_RE.match(heading)
+        if m:
+            stage_name = m.group(1).strip().lower()
+            if stage_name not in VALID_LOOP_STAGES:
+                messages.append(
+                    f"FAIL: {heading}: stage name {stage_name!r} is not one of: "
+                    + ", ".join(sorted(VALID_LOOP_STAGES)) + "."
+                )
+                passed = False
+
+    # --- Per-entry Readiness value check ---
+    for heading, entry_lines in entries:
+        raw = extract_field_value(entry_lines, "**Readiness:**")
+        if raw and not is_placeholder(raw):
+            readiness = raw.strip().lower()
+            if readiness not in VALID_READINESS:
+                messages.append(
+                    f"FAIL: {heading}: **Readiness:** value {raw!r} is not one of: "
+                    "ready, gap."
+                )
+                passed = False
+
+    if passed:
+        messages.append(f"PASS: {path.name} is complete.")
+
+    return passed, messages
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -1043,13 +1173,18 @@ def build_parser() -> argparse.ArgumentParser:
             "  --module 7   Require M1 + M2 + M3 + M5 + M6 artifacts + deliberate-practice.md\n"
             "               complete (M7 gate). deliberate-practice.md must have >= 5 reps\n"
             "               covering all five signal categories with valid step scores.\n"
-            "  --module all Same as omitting the flag: report all artifacts including M7.\n\n"
+            "  --module 8   Require M1 + M2 + M3 + M5 + M6 + M7 artifacts + loop-plan.md\n"
+            "               complete (M8 gate). loop-plan.md must have all five stage entries\n"
+            "               (recruiter-screen, hiring-manager, systems-design-round,\n"
+            "               portfolio-deep-dive, panel) with Readiness ready|gap and Plan filled.\n"
+            "               (--module 4 is not a choice; M4 validator not built.)\n"
+            "  --module all Same as omitting the flag: report all artifacts including M8.\n\n"
             "Status values per artifact: PASS / INCOMPLETE / NOT STARTED\n"
         ),
     )
     parser.add_argument(
         "--module",
-        choices=["1", "2", "3", "5", "6", "7", "all"],
+        choices=["1", "2", "3", "5", "6", "7", "8", "all"],
         default="all",
         help=(
             "Module gate to enforce. '1' requires only M1 artifacts. "
@@ -1057,7 +1192,8 @@ def build_parser() -> argparse.ArgumentParser:
             "'5' requires M1 + M2 + M3 + systems-design-log.md. "
             "'6' requires M1 + M2 + M3 + M5 + portfolio-narrative.md. "
             "'7' requires M1 + M2 + M3 + M5 + M6 + deliberate-practice.md. "
-            "'all' requires all artifacts including deliberate-practice.md. "
+            "'8' requires M1 + M2 + M3 + M5 + M6 + M7 + loop-plan.md. "
+            "'all' requires all artifacts including loop-plan.md. "
             "Default: all."
         ),
     )
@@ -1068,12 +1204,13 @@ def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
 
-    module = args.module  # "1", "2", "3", "5", "6", "7", or "all"
-    require_m2 = module in ("2", "3", "5", "6", "7", "all")
-    require_m3 = module in ("3", "5", "6", "7", "all")
-    require_m5 = module in ("5", "6", "7", "all")
-    require_m6 = module in ("6", "7", "all")
-    require_m7 = module in ("7", "all")
+    module = args.module  # "1", "2", "3", "5", "6", "7", "8", or "all"
+    require_m2 = module in ("2", "3", "5", "6", "7", "8", "all")
+    require_m3 = module in ("3", "5", "6", "7", "8", "all")
+    require_m5 = module in ("5", "6", "7", "8", "all")
+    require_m6 = module in ("6", "7", "8", "all")
+    require_m7 = module in ("7", "8", "all")
+    require_m8 = module in ("8", "all")
 
     print("Answer Engineering Prep Dossier Validator")
     print("=" * 44)
@@ -1152,9 +1289,37 @@ def main() -> int:
             print(" ", msg)
         print()
 
+    if require_m8:
+        lp_passed, lp_messages = validate_loop_plan(LOOP_PLAN)
+
+        print(f"--- {LOOP_PLAN.name} ---")
+        for msg in lp_messages:
+            print(" ", msg)
+        print()
+
     # Build the required artifact lists and results based on module level.
-    # Gating is cumulative: M7 requires M1+M2+M3+M5+M6+deliberate-practice.
-    if require_m7:
+    # Gating is cumulative: M8 requires M1+M2+M3+M5+M6+M7+loop-plan.
+    if require_m8:
+        all_passed = (
+            decomp_passed and answers_passed
+            and sm_passed and pl_passed and al_passed
+            and bb_passed and sd_passed and pn_passed
+            and dp_passed and lp_passed
+        )
+        required_names = [
+            DECOMP_LOG.name, ANSWERS_LOG.name,
+            SIGNAL_MAP.name, PRACTICE_LOG.name, AUDIT_LOG.name,
+            BEHAVIORAL_BANK.name, SYSTEMS_DESIGN_LOG.name,
+            PORTFOLIO_NARRATIVE.name, DELIBERATE_PRACTICE.name,
+            LOOP_PLAN.name,
+        ]
+        results = [
+            decomp_passed, answers_passed,
+            sm_passed, pl_passed, al_passed,
+            bb_passed, sd_passed, pn_passed, dp_passed,
+            lp_passed,
+        ]
+    elif require_m7:
         all_passed = (
             decomp_passed and answers_passed
             and sm_passed and pl_passed and al_passed

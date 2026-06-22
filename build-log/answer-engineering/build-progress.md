@@ -11,7 +11,7 @@ Per-stage authoring status. One row per module.
 | M4 | Technical Screens | ⏸️ Deferred | — | Reordered after M5. The vault interview-prep chapter has no live-coding-screen worked examples; building M4 as scoped would require fabricating coding problems, which the no-fabrication rule forbids. Deferred until its ore is sourced (likely reframed around the real Sans Python portfolio code). |
 | M6 | The Sans Python Portfolio as Resume | ✅ Shipped | 2026-06-21 | Overview + 4 lessons (the-artifact-walkthrough, foreground-the-decisions, tailoring-to-the-role, the-portfolio-narrative-document) + 4 exercises. **Phase 3 opens.** Teaches the reader to walk an interviewer through a real artifact as a decision tour (the reasoning), not a code reading: the 60-second overview + the four-beat defended decision (decision / alternative / tradeoff / failure mode guarded), the same artifact narrated three ways for three role types (the anti-memorization thesis on the portfolio), and the written portfolio-narrative document + a 7-category weak-walkthrough audit. Worked examples are the REAL Sans Python portfolio artifacts (terminal coding agent; production RAG chatbot). **Grows `check_prep.py` to v5 in place** (`--module 6` gates the portfolio-narrative: artifact, overview, key decisions, tradeoffs, failure modes, role tailoring, audit verdict; M1-3+M5 byte-identical; 49/49 tests). Plan: `m6/PLAN.md`. |
 | M7 | Live Practice and Calibration | ✅ Shipped | 2026-06-21 | Overview + 4 lessons (deliberate-practice-not-rote, the-self-review-rubric, reading-your-calibration, simulating-the-room) + 4 exercises. The practice engine: a rep is a fresh question run through the full Algorithm and self-scored on the four steps; **the self-review rubric is CODE** (`calibrate.py`, conductor-built + `--selftest`-tested), which reads the deliberate-practice log and prints a calibration scorecard (per-category reps, per-step strong/partial/weak distribution, weakest step, readiness verdict, exit 0 = READY). First throughline artifact that **scores** rather than just checks completeness. **Grows `check_prep.py` to v6 in place** (`--module 7` gates the deliberate-practice log: 5+ reps across all five categories, valid step scores, no placeholders; prior modules byte-identical; 61/61 tests). The literal realization of "code, don't write; good writing is one big schema handoff." Plan: `m7/PLAN.md`. |
-| M8 | The Hiring Loop End-to-End | ⬜ Not started | — | Phase 3 capstone: composes the whole prep dossier and **grades it in code** against a rubric (the Just Python M8 pattern: a runnable grader + pytest), the readiness-to-interview verdict. Code-don't-write: the capstone is a grader, not an essay. |
+| M8 | The Hiring Loop End-to-End | ✅ Shipped | 2026-06-21 | Phase 3 capstone; the book is content-complete (7 of 8 modules; M4 deferred). Overview + 4 lessons (sequencing-the-preparation, the-stages-of-the-loop, grading-your-dossier, closing-the-loop) + 4 exercises. Sequences the whole prep dossier across the five interview-loop stages (recruiter-screen, hiring-manager, systems-design-round, portfolio-deep-dive, panel) and **grades the dossier in code**: the capstone artifact `grade_dossier.py` composes `check_prep` (completeness) + `calibrate` (practice readiness), maps the dossier onto the stages, prints a per-stage readiness report, exit 0 = READY. The honest coding-screen gap (M4) is named, not papered over. **Grows `check_prep.py` to v7 in place** (`--module 8` gates `loop-plan.md`: five `### Stage` entries with Dossier pieces / Readiness / Plan, stage-name + readiness-value validation; prior modules byte-identical; 75/75 tests). The Just Python M8 pattern (a runnable grader chaining the prior artifacts) applied to the career dossier. Plan: `m8/PLAN.md`. |
 
 ## Provenance
 
@@ -117,3 +117,19 @@ exit cleanly against an empty dossier. Note (Ray, mid-M7): the `ponytail` lean-c
 for Opus + "no excessive coding on your part, that's what the sonnets are for" — so M8's grader will be
 Sonnet-built to a conductor-specified contract, Opus reviewing. `GATE-APPROVE-SHIP` cleared under the
 standing directive; committed and pushed as it landed.
+
+M8 closed the book (content-complete: 7 of 8 modules; M4 deferred). The capstone is a grader:
+`grade_dossier.py` composes `check_prep` + `calibrate`, maps the dossier onto the five interview-loop
+stages (the `hiring-loop-map.md` schema), and returns a per-stage readiness report (exit 0 = READY) — the
+Just Python M8 pattern applied to the career dossier. Per the ponytail directive the conductor (Opus)
+SPECCED the grader and a Sonnet BUILT + `--selftest`-tested it (composition over new code: it imports and
+reuses the prior validators rather than reimplementing them); Opus reviewed. The four lessons + the v7
+validator extension (`--module 8` over `loop-plan.md`) were the parallel Sonnet fleet. The fleet first hit
+the daily session limit (the M8 lessons + validator did not land that turn); on resume after Ray's go the
+five Round-2 Sonnets completed. VERIFY (conductor): caught + fixed one fabrication — L4 ("closing-the-loop")
+invented a "CIRCLE scaffolding" framework the book never taught; corrected to the real **STAR-L** (M3). No
+other fixes: no em-dashes, no fourth-wall leaks, the grader output quoted in L3 matches the tool, the
+coding-screen gap named honestly. BUILD/TEST: `mdbook build` clean; `check_prep.py` v7 with 75/75 pytest;
+`calibrate.py --selftest` + `grade_dossier.py --selftest` both PASS; `check_prep.py --module 8` and
+`grade_dossier.py` exit cleanly against an empty dossier. `GATE-APPROVE-SHIP` cleared under the standing
+directive; committed and pushed as it landed. **Answer Engineering is content-complete.**

@@ -59,3 +59,13 @@
 - [The Self-Review Rubric](module7/the-self-review-rubric.md)
 - [Reading Your Calibration](module7/reading-your-calibration.md)
 - [Simulating the Room](module7/simulating-the-room.md)
+
+---
+
+# Module 8: The Hiring Loop End-to-End
+
+- [Overview](module8/00-overview.md)
+- [Sequencing the Preparation](module8/sequencing-the-preparation.md)
+- [The Stages of the Loop](module8/the-stages-of-the-loop.md)
+- [Grading Your Dossier](module8/grading-your-dossier.md)
+- [Closing the Loop](module8/closing-the-loop.md)
