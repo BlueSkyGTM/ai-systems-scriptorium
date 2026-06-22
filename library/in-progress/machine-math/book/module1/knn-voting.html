@@ -1,0 +1,354 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>k-Nearest Neighbors: Voting in Feature Space - Machine Math — Classic ML and the Math It Requires</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/copy-to-claude-45921320.css">
+        <link rel="stylesheet" href="../theme/syntax-polish-53c427bd.css">
+        <link rel="stylesheet" href="../theme/readability-9f9ae6ec.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "rust";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "../searchindex-3463e170.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-c87d2913.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Machine Math — Classic ML and the Math It Requires</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="k-nearest-neighbors-voting-in-feature-space"><a class="header" href="#k-nearest-neighbors-voting-in-feature-space">k-Nearest Neighbors: Voting in Feature Space</a></h1>
+<p>Distance is a decision. Before any vote is cast, you choose a metric, and that choice encodes a hypothesis about what “similar” means in your data. Get the metric wrong and the votes are meaningless, no matter how many neighbors you consult.</p>
+<h2 id="the-algorithm-exactly"><a class="header" href="#the-algorithm-exactly">The Algorithm, Exactly</a></h2>
+<p>k-NN does three things at prediction time: measure, rank, vote. There is no model to fit, no loss to minimize, no parameters to learn. “Training” is storing the labeled dataset.</p>
+<p>Given a query point <code>x</code>:</p>
+<ol>
+<li>Compute the distance from <code>x</code> to every point in the training set.</li>
+<li>Sort those distances ascending.</li>
+<li>Take the <code>k</code> closest points.</li>
+<li>Return the majority label among those <code>k</code> neighbors (classification) or their mean target value (regression).</li>
+</ol>
+<p>The algorithm is called a <strong>lazy learner</strong> because it defers all computation to prediction time. Training is O(1); each prediction costs O(n * d) distance computations, where <code>n</code> is the number of training points and <code>d</code> is the number of features. That cost is fine at small scale and brutal at large scale, which is exactly why approximate nearest-neighbor methods exist.</p>
+<p>Azure Machine Learning’s AutoML SDK formalizes this: <code>ClassificationModels.KNN</code> and <code>RegressionModels.KNN</code> are both defined as an algorithm that “uses feature similarity to predict the values of new datapoints, meaning the new data point will be assigned a value based on how closely it matches the points in the training set” (<a href="https://learn.microsoft.com/dotnet/api/microsoft.azure.powershell.cmdlets.machinelearningservices.support.classificationmodels.knn?view=az-ps-latest">learn.microsoft.com</a>).</p>
+<h2 id="the-implementation"><a class="header" href="#the-implementation">The Implementation</a></h2>
+<p>The <code>ml/knn.py</code> below imports the distance functions you built in the previous lesson. Every line maps to one of the three steps: measure, rank, vote. Reading it is the point.</p>
+<pre><code class="language-python">"""k-nearest neighbors, from scratch in NumPy.
+
+A lazy learner: "training" is storing the data; all the work is at prediction time. Every line maps
+to one of three steps -- measure distance to every training point, rank, vote. The metric is pluggable
+because choosing it is a modeling decision, not a default.
+"""
+import numpy as np
+from collections import Counter
+
+from ml.distances import METRICS
+
+
+class KNNClassifier:
+    def __init__(self, k=5, metric="euclidean"):
+        if metric not in METRICS:
+            raise ValueError(f"Unknown metric: {metric!r}; choose one of {sorted(METRICS)}")
+        self.k = k
+        self.metric = metric
+
+    def fit(self, X, y):
+        """Store the labeled training set. No parameters are fit; this is the whole 'training' phase."""
+        self.X_train = np.asarray(X, dtype=float)
+        self.y_train = np.asarray(y)
+        return self
+
+    def predict(self, X):
+        X = np.asarray(X, dtype=float)
+        return np.array([self._predict_one(x) for x in X])
+
+    def _predict_one(self, x):
+        distance = METRICS[self.metric]
+        distances = [distance(x, row) for row in self.X_train]
+        k_idx = np.argsort(distances)[: self.k]
+        votes = Counter(self.y_train[i] for i in k_idx)
+        return votes.most_common(1)[0][0]
+</code></pre>
+<p>Note: the module docstring uses <code>--</code> (two hyphens) as a list separator inside the string literal. That is a code artifact, not prose; the style rule against em-dashes applies only to prose you read, not to characters inside string literals.</p>
+<p>The <code>METRICS</code> dispatch table lives in <code>ml/distances.py</code>, the file you built last lesson. The classifier borrows it with one import. No distance logic is duplicated; extending the metric list means editing one file.</p>
+<h2 id="k-is-the-bias-variance-knob"><a class="header" href="#k-is-the-bias-variance-knob">k Is the Bias-Variance Knob</a></h2>
+<p><code>k</code> controls the smoothness of the decision boundary with no indirection between the parameter and its geometric effect.</p>
+<p>At <code>k=1</code>, every query point’s prediction is determined by its single nearest neighbor. The decision boundary traces every kink and outlier in the training data: zero training error, high variance, severe overfitting. One mislabeled point in the training set can corrupt an entire neighborhood.</p>
+<p>At <code>k=N</code> (all training points), every query gets the global majority class. The boundary is a flat line: zero variance, maximum bias, complete underfitting.</p>
+<p>On Iris (150 samples, 80/20 stratified split, z-scored features, Euclidean distance), you see this tradeoff directly:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>k</th><th>Accuracy</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>0.967</td></tr>
+<tr><td>3</td><td>0.967</td></tr>
+<tr><td>5</td><td>1.000</td></tr>
+<tr><td>11</td><td>1.000</td></tr>
+<tr><td>21</td><td>0.900</td></tr>
+</tbody>
+</table>
+</div>
+<p>The drop at <code>k=21</code> is the high-bias end arriving: the neighborhood has grown large enough to smooth away class boundaries that Iris actually has. This is a held-out set of 30 samples, so treat these numbers as directional, not definitive. The shape of the curve, not any single value, is the lesson.</p>
+<p>The conventional starting range is odd values near the square root of the training set size: odd to avoid ties in binary classification, near <code>sqrt(n)</code> to keep neighborhoods local without chasing every outlier.</p>
+<h2 id="the-metric-is-a-hypothesis"><a class="header" href="#the-metric-is-a-hypothesis">The Metric Is a Hypothesis</a></h2>
+<p>The distance function defines what “near” means. Different metrics encode different assumptions about the geometry of your data.</p>
+<p><strong>Euclidean</strong> (L2) is the right default when all features are on comparable scales and a large absolute difference on any dimension genuinely means far apart. It squares differences, so a single large gap dominates. After z-scoring, Euclidean is usually the correct first choice for tabular data.</p>
+<p><strong>Manhattan</strong> (L1) sums absolute differences without squaring. It is more robust when features have heavy tails or when one outlier dimension would otherwise blow up the distance.</p>
+<p><strong>Cosine</strong> measures the angle between two vectors, ignoring magnitude. It is the correct choice when scale varies across observations but the proportional mix of features is what matters: a document with 30 mentions of “neural” and one with 3 mentions should be considered similar if the rest of their vocabulary profile matches. Text embeddings and high-dimensional sparse data both reward cosine.</p>
+<p>On the same Iris held-out set at <code>k=5</code>:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Metric</th><th>Accuracy</th></tr>
+</thead>
+<tbody>
+<tr><td>euclidean</td><td>1.000</td></tr>
+<tr><td>manhattan</td><td>1.000</td></tr>
+<tr><td>cosine</td><td>0.933</td></tr>
+</tbody>
+</table>
+</div>
+<p>Cosine’s lower accuracy here reflects that Iris features are spatial measurements (petal length, petal width), not frequency profiles: direction alone misses information that absolute magnitude carries. The metric that matches the data geometry wins.</p>
+<h2 id="scaling-is-not-optional"><a class="header" href="#scaling-is-not-optional">Scaling Is Not Optional</a></h2>
+<p>Distance functions are sensitive to the units of each feature. A raw feature measured in thousands (salary) will dominate a feature measured in tens (age), regardless of their actual predictive power. The classifier ends up voting on whichever feature has the largest numerical range, not the most signal.</p>
+<p>With the weakest Iris feature (sepal width) artificially inflated by a factor of 1000, unscaled accuracy on the same split is 0.800. Z-scoring restores it to 1.000. One column hijacked the distance calculation; z-scoring returned a fair vote.</p>
+<p>The fix is always the same:</p>
+<pre><code class="language-python">from ml.distances import zscore
+
+X_train_scaled = zscore(X_train)
+X_test_scaled  = zscore(X_test)
+</code></pre>
+<p>Here you z-score each set to its own column statistics, which is enough for this module. Production
+pipelines fit the scaler on training data only and apply that fixed transform to the test set so
+the test statistics never leak into training, a discipline the feature-engineering module builds
+out. The point either way: scale before you measure distance.</p>
+<h2 id="the-curse-of-dimensionality"><a class="header" href="#the-curse-of-dimensionality">The Curse of Dimensionality</a></h2>
+<p>k-NN degrades predictably as feature count grows. In high-dimensional spaces, the ratio of the maximum pairwise distance to the minimum pairwise distance converges toward 1.0. Every point becomes approximately equidistant from every other point. The concept of “nearest neighbor” loses its meaning: if the 1st nearest neighbor and the 1000th nearest neighbor are effectively the same distance away, the ranking carries no signal.</p>
+<p>The practical ceiling is roughly 20 to 50 features. Beyond that, k-NN on raw feature vectors stops working reliably. The fix is dimensionality reduction before the distance calculation, not during it. This is why embeddings exist: a model trained on millions of examples compresses hundreds of raw dimensions into a dense vector where the distances are semantically meaningful. You run k-NN on the embedding, not on the raw features.</p>
+<p>That is also the bridge to production vector search. Azure Cosmos DB’s comparison of kNN and ANN states it directly: “kNN is precise but computationally intensive, making it less suitable for large datasets. ANN offers a balance between accuracy and efficiency, making it better suited for large-scale applications” (<a href="https://learn.microsoft.com/azure/cosmos-db/gen-ai/knn-vs-ann">learn.microsoft.com</a>). At scale, exact k-NN becomes approximate nearest-neighbor search (HNSW, DiskANN, IVF). Azure AI Search supports both exhaustive KNN for small corpora and HNSW for production workloads (<a href="https://learn.microsoft.com/azure/search/vector-search-ranking#algorithms-used-in-vector-search">learn.microsoft.com</a>). The geometry is identical to the loop in the classifier above; the only thing that changes is the data structure that makes the search fast enough to serve at query time.</p>
+<p>When you build a RAG pipeline, the “retrieve relevant chunks” step is k-NN over embeddings. You are running the same algorithm. The production system has replaced the brute-force loop with a graph index, but the question it answers is unchanged: which stored vectors are nearest to this query vector?</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>k-NN is a lazy learner: training is storing the data; each prediction is O(n * d) distance computations, a neighbor ranking, and a majority vote.</li>
+<li><code>k</code> is a direct bias-variance lever: small k traces every training-set kink (high variance); large k smooths the boundary to the global majority (high bias); the right k is found by cross-validation on held-out data.</li>
+<li>The distance metric encodes a hypothesis about the data’s geometry: Euclidean for scaled absolute differences, cosine for directional profiles, Manhattan when single large differences should not dominate.</li>
+<li>The curse of dimensionality collapses k-NN’s signal in high-dimensional raw feature spaces; embedding models are the fix, compressing dimensions into vectors where distances remain meaningful.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module1/knn-voting/">
+<p><strong>Build It in Claude Code</strong>: Implement <code>ml/knn.py</code> from scratch, reusing the <code>METRICS</code> dispatch table you built in <code>ml/distances.py</code>. Fit a <code>KNNClassifier</code> on 80% of z-scored Iris (stratified split, <code>random_state=0</code>), then evaluate held-out accuracy for k in {1, 3, 5, 11, 21} with Euclidean distance; compare Euclidean vs cosine at k=5 on the same split. Report which combination wins, explain why in terms of what the metric assumes about the data, and note where the k=21 accuracy drop shows up and what it tells you about the bias side of the tradeoff.</p>
+</div>
+
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../module1/feature-vectors.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../module1/feature-vectors.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/copy-to-claude-04012d3b.js"></script>
+
+
+
+    </div>
+    </body>
+</html>
