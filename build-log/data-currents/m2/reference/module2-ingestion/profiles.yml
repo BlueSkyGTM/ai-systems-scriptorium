@@ -1,0 +1,7 @@
+module2_ingestion:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "corpus.duckdb"
+      threads: 1

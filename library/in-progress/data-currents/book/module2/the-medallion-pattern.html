@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>The Lineage Walk - Data Currents — SQL and the Data Platform for AI Systems</title>
+        <title>The Medallion Pattern - Data Currents — SQL and the Data Platform for AI Systems</title>
 
 
         <!-- Custom HTML head -->
@@ -177,80 +177,108 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="the-lineage-walk"><a class="header" href="#the-lineage-walk">The Lineage Walk</a></h1>
-<p>Eval pass-rate dropped for the <code>/compliance</code> route Tuesday. You suspect a corpus reload swapped the paragraph the model cited. The only way to prove it is to walk backward: from the answer, through the chunks it retrieved, to the exact document version and content hash that produced them.</p>
-<p>That walk is a query. You build it here.</p>
-<h2 id="three-tables-one-chain"><a class="header" href="#three-tables-one-chain">Three Tables, One Chain</a></h2>
-<p>The telemetry store already tracks what your system did. Lineage tracks what it read. Three tables extend the schema.</p>
-<pre><code class="language-sql">-- retrieved_chunk_ids stored as a comma-separated list (SQLite has no array type)
-CREATE TABLE answers (
-    answer_id           TEXT PRIMARY KEY,
-    trace_id            TEXT NOT NULL REFERENCES spans(trace_id),
-    retrieved_chunk_ids TEXT NOT NULL   -- e.g. 'chunk_001,chunk_002'
-);
-CREATE TABLE chunks (
-    chunk_id           TEXT PRIMARY KEY,
-    corpus_version     TEXT NOT NULL,
-    source_doc_id      TEXT NOT NULL,
-    source_doc_version TEXT NOT NULL
-);
-CREATE TABLE source_documents (
-    doc_id           TEXT NOT NULL,
-    version_id       TEXT NOT NULL,
-    last_modified_at TIMESTAMP NOT NULL,
-    content_hash     TEXT NOT NULL,
-    PRIMARY KEY (doc_id, version_id)
-);
+                        <h1 id="the-medallion-pattern"><a class="header" href="#the-medallion-pattern">The Medallion Pattern</a></h1>
+<p>Query raw ingested documents directly and you will regret it. Casing is inconsistent, URLs leak into
+text, duplicate records pass through, and every consumer downstream has to paper over the same defects
+independently. The medallion pattern breaks that cycle: three named layers, one job each, and a clear
+rule about what goes where.</p>
+<h2 id="why-raw-is-dangerous"><a class="header" href="#why-raw-is-dangerous">Why Raw Is Dangerous</a></h2>
+<p>The document corpus your AI system queries is not clean at the moment it lands. Scrapers vary their
+encoding, sources format titles differently, and the same document sometimes arrives more than once
+with different timestamps. If your retrieval layer queries that raw table, those defects go straight
+into the embedding and into the answer. The bugs are invisible until something retrieves the wrong
+chunk and cites a URL in the middle of a sentence.</p>
+<p>The real problem is not any one defect. It is the absence of a trust boundary: there is no moment at
+which the data has been verified, cleaned, and stamped ready. Without that boundary, every consumer
+has to make its own guess about what the data means.</p>
+<h2 id="three-layers-one-job-each"><a class="header" href="#three-layers-one-job-each">Three Layers, One Job Each</a></h2>
+<p>The medallion architecture defines three layers in a lakehouse. Each raises quality before passing
+to the next. [MS-Learn medallion / OneLake: https://learn.microsoft.com/fabric/onelake/onelake-medallion-lakehouse-architecture]</p>
+<p><strong>Bronze</strong> holds the data exactly as ingested, with only the minimum casts needed to give it a
+schema. Nothing is cleaned. Nothing is deduplicated. The bronze layer is your audit trail: if
+something goes wrong downstream, you can always return to what actually arrived. Bronze adds one
+column, <code>ingested_at</code>, so you can track when each row landed.</p>
+<pre><code class="language-sql">-- models/bronze/bronze_corpus_raw.sql
+{{ config(materialized='table') }}
+SELECT
+    doc_id,
+    CAST(created_on AS DATE) AS created_on,
+    title, body, category,
+    CURRENT_TIMESTAMP AS ingested_at
+FROM {{ ref('corpus_raw') }}
 </code></pre>
-<p><code>answers</code> links a trace to the chunks the retriever pulled. <code>chunks</code> links each chunk to the corpus version and source document version it came from. <code>source_documents</code> is the version ledger: every document reload writes a new row with a new <code>content_hash</code>, and old rows stay. The <code>PRIMARY KEY (doc_id, version_id)</code> enforces that.</p>
-<p>This is a minimal lineage schema. It records enough to answer the question: did the document change between the load that produced this answer and the one before it?</p>
-<h2 id="the-storage-seam-comma-lists-vs-arrays"><a class="header" href="#the-storage-seam-comma-lists-vs-arrays">The Storage Seam: Comma Lists vs. Arrays</a></h2>
-<p>The artifact stores <code>retrieved_chunk_ids</code> as a comma-separated TEXT column because SQLite has no array type. DuckDB reads it with <code>string_split(..., ',')</code> and <code>list_contains(...)</code>. A Postgres column would use <code>= ANY(array_column)</code>; a warehouse without arrays uses a bridge table, one row per answer-chunk pair.</p>
-<h2 id="query-8-walk-an-answer-back-to-its-source-version"><a class="header" href="#query-8-walk-an-answer-back-to-its-source-version">Query 8: Walk an Answer Back to Its Source Version</a></h2>
-<pre><code class="language-sql">WITH answer_context AS (
-    SELECT a.answer_id, a.trace_id, a.retrieved_chunk_ids
-    FROM answers a
-    WHERE a.answer_id = $target_answer_id
+<p><strong>Silver</strong> is where the cleaning happens. The raw text passes through a deterministic recipe: titles
+and bodies are lowercased and trimmed, URLs are stripped with a regex, whitespace is collapsed, then
+the cleaned title and body are concatenated into a single <code>text</code> column. A <code>content_hash</code> (md5 of
+the cleaned text) is computed here. Silver rows are trustworthy. The consumers downstream do not
+need to know how dirty the source was.</p>
+<p>The cleaning recipe in the silver model below is the same recipe the made-with-ml data pipeline
+uses for corpus preprocessing. Landing it here lifts it out of ad hoc preprocessing scripts and
+into a versioned, testable dbt model.</p>
+<pre><code class="language-sql">-- models/silver/silver_corpus_clean.sql  (abridged to the transform spine)
+{{ config(materialized='table') }}
+WITH raw AS (
+    SELECT doc_id, created_on, category, ingested_at,
+           TRIM(LOWER(title)) AS title_lc, TRIM(LOWER(body)) AS body_lc
+    FROM {{ ref('bronze_corpus_raw') }}
 ),
-chunk_sources AS (
-    SELECT ac.answer_id, c.chunk_id, c.corpus_version, c.source_doc_id, c.source_doc_version
-    FROM answer_context ac
-    JOIN chunks c ON list_contains(string_split(ac.retrieved_chunk_ids, ','), c.chunk_id)
+url_stripped AS (
+    SELECT doc_id, created_on, category, ingested_at,
+           regexp_replace(title_lc, 'https?://\S+', '', 'g') AS title_no_url,
+           regexp_replace(body_lc,  'https?://\S+', '', 'g') AS body_no_url
+    FROM raw
 ),
-doc_versions AS (
-    SELECT cs.answer_id, cs.chunk_id, cs.source_doc_id, cs.source_doc_version,
-        d.last_modified_at, d.content_hash
-    FROM chunk_sources cs
-    JOIN source_documents d ON d.doc_id = cs.source_doc_id AND d.version_id = cs.source_doc_version
+collapsed AS (
+    SELECT doc_id, created_on, category, ingested_at,
+           TRIM(regexp_replace(title_no_url, '\s+', ' ', 'g')) AS cleaned_title,
+           TRIM(regexp_replace(body_no_url,  '\s+', ' ', 'g')) AS cleaned_body
+    FROM url_stripped
 )
-SELECT * FROM doc_versions ORDER BY chunk_id;
+SELECT doc_id, created_on, category,
+       cleaned_title || ' ' || cleaned_body AS text,
+       md5(cleaned_title || ' ' || cleaned_body) AS content_hash,
+       CURRENT_TIMESTAMP AS cleaned_at
+FROM collapsed
 </code></pre>
-<p>Read it as three steps named in order. <code>answer_context</code> pins the target answer and pulls its chunk list. <code>chunk_sources</code> joins that list to the <code>chunks</code> table, resolving each chunk ID to the corpus version and document version it belongs to. <code>doc_versions</code> joins to <code>source_documents</code> to retrieve the content hash for that exact version.</p>
-<p>Each row in the result is one chunk the answer drew on, with the document version and content hash that produced it. Compare Tuesday’s hash to Monday’s: if they differ, the corpus reload swapped the paragraph. That is the answer.</p>
-<p>This is the lineage lookup Module 6 will automate into a full lineage store. Here you write it by hand, so you understand the data shape before the automation hides it.</p>
-<h2 id="the-module-1-diagnostic-playbook"><a class="header" href="#the-module-1-diagnostic-playbook">The Module 1 Diagnostic Playbook</a></h2>
-<p>These eight queries are the ones you run in order during a production incident. Lessons 1 and 2 built them; this lesson closes the set.</p>
-<ol>
-<li>P95 latency by route (current window)</li>
-<li>Cost by tenant (current week)</li>
-<li>Eval pass-rate by day and criterion (rolling 14 days)</li>
-<li>Rolling seven-day pass-rate to smooth noise</li>
-<li>Per-tenant cost rank, this week versus last week</li>
-<li>Latency delta around a deployment timestamp</li>
-<li>Freshness breach: which sources are stale and by how much</li>
-<li>Lineage walk: answer back to source document version and content hash</li>
-</ol>
-<p>Run them in this order and you cover the full surface of what can go wrong: latency, cost, quality trend, quality smoothed, cost attribution shift, deploy regression, corpus staleness, and corpus content change. The eight queries together are the operator’s toolkit for a production AI system.</p>
-<p>Module 2 extends this same <code>module1-sql/</code> store: you land its tables as warehouse targets and write dbt models that transform the raw telemetry into the query layer a data team can build dashboards on.</p>
+<p>Notice the CTEs: each CTE does exactly one thing. <code>raw</code> lowercases and trims. <code>url_stripped</code> removes
+URLs. <code>collapsed</code> flattens whitespace. The final <code>SELECT</code> concatenates and hashes. You can read the
+recipe in order without tracing through nested subqueries.</p>
+<p><strong>Gold</strong> is the serving layer. These are the tables your retrieval queries, your freshness SLO
+monitor, and the lineage walk in Module 6 all read. Gold does not clean; it shapes. The
+<code>gold_source_documents</code> table reduces silver to one row per <code>(doc_id, content_hash)</code> pair, which is
+exactly the grain the lineage store expects: this document, at this content fingerprint, was last
+modified at this timestamp.</p>
+<pre><code class="language-sql">-- models/gold/gold_source_documents.sql
+{{ config(materialized='table') }}
+SELECT doc_id, 'v1' AS version_id, MAX(cleaned_at) AS last_modified_at,
+       content_hash, created_on AS source_created_on
+FROM {{ ref('silver_corpus_clean') }}
+GROUP BY doc_id, content_hash, created_on
+</code></pre>
+<p>The <code>content_hash</code> is what makes deduplication verifiable. Two runs that produce the same document
+text will hash to the same value. Gold keeps only the latest <code>cleaned_at</code> for each pair. If the
+document is unchanged, no new row lands.</p>
+<h2 id="the-direction-is-one-way"><a class="header" href="#the-direction-is-one-way">The Direction Is One-Way</a></h2>
+<p>Bronze never reads from silver. Silver reads only from bronze. Gold reads only from silver. The
+direction is enforced by <code>{{ ref() }}</code> dependencies in dbt: the build order follows the graph, and
+the graph only flows down. If you find a query that reads gold to populate silver, something is wrong
+with the design.</p>
+<p>The reason this matters is blast radius. When you need to rerun the cleaning logic (say, the URL
+regex misses a class of malformed links), you drop and rebuild silver from bronze. Gold rebuilds from
+silver. The source data in bronze is untouched. The trust boundary held.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>Lineage resolves an answer to the exact source-document version and content hash that produced it; a changed content hash between two loads is the evidence that a corpus reload altered what the model cited.</li>
-<li>The lineage CTE chain runs in three named steps: isolate the target answer, join its chunk IDs to the <code>chunks</code> table, then join to <code>source_documents</code> for the version record and content hash.</li>
-<li><code>retrieved_chunk_ids</code> is stored as comma-separated TEXT in SQLite (no array type); DuckDB reads it with <code>string_split(..., ',')</code> and <code>list_contains(...)</code>; Postgres uses <code>= ANY(array_column)</code>.</li>
-<li>The eight-query diagnostic playbook (latency, cost, pass-rate, rolling pass-rate, cost rank delta, deploy delta, freshness breach, lineage walk) covers the full incident surface for a production AI system.</li>
+<li>Bronze holds the data exactly as ingested; silver cleans and types it; gold shapes it for serving.
+Each layer reads only from the layer above it, never the reverse.</li>
+<li>The cleaning happens in silver: lowercase, strip URLs, collapse whitespace, concatenate title and
+body, hash. Nothing upstream of silver is trusted as clean.</li>
+<li>The <code>content_hash</code> in silver is md5 of the cleaned text; gold uses it to reduce to one row per
+<code>(doc_id, content_hash)</code>, making deduplication verifiable by query.</li>
+<li>The one-way dependency (bronze to silver to gold) limits blast radius: a recipe change rebuilds
+silver and gold from bronze without touching the source.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module1/the-lineage-walk/">
-<p><strong>Build It in Claude Code</strong>: Add the three lineage tables (<code>answers</code>, <code>chunks</code>, <code>source_documents</code>) to <code>db/schema.sql</code>; extend <code>db/seed.py</code> to seed one target answer whose retrieved chunk resolves to a document with a changed <code>content_hash</code> (seed two versions of the same <code>source_doc_id</code> so the walk lands on the newer, changed hash); add <code>queries/08_lineage_walk.sql</code> using the locked CTE chain from this lesson; then finalize <code>smoke.py</code> to run and assert all eight queries (exit non-zero on any failure) and write a <code>tests/test_queries.py</code> pytest suite that mirrors every smoke assertion as a named test.</p>
+<div class="claude-handoff" data-exercise="exercises/module2/the-medallion-pattern/">
+<p><strong>Build It in Claude Code</strong>: Structure <code>module2-ingestion/</code> as three medallion layers: add <code>models/bronze/bronze_corpus_raw.sql</code> to hold raw documents as-ingested (schema only, no cleaning), add <code>models/silver/silver_corpus_clean.sql</code> applying the full cleaning recipe (lowercase, URL-strip, whitespace-collapse, title+body concat, md5 <code>content_hash</code>), and add <code>models/gold/gold_source_documents.sql</code> plus <code>models/gold/gold_chunks.sql</code> as the serving tables the lineage walk queries.</p>
 </div>
 
 
@@ -258,11 +286,11 @@ SELECT * FROM doc_versions ORDER BY chunk_id;
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module1/ctes-and-the-diagnostic-chain.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module2/the-incremental-merge.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module2/00-overview.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module2/dbt-as-the-transform-layer.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -272,11 +300,11 @@ SELECT * FROM doc_versions ORDER BY chunk_id;
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module1/ctes-and-the-diagnostic-chain.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module2/the-incremental-merge.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module2/00-overview.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module2/dbt-as-the-transform-layer.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

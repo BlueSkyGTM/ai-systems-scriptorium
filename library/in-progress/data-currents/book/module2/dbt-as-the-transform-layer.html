@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>The Lineage Walk - Data Currents — SQL and the Data Platform for AI Systems</title>
+        <title>dbt as the Transform Layer - Data Currents — SQL and the Data Platform for AI Systems</title>
 
 
         <!-- Custom HTML head -->
@@ -177,80 +177,119 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="the-lineage-walk"><a class="header" href="#the-lineage-walk">The Lineage Walk</a></h1>
-<p>Eval pass-rate dropped for the <code>/compliance</code> route Tuesday. You suspect a corpus reload swapped the paragraph the model cited. The only way to prove it is to walk backward: from the answer, through the chunks it retrieved, to the exact document version and content hash that produced them.</p>
-<p>That walk is a query. You build it here.</p>
-<h2 id="three-tables-one-chain"><a class="header" href="#three-tables-one-chain">Three Tables, One Chain</a></h2>
-<p>The telemetry store already tracks what your system did. Lineage tracks what it read. Three tables extend the schema.</p>
-<pre><code class="language-sql">-- retrieved_chunk_ids stored as a comma-separated list (SQLite has no array type)
-CREATE TABLE answers (
-    answer_id           TEXT PRIMARY KEY,
-    trace_id            TEXT NOT NULL REFERENCES spans(trace_id),
-    retrieved_chunk_ids TEXT NOT NULL   -- e.g. 'chunk_001,chunk_002'
-);
-CREATE TABLE chunks (
-    chunk_id           TEXT PRIMARY KEY,
-    corpus_version     TEXT NOT NULL,
-    source_doc_id      TEXT NOT NULL,
-    source_doc_version TEXT NOT NULL
-);
-CREATE TABLE source_documents (
-    doc_id           TEXT NOT NULL,
-    version_id       TEXT NOT NULL,
-    last_modified_at TIMESTAMP NOT NULL,
-    content_hash     TEXT NOT NULL,
-    PRIMARY KEY (doc_id, version_id)
-);
+                        <h1 id="dbt-as-the-transform-layer"><a class="header" href="#dbt-as-the-transform-layer">dbt as the Transform Layer</a></h1>
+<p>A hand-written SQL transform with no tests is a silent-regression machine: it runs, produces rows,
+and tells you nothing about whether those rows are correct. The day a null slips into <code>content_hash</code>
+or a chunk loses its parent document, your retrieval system gets garbage and the pipeline logs
+“success.” dbt breaks that silence by making the transform reviewable code and running tests that
+block promotion when the data fails.</p>
+<p>You build a dbt project that wraps <code>module2-ingestion/</code> in versioned models with schema tests. A
+<code>SELECT</code> becomes a model. A model materializes as a table. A test asserts a property of that table.
+When a test fails, <code>dbt build</code> exits non-zero and the load does not advance.</p>
+<h2 id="dbt-models-are-select-statements"><a class="header" href="#dbt-models-are-select-statements">dbt Models Are SELECT Statements</a></h2>
+<p>In dbt, a model is a <code>.sql</code> file that contains one <code>SELECT</code>. dbt runs that <code>SELECT</code> and materializes
+the result as a table or view in your target database. The materialization strategy lives in
+<code>dbt_project.yml</code>, not in the SQL file:</p>
+<pre><code class="language-yaml"># dbt_project.yml
+name: module2_ingestion
+version: "1.0.0"
+config-version: 2
+profile: module2_ingestion
+model-paths: ["models"]
+seed-paths: ["seeds"]
+models:
+  module2_ingestion:
+    bronze: { +materialized: table, +schema: bronze }
+    silver: { +materialized: table, +schema: silver }
+    gold:   { +materialized: table, +schema: gold }
 </code></pre>
-<p><code>answers</code> links a trace to the chunks the retriever pulled. <code>chunks</code> links each chunk to the corpus version and source document version it came from. <code>source_documents</code> is the version ledger: every document reload writes a new row with a new <code>content_hash</code>, and old rows stay. The <code>PRIMARY KEY (doc_id, version_id)</code> enforces that.</p>
-<p>This is a minimal lineage schema. It records enough to answer the question: did the document change between the load that produced this answer and the one before it?</p>
-<h2 id="the-storage-seam-comma-lists-vs-arrays"><a class="header" href="#the-storage-seam-comma-lists-vs-arrays">The Storage Seam: Comma Lists vs. Arrays</a></h2>
-<p>The artifact stores <code>retrieved_chunk_ids</code> as a comma-separated TEXT column because SQLite has no array type. DuckDB reads it with <code>string_split(..., ',')</code> and <code>list_contains(...)</code>. A Postgres column would use <code>= ANY(array_column)</code>; a warehouse without arrays uses a bridge table, one row per answer-chunk pair.</p>
-<h2 id="query-8-walk-an-answer-back-to-its-source-version"><a class="header" href="#query-8-walk-an-answer-back-to-its-source-version">Query 8: Walk an Answer Back to Its Source Version</a></h2>
-<pre><code class="language-sql">WITH answer_context AS (
-    SELECT a.answer_id, a.trace_id, a.retrieved_chunk_ids
-    FROM answers a
-    WHERE a.answer_id = $target_answer_id
-),
-chunk_sources AS (
-    SELECT ac.answer_id, c.chunk_id, c.corpus_version, c.source_doc_id, c.source_doc_version
-    FROM answer_context ac
-    JOIN chunks c ON list_contains(string_split(ac.retrieved_chunk_ids, ','), c.chunk_id)
-),
-doc_versions AS (
-    SELECT cs.answer_id, cs.chunk_id, cs.source_doc_id, cs.source_doc_version,
-        d.last_modified_at, d.content_hash
-    FROM chunk_sources cs
-    JOIN source_documents d ON d.doc_id = cs.source_doc_id AND d.version_id = cs.source_doc_version
-)
-SELECT * FROM doc_versions ORDER BY chunk_id;
+<p>Each directory under <code>models/</code> maps to a medallion layer. Every model in <code>models/bronze/</code> lands in
+the <code>bronze</code> schema as a table. Every model in <code>models/gold/</code> lands in <code>gold</code>. The SQL stays
+portable; the destination is configuration.</p>
+<p>The database adapter is declared in <code>profiles.yml</code>. For this module, dbt targets DuckDB, which is
+offline and file-based:</p>
+<pre><code class="language-yaml"># profiles.yml
+module2_ingestion:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "corpus.duckdb"
+      threads: 1
 </code></pre>
-<p>Read it as three steps named in order. <code>answer_context</code> pins the target answer and pulls its chunk list. <code>chunk_sources</code> joins that list to the <code>chunks</code> table, resolving each chunk ID to the corpus version and document version it belongs to. <code>doc_versions</code> joins to <code>source_documents</code> to retrieve the content hash for that exact version.</p>
-<p>Each row in the result is one chunk the answer drew on, with the document version and content hash that produced it. Compare Tuesday’s hash to Monday’s: if they differ, the corpus reload swapped the paragraph. That is the answer.</p>
-<p>This is the lineage lookup Module 6 will automate into a full lineage store. Here you write it by hand, so you understand the data shape before the automation hides it.</p>
-<h2 id="the-module-1-diagnostic-playbook"><a class="header" href="#the-module-1-diagnostic-playbook">The Module 1 Diagnostic Playbook</a></h2>
-<p>These eight queries are the ones you run in order during a production incident. Lessons 1 and 2 built them; this lesson closes the set.</p>
-<ol>
-<li>P95 latency by route (current window)</li>
-<li>Cost by tenant (current week)</li>
-<li>Eval pass-rate by day and criterion (rolling 14 days)</li>
-<li>Rolling seven-day pass-rate to smooth noise</li>
-<li>Per-tenant cost rank, this week versus last week</li>
-<li>Latency delta around a deployment timestamp</li>
-<li>Freshness breach: which sources are stale and by how much</li>
-<li>Lineage walk: answer back to source document version and content hash</li>
-</ol>
-<p>Run them in this order and you cover the full surface of what can go wrong: latency, cost, quality trend, quality smoothed, cost attribution shift, deploy regression, corpus staleness, and corpus content change. The eight queries together are the operator’s toolkit for a production AI system.</p>
-<p>Module 2 extends this same <code>module1-sql/</code> store: you land its tables as warehouse targets and write dbt models that transform the raw telemetry into the query layer a data team can build dashboards on.</p>
+<p>No server to spin up. No credentials to manage. The same project structure and the same
+<code>dbt_project.yml</code> run against a Fabric Warehouse in production, swapping only the adapter in
+<code>profiles.yml</code>. Microsoft Fabric supports dbt Core 1.9 natively as a Data Factory job type
+(preview as of mid-2026), targeting a Fabric Warehouse with the same model-and-test contract.
+[MS-Learn dbt jobs in Fabric: https://learn.microsoft.com/fabric/data-factory/dbt-job-overview]
+The offline artifact you build here transfers directly: models are SELECT statements; the adapter
+is the only seam.</p>
+<h2 id="schema-tests-gate-promotion"><a class="header" href="#schema-tests-gate-promotion">Schema Tests Gate Promotion</a></h2>
+<p>The medallion pattern establishes bronze, silver, and gold as quality tiers. dbt’s schema tests are
+what enforces those tiers: they run after models build, and a failure exits non-zero before any
+downstream model can consume bad data.</p>
+<p>Tests live in <code>models/schema.yml</code>. They declare properties of columns that must hold true in the
+materialized table:</p>
+<pre><code class="language-yaml"># models/schema.yml  (excerpt)
+version: 2
+models:
+  - name: silver_corpus_clean
+    columns:
+      - name: doc_id
+        data_tests: [not_null, unique]
+      - name: content_hash
+        data_tests: [not_null]
+  - name: gold_chunks
+    columns:
+      - name: chunk_id
+        data_tests: [not_null, unique]
+      - name: source_doc_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: { to: ref('gold_source_documents'), field: doc_id }
+  - name: gold_corpus_loads
+    columns:
+      - name: status
+        data_tests:
+          - not_null
+          - accepted_values: { values: ['success', 'failure'] }
+</code></pre>
+<p>Read each block as a contract. <code>silver_corpus_clean.doc_id</code> must be present and unique; a duplicate
+or a null fails the gate. <code>gold_chunks.source_doc_id</code> must refer to an actual <code>doc_id</code> in
+<code>gold_source_documents</code>; an orphaned chunk fails the referential integrity test. <code>gold_corpus_loads.status</code>
+must be either <code>'success'</code> or <code>'failure'</code>; any other value fails <code>accepted_values</code>.</p>
+<p>These are not documentation. dbt executes each one as a query against the materialized table and
+counts the failures. A non-zero failure count fails the test; a failed test exits <code>dbt build</code>
+non-zero.</p>
+<h2 id="the-build-command-is-the-gate"><a class="header" href="#the-build-command-is-the-gate">The Build Command Is the Gate</a></h2>
+<p>Three commands cover the full workflow:</p>
+<pre><code class="language-text">dbt seed     # load seeds/corpus_raw.csv
+dbt build    # run models in dependency order, then run every test; non-zero exit on any test failure
+dbt test     # run only the tests
+</code></pre>
+<p><code>dbt build</code> is the one that matters for a pipeline. It resolves the model dependency graph, builds
+each model in order, and then runs every test. If any test fails, the exit code is non-zero and the
+build stops. A nightly orchestrator running <code>dbt build</code> gets a clean boolean: 0 means all models
+built and all tests passed; anything else means the corpus did not promote.</p>
+<p>That is the gate. The SQL transform is no longer silent because dbt makes it runnable, testable,
+and blockable.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>Lineage resolves an answer to the exact source-document version and content hash that produced it; a changed content hash between two loads is the evidence that a corpus reload altered what the model cited.</li>
-<li>The lineage CTE chain runs in three named steps: isolate the target answer, join its chunk IDs to the <code>chunks</code> table, then join to <code>source_documents</code> for the version record and content hash.</li>
-<li><code>retrieved_chunk_ids</code> is stored as comma-separated TEXT in SQLite (no array type); DuckDB reads it with <code>string_split(..., ',')</code> and <code>list_contains(...)</code>; Postgres uses <code>= ANY(array_column)</code>.</li>
-<li>The eight-query diagnostic playbook (latency, cost, pass-rate, rolling pass-rate, cost rank delta, deploy delta, freshness breach, lineage walk) covers the full incident surface for a production AI system.</li>
+<li>A dbt model is a single <code>SELECT</code> that dbt materializes as a table or view; the materialization
+strategy and target schema are configuration in <code>dbt_project.yml</code>, not in the SQL.</li>
+<li>Schema tests in <code>models/schema.yml</code> assert properties of materialized columns: <code>not_null</code>,
+<code>unique</code>, <code>relationships</code>, and <code>accepted_values</code> each compile to a query dbt runs against the
+table.</li>
+<li><code>dbt build</code> runs models in dependency order then runs every test; a failing test exits non-zero,
+blocking promotion of downstream layers.</li>
+<li>The DuckDB adapter makes the full dbt project run offline, file-based; swapping the adapter in
+<code>profiles.yml</code> targets a Fabric Warehouse with the same models and tests unchanged.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module1/the-lineage-walk/">
-<p><strong>Build It in Claude Code</strong>: Add the three lineage tables (<code>answers</code>, <code>chunks</code>, <code>source_documents</code>) to <code>db/schema.sql</code>; extend <code>db/seed.py</code> to seed one target answer whose retrieved chunk resolves to a document with a changed <code>content_hash</code> (seed two versions of the same <code>source_doc_id</code> so the walk lands on the newer, changed hash); add <code>queries/08_lineage_walk.sql</code> using the locked CTE chain from this lesson; then finalize <code>smoke.py</code> to run and assert all eight queries (exit non-zero on any failure) and write a <code>tests/test_queries.py</code> pytest suite that mirrors every smoke assertion as a named test.</p>
+<p>The transform is now a commit, not a script someone ran once and forgot. A reviewer can read it,
+a test can break it, and a broken test means the pipeline never claims the load succeeded.</p>
+<div class="claude-handoff" data-exercise="exercises/module2/dbt-as-the-transform-layer/">
+<p><strong>Build It in Claude Code</strong>: Wrap the <code>module2-ingestion/</code> medallion models in a dbt project by adding <code>dbt_project.yml</code> (with bronze/silver/gold materialization config) and <code>profiles.yml</code> (DuckDB adapter, offline); add <code>models/schema.yml</code> with <code>not_null</code>, <code>unique</code>, <code>relationships</code>, and <code>accepted_values</code> tests that gate promotion between layers; run <code>dbt build</code> to confirm all models build and all tests pass; then introduce a null <code>content_hash</code> in the silver model and prove <code>dbt test</code> exits non-zero, confirming the gate blocks the bad data.</p>
 </div>
 
 
@@ -258,11 +297,11 @@ SELECT * FROM doc_versions ORDER BY chunk_id;
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module1/ctes-and-the-diagnostic-chain.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module2/the-medallion-pattern.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module2/00-overview.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module2/the-batch-freshness-slo.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -272,11 +311,11 @@ SELECT * FROM doc_versions ORDER BY chunk_id;
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module1/ctes-and-the-diagnostic-chain.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module2/the-medallion-pattern.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module2/00-overview.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module2/the-batch-freshness-slo.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

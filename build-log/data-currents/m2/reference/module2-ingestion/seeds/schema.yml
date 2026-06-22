@@ -1,0 +1,33 @@
+version: 2
+
+seeds:
+  - name: corpus_raw
+    description: "Synthetic raw corpus of 120 documents (fixed seed=42). Mirrors made-with-ml columns."
+    columns:
+      - name: doc_id
+        description: "Unique document identifier"
+        data_tests:
+          - not_null
+          - unique
+      - name: created_on
+        description: "Document creation date (YYYY-MM-DD)"
+        data_tests:
+          - not_null
+      - name: title
+        data_tests:
+          - not_null
+      - name: body
+        data_tests:
+          - not_null
+      - name: category
+        description: "ML category label"
+        data_tests:
+          - not_null
+          - accepted_values:
+              values:
+                - nlp
+                - computer-vision
+                - mlops
+                - data-engineering
+                - reinforcement-learning
+                - interpretability

@@ -1,0 +1,124 @@
+version: 2
+
+models:
+  - name: bronze_corpus_raw
+    description: "Raw documents as-ingested from seeds/corpus_raw.csv. Typed + ingestion timestamp. No cleaning."
+    columns:
+      - name: doc_id
+        description: "Source document identifier"
+        data_tests:
+          - not_null
+      - name: title
+        data_tests:
+          - not_null
+      - name: body
+        data_tests:
+          - not_null
+      - name: category
+        data_tests:
+          - not_null
+      - name: ingested_at
+        data_tests:
+          - not_null
+
+  - name: silver_corpus_clean
+    description: "Cleaned + typed documents. made-with-ml text recipe applied. Deduped on doc_id."
+    columns:
+      - name: doc_id
+        description: "Source document identifier — unique in silver"
+        data_tests:
+          - not_null
+          - unique
+      - name: text
+        description: "Cleaned concatenated text (title + body)"
+        data_tests:
+          - not_null
+      - name: content_hash
+        description: "md5 of cleaned text; never null"
+        data_tests:
+          - not_null
+      - name: category
+        data_tests:
+          - not_null
+
+  - name: gold_source_documents
+    description: "Serving table: one row per (doc_id, version_id). PK is composite."
+    columns:
+      - name: doc_id
+        description: "Document identifier"
+        data_tests:
+          - not_null
+      - name: version_id
+        description: "Content version identifier"
+        data_tests:
+          - not_null
+      - name: content_hash
+        description: "md5 of the document text at this version"
+        data_tests:
+          - not_null
+      - name: last_modified_at
+        data_tests:
+          - not_null
+
+  - name: gold_chunks
+    description: "Serving table: document chunks. chunk_id is the PK."
+    columns:
+      - name: chunk_id
+        description: "Deterministic chunk identifier"
+        data_tests:
+          - not_null
+          - unique
+      - name: source_doc_id
+        description: "FK to source_documents.doc_id"
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('gold_source_documents')
+                field: doc_id
+      - name: source_doc_version
+        data_tests:
+          - not_null
+      - name: corpus_version
+        data_tests:
+          - not_null
+      - name: text
+        data_tests:
+          - not_null
+
+  - name: gold_corpus_loads
+    description: "Load audit rows — one per ingestion run."
+    columns:
+      - name: load_id
+        description: "Unique load run identifier"
+        data_tests:
+          - not_null
+          - unique
+      - name: source_id
+        data_tests:
+          - not_null
+      - name: status
+        description: "success or failure"
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['success', 'failure']
+      - name: loaded_at
+        data_tests:
+          - not_null
+      - name: rows_ingested
+        data_tests:
+          - not_null
+
+  - name: gold_freshness_slos
+    description: "Per-source SLO targets."
+    columns:
+      - name: source_id
+        description: "Source identifier — unique PK"
+        data_tests:
+          - not_null
+          - unique
+      - name: max_age_hours
+        description: "Maximum allowed age in hours before source is stale"
+        data_tests:
+          - not_null

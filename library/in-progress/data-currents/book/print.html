@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-29089131.js";
+            window.path_to_searchindex_js = "searchindex-ac768c50.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-72a266be.js"></script>
+        <script src="toc-3a2ac421.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -694,6 +694,442 @@ SELECT * FROM doc_versions ORDER BY chunk_id;
 </ul>
 <div class="claude-handoff" data-exercise="exercises/module1/the-lineage-walk/">
 <p><strong>Build It in Claude Code</strong>: Add the three lineage tables (<code>answers</code>, <code>chunks</code>, <code>source_documents</code>) to <code>db/schema.sql</code>; extend <code>db/seed.py</code> to seed one target answer whose retrieved chunk resolves to a document with a changed <code>content_hash</code> (seed two versions of the same <code>source_doc_id</code> so the walk lands on the newer, changed hash); add <code>queries/08_lineage_walk.sql</code> using the locked CTE chain from this lesson; then finalize <code>smoke.py</code> to run and assert all eight queries (exit non-zero on any failure) and write a <code>tests/test_queries.py</code> pytest suite that mirrors every smoke assertion as a named test.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-2-batch-ingestion"><a class="header" href="#module-2-batch-ingestion">Module 2: Batch Ingestion</a></h1>
+<p>In Module 1 you queried the corpus and walked its lineage. Something had to fill those tables first.
+This module builds it: the nightly reload that ingests raw documents, cleans them, versions them, and
+lands the <code>source_documents</code> and <code>chunks</code> tables the lineage walk reads. You treat the reload as a
+production system, not a cron job that overwrites everything and hopes.</p>
+<p>The difference is in four moves. The load is an idempotent merge, so re-running is safe and a changed
+document is a new version, not a silent overwrite. The transform runs as a medallion, so raw data is
+cleaned and made trustworthy before anything queries it. The transform is dbt, so it is versioned,
+reviewed, and gated by tests. And the whole thing carries a freshness SLO, so a stale index trips a
+gate instead of quietly serving yesterday’s answer.</p>
+<h2 id="what-this-module-covers-1"><a class="header" href="#what-this-module-covers-1">What This Module Covers</a></h2>
+<p><strong>The Incremental Merge</strong> replaces truncate-and-reload with an idempotent upsert keyed on a content
+hash. Re-running an unchanged source changes nothing; a changed document writes a new version and
+keeps the old. This is what makes the lineage walk from Module 1 have versions to walk.</p>
+<p><strong>The Medallion Pattern</strong> structures the transform into bronze (raw), silver (cleaned and typed), and
+gold (serving) layers. The cleaning happens in silver; the tables the book queries are gold. Each
+layer raises the trust you can place in the data.</p>
+<p><strong>dbt as the Transform Layer</strong> turns those layers into versioned models with tests that gate
+promotion. A model is a <code>SELECT</code> that materializes; a test asserts a property; <code>dbt build</code> runs the
+models and then the tests, and a failing test blocks the build.</p>
+<p><strong>The Batch Freshness SLO</strong> makes staleness a measured objective. You record every load, compare the
+last successful load’s age to a per-source target, and fail a gate when a source goes stale. It writes
+the <code>corpus_loads</code> rows the Module 1 freshness-breach query reads.</p>
+<h2 id="who-this-is-for-2"><a class="header" href="#who-this-is-for-2">Who This Is For</a></h2>
+<p>You finished Module 1: you can write operator SQL over telemetry and walk lineage. Now you build the
+pipeline that produces the corpus those queries read. This is the data engineer’s batch layer seen
+from the AI engineer’s seat: you author and test the transform and own the freshness target, you do
+not operate the cluster.</p>
+<h2 id="the-artifact-1"><a class="header" href="#the-artifact-1">The Artifact</a></h2>
+<p>You build <code>module2-ingestion/</code>, which extends the Module 1 store. It holds a dbt medallion project
+(bronze, silver, gold models plus schema tests), an <code>ingest.py</code> loader that performs the idempotent
+merge and writes a load-audit row, and a <code>freshness_check.py</code> gate. The gold tables it produces are
+the ones Module 1 queries, so the lineage walk runs unchanged against your output. Module 3 takes this
+pipeline and orchestrates it on a schedule with retries and alerting.</p>
+<h2 id="prerequisites-1"><a class="header" href="#prerequisites-1">Prerequisites</a></h2>
+<ul>
+<li>Module 1 complete (the <code>module1-sql/</code> store and the lineage walk)</li>
+<li>Python 3.11+, <code>duckdb</code>, and <code>dbt-duckdb</code> (one pip install); everything runs offline</li>
+<li>Comfort with <code>SELECT</code>, <code>GROUP BY</code>, and CTEs at the Module 1 level</li>
+</ul>
+<h2 id="time-estimate-1"><a class="header" href="#time-estimate-1">Time Estimate</a></h2>
+<p>Each lesson runs 70 to 110 minutes including its exercise. The dbt lesson takes longest the first
+time, because installing and wiring the project is its own small task.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-incremental-merge"><a class="header" href="#the-incremental-merge">The Incremental Merge</a></h1>
+<p>Truncating and reloading your corpus every night is quiet until it isn’t: the moment a document
+changes, you lose the old version, every chunk re-indexes from scratch, and the lineage walk M1
+built has nothing to compare against. You traded version history for simplicity, and you will
+not know the cost until the day someone asks “what did this doc say last week?”</p>
+<p>The fix is a MERGE keyed on a content hash. You insert only what changed, keep what didn’t,
+and retain every old version without touching it.</p>
+<h2 id="how-the-merge-works"><a class="header" href="#how-the-merge-works">How the MERGE Works</a></h2>
+<p>Every document enters the pipeline as a hash and a row in <code>source_documents</code>. The schema is:</p>
+<pre><code class="language-sql">CREATE TABLE source_documents (
+    doc_id           TEXT NOT NULL,
+    version_id       TEXT NOT NULL,
+    last_modified_at TEXT NOT NULL,
+    content_hash     TEXT NOT NULL,
+    PRIMARY KEY (doc_id, version_id)
+);
+</code></pre>
+<p>The primary key is <code>(doc_id, version_id)</code>, not <code>doc_id</code> alone. That is what allows a document
+to accumulate versions: <code>v1</code>, <code>v2</code>, <code>v3</code>, each with its own hash and timestamp. A truncate-and-reload
+schema uses <code>doc_id</code> as the sole key and overwrites the row; this one extends it.</p>
+<p>The hash is an MD5 of the document’s UTF-8 body:</p>
+<pre><code class="language-python">def content_hash(text: str) -&gt; str:
+    """md5 hex digest of UTF-8 encoded text."""
+    return hashlib.md5(text.encode("utf-8")).hexdigest()
+</code></pre>
+<p>Before inserting anything, you check whether the <code>(doc_id, content_hash)</code> pair already exists.
+If it does, the content is identical to a previously ingested version; skip it. If the <code>doc_id</code>
+exists with a different hash, the document changed; assign the next version_id and insert. If
+the <code>doc_id</code> is new, insert v1.</p>
+<pre><code class="language-python">def merge_gold(conn, silver_rows, corpus_version) -&gt; int:
+    """
+    Idempotent MERGE into source_documents + chunks, keyed on (doc_id, content_hash):
+      - (doc_id, content_hash) already exists -&gt; skip (idempotent).
+      - doc_id exists with a DIFFERENT content_hash -&gt; insert a new version.
+      - doc_id is new -&gt; insert v1.
+    Returns the number of NEW source_document versions inserted.
+    """
+    now_ts = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    new_versions = 0
+    for row in silver_rows:
+        doc_id, c_hash, text = row["doc_id"], row["content_hash"], row["text"]
+        existing = conn.execute(
+            "SELECT version_id FROM source_documents WHERE doc_id = ? AND content_hash = ?",
+            (doc_id, c_hash),
+        ).fetchone()
+        if existing:
+            version_id = existing[0]                    # same content -&gt; do nothing
+        else:
+            version_id = next_version_id(conn, doc_id)  # v1, v2, v3 ...
+            conn.execute(
+                "INSERT INTO source_documents (doc_id, version_id, last_modified_at, content_hash) "
+                "VALUES (?, ?, ?, ?)",
+                (doc_id, version_id, now_ts, c_hash),
+            )
+            new_versions += 1
+        # chunks: deterministic chunk_ids make this UPSERT idempotent too
+        for chunk_id, chunk_text_val in chunk_text(doc_id, text):
+            conn.execute(
+                "INSERT OR REPLACE INTO chunks "
+                "(chunk_id, source_doc_id, source_doc_version, corpus_version, text) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (chunk_id, doc_id, version_id, corpus_version, chunk_text_val),
+            )
+    conn.commit()
+    return new_versions
+</code></pre>
+<p>The return value is the proof: run the same corpus twice and <code>merge_gold</code> returns <code>0</code> the second
+time. That is the idempotency contract. Change one document’s body and it returns <code>1</code>: one new
+version, old version retained.</p>
+<h2 id="the-warehouse-equivalent"><a class="header" href="#the-warehouse-equivalent">The Warehouse Equivalent</a></h2>
+<p>A warehouse runs this as a single statement against a Delta or Lakehouse table:</p>
+<pre><code class="language-sql">MERGE INTO source_documents AS target
+USING new_batch AS source
+ON target.doc_id = source.doc_id AND target.content_hash = source.content_hash
+WHEN NOT MATCHED THEN INSERT (doc_id, version_id, last_modified_at, content_hash)
+  VALUES (source.doc_id, source.version_id, source.last_modified_at, source.content_hash);
+</code></pre>
+<p>The semantics are identical: match on <code>(doc_id, content_hash)</code>, insert only the rows that don’t
+already exist, leave the rest untouched.
+[MS-Learn MERGE INTO (Delta): https://learn.microsoft.com/azure/databricks/delta/merge]</p>
+<p>The artifact runs the same logic in Python over SQLite so it stays offline. The production path
+swaps the <code>conn.execute</code> calls for a single <code>MERGE INTO</code>; the key and the contract stay the same.</p>
+<h2 id="why-not-truncate-and-reload"><a class="header" href="#why-not-truncate-and-reload">Why Not Truncate and Reload</a></h2>
+<p>A nightly truncate-and-reload feels cheaper: one <code>DELETE</code>, one bulk insert, done. But it has three
+costs that compound. First, every chunk re-indexes from zero, even for documents that did not change.
+Second, old versions are gone; the lineage walk cannot answer “what changed and when.” Third, the
+operation is not idempotent: run it twice on the same corpus and you get two full reloads, not one
+quiet no-op.</p>
+<p>A content-hash MERGE absorbs all three at the cost of one <code>SELECT</code> per document before each insert.
+At nightly batch scale, that is an acceptable trade.</p>
+<p>The hash is the key. Know what it commits you to: identical content always produces the same hash,
+so the idempotency check is exact; any byte-level change produces a new hash and a new version, so
+no mutation slips through silently.</p>
+<h2 id="core-concepts-4"><a class="header" href="#core-concepts-4">Core Concepts</a></h2>
+<ul>
+<li>A batch corpus reload is idempotent when it is keyed on <code>(doc_id, content_hash)</code>: re-running an
+unchanged source inserts zero new rows.</li>
+<li>When a document’s body changes, the MERGE inserts a new version_id and retains the old row; the
+version history is append-only, never overwritten.</li>
+<li>The content hash is an MD5 of the UTF-8 body: identical content always produces the same hash,
+any byte change produces a different one.</li>
+<li>A warehouse <code>MERGE INTO ... WHEN NOT MATCHED THEN INSERT</code> is the single-statement equivalent;
+the Python loop over SQLite runs the same semantics offline.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module2/the-incremental-merge/">
+<p><strong>Build It in Claude Code</strong>: Build the <code>ingest.py</code> loader that reads a synthetic raw corpus, computes a <code>content_hash</code> per document using the MD5 helper, and MERGEs into a versioned <code>source_documents</code> store keyed on <code>(doc_id, content_hash)</code>; prove it is idempotent by running it twice and asserting zero new versions on the second run, then mutate one document’s body, re-run, and assert exactly one new version inserted with the old version retained.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-medallion-pattern"><a class="header" href="#the-medallion-pattern">The Medallion Pattern</a></h1>
+<p>Query raw ingested documents directly and you will regret it. Casing is inconsistent, URLs leak into
+text, duplicate records pass through, and every consumer downstream has to paper over the same defects
+independently. The medallion pattern breaks that cycle: three named layers, one job each, and a clear
+rule about what goes where.</p>
+<h2 id="why-raw-is-dangerous"><a class="header" href="#why-raw-is-dangerous">Why Raw Is Dangerous</a></h2>
+<p>The document corpus your AI system queries is not clean at the moment it lands. Scrapers vary their
+encoding, sources format titles differently, and the same document sometimes arrives more than once
+with different timestamps. If your retrieval layer queries that raw table, those defects go straight
+into the embedding and into the answer. The bugs are invisible until something retrieves the wrong
+chunk and cites a URL in the middle of a sentence.</p>
+<p>The real problem is not any one defect. It is the absence of a trust boundary: there is no moment at
+which the data has been verified, cleaned, and stamped ready. Without that boundary, every consumer
+has to make its own guess about what the data means.</p>
+<h2 id="three-layers-one-job-each"><a class="header" href="#three-layers-one-job-each">Three Layers, One Job Each</a></h2>
+<p>The medallion architecture defines three layers in a lakehouse. Each raises quality before passing
+to the next. [MS-Learn medallion / OneLake: https://learn.microsoft.com/fabric/onelake/onelake-medallion-lakehouse-architecture]</p>
+<p><strong>Bronze</strong> holds the data exactly as ingested, with only the minimum casts needed to give it a
+schema. Nothing is cleaned. Nothing is deduplicated. The bronze layer is your audit trail: if
+something goes wrong downstream, you can always return to what actually arrived. Bronze adds one
+column, <code>ingested_at</code>, so you can track when each row landed.</p>
+<pre><code class="language-sql">-- models/bronze/bronze_corpus_raw.sql
+{{ config(materialized='table') }}
+SELECT
+    doc_id,
+    CAST(created_on AS DATE) AS created_on,
+    title, body, category,
+    CURRENT_TIMESTAMP AS ingested_at
+FROM {{ ref('corpus_raw') }}
+</code></pre>
+<p><strong>Silver</strong> is where the cleaning happens. The raw text passes through a deterministic recipe: titles
+and bodies are lowercased and trimmed, URLs are stripped with a regex, whitespace is collapsed, then
+the cleaned title and body are concatenated into a single <code>text</code> column. A <code>content_hash</code> (md5 of
+the cleaned text) is computed here. Silver rows are trustworthy. The consumers downstream do not
+need to know how dirty the source was.</p>
+<p>The cleaning recipe in the silver model below is the same recipe the made-with-ml data pipeline
+uses for corpus preprocessing. Landing it here lifts it out of ad hoc preprocessing scripts and
+into a versioned, testable dbt model.</p>
+<pre><code class="language-sql">-- models/silver/silver_corpus_clean.sql  (abridged to the transform spine)
+{{ config(materialized='table') }}
+WITH raw AS (
+    SELECT doc_id, created_on, category, ingested_at,
+           TRIM(LOWER(title)) AS title_lc, TRIM(LOWER(body)) AS body_lc
+    FROM {{ ref('bronze_corpus_raw') }}
+),
+url_stripped AS (
+    SELECT doc_id, created_on, category, ingested_at,
+           regexp_replace(title_lc, 'https?://\S+', '', 'g') AS title_no_url,
+           regexp_replace(body_lc,  'https?://\S+', '', 'g') AS body_no_url
+    FROM raw
+),
+collapsed AS (
+    SELECT doc_id, created_on, category, ingested_at,
+           TRIM(regexp_replace(title_no_url, '\s+', ' ', 'g')) AS cleaned_title,
+           TRIM(regexp_replace(body_no_url,  '\s+', ' ', 'g')) AS cleaned_body
+    FROM url_stripped
+)
+SELECT doc_id, created_on, category,
+       cleaned_title || ' ' || cleaned_body AS text,
+       md5(cleaned_title || ' ' || cleaned_body) AS content_hash,
+       CURRENT_TIMESTAMP AS cleaned_at
+FROM collapsed
+</code></pre>
+<p>Notice the CTEs: each CTE does exactly one thing. <code>raw</code> lowercases and trims. <code>url_stripped</code> removes
+URLs. <code>collapsed</code> flattens whitespace. The final <code>SELECT</code> concatenates and hashes. You can read the
+recipe in order without tracing through nested subqueries.</p>
+<p><strong>Gold</strong> is the serving layer. These are the tables your retrieval queries, your freshness SLO
+monitor, and the lineage walk in Module 6 all read. Gold does not clean; it shapes. The
+<code>gold_source_documents</code> table reduces silver to one row per <code>(doc_id, content_hash)</code> pair, which is
+exactly the grain the lineage store expects: this document, at this content fingerprint, was last
+modified at this timestamp.</p>
+<pre><code class="language-sql">-- models/gold/gold_source_documents.sql
+{{ config(materialized='table') }}
+SELECT doc_id, 'v1' AS version_id, MAX(cleaned_at) AS last_modified_at,
+       content_hash, created_on AS source_created_on
+FROM {{ ref('silver_corpus_clean') }}
+GROUP BY doc_id, content_hash, created_on
+</code></pre>
+<p>The <code>content_hash</code> is what makes deduplication verifiable. Two runs that produce the same document
+text will hash to the same value. Gold keeps only the latest <code>cleaned_at</code> for each pair. If the
+document is unchanged, no new row lands.</p>
+<h2 id="the-direction-is-one-way"><a class="header" href="#the-direction-is-one-way">The Direction Is One-Way</a></h2>
+<p>Bronze never reads from silver. Silver reads only from bronze. Gold reads only from silver. The
+direction is enforced by <code>{{ ref() }}</code> dependencies in dbt: the build order follows the graph, and
+the graph only flows down. If you find a query that reads gold to populate silver, something is wrong
+with the design.</p>
+<p>The reason this matters is blast radius. When you need to rerun the cleaning logic (say, the URL
+regex misses a class of malformed links), you drop and rebuild silver from bronze. Gold rebuilds from
+silver. The source data in bronze is untouched. The trust boundary held.</p>
+<h2 id="core-concepts-5"><a class="header" href="#core-concepts-5">Core Concepts</a></h2>
+<ul>
+<li>Bronze holds the data exactly as ingested; silver cleans and types it; gold shapes it for serving.
+Each layer reads only from the layer above it, never the reverse.</li>
+<li>The cleaning happens in silver: lowercase, strip URLs, collapse whitespace, concatenate title and
+body, hash. Nothing upstream of silver is trusted as clean.</li>
+<li>The <code>content_hash</code> in silver is md5 of the cleaned text; gold uses it to reduce to one row per
+<code>(doc_id, content_hash)</code>, making deduplication verifiable by query.</li>
+<li>The one-way dependency (bronze to silver to gold) limits blast radius: a recipe change rebuilds
+silver and gold from bronze without touching the source.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module2/the-medallion-pattern/">
+<p><strong>Build It in Claude Code</strong>: Structure <code>module2-ingestion/</code> as three medallion layers: add <code>models/bronze/bronze_corpus_raw.sql</code> to hold raw documents as-ingested (schema only, no cleaning), add <code>models/silver/silver_corpus_clean.sql</code> applying the full cleaning recipe (lowercase, URL-strip, whitespace-collapse, title+body concat, md5 <code>content_hash</code>), and add <code>models/gold/gold_source_documents.sql</code> plus <code>models/gold/gold_chunks.sql</code> as the serving tables the lineage walk queries.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="dbt-as-the-transform-layer"><a class="header" href="#dbt-as-the-transform-layer">dbt as the Transform Layer</a></h1>
+<p>A hand-written SQL transform with no tests is a silent-regression machine: it runs, produces rows,
+and tells you nothing about whether those rows are correct. The day a null slips into <code>content_hash</code>
+or a chunk loses its parent document, your retrieval system gets garbage and the pipeline logs
+“success.” dbt breaks that silence by making the transform reviewable code and running tests that
+block promotion when the data fails.</p>
+<p>You build a dbt project that wraps <code>module2-ingestion/</code> in versioned models with schema tests. A
+<code>SELECT</code> becomes a model. A model materializes as a table. A test asserts a property of that table.
+When a test fails, <code>dbt build</code> exits non-zero and the load does not advance.</p>
+<h2 id="dbt-models-are-select-statements"><a class="header" href="#dbt-models-are-select-statements">dbt Models Are SELECT Statements</a></h2>
+<p>In dbt, a model is a <code>.sql</code> file that contains one <code>SELECT</code>. dbt runs that <code>SELECT</code> and materializes
+the result as a table or view in your target database. The materialization strategy lives in
+<code>dbt_project.yml</code>, not in the SQL file:</p>
+<pre><code class="language-yaml"># dbt_project.yml
+name: module2_ingestion
+version: "1.0.0"
+config-version: 2
+profile: module2_ingestion
+model-paths: ["models"]
+seed-paths: ["seeds"]
+models:
+  module2_ingestion:
+    bronze: { +materialized: table, +schema: bronze }
+    silver: { +materialized: table, +schema: silver }
+    gold:   { +materialized: table, +schema: gold }
+</code></pre>
+<p>Each directory under <code>models/</code> maps to a medallion layer. Every model in <code>models/bronze/</code> lands in
+the <code>bronze</code> schema as a table. Every model in <code>models/gold/</code> lands in <code>gold</code>. The SQL stays
+portable; the destination is configuration.</p>
+<p>The database adapter is declared in <code>profiles.yml</code>. For this module, dbt targets DuckDB, which is
+offline and file-based:</p>
+<pre><code class="language-yaml"># profiles.yml
+module2_ingestion:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "corpus.duckdb"
+      threads: 1
+</code></pre>
+<p>No server to spin up. No credentials to manage. The same project structure and the same
+<code>dbt_project.yml</code> run against a Fabric Warehouse in production, swapping only the adapter in
+<code>profiles.yml</code>. Microsoft Fabric supports dbt Core 1.9 natively as a Data Factory job type
+(preview as of mid-2026), targeting a Fabric Warehouse with the same model-and-test contract.
+[MS-Learn dbt jobs in Fabric: https://learn.microsoft.com/fabric/data-factory/dbt-job-overview]
+The offline artifact you build here transfers directly: models are SELECT statements; the adapter
+is the only seam.</p>
+<h2 id="schema-tests-gate-promotion"><a class="header" href="#schema-tests-gate-promotion">Schema Tests Gate Promotion</a></h2>
+<p>The medallion pattern establishes bronze, silver, and gold as quality tiers. dbt’s schema tests are
+what enforces those tiers: they run after models build, and a failure exits non-zero before any
+downstream model can consume bad data.</p>
+<p>Tests live in <code>models/schema.yml</code>. They declare properties of columns that must hold true in the
+materialized table:</p>
+<pre><code class="language-yaml"># models/schema.yml  (excerpt)
+version: 2
+models:
+  - name: silver_corpus_clean
+    columns:
+      - name: doc_id
+        data_tests: [not_null, unique]
+      - name: content_hash
+        data_tests: [not_null]
+  - name: gold_chunks
+    columns:
+      - name: chunk_id
+        data_tests: [not_null, unique]
+      - name: source_doc_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: { to: ref('gold_source_documents'), field: doc_id }
+  - name: gold_corpus_loads
+    columns:
+      - name: status
+        data_tests:
+          - not_null
+          - accepted_values: { values: ['success', 'failure'] }
+</code></pre>
+<p>Read each block as a contract. <code>silver_corpus_clean.doc_id</code> must be present and unique; a duplicate
+or a null fails the gate. <code>gold_chunks.source_doc_id</code> must refer to an actual <code>doc_id</code> in
+<code>gold_source_documents</code>; an orphaned chunk fails the referential integrity test. <code>gold_corpus_loads.status</code>
+must be either <code>'success'</code> or <code>'failure'</code>; any other value fails <code>accepted_values</code>.</p>
+<p>These are not documentation. dbt executes each one as a query against the materialized table and
+counts the failures. A non-zero failure count fails the test; a failed test exits <code>dbt build</code>
+non-zero.</p>
+<h2 id="the-build-command-is-the-gate"><a class="header" href="#the-build-command-is-the-gate">The Build Command Is the Gate</a></h2>
+<p>Three commands cover the full workflow:</p>
+<pre><code class="language-text">dbt seed     # load seeds/corpus_raw.csv
+dbt build    # run models in dependency order, then run every test; non-zero exit on any test failure
+dbt test     # run only the tests
+</code></pre>
+<p><code>dbt build</code> is the one that matters for a pipeline. It resolves the model dependency graph, builds
+each model in order, and then runs every test. If any test fails, the exit code is non-zero and the
+build stops. A nightly orchestrator running <code>dbt build</code> gets a clean boolean: 0 means all models
+built and all tests passed; anything else means the corpus did not promote.</p>
+<p>That is the gate. The SQL transform is no longer silent because dbt makes it runnable, testable,
+and blockable.</p>
+<h2 id="core-concepts-6"><a class="header" href="#core-concepts-6">Core Concepts</a></h2>
+<ul>
+<li>A dbt model is a single <code>SELECT</code> that dbt materializes as a table or view; the materialization
+strategy and target schema are configuration in <code>dbt_project.yml</code>, not in the SQL.</li>
+<li>Schema tests in <code>models/schema.yml</code> assert properties of materialized columns: <code>not_null</code>,
+<code>unique</code>, <code>relationships</code>, and <code>accepted_values</code> each compile to a query dbt runs against the
+table.</li>
+<li><code>dbt build</code> runs models in dependency order then runs every test; a failing test exits non-zero,
+blocking promotion of downstream layers.</li>
+<li>The DuckDB adapter makes the full dbt project run offline, file-based; swapping the adapter in
+<code>profiles.yml</code> targets a Fabric Warehouse with the same models and tests unchanged.</li>
+</ul>
+<p>The transform is now a commit, not a script someone ran once and forgot. A reviewer can read it,
+a test can break it, and a broken test means the pipeline never claims the load succeeded.</p>
+<div class="claude-handoff" data-exercise="exercises/module2/dbt-as-the-transform-layer/">
+<p><strong>Build It in Claude Code</strong>: Wrap the <code>module2-ingestion/</code> medallion models in a dbt project by adding <code>dbt_project.yml</code> (with bronze/silver/gold materialization config) and <code>profiles.yml</code> (DuckDB adapter, offline); add <code>models/schema.yml</code> with <code>not_null</code>, <code>unique</code>, <code>relationships</code>, and <code>accepted_values</code> tests that gate promotion between layers; run <code>dbt build</code> to confirm all models build and all tests pass; then introduce a null <code>content_hash</code> in the silver model and prove <code>dbt test</code> exits non-zero, confirming the gate blocks the bad data.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-batch-freshness-slo"><a class="header" href="#the-batch-freshness-slo">The Batch Freshness SLO</a></h1>
+<p>A stale index answers yesterday’s question with full confidence. No error, no warning: just a retriever serving last night’s corpus to a user who needed this morning’s. The problem is not that freshness breaks; it is that nobody defined it until the pager fired.</p>
+<p>You build the definition here: a freshness SLO is a measured, alerting objective. You record each load, compare the last successful load’s age to a per-source target, and fail a gate the moment a source goes stale.</p>
+<h2 id="two-tables-one-contract"><a class="header" href="#two-tables-one-contract">Two Tables, One Contract</a></h2>
+<p>The SLO lives in two tables that extend <code>module2-ingestion/</code>.</p>
+<pre><code class="language-sql">CREATE TABLE corpus_loads (
+    load_id       TEXT PRIMARY KEY,
+    source_id     TEXT NOT NULL,
+    status        TEXT NOT NULL,
+    loaded_at     TEXT NOT NULL,
+    rows_ingested INTEGER NOT NULL
+);
+CREATE TABLE freshness_slos (
+    source_id     TEXT PRIMARY KEY,
+    max_age_hours INTEGER NOT NULL
+);
+-- seeded targets:  ('corpus_raw', 25)  nightly;  ('corpus_raw_realtime', 2)  near-real-time
+</code></pre>
+<p><code>corpus_loads</code> is the audit log: every run of <code>ingest.py</code> appends one row recording the source, outcome, timestamp, and row count. <code>freshness_slos</code> is the contract: how many hours of lag each source is allowed before the system considers it stale.</p>
+<p>These two tables are the same shape M1’s freshness-breach query already reads. The <code>ctes-and-the-diagnostic-chain</code> lesson built that query against this exact schema; the loader you built in the merge lesson is what writes those <code>corpus_loads</code> rows. M1 was the question; M2 is what generates the answer.</p>
+<h2 id="the-freshness-check"><a class="header" href="#the-freshness-check">The Freshness Check</a></h2>
+<p>The check computes one thing per source: how long ago did the last successful load run, and does that duration exceed the SLO?</p>
+<pre><code class="language-python">rows = conn.execute("""
+    SELECT s.source_id, s.max_age_hours, MAX(cl.loaded_at) AS last_load_ts
+    FROM freshness_slos s
+    LEFT JOIN corpus_loads cl
+        ON cl.source_id = s.source_id AND cl.status = 'success'
+    GROUP BY s.source_id, s.max_age_hours
+""").fetchall()
+
+for row in rows:
+    if row["last_load_ts"] is None:
+        age_hours, is_stale = float("inf"), True       # never loaded -&gt; stale
+    else:
+        last_load = datetime.fromisoformat(row["last_load_ts"])
+        age_hours = (now - last_load).total_seconds() / 3600
+        is_stale  = age_hours &gt; row["max_age_hours"]
+# exit non-zero if ANY source is stale -&gt; the gate
+</code></pre>
+<p>The <code>LEFT JOIN</code> is load-bearing: a source with no successful loads gets a <code>NULL</code> for <code>last_load_ts</code>, and the <code>None</code> branch assigns <code>float("inf")</code> hours and marks it stale. A source that has never loaded is not fresh by default; it is maximally stale.</p>
+<p>Note the filter on <code>cl.status = 'success'</code>. A failed reload does not reset the age clock. If <code>corpus_raw</code> ran at midnight and failed, the last successful load was the night before, and the SLO is judged against that. This is the same semantics M1’s CTE chain used: only successful loads count.</p>
+<h2 id="what-the-gate-means"><a class="header" href="#what-the-gate-means">What the Gate Means</a></h2>
+<p>Microsoft Fabric Data Factory records every pipeline run and lets you inspect its history in the monitor view. [MS-Learn: https://learn.microsoft.com/fabric/data-factory/monitor-pipeline-runs] But Fabric does not enforce a freshness SLA out of the box. There is no built-in guardrail that fires when a source goes stale. You build the SLO check yourself on top of that run history.</p>
+<p>The <code>freshness_check.py</code> script is that check. When it exits zero, every source is inside its window. When it exits non-zero, at least one source has exceeded its target age, and the gate has fired. What happens next, whether that is a PagerDuty alert, a Slack notification, or a deployment block, is a decision the orchestrator makes. The gate’s job is to produce a reliable non-zero exit when the contract is broken.</p>
+<p>Two numbers make the contract meaningful. A nightly batch source with a 25-hour target has a one-hour margin before the next run should have landed. A near-real-time source with a 2-hour target goes stale fast, and the gate will tell you before users do.</p>
+<h2 id="the-m1-connection"><a class="header" href="#the-m1-connection">The M1 Connection</a></h2>
+<p>M1’s <code>freshness_breach</code> query (Q7 in the diagnostic playbook) is what an on-call engineer runs when the pager fires at 2 a.m. It reads <code>corpus_loads</code> and <code>freshness_slos</code>, finds sources where the last successful load exceeds <code>max_age_hours</code>, and returns them sorted by age. That query works because this module wrote the rows it reads. <code>ingest.py</code> is the writer; Q7 is the reader. The two modules share a data contract, and the smoke gate in this exercise asserts it: run the freshness-breach query against the same tables and confirm it surfaces the stale source.</p>
+<p>That is the compounding in action. M1 taught you to diagnose; M2 built the system that generates the evidence.</p>
+<h2 id="core-concepts-7"><a class="header" href="#core-concepts-7">Core Concepts</a></h2>
+<ul>
+<li>A freshness SLO is a per-source numeric target (<code>max_age_hours</code>) compared against the age of the last successful load; a source with no successful loads is maximally stale, not provisionally fresh.</li>
+<li><code>corpus_loads</code> is the audit log that makes the SLO measurable: every ingest run appends one row so the check always has a <code>MAX(loaded_at)</code> to work against.</li>
+<li>The gate exits non-zero when any source exceeds its target; it exits zero only when every source is inside its window. Zero means the whole contract is satisfied.</li>
+<li>M1’s freshness-breach query reads the same <code>corpus_loads</code> and <code>freshness_slos</code> tables this module writes; the two modules share a data contract enforced by the smoke gate.</li>
+</ul>
+<p>The SLO you define today is the number on-call reads at 2 a.m. Set it with intention, or someone else will set it with hindsight.</p>
+<p>Module 3 orchestrates these loads on a schedule with retries and alerting, so the gate fires automatically rather than requiring a manual run.</p>
+<div class="claude-handoff" data-exercise="exercises/module2/the-batch-freshness-slo/">
+<p><strong>Build It in Claude Code</strong>: Extend <code>ingest.py</code> to append a <code>corpus_loads</code> row (with <code>load_id</code>, <code>source_id</code>, <code>status</code>, <code>loaded_at</code>, and <code>rows_ingested</code>) on every run; seed <code>freshness_slos</code> with two targets (<code>corpus_raw</code> at 25 hours for the nightly batch, <code>corpus_raw_realtime</code> at 2 hours for the near-real-time source); build <code>freshness_check.py</code> that queries the last successful load age for each source against its SLO and exits non-zero when any source is stale; then finalize <code>smoke.py</code> to assert that a fresh source passes the check, a source whose load timestamp is seeded in the past beyond its SLO fails the check, and that M1’s freshness-breach query run against the same tables returns exactly the stale source.</p>
 </div>
 
 

@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>The Lineage Walk - Data Currents — SQL and the Data Platform for AI Systems</title>
+        <title>The Incremental Merge - Data Currents — SQL and the Data Platform for AI Systems</title>
 
 
         <!-- Custom HTML head -->
@@ -177,80 +177,112 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="the-lineage-walk"><a class="header" href="#the-lineage-walk">The Lineage Walk</a></h1>
-<p>Eval pass-rate dropped for the <code>/compliance</code> route Tuesday. You suspect a corpus reload swapped the paragraph the model cited. The only way to prove it is to walk backward: from the answer, through the chunks it retrieved, to the exact document version and content hash that produced them.</p>
-<p>That walk is a query. You build it here.</p>
-<h2 id="three-tables-one-chain"><a class="header" href="#three-tables-one-chain">Three Tables, One Chain</a></h2>
-<p>The telemetry store already tracks what your system did. Lineage tracks what it read. Three tables extend the schema.</p>
-<pre><code class="language-sql">-- retrieved_chunk_ids stored as a comma-separated list (SQLite has no array type)
-CREATE TABLE answers (
-    answer_id           TEXT PRIMARY KEY,
-    trace_id            TEXT NOT NULL REFERENCES spans(trace_id),
-    retrieved_chunk_ids TEXT NOT NULL   -- e.g. 'chunk_001,chunk_002'
-);
-CREATE TABLE chunks (
-    chunk_id           TEXT PRIMARY KEY,
-    corpus_version     TEXT NOT NULL,
-    source_doc_id      TEXT NOT NULL,
-    source_doc_version TEXT NOT NULL
-);
-CREATE TABLE source_documents (
+                        <h1 id="the-incremental-merge"><a class="header" href="#the-incremental-merge">The Incremental Merge</a></h1>
+<p>Truncating and reloading your corpus every night is quiet until it isn’t: the moment a document
+changes, you lose the old version, every chunk re-indexes from scratch, and the lineage walk M1
+built has nothing to compare against. You traded version history for simplicity, and you will
+not know the cost until the day someone asks “what did this doc say last week?”</p>
+<p>The fix is a MERGE keyed on a content hash. You insert only what changed, keep what didn’t,
+and retain every old version without touching it.</p>
+<h2 id="how-the-merge-works"><a class="header" href="#how-the-merge-works">How the MERGE Works</a></h2>
+<p>Every document enters the pipeline as a hash and a row in <code>source_documents</code>. The schema is:</p>
+<pre><code class="language-sql">CREATE TABLE source_documents (
     doc_id           TEXT NOT NULL,
     version_id       TEXT NOT NULL,
-    last_modified_at TIMESTAMP NOT NULL,
+    last_modified_at TEXT NOT NULL,
     content_hash     TEXT NOT NULL,
     PRIMARY KEY (doc_id, version_id)
 );
 </code></pre>
-<p><code>answers</code> links a trace to the chunks the retriever pulled. <code>chunks</code> links each chunk to the corpus version and source document version it came from. <code>source_documents</code> is the version ledger: every document reload writes a new row with a new <code>content_hash</code>, and old rows stay. The <code>PRIMARY KEY (doc_id, version_id)</code> enforces that.</p>
-<p>This is a minimal lineage schema. It records enough to answer the question: did the document change between the load that produced this answer and the one before it?</p>
-<h2 id="the-storage-seam-comma-lists-vs-arrays"><a class="header" href="#the-storage-seam-comma-lists-vs-arrays">The Storage Seam: Comma Lists vs. Arrays</a></h2>
-<p>The artifact stores <code>retrieved_chunk_ids</code> as a comma-separated TEXT column because SQLite has no array type. DuckDB reads it with <code>string_split(..., ',')</code> and <code>list_contains(...)</code>. A Postgres column would use <code>= ANY(array_column)</code>; a warehouse without arrays uses a bridge table, one row per answer-chunk pair.</p>
-<h2 id="query-8-walk-an-answer-back-to-its-source-version"><a class="header" href="#query-8-walk-an-answer-back-to-its-source-version">Query 8: Walk an Answer Back to Its Source Version</a></h2>
-<pre><code class="language-sql">WITH answer_context AS (
-    SELECT a.answer_id, a.trace_id, a.retrieved_chunk_ids
-    FROM answers a
-    WHERE a.answer_id = $target_answer_id
-),
-chunk_sources AS (
-    SELECT ac.answer_id, c.chunk_id, c.corpus_version, c.source_doc_id, c.source_doc_version
-    FROM answer_context ac
-    JOIN chunks c ON list_contains(string_split(ac.retrieved_chunk_ids, ','), c.chunk_id)
-),
-doc_versions AS (
-    SELECT cs.answer_id, cs.chunk_id, cs.source_doc_id, cs.source_doc_version,
-        d.last_modified_at, d.content_hash
-    FROM chunk_sources cs
-    JOIN source_documents d ON d.doc_id = cs.source_doc_id AND d.version_id = cs.source_doc_version
-)
-SELECT * FROM doc_versions ORDER BY chunk_id;
+<p>The primary key is <code>(doc_id, version_id)</code>, not <code>doc_id</code> alone. That is what allows a document
+to accumulate versions: <code>v1</code>, <code>v2</code>, <code>v3</code>, each with its own hash and timestamp. A truncate-and-reload
+schema uses <code>doc_id</code> as the sole key and overwrites the row; this one extends it.</p>
+<p>The hash is an MD5 of the document’s UTF-8 body:</p>
+<pre><code class="language-python">def content_hash(text: str) -&gt; str:
+    """md5 hex digest of UTF-8 encoded text."""
+    return hashlib.md5(text.encode("utf-8")).hexdigest()
 </code></pre>
-<p>Read it as three steps named in order. <code>answer_context</code> pins the target answer and pulls its chunk list. <code>chunk_sources</code> joins that list to the <code>chunks</code> table, resolving each chunk ID to the corpus version and document version it belongs to. <code>doc_versions</code> joins to <code>source_documents</code> to retrieve the content hash for that exact version.</p>
-<p>Each row in the result is one chunk the answer drew on, with the document version and content hash that produced it. Compare Tuesday’s hash to Monday’s: if they differ, the corpus reload swapped the paragraph. That is the answer.</p>
-<p>This is the lineage lookup Module 6 will automate into a full lineage store. Here you write it by hand, so you understand the data shape before the automation hides it.</p>
-<h2 id="the-module-1-diagnostic-playbook"><a class="header" href="#the-module-1-diagnostic-playbook">The Module 1 Diagnostic Playbook</a></h2>
-<p>These eight queries are the ones you run in order during a production incident. Lessons 1 and 2 built them; this lesson closes the set.</p>
-<ol>
-<li>P95 latency by route (current window)</li>
-<li>Cost by tenant (current week)</li>
-<li>Eval pass-rate by day and criterion (rolling 14 days)</li>
-<li>Rolling seven-day pass-rate to smooth noise</li>
-<li>Per-tenant cost rank, this week versus last week</li>
-<li>Latency delta around a deployment timestamp</li>
-<li>Freshness breach: which sources are stale and by how much</li>
-<li>Lineage walk: answer back to source document version and content hash</li>
-</ol>
-<p>Run them in this order and you cover the full surface of what can go wrong: latency, cost, quality trend, quality smoothed, cost attribution shift, deploy regression, corpus staleness, and corpus content change. The eight queries together are the operator’s toolkit for a production AI system.</p>
-<p>Module 2 extends this same <code>module1-sql/</code> store: you land its tables as warehouse targets and write dbt models that transform the raw telemetry into the query layer a data team can build dashboards on.</p>
+<p>Before inserting anything, you check whether the <code>(doc_id, content_hash)</code> pair already exists.
+If it does, the content is identical to a previously ingested version; skip it. If the <code>doc_id</code>
+exists with a different hash, the document changed; assign the next version_id and insert. If
+the <code>doc_id</code> is new, insert v1.</p>
+<pre><code class="language-python">def merge_gold(conn, silver_rows, corpus_version) -&gt; int:
+    """
+    Idempotent MERGE into source_documents + chunks, keyed on (doc_id, content_hash):
+      - (doc_id, content_hash) already exists -&gt; skip (idempotent).
+      - doc_id exists with a DIFFERENT content_hash -&gt; insert a new version.
+      - doc_id is new -&gt; insert v1.
+    Returns the number of NEW source_document versions inserted.
+    """
+    now_ts = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    new_versions = 0
+    for row in silver_rows:
+        doc_id, c_hash, text = row["doc_id"], row["content_hash"], row["text"]
+        existing = conn.execute(
+            "SELECT version_id FROM source_documents WHERE doc_id = ? AND content_hash = ?",
+            (doc_id, c_hash),
+        ).fetchone()
+        if existing:
+            version_id = existing[0]                    # same content -&gt; do nothing
+        else:
+            version_id = next_version_id(conn, doc_id)  # v1, v2, v3 ...
+            conn.execute(
+                "INSERT INTO source_documents (doc_id, version_id, last_modified_at, content_hash) "
+                "VALUES (?, ?, ?, ?)",
+                (doc_id, version_id, now_ts, c_hash),
+            )
+            new_versions += 1
+        # chunks: deterministic chunk_ids make this UPSERT idempotent too
+        for chunk_id, chunk_text_val in chunk_text(doc_id, text):
+            conn.execute(
+                "INSERT OR REPLACE INTO chunks "
+                "(chunk_id, source_doc_id, source_doc_version, corpus_version, text) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (chunk_id, doc_id, version_id, corpus_version, chunk_text_val),
+            )
+    conn.commit()
+    return new_versions
+</code></pre>
+<p>The return value is the proof: run the same corpus twice and <code>merge_gold</code> returns <code>0</code> the second
+time. That is the idempotency contract. Change one document’s body and it returns <code>1</code>: one new
+version, old version retained.</p>
+<h2 id="the-warehouse-equivalent"><a class="header" href="#the-warehouse-equivalent">The Warehouse Equivalent</a></h2>
+<p>A warehouse runs this as a single statement against a Delta or Lakehouse table:</p>
+<pre><code class="language-sql">MERGE INTO source_documents AS target
+USING new_batch AS source
+ON target.doc_id = source.doc_id AND target.content_hash = source.content_hash
+WHEN NOT MATCHED THEN INSERT (doc_id, version_id, last_modified_at, content_hash)
+  VALUES (source.doc_id, source.version_id, source.last_modified_at, source.content_hash);
+</code></pre>
+<p>The semantics are identical: match on <code>(doc_id, content_hash)</code>, insert only the rows that don’t
+already exist, leave the rest untouched.
+[MS-Learn MERGE INTO (Delta): https://learn.microsoft.com/azure/databricks/delta/merge]</p>
+<p>The artifact runs the same logic in Python over SQLite so it stays offline. The production path
+swaps the <code>conn.execute</code> calls for a single <code>MERGE INTO</code>; the key and the contract stay the same.</p>
+<h2 id="why-not-truncate-and-reload"><a class="header" href="#why-not-truncate-and-reload">Why Not Truncate and Reload</a></h2>
+<p>A nightly truncate-and-reload feels cheaper: one <code>DELETE</code>, one bulk insert, done. But it has three
+costs that compound. First, every chunk re-indexes from zero, even for documents that did not change.
+Second, old versions are gone; the lineage walk cannot answer “what changed and when.” Third, the
+operation is not idempotent: run it twice on the same corpus and you get two full reloads, not one
+quiet no-op.</p>
+<p>A content-hash MERGE absorbs all three at the cost of one <code>SELECT</code> per document before each insert.
+At nightly batch scale, that is an acceptable trade.</p>
+<p>The hash is the key. Know what it commits you to: identical content always produces the same hash,
+so the idempotency check is exact; any byte-level change produces a new hash and a new version, so
+no mutation slips through silently.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>Lineage resolves an answer to the exact source-document version and content hash that produced it; a changed content hash between two loads is the evidence that a corpus reload altered what the model cited.</li>
-<li>The lineage CTE chain runs in three named steps: isolate the target answer, join its chunk IDs to the <code>chunks</code> table, then join to <code>source_documents</code> for the version record and content hash.</li>
-<li><code>retrieved_chunk_ids</code> is stored as comma-separated TEXT in SQLite (no array type); DuckDB reads it with <code>string_split(..., ',')</code> and <code>list_contains(...)</code>; Postgres uses <code>= ANY(array_column)</code>.</li>
-<li>The eight-query diagnostic playbook (latency, cost, pass-rate, rolling pass-rate, cost rank delta, deploy delta, freshness breach, lineage walk) covers the full incident surface for a production AI system.</li>
+<li>A batch corpus reload is idempotent when it is keyed on <code>(doc_id, content_hash)</code>: re-running an
+unchanged source inserts zero new rows.</li>
+<li>When a document’s body changes, the MERGE inserts a new version_id and retains the old row; the
+version history is append-only, never overwritten.</li>
+<li>The content hash is an MD5 of the UTF-8 body: identical content always produces the same hash,
+any byte change produces a different one.</li>
+<li>A warehouse <code>MERGE INTO ... WHEN NOT MATCHED THEN INSERT</code> is the single-statement equivalent;
+the Python loop over SQLite runs the same semantics offline.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module1/the-lineage-walk/">
-<p><strong>Build It in Claude Code</strong>: Add the three lineage tables (<code>answers</code>, <code>chunks</code>, <code>source_documents</code>) to <code>db/schema.sql</code>; extend <code>db/seed.py</code> to seed one target answer whose retrieved chunk resolves to a document with a changed <code>content_hash</code> (seed two versions of the same <code>source_doc_id</code> so the walk lands on the newer, changed hash); add <code>queries/08_lineage_walk.sql</code> using the locked CTE chain from this lesson; then finalize <code>smoke.py</code> to run and assert all eight queries (exit non-zero on any failure) and write a <code>tests/test_queries.py</code> pytest suite that mirrors every smoke assertion as a named test.</p>
+<div class="claude-handoff" data-exercise="exercises/module2/the-incremental-merge/">
+<p><strong>Build It in Claude Code</strong>: Build the <code>ingest.py</code> loader that reads a synthetic raw corpus, computes a <code>content_hash</code> per document using the MD5 helper, and MERGEs into a versioned <code>source_documents</code> store keyed on <code>(doc_id, content_hash)</code>; prove it is idempotent by running it twice and asserting zero new versions on the second run, then mutate one document’s body, re-run, and assert exactly one new version inserted with the old version retained.</p>
 </div>
 
 
@@ -258,11 +290,11 @@ SELECT * FROM doc_versions ORDER BY chunk_id;
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module1/ctes-and-the-diagnostic-chain.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module2/00-overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module2/00-overview.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module2/the-medallion-pattern.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -272,11 +304,11 @@ SELECT * FROM doc_versions ORDER BY chunk_id;
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module1/ctes-and-the-diagnostic-chain.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module2/00-overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module2/00-overview.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module2/the-medallion-pattern.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
