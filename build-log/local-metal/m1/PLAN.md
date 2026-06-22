@@ -1,7 +1,7 @@
 # Module 1 — The Build — Build Plan (GATE-LOCK-PLAN input)
 
 Status: **PLAN LOCKED 2026-06-21 (`GATE-LOCK-PLAN` cleared).** First authoring stage for Local
-Metal (graduated to `library/in-progress/local-metal` 2026-06-21). **No hardware exists** —
+Metal (graduated to in-progress 2026-06-21, now at `library/completed/local-metal`). **No hardware exists** —
 "Cthulhu" is the codename for the reference build (the SPEC's BOM), not a machine that is built;
 this book is the curriculum that takes a reader from buying the parts to managing a networked
 local-model host. M1 turns the blueprint's first module + the SPEC's Step 1 into finished mdBook

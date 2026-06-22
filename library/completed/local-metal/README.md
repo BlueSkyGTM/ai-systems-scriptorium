@@ -195,4 +195,5 @@ The candidates below are kept as the record of the decision.
 | **Home Inference** | Emphasizes the outcome (running inference at home) over the hardware. More accessible to a reader who does not yet know they want to build a machine; less precise for an engineer who already knows the domain. |
 | **Bare Metal** | Classic sysadmin phrase for running directly on hardware without a hypervisor. Familiar and accurate, but slightly generic (used in cloud contexts too), which muddies the homebrew framing. Strongest for a sysadmin-leaning audience; weaker for the AI-Engineer audience this library targets. |
 
-Decision: **Local Metal**. The book has graduated to `library/in-progress/local-metal`.
+Decision: **Local Metal**. The book graduated to in-progress, then relocated to
+`library/completed/local-metal` on content-completion (all 7 modules shipped 2026-06-21).

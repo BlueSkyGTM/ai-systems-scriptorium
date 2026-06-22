@@ -2,7 +2,7 @@
 
 Per-stage authoring status. One row per module. Seven modules: six track the Cthulhu SPEC's
 six How-To steps, plus a perf-and-tuning capstone (M7). See
-`library/in-progress/local-metal/README.md` for the full blueprint.
+`library/completed/local-metal/README.md` for the full blueprint.
 
 | Module | Title | Status | Shipped | Notes |
 |--------|-------|--------|---------|-------|
@@ -16,8 +16,9 @@ six How-To steps, plus a perf-and-tuning capstone (M7). See
 
 ## Provenance
 
-Graduated to `library/in-progress/local-metal` on 2026-06-21 (`GATE-NAME-BOOK` cleared: title
-**Local Metal**, slug `local-metal`). **No hardware exists** — "Cthulhu" is the codename for the
+Graduated to in-progress on 2026-06-21 (`GATE-NAME-BOOK` cleared: title **Local Metal**, slug
+`local-metal`), then relocated to `library/completed/local-metal` on content-completion 2026-06-21
+(all 7 modules shipped; the cataloguing move, no gate). **No hardware exists** — "Cthulhu" is the codename for the
 reference build (the SPEC's BOM), not a running machine; the book is the curriculum that takes a
 reader from buying the parts to managing a networked local-model host. This is the seventh book
 and the library's only hardware-grounded title — the place every other book eventually comes to
