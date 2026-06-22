@@ -37,7 +37,7 @@ NOT load**, hand off where it says, and stop only at the named gate (defined in
 ## Routed boundaries (each has its own CONTEXT.md)
 
 `library` · `library/completed/sans-python` · `library/completed/just-python` ·
-`library/completed/local-metal` · `library/in-progress/answer-engineering` ·
+`library/completed/local-metal` · `library/completed/answer-engineering` ·
 `library/in-progress/machine-math` · `library/in-progress/data-currents` ·
 `library/planned/tasteful-tuning` · `platform` ·
 `platform/pipeline` · `platform/conventions` · `platform/templates` · `ingredients` ·

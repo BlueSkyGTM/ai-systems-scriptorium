@@ -15,7 +15,7 @@ Format mirrors `ingredients/dossiers/module4.md`.
 
 M1 installs the Algorithm: the four-step internal reasoning process (decompose the question,
 identify the signal, construct the answer, stress-test it) that lets a candidate answer
-questions they have never seen. The two draft lessons in `library/in-progress/answer-engineering/draft/`
+questions they have never seen. The two draft lessons in `library/completed/answer-engineering/draft/`
 cover steps 1-2 (decompose + signal) and step 3 (construct), with step 4 (stress-test)
 folded into Lesson 2 as the final check. M2 goes deeper on each step.
 

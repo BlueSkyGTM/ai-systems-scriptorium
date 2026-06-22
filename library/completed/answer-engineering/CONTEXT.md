@@ -1,4 +1,4 @@
-# CONTEXT — Answer Engineering (IN PROGRESS)
+# CONTEXT — Answer Engineering (COMPLETED)
 
 The career book. Where every other Scriptorium book builds the skills, this one teaches the reader
 to demonstrate those skills under pressure: an internal framework for reasoning to a strong answer,
@@ -6,8 +6,8 @@ not a script to recite. It treats answer construction as an engineering discipli
 AI Engineer hiring loop in full — behavioral, technical, and AI/ML systems-design interviews — and
 positions the Sans Python portfolio artifacts as the resume.
 
-**Graduated to in-progress 2026-06-21; Modules 1–3 shipped.** `GATE-NAME-BOOK` cleared (title **Answer
-Engineering**, slug `answer-engineering`). M1 "The Framework" (overview + 2 lessons + 2 exercises)
+**COMPLETED 2026-06-21; all 8 modules shipped; relocated to `library/completed/answer-engineering`.**
+`GATE-NAME-BOOK` cleared (title **Answer Engineering**, slug `answer-engineering`). M1 "The Framework" (overview + 2 lessons + 2 exercises)
 installs the four-step Algorithm and seeds the prep-dossier throughline (`exercises/prep/` +
 `check_prep.py`). M2 "The Algorithm in Detail" (overview + 4 lessons + 4 exercises) deepens each step on
 the hard cases and grows the validator to v2 in place. M3 "Behavioral Interviews" (overview + 4 lessons +
