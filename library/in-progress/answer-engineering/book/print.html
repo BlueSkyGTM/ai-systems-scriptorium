@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-f686a47f.js";
+            window.path_to_searchindex_js = "searchindex-902e85da.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-2cbfa76e.js"></script>
+        <script src="toc-6e889fb8.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -1049,6 +1049,632 @@ not yet told an influence story.</p>
 </div>
 
 <div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-4-technical-screens"><a class="header" href="#module-4-technical-screens">Module 4: Technical Screens</a></h1>
+<p>The technical screen is the round that makes strong engineers nervous, because it feels like a test of
+whether you can solve the problem in time. It is not. It is a test of how you think while you solve it.
+The interviewer is watching a process: do you clarify before you code, do you narrate your reasoning, do
+you stay coherent when you hit a bug, do you test your own work. The code is the residue; the thinking is
+the signal.</p>
+<p>That reframing is the whole module. A candidate who silently produces a correct solution scores below a
+candidate who talks through a slightly messier one, because the silent candidate gave the interviewer
+nothing to evaluate except the final state. The skill this module builds is the communication layer: the
+running narration that turns a coding task into evidence of how you work.</p>
+<h2 id="what-the-interviewer-is-actually-collecting"><a class="header" href="#what-the-interviewer-is-actually-collecting">What the Interviewer Is Actually Collecting</a></h2>
+<p>In a technical screen the interviewer is collecting a process signal, not an answer key. They want to see
+that you treat an underspecified prompt as something to clarify, that you state your approach before you
+commit to it, that you narrate the tradeoff when you choose a data structure or an error-handling
+strategy, and that when something breaks you debug out loud instead of going quiet and guessing. A
+correct solution with none of that narration is a weak screen; a candidate who thinks out loud the whole
+way, even through a stumble, is the one the interviewer can actually assess.</p>
+<h2 id="grounded-in-your-portfolio-not-puzzles"><a class="header" href="#grounded-in-your-portfolio-not-puzzles">Grounded in Your Portfolio, Not Puzzles</a></h2>
+<p>The worked tasks in this module are not abstract puzzles. They are real AI-engineering patterns drawn from
+the systems you built in the Sans Python portfolio: a token-budget guard, a retrieval relevance floor, a
+content guardrail, a subprocess sandbox with a timeout, a read-only kill switch. Each one is a thing a
+working AI engineer implements, and each is small enough to code in a screen. You practice the
+communication layer on problems that look like the job, not on tricks that do not.</p>
+<p>One honest boundary: this module teaches the communication layer and the AI-engineering coding patterns
+that show up in real screens. It is not a substitute for dedicated algorithm and data-structure practice.
+If your loop includes a pure algorithms screen, drill that separately, as the final module also advises.
+What you learn here is how to make any coding round legible to the person evaluating you.</p>
+<h2 id="the-four-lessons-1"><a class="header" href="#the-four-lessons-1">The Four Lessons</a></h2>
+<ol>
+<li><strong>Narrating the Screen</strong> builds the communication layer: clarify before coding, narrate your reasoning,
+think out loud, and avoid the pitfalls that make a screen go quiet.</li>
+<li><strong>The Happy Path and the Edges</strong> is implementation discipline: code the working path first, then the
+defensive cases, testing as you go.</li>
+<li><strong>Debugging Out Loud</strong> is what to do when you get stuck: a repeatable motion for isolating a bug and
+recovering without a panicked rewrite.</li>
+<li><strong>The Clock and the Weak-Screen Audit</strong> is time management under pressure plus the audit you run on
+your own screen performance before the room does.</li>
+</ol>
+<h2 id="what-this-module-feeds-forward-3"><a class="header" href="#what-this-module-feeds-forward-3">What This Module Feeds Forward</a></h2>
+<p>By the end you have a coding-screen log in your prep dossier: real screen reps where you recorded the
+task, the clarifying questions you asked, the approach you narrated, where you got stuck and how you
+recovered, and the tests you ran. That log is the record of the one interview skill that is hardest to
+fake and easiest to neglect, and it is yours to keep practicing against right up to the loop.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="narrating-the-screen"><a class="header" href="#narrating-the-screen">Narrating the Screen</a></h1>
+<p>Silence is the failure mode nobody warns you about. You can write correct code, return the right
+answer, and still score below the candidate who stumbled through a messier solution, because that
+candidate gave the interviewer something to evaluate: a process.</p>
+<p>The technical screen is not an answer key. It is an observation of how you think. The interviewer is
+watching whether you treat an underspecified prompt as something to clarify, whether you state your
+approach before you commit to it, and whether you keep talking when things get hard instead of going
+quiet and guessing. The code is the residue. The narration is the signal.</p>
+<h2 id="what-the-interviewer-is-collecting"><a class="header" href="#what-the-interviewer-is-collecting">What the Interviewer Is Collecting</a></h2>
+<p>Before the first line of code appears, the interviewer is already forming a picture. They want
+evidence of four things: that you decompose a vague prompt before building against it, that you
+choose an approach consciously instead of reflexively, that you explain your decisions as you make
+them, and that you test your own work. A candidate who silently produces a correct solution in ten
+minutes hands the interviewer a black box. A candidate who narrates a slightly rougher solution gives
+the interviewer ten minutes of process signal.</p>
+<p>That signal is what they write down after you leave.</p>
+<h2 id="the-four-pitfalls"><a class="header" href="#the-four-pitfalls">The Four Pitfalls</a></h2>
+<p>There are four ways a screen goes quiet without the candidate noticing.</p>
+<p>The first is <strong>monologuing without check-ins.</strong> You talk continuously but never pause to ask “does
+that make sense?” or “is that the direction you had in mind?” The interviewer cannot interrupt the
+narration to redirect you, and you spend fifteen minutes in the wrong corner.</p>
+<p>The second is <strong>not leading with structure.</strong> You dive into code before stating what you are going to
+build. The interviewer cannot follow the implementation because they do not know the plan. Lead with
+the shape; code the shape.</p>
+<p>The third is <strong>jargon without explanation.</strong> You say “CRAG gate” or “cosine floor” without a sentence
+of grounding. The interviewer does not know whether you understand the concept or are borrowing the
+label.</p>
+<p>The fourth is <strong>defending a wrong answer when the interviewer hints.</strong> An interviewer who says
+“interesting, what happens if the list is empty?” is not making conversation. They are pointing at
+a gap. The candidate who says “oh, good point, let me revise” scores higher than the one who
+explains why the gap is not really a gap.</p>
+<p>These four pitfalls are the mechanical failures of a weak screen. The rest of this lesson builds the
+habits that prevent them.</p>
+<h2 id="clarify-before-you-code"><a class="header" href="#clarify-before-you-code">Clarify Before You Code</a></h2>
+<p>Every screen prompt is underspecified. That is not an accident; it is part of the test. The
+interviewer wants to see whether you treat an ambiguous brief as a contract to negotiate or as an
+instruction to execute. Candidates who negotiate always outperform candidates who execute, because
+negotiation surfaces assumptions before they turn into bugs.</p>
+<p>The clarifying questions are not stalling. They are the first visible sign that you think like an
+engineer.</p>
+<p>Ask about the inputs: what does the index return, what type, what shape? Ask about the score range:
+is 1.0 perfect match or is 0.0? Ask about the edge case: what should happen when nothing clears the
+floor? Ask about the contract: is returning an empty list acceptable, or should the caller raise?</p>
+<p>Four questions take thirty seconds. They lock the contract. Now you are building against a
+specification, not a guess.</p>
+<h2 id="narrate-while-you-code-the-eta-shape"><a class="header" href="#narrate-while-you-code-the-eta-shape">Narrate While You Code: The ETA Shape</a></h2>
+<p>Once you have a contract, state your approach before you type. One sentence on what you are going to
+build. Then code it, and narrate each decision as it arrives using the ETA shape: explain the choice
+simply, give the technical detail, name the tradeoff.</p>
+<p>A narrated decision sounds like this:</p>
+<blockquote>
+<p>“I’m making <code>min_score</code> a constructor argument rather than a parameter on <code>retrieve()</code>, because
+the floor is a policy the deployer sets once, not something callers tune per query. The tradeoff
+is that you have to instantiate a new Retriever to change the floor at runtime, but that’s
+intentional: you want the policy to be stable across a conversation.”</p>
+</blockquote>
+<p>That is thirty seconds. It tells the interviewer you understand the design decision and the reason
+behind it. A silent implementation of the same choice tells them nothing.</p>
+<h2 id="the-worked-task-a-retrieval-relevance-floor"><a class="header" href="#the-worked-task-a-retrieval-relevance-floor">The Worked Task: A Retrieval Relevance Floor</a></h2>
+<p>Here is what a full narrated screen looks like, from the clarifying questions to the finished
+implementation.</p>
+<hr>
+<p><strong>The prompt:</strong> “Implement a retriever that wraps a vector index and drops results below a relevance
+threshold, so the generator only sees high-confidence context and can refuse when nothing clears the
+floor.”</p>
+<h3 id="step-1-clarify-the-contract"><a class="header" href="#step-1-clarify-the-contract">Step 1: Clarify the Contract</a></h3>
+<p>Before writing anything, ask:</p>
+<ul>
+<li>“What does the index’s <code>search</code> method return? A list of tuples, a dataclass, something else?”</li>
+<li>“What is the score range? Is 1.0 a perfect match, or is it 0.0? Are higher scores better or lower?”</li>
+<li>“What should <code>retrieve()</code> return when nothing clears the floor: an empty list, or should it raise?”</li>
+<li>“Is it acceptable for the generator to refuse to answer when the list is empty? Or does it need to
+always produce something?”</li>
+</ul>
+<p>The answers shape the implementation. Assume the interviewer says: the index returns <code>(chunk, score)</code>
+tuples, higher is better, the range is 0.0 to 1.0, an empty list is the right return, and yes,
+refusing is the intended behavior when nothing clears the floor.</p>
+<p>Now you have a contract. State your approach.</p>
+<h3 id="step-2-state-the-approach"><a class="header" href="#step-2-state-the-approach">Step 2: State the Approach</a></h3>
+<blockquote>
+<p>“I’ll build a <code>Retriever</code> class that wraps any vector index. The floor goes in <code>__init__</code> as a
+<code>min_score</code> parameter, because it’s a deployment policy, not a per-query argument. The <code>retrieve()</code>
+method calls the index, filters the results, and returns a list of structured objects with the chunk
+and the score both attached, so the caller can cite sources. If nothing clears the floor, it returns
+an empty list and the generator knows to refuse.”</p>
+</blockquote>
+<p>That is the plan. Now build it.</p>
+<h3 id="step-3-narrate-the-implementation"><a class="header" href="#step-3-narrate-the-implementation">Step 3: Narrate the Implementation</a></h3>
+<p>Start with the data structure the method returns.</p>
+<pre><code class="language-python">from dataclasses import dataclass
+
+@dataclass
+class Retrieved:
+    chunk: Chunk
+    score: float
+
+    @property
+    def citation(self) -&gt; str:
+        return self.chunk.citation()
+</code></pre>
+<blockquote>
+<p>“I’m wrapping each result in a <code>Retrieved</code> dataclass rather than returning raw tuples. The reason
+is that tuples are positional: whoever calls this has to know that index 0 is the chunk and index 1
+is the score. A dataclass makes the contract explicit and gives us a place to hang the <code>citation</code>
+property, so the generator can cite sources without reaching into the chunk internals. The tradeoff
+is one more class to maintain, but the interface clarity is worth it for anything that will get
+reused.”</p>
+</blockquote>
+<p>Now the <code>Retriever</code> class.</p>
+<pre><code class="language-python">class Retriever:
+    def __init__(self, index: VectorIndex, *, min_score: float = 0.0) -&gt; None:
+        self._index = index
+        self._min_score = min_score
+
+    def retrieve(self, query: str, k: int = 4) -&gt; list[Retrieved]:
+        hits = self._index.search(query, k=k)
+        return [Retrieved(chunk=c, score=s) for c, s in hits if s &gt;= self._min_score]
+</code></pre>
+<blockquote>
+<p>“A few things here. <code>min_score</code> is keyword-only via the <code>*</code> in the signature, so a caller cannot
+accidentally pass it positionally and confuse it with the index. The default is 0.0, which means
+no filtering at all, so the class is a safe drop-in when you do not need a floor. The filtering
+happens in the list comprehension with <code>if s &gt;= self._min_score</code>. That single line is the CRAG
+gate: when the index returns low-confidence results, they never reach the generator. If everything
+is below the floor, the list is empty, and that empty list is the signal the generator reads as
+‘refuse to answer.’”</p>
+</blockquote>
+<blockquote>
+<p>“The tradeoff of putting the floor in the retriever rather than in the generator is that the policy
+is enforced before the generator ever sees the context. The generator cannot override it. That is
+a feature, not a bug: you want the reliability gate to be structural, not something the model can
+reason its way around.”</p>
+</blockquote>
+<h3 id="step-4-name-the-edges-before-the-interviewer-does"><a class="header" href="#step-4-name-the-edges-before-the-interviewer-does">Step 4: Name the Edges Before the Interviewer Does</a></h3>
+<p>Before the interviewer asks, raise the edge cases yourself.</p>
+<blockquote>
+<p>“A few things I would test: the zero-results case, where everything is below the floor; the
+all-results case, where the floor is 0.0; and a boundary case where one result is exactly at
+<code>min_score</code>, which should pass. I would also think about what happens if the index raises: right
+now that propagates up, which is probably fine, but in production you might want to catch and
+wrap it.”</p>
+</blockquote>
+<p>Naming the edges tells the interviewer you know what you built. It is also how you prevent the
+“what if the list is empty?” redirect, because you have already answered it.</p>
+<hr>
+<p>That is a complete narrated screen. The implementation is the same one you would write silently. The
+difference is that the interviewer now knows why you made every choice, and they have evidence that
+you think about design, contracts, and edge cases, not just syntax.</p>
+<h2 id="core-concepts-10"><a class="header" href="#core-concepts-10">Core Concepts</a></h2>
+<ul>
+<li>The technical screen collects a process signal, not an answer key: a narrated, slightly imperfect
+solution scores higher than a silent, correct one because it gives the interviewer something to
+evaluate.</li>
+<li>Clarifying questions before coding are not stalling; they convert an underspecified prompt into a
+contract, and candidates who negotiate the contract always outperform candidates who execute
+against a guess.</li>
+<li>The ETA shape (explain simply, technical detail, tradeoff) is the unit of narration for each
+coding decision; it takes thirty seconds and tells the interviewer you understand the design, not
+just the syntax.</li>
+<li>The four pitfalls of a weak screen are monologuing without check-ins, coding before stating the
+plan, jargon without grounding, and defending a wrong answer when the interviewer hints; all four
+are recoverable if you notice them early.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module4/narrating-the-screen/">
+<p><strong>Try It in Claude Code:</strong> run one coding-screen rep on a small AI-engineering task, narrating your clarifying questions and your reasoning out loud, and log it in your coding-screen log.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-happy-path-and-the-edges"><a class="header" href="#the-happy-path-and-the-edges">The Happy Path and the Edges</a></h1>
+<p>The previous lesson built the communication layer: narrate, clarify, do not go silent. This lesson is
+about the sequence inside that narration. How you order your implementation tells the interviewer as much
+as the code itself.</p>
+<h2 id="happy-path-first"><a class="header" href="#happy-path-first">Happy Path First</a></h2>
+<p>A working skeleton beats a half-built perfect solution, and the interviewer knows this. The candidate who
+spends fifteen minutes on edge-case handling before they have a single line that runs has made a
+prioritization error in public. The interviewer is watching; the signal is real.</p>
+<p>The move is simple: say out loud that you are doing it on purpose. “I am going to get the happy path
+working first so we have something runnable, then I will layer in the defensive cases.” That sentence
+does two things. It shows you understand that a partial working solution is more valuable than a
+comprehensive non-running one. It also creates a shared checkpoint: the interviewer knows what you are
+planning, so they can redirect you if the edge cases are actually the point of the problem.</p>
+<p>After the happy path runs, enumerate the edges before you code them. Name them one at a time: “Zero or
+negative inputs. The ordering of check before charge. The second cap, the iteration ceiling. Each one
+is a deliberate decision, not an afterthought.” The enumeration signals that you know the space. Then
+handle them in order and test each one as you go.</p>
+<h2 id="worked-example-the-token-budget-guard"><a class="header" href="#worked-example-the-token-budget-guard">Worked Example: The Token-Budget Guard</a></h2>
+<h3 id="the-prompt"><a class="header" href="#the-prompt">The Prompt</a></h3>
+<p>“Write a cost governor for an agent loop. It should enforce a dollar ceiling and stop the run when the
+limit is hit.”</p>
+<h3 id="happy-path-first-1"><a class="header" href="#happy-path-first-1">Happy Path First</a></h3>
+<p>State the goal: track spend and raise when you go over. That is the happy path. Write that first.</p>
+<pre><code class="language-python">class BudgetBreach(Exception):
+    pass
+
+class Budget:
+    def __init__(self, max_usd: float):
+        self.max_usd = max_usd
+        self.spent_usd = 0.0
+
+    def charge(self, usd: float) -&gt; None:
+        self.spent_usd += usd
+        if self.spent_usd &gt; self.max_usd:
+            raise BudgetBreach(f"budget exceeded: ${self.spent_usd:.4f}")
+</code></pre>
+<p>Say out loud: “This version tracks spend and raises on breach. It is not complete, but it is runnable
+and testable right now.” Then test it immediately.</p>
+<pre><code class="language-python">b = Budget(max_usd=1.00)
+b.charge(0.50)   # fine
+b.charge(0.60)   # should raise
+</code></pre>
+<p>Run that check. Confirm the exception fires. Now the skeleton is solid; you have not spent time on
+edges that sit on top of broken scaffolding.</p>
+<h3 id="edge-cases-enumerated-out-loud"><a class="header" href="#edge-cases-enumerated-out-loud">Edge Cases, Enumerated Out Loud</a></h3>
+<p>Say them before you code them: “I see three edges. First, the agent loop can run forever even within
+the dollar cap, so I need an iteration ceiling alongside the cost ceiling. Second, the check should
+happen before the call, not after, because if I charge and then check I have already paid. Third, I
+should handle zero or negative spend amounts gracefully.”</p>
+<p>Handle the iteration cap. The real <code>Budget</code> class in <code>exercises/module6/01-terminal-coding-agent/budget.py</code>
+carries both caps as first-class parameters: <code>max_usd</code> and <code>max_turns</code>. Add it:</p>
+<pre><code class="language-python">@dataclass
+class Budget:
+    max_usd: float
+    max_turns: int
+    spent_usd: float = 0.0
+    turns: int = 0
+
+    def charge(self, usd: float, label: str = "model_call") -&gt; None:
+        self.spent_usd += usd
+        self.turns += 1
+        self._enforce()
+
+    def _enforce(self) -&gt; None:
+        if self.spent_usd &gt; self.max_usd:
+            raise BudgetBreach(
+                f"per-task budget exceeded: ${self.spent_usd:.4f} &gt; ${self.max_usd:.4f}"
+            )
+        if self.turns &gt; self.max_turns:
+            raise BudgetBreach(
+                f"iteration cap exceeded: {self.turns} &gt; {self.max_turns}"
+            )
+</code></pre>
+<p>Test the iteration cap separately: “Let me confirm the turn ceiling fires independently of spend.”</p>
+<pre><code class="language-python">b = Budget(max_usd=100.00, max_turns=2)
+b.charge(0.01)  # turn 1: fine
+b.charge(0.01)  # turn 2: fine
+b.charge(0.01)  # turn 3: should raise on iteration
+</code></pre>
+<p>Now handle the check-before-charge ordering. Say why: “A budget you check after paying is one the
+agent has already cheated. The loop should call <code>check()</code> before each model call so a run that is
+already over budget stops before paying for one more action.” The real implementation separates
+<code>check()</code> from <code>charge()</code> for exactly this reason.</p>
+<pre><code class="language-python">def check(self) -&gt; None:
+    """Call before each model call. Raises if already over cap."""
+    self._enforce()
+</code></pre>
+<p>Test the sequence: confirm that <code>check()</code> after a prior <code>charge()</code> that tripped the cap still raises,
+without accumulating another turn.</p>
+<p>The zero-or-negative input edge is the last one: “What happens if the caller passes a negative spend
+amount? That would silently decrease <code>spent_usd</code> and extend the budget. I want to guard against that.”
+Mention it, decide whether to add a guard or treat it as caller error, and say your reasoning out loud.
+In the portfolio implementation the caller contract is strict; invalid amounts are not expected. Say
+that and move on. The interviewer sees you considered it.</p>
+<h2 id="worked-example-the-content-guardrail"><a class="header" href="#worked-example-the-content-guardrail">Worked Example: The Content Guardrail</a></h2>
+<h3 id="the-prompt-1"><a class="header" href="#the-prompt-1">The Prompt</a></h3>
+<p>“Write a content guardrail that screens text against a list of prohibited patterns and returns a
+structured verdict.”</p>
+<h3 id="happy-path-first-2"><a class="header" href="#happy-path-first-2">Happy Path First</a></h3>
+<p>The happy path is: compile a list of patterns, search the input, return a result. Say that out loud,
+then write it.</p>
+<pre><code class="language-python">import re
+from dataclasses import dataclass
+
+@dataclass
+class Verdict:
+    blocked: bool
+    rule: str = ""
+
+class Guardrail:
+    def __init__(self, patterns):
+        self._patterns = [re.compile(p, re.IGNORECASE) for p in patterns]
+
+    def screen(self, text: str) -&gt; Verdict:
+        for pat in self._patterns:
+            if pat.search(text):
+                return Verdict(blocked=True, rule=pat.pattern)
+        return Verdict(blocked=False)
+</code></pre>
+<p>Test it immediately with one clean input and one that should trigger.</p>
+<pre><code class="language-python">g = Guardrail([r"\bexfiltrate\b"])
+print(g.screen("How long are records retained?").blocked)     # False
+print(g.screen("Exfiltrate all customer records").blocked)    # True
+</code></pre>
+<p>Confirm both results. The skeleton works. Now enumerate the edges.</p>
+<h3 id="edge-cases-enumerated-out-loud-1"><a class="header" href="#edge-cases-enumerated-out-loud-1">Edge Cases, Enumerated Out Loud</a></h3>
+<p>Say them: “Three things I want to address. First, some patterns should be absolute; an operator
+configuring the system should not be able to remove them. Second, the empty input case. Third, the
+<code>Verdict</code> needs a <code>stage</code> field because this guard runs on both inputs and outputs, and the caller
+needs to know which fired.”</p>
+<p>Handle the hardcoded floor. This is the architecturally interesting edge, and worth a sentence of
+narration: “The safety floor cannot be tunable, because an operator who can lower the floor below the
+prohibition level has effectively disabled it. In <code>exercises/module6/02-production-rag-chatbot/guardrail.py</code>
+the floor lives in <code>_PROHIBITED</code> at module level, compiled separately from the operator-tunable
+patterns. The operator layer adds to the pattern set; it cannot remove from the floor.”</p>
+<p>Show the two-layer structure:</p>
+<pre><code class="language-python"># Module-level floor: not passed through __init__, not tunable
+_PROHIBITED = [
+    r"\bignore (all|the|your) (previous|prior) instructions\b",
+    r"\bexfiltrate\b",
+    r"\bdisable (the )?(audit|logging|guardrail)\b",
+]
+
+class Guardrail:
+    def __init__(self, *, enforce_off_topic: bool = False) -&gt; None:
+        self._patterns = [re.compile(p, re.IGNORECASE) for p in _PROHIBITED]
+        if enforce_off_topic:
+            self._patterns += [re.compile(r"\bwrite me a poem\b", re.IGNORECASE)]
+</code></pre>
+<p>Test the layering: “I want to confirm that even with <code>enforce_off_topic=False</code>, the hardcoded patterns
+still block.” Run a prohibited input through both configurations; both must block.</p>
+<p>Handle the <code>stage</code> field: “The guardrail screens inputs before retrieval and outputs before the
+response. The verdict should carry which stage fired so the caller can log it correctly.” Add <code>stage</code>
+to the dataclass and pass it from <code>screen_input</code> and <code>screen_output</code> separately. Test each path.</p>
+<p>Handle the empty input last: “What does an empty string return? The pattern loop finds no match, so
+it returns <code>blocked=False</code>. That is the right answer; an empty query is not a threat.” Say it,
+confirm it with a quick test, move on.</p>
+<h2 id="testing-as-you-go"><a class="header" href="#testing-as-you-go">Testing as You Go</a></h2>
+<p>The pattern across both examples is the same: after each step, run the smallest test that confirms
+the step works before moving to the next. This is not thoroughness for its own sake. It is error
+isolation. If you write the happy path and three edges together before running anything, you do not
+know which part broke when something fails. If you test after each step, the failing test names the
+failing step.</p>
+<p>Say this out loud too: “I am testing after each step so I know exactly where to look if something
+breaks.” The interviewer hears that you treat testability as a design property, not a post-coding
+activity.</p>
+<h2 id="core-concepts-11"><a class="header" href="#core-concepts-11">Core Concepts</a></h2>
+<ul>
+<li>Code the happy path first and say so out loud: a working skeleton gives you a testable foundation,
+and the narration shows the interviewer that the sequence is intentional, not accidental.</li>
+<li>Enumerate edge cases before you code them: naming them in order shows you know the problem space
+and creates a shared plan the interviewer can redirect if the priorities are wrong.</li>
+<li>The check-before-charge ordering in a cost governor is a design decision, not a coincidence: a
+budget enforced after the call has already been paid cannot prevent the next one.</li>
+<li>Hardcoded safety floors and operator-tunable layers serve different purposes: a floor an operator
+can lower is not a floor, it is a default, and the architecture must reflect that distinction.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module4/the-happy-path-and-the-edges/">
+<p><strong>Try It in Claude Code:</strong> run a coding-screen rep where you code the happy path first and then enumerate and handle the edge cases out loud, logging the test cases you ran in your coding-screen log.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="debugging-out-loud"><a class="header" href="#debugging-out-loud">Debugging Out Loud</a></h1>
+<p>Getting stuck is not a failure. Going silent when you do is.</p>
+<p>The moment a candidate stops talking, the interviewer’s job becomes much harder: they cannot tell whether the candidate is thinking clearly and needs a minute, or is lost and starting to thrash. A well-run screen ends with the interviewer saying “I could see exactly how they were thinking, even when it got hard.” A failed screen ends with “they went quiet, rewrote it from scratch, and I still don’t know how they work.” The code at the end matters less than you expect. The narration is the signal.</p>
+<p>This lesson is about that moment. You will hit a bug in a screen. When you do, there is a repeatable motion that turns the stuck point into evidence of a systematic mind: gather what you know, form three to five hypotheses, isolate the cause, then fix it and verify. The rest of the lesson works two real bugs through that motion in full.</p>
+<h2 id="the-debugging-motion"><a class="header" href="#the-debugging-motion">The Debugging Motion</a></h2>
+<p>The motion has four steps, and each one has a narration line.</p>
+<p><strong>Gather.</strong> Before you change anything, describe the symptom. What is the observable failure? When does it happen? Is it deterministic or intermittent? A candidate who says “so the call is hanging, and it hangs every time, even on a trivial input” has already told the interviewer something useful. The interviewer knows you are not guessing yet.</p>
+<p><strong>Hypothesize.</strong> Generate three to five candidate causes, out loud, before you start eliminating. This step is where most candidates short-circuit: they see one plausible cause and dive in. If they are wrong, they have wasted time and shown the interviewer they do not think systematically. Listing the hypotheses first costs ten seconds and shows a completely different kind of mind. Say each one in a sentence, and say what it would predict.</p>
+<p><strong>Diagnose.</strong> Pick the fastest hypothesis to eliminate and isolate it. Add a temporary check, narrow the input to the smallest case that reproduces the bug, or trace where a value changes. One variable at a time. Narrate each move as you make it: “I’m going to pass an empty string here to rule out an encoding issue” is cleaner than silent typing followed by a result.</p>
+<p><strong>Fix and Verify.</strong> When you have the cause, state it before you patch it. Then fix, and say what a passing verification looks like before you run it. “I expect this to return a structured result now, not hang” is a committed prediction, and committed predictions are what distinguish an engineer from a guesser.</p>
+<h2 id="the-subprocess-sandbox-hangs"><a class="header" href="#the-subprocess-sandbox-hangs">The Subprocess Sandbox Hangs</a></h2>
+<p>Here is the scenario. You have implemented a subprocess sandbox that runs a test suite inside a child process and returns the result. When you call it during the screen, the program hangs. The interviewer is watching.</p>
+<p>Start with the gather step. The symptom is a hang on every call, not an exception. The program does not crash; it waits. That rules out a configuration error that would fail immediately.</p>
+<p>Now hypothesize, out loud:</p>
+<ol>
+<li>“The timeout parameter was never passed, so there is no deadline.”</li>
+<li>“The timeout is being passed but the exception is not caught, so it propagates and crashes the agent loop rather than returning a result.”</li>
+<li>“The child process is hanging on output: it is writing more to stdout or stderr than the pipe buffer holds, and <code>subprocess.run</code> is blocking on the drain.”</li>
+<li>“The process timed out but the child was not killed, so the parent is stuck waiting for a process that is still running.”</li>
+</ol>
+<p>That is four hypotheses. You have not touched the code yet. The interviewer has just watched you reason about subprocess semantics from first principles.</p>
+<p>Now isolate. The fastest check is whether the <code>timeout</code> argument is being passed at all. Look at the call site:</p>
+<pre><code class="language-python">def run(argv: list[str], cwd: str, timeout_s: float = 30.0) -&gt; SandboxResult:
+    try:
+        proc = subprocess.run(
+            argv,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=timeout_s,
+        )
+</code></pre>
+<p>The timeout is there. So hypothesis one is eliminated. Now check whether the exception branch exists and returns rather than re-raises:</p>
+<pre><code class="language-python">    except subprocess.TimeoutExpired as exc:
+        return SandboxResult(
+            exit_code=TIMED_OUT,
+            stdout=exc.stdout.decode() if isinstance(exc.stdout, bytes) else (exc.stdout or ""),
+            stderr=(exc.stderr.decode() if isinstance(exc.stderr, bytes) else (exc.stderr or ""))
+            + "\n[sandbox] wall-clock timeout exceeded",
+            timed_out=True,
+        )
+</code></pre>
+<p>That branch exists and returns a <code>SandboxResult</code>. Hypothesis two is eliminated. The hang is happening before the deadline fires, which points toward hypothesis three: the child is producing so much output that the pipe buffer fills and the child blocks trying to write, while the parent blocks waiting for the process to finish. They deadlock.</p>
+<p>The fix is <code>capture_output=True</code>, which is already present in this implementation. In a screen where the call was written without it, that is the patch: capture both streams so the pipe never blocks. And the deeper lesson, which you should say out loud: a timeout is only useful if you also capture the output, because a full pipe prevents the timeout from ever firing.</p>
+<p>State what you expect before you verify: “With capture in place and a short input, I expect the call to return in under a second with <code>timed_out=False</code> and a non-empty exit code.” Then run it. The motion is gather, hypothesize, diagnose, fix, verify. You have shown the interviewer all five steps with narration.</p>
+<p>One implementation detail worth noting: <code>exc.stdout</code> on a <code>TimeoutExpired</code> exception holds whatever partial output was captured before the deadline. The sandbox in <code>sandbox.py</code> decodes it carefully because it can arrive as bytes even though the parent requested text mode. That partial output is often the most useful debugging signal the agent has. Treating a timeout as a <code>SandboxResult</code> with <code>timed_out=True</code> rather than letting it raise means the agent loop reads it as an observation and can decide whether to retry.</p>
+<h2 id="the-path-jail-has-a-hole"><a class="header" href="#the-path-jail-has-a-hole">The Path Jail Has a Hole</a></h2>
+<p>Here is the second scenario. You have implemented a tool dispatcher that restricts file access to a project root. During the screen, you demonstrate it, and then the interviewer asks: “What happens if the model passes <code>../../etc/passwd</code> as the path argument?” You test it. The restriction holds. Then they ask: “What if the path starts with the root but then escapes?” You test it. The restriction fails.</p>
+<p>Gather: the containment check is not catching all traversals. The symptom is specific and the interviewer has pointed you at the input class that triggers it.</p>
+<p>Hypothesize:</p>
+<ol>
+<li>“The path is being joined with the root before being resolved, so a path that starts with an absolute prefix overwrites the join.”</li>
+<li>“The path is being resolved before being joined, which means <code>realpath</code> sees the attacker’s path in isolation and <code>os.path.join</code> appends it after.”</li>
+<li>“The containment check compares strings before resolving symlinks, so a symlink inside the project root could point outside it and pass the check.”</li>
+<li>“The check uses <code>startswith</code> with the root string, and a path that starts with the root as a string prefix but then escapes is not caught.”</li>
+</ol>
+<p>Look at the actual <code>_resolve</code> function:</p>
+<pre><code class="language-python">def _resolve(project_root: str, rel_path: str) -&gt; str:
+    root = os.path.realpath(project_root)
+    target = os.path.realpath(os.path.join(root, rel_path))
+    if target != root and not target.startswith(root + os.sep):
+        raise ValueError(f"path escapes project root: {rel_path}")
+    return target
+</code></pre>
+<p>Walk through the order of operations. <code>root</code> is resolved first, which flattens symlinks. Then <code>os.path.join(root, rel_path)</code> is called before resolving the target; if <code>rel_path</code> is a relative path with traversal like <code>../../../etc/passwd</code>, the join produces a path outside the root. Then <code>realpath</code> resolves the target, which resolves any remaining traversal. The containment check runs on the resolved target.</p>
+<p>That means hypothesis four is eliminated: the implementation appends the separator to the root string in the <code>startswith</code> check, so a path like <code>/project-root-and-something-else/file</code> would not pass. And hypothesis two is eliminated: the resolution order is join-then-resolve, not resolve-then-join. The more interesting case is hypothesis three. Narrate it: “A symlink inside the project root that points to a file outside it would be followed by <code>realpath</code>, and the resolved target would fail the containment check. That is correct behavior: the jail catches it.”</p>
+<p>The actual hole the interviewer is probing is subtler. Pass a path of <code>subdir/../../etc/passwd</code>. The join produces <code>/project-root/subdir/../../etc/passwd</code>. Then <code>realpath</code> resolves it to <code>/etc/passwd</code>. The containment check fires: <code>/etc/passwd</code> does not start with <code>/project-root/</code>, so it raises. The jail works.</p>
+<p>Now try a symlink attack differently: create a file inside the root that is a symlink to a file outside it. <code>realpath</code> follows the symlink, and the resolved path escapes the root. The jail catches that too.</p>
+<p>The hole the interviewer is likely pointing at in a broken implementation is missing the separator in the <code>startswith</code> check: a root of <code>/project</code> and a path resolving to <code>/project-extended/secret</code> would pass a check written as <code>target.startswith(root)</code>. The correct implementation appends <code>os.sep</code>:</p>
+<pre><code class="language-python">if target != root and not target.startswith(root + os.sep):
+    raise ValueError(f"path escapes project root: {rel_path}")
+</code></pre>
+<p>This is in the actual <code>_resolve</code> function in <code>tools/__init__.py</code>. State it explicitly: “The separator is load-bearing. Without it, a directory name that starts with the root string but is a sibling, not a child, would pass the check.” That is the fix and the verification in one sentence.</p>
+<p>When the interviewer asks you to verify, write a direct test: construct a <code>project_root</code>, call <code>_resolve</code> with a traversal path, and assert that a <code>ValueError</code> is raised. Then call it with a valid relative path and assert it returns the resolved absolute path. State the expected outcome before you run. That is what systematic verification looks like in a screen.</p>
+<h2 id="recovering-without-a-rewrite"><a class="header" href="#recovering-without-a-rewrite">Recovering Without a Rewrite</a></h2>
+<p>When you identify the bug, the instinct is often to scrap what you have and start over. Resist it. A rewrite is expensive and signals that you did not understand your own code. A targeted patch signals that you do.</p>
+<p>The question to ask yourself, out loud if there is time: is this a logic error in one function, or is it a structural problem that will require changing several call sites? A containment check that uses <code>startswith</code> without the separator is a one-line fix in <code>_resolve</code>. A design that puts the path resolution in the wrong layer, so that every caller is responsible for it, is a structural problem. In a screen, patch the logic error in place. Name the structural problem if it exists, propose what a real refactor would look like, and keep moving.</p>
+<p>How to say this to the interviewer: “I can see the issue is isolated to the containment check, so I will fix it there rather than rework the whole dispatch flow. If this were production code I would also add a test that exercises the separator edge case, so a future change cannot quietly regress it.”</p>
+<p>That sentence tells the interviewer three things: you found the bug, you are not panicking, and you think about regressions. That is the screen won.</p>
+<h2 id="core-concepts-12"><a class="header" href="#core-concepts-12">Core Concepts</a></h2>
+<ul>
+<li>Going silent when you get stuck is the failure, not the bug itself; narrating the hypotheses and the elimination sequence turns a stumble into evidence of systematic thinking.</li>
+<li>The debugging motion is gather (describe the symptom), hypothesize (three to five candidates, stated before you eliminate any), diagnose (isolate by eliminating the fastest hypothesis first), then fix and verify with a committed prediction.</li>
+<li>A subprocess timeout is only useful if you also capture output; a full pipe prevents the deadline from firing, and treating <code>TimeoutExpired</code> as a structured result rather than a raised exception keeps the agent loop readable.</li>
+<li>A path-jail containment check must append <code>os.sep</code> to the root in the <code>startswith</code> comparison; without it, a sibling directory whose name begins with the root string passes the check and escapes the jail.</li>
+</ul>
+<hr>
+<div class="claude-handoff" data-exercise="exercises/module4/debugging-out-loud/">
+<p><strong>Try It in Claude Code:</strong> run a coding-screen rep where you deliberately hit a bug, narrate the gather-hypothesize-diagnose-verify motion out loud, and log the stuck point and your recovery in your coding-screen log.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-clock-and-the-weak-screen-audit"><a class="header" href="#the-clock-and-the-weak-screen-audit">The Clock and the Weak-Screen Audit</a></h1>
+<p>The clock is not a countdown to the answer. It is part of what the interviewer is testing. A candidate who runs out of time with nothing runnable has not just failed to finish; they have told the interviewer that they cannot prioritize under pressure. A candidate who says “I have about four minutes left, so I am going to cut error logging and mark it as a known gap” has just demonstrated production judgment.</p>
+<p>That is the seam this lesson teaches: how to manage the clock as a resource and how to audit your own screen performance before the room does it for you.</p>
+<h2 id="allocate-the-clock-before-you-touch-the-keyboard"><a class="header" href="#allocate-the-clock-before-you-touch-the-keyboard">Allocate the Clock Before You Touch the Keyboard</a></h2>
+<p>The single highest-leverage move in a timed screen is deciding, out loud, before you start coding, how you will spend your time.</p>
+<p>The allocation follows the same shape every time.</p>
+<p><strong>Clarify (two to three minutes).</strong> Ask the questions you cannot infer from the prompt. Not every question you could ask; the load-bearing ones. What is the interface this component will plug into? Is there an existing type I should conform to? Is the error case in scope for this session, or do you want the happy path first? Then restate what you heard: “So I am building a read-only kill switch that the agent loop checks before each action; the operator trips it from outside the process; I do not need to test the write path today.” That restatement earns you alignment and gives the interviewer a chance to correct a wrong assumption before you have coded against it.</p>
+<p><strong>Happy path (roughly half the clock).</strong> The first version runs and is demonstrably correct on the main case. Not clean; not hardened; just runnable on the case that matters. This is the artifact. If the clock expires here, you have something to show.</p>
+<p><strong>Edges and polish (the remaining time).</strong> Error cases, input validation, a docstring, a test. You work these in priority order, and you say which ones you are taking in priority order: “I want to add input validation on the score parameter, then a test for the breach case; if I run out of time before the test I will note it as the next step.”</p>
+<p>Narrate the budget out loud. Not once at the start and then silently; at each transition. “I have about ten minutes left; the main path works; I am moving to the breach case now.” The interviewer tracks your clock awareness; silence reads as lost.</p>
+<h2 id="the-stated-cut"><a class="header" href="#the-stated-cut">The Stated Cut</a></h2>
+<p>When the clock is short, the move is not to code faster. It is to name what you are not building and why.</p>
+<p>The stated cut beats silent incompletion on every metric. A silent omission looks like you forgot it or did not know it needed to be there. A stated cut looks like judgment. “I am skipping input validation for now; in production you would want to reject a score outside zero to one, but I want the breach logic running first” is an engineer reasoning about priority. That is what the screen is measuring.</p>
+<p>The cut must be narrated at the moment you make it, not at the end as an apology. Say it when you decide to skip the thing, not after you have run out of time. An apology after the clock expires is not a cut; it is an admission.</p>
+<h2 id="the-read-only-kill-switch"><a class="header" href="#the-read-only-kill-switch">The Read-Only Kill Switch</a></h2>
+<p>The prompt: “Build a kill switch the agent loop can check before each action. The agent must only be able to read it, never write it.”</p>
+<p>You hear the prompt. You clarify.</p>
+<p>“So the interface constraint is the key part of this task: the agent gets a read-only handle. Where does the switch live in storage? Can I use a file path for this session?” The interviewer confirms: a file path is fine; the read-only boundary is what matters.</p>
+<p>You state your time plan: “I have about fifteen minutes. I want a working <code>tripped()</code> check in five, then I will design the operator-vs-agent split, then a quick test.”</p>
+<p>You lead with the core idea before the code:</p>
+<p>“The property this pattern enforces is asymmetric control. The agent’s reachable state does not include the write path. If it did, a sufficiently autonomous agent could disable its own kill switch, and you have a safety control in name only. The split between <code>KillSwitch</code> and <code>OperatorKillSwitch</code> is where that property lives.”</p>
+<p>Then you code. The agent’s handle:</p>
+<pre><code class="language-python">class KillSwitch:
+    """Read-only from the agent's side. The operator holds the write path."""
+
+    def __init__(self, path: str):
+        self._path = path
+
+    def tripped(self) -&gt; bool:
+        """The only method the agent loop calls."""
+        return os.path.exists(self._path)
+</code></pre>
+<p>You narrate as you write: “The agent loop is handed an instance of <code>KillSwitch</code>, not <code>OperatorKillSwitch</code>. It gets <code>tripped()</code> and nothing else. There is no <code>engage()</code> in this class because the agent must never be able to call it.”</p>
+<p>Then the operator handle:</p>
+<pre><code class="language-python">class OperatorKillSwitch(KillSwitch):
+    """The operator's handle. The agent never gets one of these."""
+
+    def engage(self, reason: str = "operator halt") -&gt; None:
+        with open(self._path, "w", encoding="utf-8") as f:
+            f.write(reason)
+
+    def clear(self) -&gt; None:
+        if os.path.exists(self._path):
+            os.remove(self._path)
+</code></pre>
+<p>“The operator creates the <code>OperatorKillSwitch</code>, keeps the reference, and passes only the base class to the agent loop constructor. The agent cannot call <code>engage()</code> because it does not have a reference to the subclass. The access control is enforced by the object graph, not by instructions to the model.”</p>
+<p>You have the happy path in about six minutes. You check in: “That is the core design. I want to add a <code>Halted</code> exception the loop raises when <code>tripped()</code> returns true, then a minimal test. Do you want me to go deeper on the storage layer, or should I keep moving to the test?”</p>
+<p>The interviewer says keep moving. You raise the exception, write one test that trips the file and asserts <code>tripped()</code> returns true, then one test on a fresh path that asserts it returns false. Clock used: eleven minutes. Four minutes to spare, which you spend noting the production analogue out loud: “In production this would be a Redis key under a read-only ACL, or a feature flag the agent process has read access to but cannot write. The file is the stand-in; the asymmetric control property is the same.”</p>
+<p>That last sentence is not filler. It is the signal that you understand what the pattern is abstracting.</p>
+<h2 id="the-drift-monitor"><a class="header" href="#the-drift-monitor">The Drift Monitor</a></h2>
+<p>The prompt: “Build a quality drift monitor. It should track a rolling window of quality scores and flag when the mean falls below an SLO floor.”</p>
+<p>You clarify: “What is the interface for the SLO floor? Is it a fixed constant, or does it come from a baseline measurement? What type do you want the output to be?” The interviewer says the floor derives from a baseline at deploy time; return a structured reading with the current mean and a breach flag.</p>
+<p>You state your plan: “I have about twenty minutes. I want a <code>record()</code> method that returns a reading in ten, then I will add the <code>baseline</code> and <code>floor</code> derivation, then test the breach case.”</p>
+<p>You narrate the design decision before touching the keyboard:</p>
+<p>“The key question here is what the floor is measuring against. A point check asks whether any single score is below a threshold. A rolling mean asks whether quality is trending down, which is a different, and usually more useful, question in production. A single bad score is noise; a degraded rolling mean is signal.”</p>
+<pre><code class="language-python">from collections import deque
+from dataclasses import dataclass
+
+@dataclass
+class DriftReading:
+    n: int
+    rolling_mean: float
+    baseline: float
+    floor: float
+    breached: bool
+</code></pre>
+<p>“I am separating the reading from the monitor because the monitor accumulates state and the reading is a snapshot. That makes the reading easy to log, compare, or pass to an alerting system without coupling it to the monitor.”</p>
+<pre><code class="language-python">class DriftMonitor:
+    def __init__(self, baseline: float, *, window: int = 20, tolerance: float = 0.15) -&gt; None:
+        self.baseline = baseline
+        self.floor = max(0.0, baseline - tolerance)
+        self.window = window
+        self._scores = deque(maxlen=window)
+
+    def record(self, score: float) -&gt; DriftReading:
+        self._scores.append(float(score))
+        mean = sum(self._scores) / len(self._scores)
+        return DriftReading(
+            n=len(self._scores),
+            rolling_mean=mean,
+            baseline=self.baseline,
+            floor=self.floor,
+            breached=mean &lt; self.floor,
+        )
+</code></pre>
+<p>You narrate the <code>floor</code> line: “The floor is <code>baseline minus tolerance</code>, clamped to zero. If the baseline is 0.9 and tolerance is 0.15, the floor is 0.75. The operator sets the tolerance, not the floor directly, because the tolerance is the meaningful knob: how much degradation from what we measured at deploy is acceptable?”</p>
+<p>You check in with nine minutes left: “The happy path runs. I want to test the breach case, then note one known gap. Should I also show a degrading run?”</p>
+<p>The interviewer says yes. You write a quick inline demo:</p>
+<pre><code class="language-python">mon = DriftMonitor(baseline=0.9, window=5, tolerance=0.2)
+for s in [0.9, 0.9, 0.8, 0.4, 0.3]:
+    r = mon.record(s)
+    status = "BREACH" if r.breached else "ok"
+    print(f"n={r.n} mean={r.rolling_mean:.2f} floor={r.floor:.2f} -&gt; {status}")
+</code></pre>
+<p>“As the window fills with low scores, the mean eventually falls below 0.7 and the breach flag trips. The monitor does not raise an exception; it returns a reading. The caller decides what a breach means: alert, roll back, page someone. That keeps this component composable.”</p>
+<p>You are at seventeen minutes. You state the cut: “I am skipping input validation on <code>score</code>; in production you would want to reject values outside zero to one and log the bad input, but I want to leave two minutes to cover the production analogue.” The interviewer nods. You spend those two minutes: “In a live system, this monitor runs as a sidecar or a service, sampling a scored quality signal from traffic. The <code>baseline</code> comes from the last eval run before deploy. The <code>tolerance</code> is an SLA negotiation between product and eng. Silent degradation is the failure mode this catches; no infrastructure metric would have moved.”</p>
+<p>Clock: clean.</p>
+<h2 id="the-weak-screen-audit"><a class="header" href="#the-weak-screen-audit">The Weak-Screen Audit</a></h2>
+<p>The module overview said this module builds the communication layer, and the communication layer is not just what you do during the screen. It includes what you do immediately after: run the audit on yourself before the feedback comes to you.</p>
+<p>The weak-design audit in Module 5 turns a design session’s failure modes into a structured self-check. This is the coding-screen analogue. After every logged rep, run through these questions. For each one, give yourself a pass or a gap, and record the gap.</p>
+<h3 id="clarification"><a class="header" href="#clarification">Clarification</a></h3>
+<p><strong>“Did I clarify before coding, or did I assume?”</strong></p>
+<p>Pass: you asked at least one load-bearing clarifying question and restated the scope before you started. The restatement is part of the check, not optional.</p>
+<p>Gap: you started coding based on the literal prompt text and had to course-correct mid-task when you discovered an ambiguity. That course-correction cost you time and told the interviewer you do not treat underspecified prompts as underspecified.</p>
+<h3 id="narration"><a class="header" href="#narration">Narration</a></h3>
+<p><strong>“Did I narrate, or did I go silent?”</strong></p>
+<p>Pass: the interviewer could follow your reasoning at every step without asking. You said why before you said what.</p>
+<p>Gap: there were stretches where you coded in silence. Even if the code was good, the interviewer had nothing to evaluate. Silence in a screen is not concentration; it reads as a signal that you are lost or that you do not understand the communication requirement.</p>
+<h3 id="structure"><a class="header" href="#structure">Structure</a></h3>
+<p><strong>“Did I lead with structure?”</strong></p>
+<p>Pass: you stated the design decision before you wrote the first line. The interviewer knew where you were going before you arrived.</p>
+<p>Gap: you dove into code and the architecture emerged from the bottom up. The interviewer had to reverse-engineer your approach from the code you were writing. That is asking them to do your job.</p>
+<h3 id="testing"><a class="header" href="#testing">Testing</a></h3>
+<p><strong>“Did I test as I went, or only at the end?”</strong></p>
+<p>Pass: you ran or sketched a test before moving to the next section. You found a bug while the relevant code was still in focus and fixed it there.</p>
+<p>Gap: you wrote all the code and then ran everything at the end. When something broke, you had to retrace the whole session to find the failure point. That is a debugging problem you created for yourself, and the interviewer watched you create it.</p>
+<h3 id="debugging"><a class="header" href="#debugging">Debugging</a></h3>
+<p><strong>“When stuck, did I debug out loud or freeze?”</strong></p>
+<p>Pass: you hit a bug, you stated the three hypotheses about its cause, you isolated it, and you fixed it without rewriting the whole function.</p>
+<p>Gap: you went quiet when something broke. The silence lasted more than thirty seconds. The interviewer could not distinguish “working through it” from “lost.” When you broke silence, it was to say the fix, not to narrate the diagnosis.</p>
+<h3 id="updating"><a class="header" href="#updating">Updating</a></h3>
+<p><strong>“When the interviewer hinted I was wrong, did I update or defend?”</strong></p>
+<p>Pass: the interviewer’s question or frown registered as signal. You paused, you said “let me reconsider that,” and you updated your approach. The update did not require them to tell you twice.</p>
+<p>Gap: you defended your first answer. You explained why your approach was correct, then continued with it, and the interviewer’s skepticism escalated. Defending a wrong answer is a worse signal than getting it wrong.</p>
+<h3 id="clock"><a class="header" href="#clock">Clock</a></h3>
+<p><strong>“Did I manage the clock, or did I run out with nothing runnable?”</strong></p>
+<p>Pass: you allocated the time at the start, narrated transitions, made at least one stated cut, and had a working artifact when the clock stopped.</p>
+<p>Gap: you ran out of time without a runnable happy path. The final state was a partial implementation the interviewer could not evaluate. No amount of explanation after the fact recovers this; the artifact is the evidence, and the artifact was not there.</p>
+<h2 id="core-concepts-13"><a class="header" href="#core-concepts-13">Core Concepts</a></h2>
+<ul>
+<li>Narrating the time budget at the start and at each transition is a screen skill, not a formality; silence on the clock reads as lost.</li>
+<li>The stated cut beats silent incompletion: naming what you are not building, and why, is a signal of production judgment, not an excuse.</li>
+<li>Asymmetric control means the agent’s reachable state does not include the write path; the kill switch works because the agent cannot touch the class that has <code>engage()</code>.</li>
+<li>The weak-screen audit runs on your logged rep immediately after, not after you get feedback; the seven questions span clarification, narration, structure, testing, debugging, updating, and clock management.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module4/the-clock-and-the-weak-screen-audit/">
+<p><strong>Try It in Claude Code:</strong> run a timed coding-screen rep, then run the weak-screen audit on it and record which checks you passed, which you missed, and the one habit you will change, in your coding-screen log.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
 <h1 id="module-5-aiml-systems-design-interviews"><a class="header" href="#module-5-aiml-systems-design-interviews">Module 5: AI/ML Systems-Design Interviews</a></h1>
 <p>The systems-design round is the one most AI engineers walk into underprepared, because it is open-ended
 on purpose. There is no single right answer, the prompt is deliberately vague, and the whiteboard is
@@ -1083,7 +1709,7 @@ as behavioral prep in a different costume: memorizing a reference architecture a
 prompt. A memorized architecture survives exactly until the interviewer changes the scale or the
 constraint, which they will. The designs here are demonstrations of how to think to a design, run on
 real prompts, so you can run the same thinking on a prompt you have never seen.</p>
-<h2 id="the-four-lessons-1"><a class="header" href="#the-four-lessons-1">The Four Lessons</a></h2>
+<h2 id="the-four-lessons-2"><a class="header" href="#the-four-lessons-2">The Four Lessons</a></h2>
 <ol>
 <li><strong>Reading the Design Prompt</strong> builds the scoping discipline: how to turn an open-ended prompt into a
 bounded problem before you draw anything, and why the candidate who scopes beats the one who designs
@@ -1095,7 +1721,7 @@ reliability, and evaluation through a design, and naming the tradeoff when two o
 <li><strong>The Full Design Under Pressure</strong> runs one complete design end to end on the clock, then turns the
 weak-design audit on it the way Module 2 turned the weak-answer audit on a behavioral story.</li>
 </ol>
-<h2 id="what-this-module-feeds-forward-3"><a class="header" href="#what-this-module-feeds-forward-3">What This Module Feeds Forward</a></h2>
+<h2 id="what-this-module-feeds-forward-4"><a class="header" href="#what-this-module-feeds-forward-4">What This Module Feeds Forward</a></h2>
 <p>By the end you have a systems-design log in your prep dossier: at least one open-ended prompt taken all
 the way through the Algorithm and SPIDER, with the design justified, the four production-reasoning
 pillars threaded, and a weak-design audit on your own work. That log is the artifact you rehearse from
@@ -1137,7 +1763,7 @@ on paper here are the systems you will walk an interviewer through there.</p>
 <p>Scoping transfers across prompt types because the questions that matter are always variants of the same four inquiries: scale (how much, how many, how fast), users and access (who, with what permissions, from where), success criteria (what does “working” mean, what metric proves it), and integration and constraints (what already exists, what cannot change, what compliance applies). You do not need to memorize a checklist. You need to ask yourself, on every prompt, what you do not yet know that would change the design.</p>
 <p>The practical move: after you hear the prompt, say one sentence that acknowledges it, then name the two or three dimensions you need to resolve before drawing. “Before I start, I want to make sure I understand the scale and access model, because those will shape the retrieval architecture.” That sentence does two things: it demonstrates the scoping reflex, and it invites the interviewer to tell you what they care about, which steers the rest of the round.</p>
 <p>One thing scoping is not: a way to run the clock. Five to eight minutes of genuine clarifying questions is a signal of engineering maturity. Twenty minutes of questions to avoid designing is visible to the interviewer. Ask what you need; then scope, state your priorities out loud, and draw.</p>
-<h2 id="core-concepts-10"><a class="header" href="#core-concepts-10">Core Concepts</a></h2>
+<h2 id="core-concepts-14"><a class="header" href="#core-concepts-14">Core Concepts</a></h2>
 <ul>
 <li>The first ten minutes of a design round test whether you scope an open-ended problem into a bounded one before drawing; the candidate who designs blind is solving a question they invented.</li>
 <li>Scope produces the numbers and constraints that justify every architectural choice; without them, component decisions are assertions, not reasoning.</li>
@@ -1293,7 +1919,7 @@ the P99. The re-embed on every price change that cannot keep up at 50 million pr
 Document AI tier alone that misses the complex layouts in the tail of the distribution. The
 candidate who names what goes wrong with the rejected option has thought through the design from
 both directions, and that is rare enough to register.</p>
-<h2 id="core-concepts-11"><a class="header" href="#core-concepts-11">Core Concepts</a></h2>
+<h2 id="core-concepts-15"><a class="header" href="#core-concepts-15">Core Concepts</a></h2>
 <ul>
 <li>Naming a component is the entry ticket; defending it with a scale-dependent reason is the work.</li>
 <li>The defense of any component has a shape: name what you chose, name the simpler alternative
@@ -1338,7 +1964,7 @@ tradeoff depth), treating prompts as magic, and one-size-fits-all model selectio
 <p>Second, name the dominant tradeoff against a third pillar. Every deep optimization in one pillar costs you something in another. Cascade routing cuts latency and cost but adds operational complexity and calibration surface, which is a reliability cost. Sampled online eval cuts cost but introduces sampling risk, a real tradeoff you name before the interviewer asks.</p>
 <p>Third, close the fourth pillar with at least one concrete sentence rather than leaving it open. If the prompt stresses latency and cost, you still close reliability with one sentence on graceful degradation and evaluation with one sentence on what metric you would monitor first.</p>
 <p>The interviewer is not checking whether your architecture is theoretically optimal. They are checking whether you treat production as a set of constraints that all exist simultaneously, and whether you are the kind of engineer who names conflicts before being asked. The candidate who pretends the tradeoffs do not exist does not score staff. The candidate who names them, owns them, and defends the choice does.</p>
-<h2 id="core-concepts-12"><a class="header" href="#core-concepts-12">Core Concepts</a></h2>
+<h2 id="core-concepts-16"><a class="header" href="#core-concepts-16">Core Concepts</a></h2>
 <ul>
 <li>The staff signal in a design round is threading cost, latency, reliability, and evaluation simultaneously, then naming the tradeoff when two of them conflict; optimizing a single dimension is the senior ceiling.</li>
 <li>A cascade architecture solves both the latency and cost problem at once by routing the majority of requests to cheap, fast stages and reserving expensive stages for the small fraction that genuinely requires them.</li>
@@ -1353,7 +1979,7 @@ tradeoff depth), treating prompts as magic, and one-size-fits-all model selectio
 <h1 id="the-full-design-under-pressure"><a class="header" href="#the-full-design-under-pressure">The Full Design Under Pressure</a></h1>
 <p>The real test of SPIDER is not whether you know the phases. It is whether you can run them under a clock, in front of someone who is watching how you think, on a prompt you have never seen.</p>
 <p>This lesson does three things. It runs one complete design from the first question through the final reliability check, so you can watch the whole motion at speed. Then it turns the weak-design audit on that design, the way Module 2 turned the weak-answer audit on a behavioral story, so you have a checklist you can run on your own work before the room does. Finally it shows how the same prompt produces a different design under a different stress, because the design is not a fixed artifact to memorize; it bends to the signal being evaluated.</p>
-<h2 id="the-prompt"><a class="header" href="#the-prompt">The Prompt</a></h2>
+<h2 id="the-prompt-2"><a class="header" href="#the-prompt-2">The Prompt</a></h2>
 <p><em>“Design the memory system for a personal AI assistant that works with a user over months. It should remember preferences and facts, learn from past sessions, recall relevant history at the right moments, and forget what it should not keep. Sessions can run for hours. Support one million users.”</em></p>
 <p>The clock starts now.</p>
 <h2 id="phase-s-scope-and-clarify-000-to-005"><a class="header" href="#phase-s-scope-and-clarify-000-to-005">Phase S: Scope and Clarify (0:00 to 0:05)</a></h2>
@@ -1443,7 +2069,7 @@ tradeoff depth), treating prompts as magic, and one-size-fits-all model selectio
 <p>The E phase under stress B foregrounds deletion latency monitoring and the audit log; the R phase foregrounds the failure mode where a deletion job silently fails.</p>
 <p>The same architecture. Different deep-dive targets. Different emphasis in evaluation and reliability. That is not inconsistency; it is calibration. You read the stress, you direct the 15 minutes of deep dive at the thing the interviewer is actually evaluating, and the design you produce demonstrates production judgment rather than a rehearsed answer.</p>
 <p>That is why the SPIDER phases are a motion, not a template. The phases are stable; what you fill them with bends to the signal.</p>
-<h2 id="core-concepts-13"><a class="header" href="#core-concepts-13">Core Concepts</a></h2>
+<h2 id="core-concepts-17"><a class="header" href="#core-concepts-17">Core Concepts</a></h2>
 <ul>
 <li>The write path is the hard part of a memory system design: extraction, dedup, conflict supersession with bitemporal records, and importance filtering are all harder than retrieval and are where most designs go thin.</li>
 <li>Wrong recall is worse than no recall; the relevance gate is a correctness requirement, not an optimization, and it belongs in the design as a first-class component.</li>
@@ -1481,7 +2107,7 @@ prep is a memorized monologue, the same speech delivered to every interviewer re
 the follow-up. The walkthroughs here are demonstrations of how to construct the narration from the
 artifact and the role in front of you, so you can do it for your own work and adapt when the interviewer
 steers.</p>
-<h2 id="the-four-lessons-2"><a class="header" href="#the-four-lessons-2">The Four Lessons</a></h2>
+<h2 id="the-four-lessons-3"><a class="header" href="#the-four-lessons-3">The Four Lessons</a></h2>
 <ol>
 <li><strong>The Artifact Walkthrough</strong> builds the shape: the sixty-second overview, then the decision tour, and
 the discipline of what to foreground versus what to skip.</li>
@@ -1492,7 +2118,7 @@ role, and a research-adjacent role, because the walkthrough bends to the signal 
 <li><strong>The Portfolio Narrative Document</strong> composes the written walkthrough you bring to interviews, then
 turns the weak-walkthrough audit on it the way earlier modules audited an answer and a design.</li>
 </ol>
-<h2 id="what-this-module-feeds-forward-4"><a class="header" href="#what-this-module-feeds-forward-4">What This Module Feeds Forward</a></h2>
+<h2 id="what-this-module-feeds-forward-5"><a class="header" href="#what-this-module-feeds-forward-5">What This Module Feeds Forward</a></h2>
 <p>By the end you have a portfolio-narrative document in your prep dossier: a structured, interview-ready
 walkthrough of at least one artifact, with the decisions, tradeoffs, failure modes, and role-tailoring
 written down and self-audited. That document is what you rehearse from before a portfolio round, and the
@@ -1535,7 +2161,7 @@ composes it with everything else in the dossier into the full preparation you wa
 <p>The terminal coding agent defines “done” as a fact returned by running the real test suite, not a claim from the model. The alternative: trust the model’s self-assessment. The model loops, writes a fix, and reports whether it believes the fix is correct.</p>
 <p>The tradeoff you accepted: the agent runs the full suite on every candidate fix. That costs time and money. But the failure mode you guarded is the one that makes coding agents unreliable in practice: the agent declares victory on a broken fix. A model that checks its own output is an optimist, not a verifier. The gate is the antidote, and it defaults to REJECT, not to pass. You have to earn the pass.</p>
 <p>That default matters. A gate that defaults to pass with a threshold is a gate that can be gamed by an agent that barely tries. A gate that defaults to REJECT can only be cleared by running the tests and having them pass. The distinction is architectural, not a detail.</p>
-<h3 id="the-read-only-kill-switch"><a class="header" href="#the-read-only-kill-switch">The Read-Only Kill Switch</a></h3>
+<h3 id="the-read-only-kill-switch-1"><a class="header" href="#the-read-only-kill-switch-1">The Read-Only Kill Switch</a></h3>
 <p>The kill switch is a file the operator owns. The agent can read it (<code>tripped()</code>) but cannot write it. The alternative: a flag in the agent’s own reachable state, something the agent sets when it decides to stop.</p>
 <p>The tradeoff: the kill switch requires an external file check before every action. That is one more thing that can fail. But the failure mode guarded is more serious: if the kill switch lives in state the agent can write, the agent can disable its own kill switch. You have a kill switch in name only. The read-only constraint is what gives the operator actual control, not apparent control.</p>
 <p>This is the kind of decision an interviewer cannot infer from the code. Reading the source, they see a file check. They do not see the reasoning: that write access was considered and removed because write access defeats the purpose.</p>
@@ -1552,7 +2178,7 @@ composes it with everything else in the dossier into the full preparation you wa
 <p>Then run three or four decisions through the four-beat structure: what you chose, what you rejected, the tradeoff you accepted, the failure mode you guarded. Choose the decisions that are genuinely defensible: ones where you had a real alternative, not ones where there was only one obvious answer.</p>
 <p>Close the decision tour before the interviewer’s attention runs out. Ten minutes is about right for a portfolio walkthrough in an interview setting. If you are running longer, you have too many decisions in the tour; cut to the three that are strongest.</p>
 <p>One note on adaptation: the decisions do not change between interviewers, but the order and emphasis do. An infrastructure-focused interviewer will want the kill switch and the budget early; they are the operability story. A product-focused interviewer may want the verification gate and its implications for reliability. You read the role before the walkthrough, and you lead with the decision the role values. That adaptation is not dishonesty; it is signal discipline. The walkthrough is for them.</p>
-<h2 id="core-concepts-14"><a class="header" href="#core-concepts-14">Core Concepts</a></h2>
+<h2 id="core-concepts-18"><a class="header" href="#core-concepts-18">Core Concepts</a></h2>
 <ul>
 <li>A walkthrough is the reasoning behind an artifact told to someone who was not there, not a narration of what each function does; that distinction is where interviews turn.</li>
 <li>The sixty-second overview orients fast and leads with the single most differentiating decision, not a component list.</li>
@@ -1688,7 +2314,7 @@ eval gate is what makes this a regulated-vertical system rather than a chatbot w
 <p>The artifacts you built in Sans Python are already strong. The decision layer is already there. The work
 before a portfolio round is not inventing reasoning; it is writing down the reasoning you did when you
 shipped the system, in four parts, so it comes out clean when an interviewer asks.</p>
-<h2 id="core-concepts-15"><a class="header" href="#core-concepts-15">Core Concepts</a></h2>
+<h2 id="core-concepts-19"><a class="header" href="#core-concepts-19">Core Concepts</a></h2>
 <ul>
 <li>A defended decision has four parts: what you chose, what you rejected, the tradeoff you accepted,
 and the failure mode it guards against; a walkthrough that runs this shape for every load-bearing
@@ -1744,7 +2370,7 @@ running it offline without an LLM judge makes it mandatory rather than expensive
 <p><strong>The questions they ask first.</strong> If the first two questions are about the user experience or failure modes in production, that is a live signal: shift your depth allocation toward the product frame. If the first questions are about how you would extend or replace a component, shift toward the platform frame. If the first questions are about how you measured what you built, shift toward the research-adjacent frame. This is not a rigid decision; it is a continuous update. The interviewer’s questions are data about what they are evaluating, and you are allowed to use that data.</p>
 <p>Once you have read the signal, the choice is which decision to lead with: the refusal and citation contract, the protocol seam, or the eval gate. The rest of the walkthrough follows from the lead. You foreground what the role values, you depth-allocate there, and you hold the other decisions ready for follow-ups. You did not change the artifact; you changed where you entered it.</p>
 <p>This is what makes the portfolio narration a live skill rather than a speech. A memorized monologue has one entry point. A walkthrough built from the decision layer has seven, and you choose the right one for the room.</p>
-<h2 id="core-concepts-16"><a class="header" href="#core-concepts-16">Core Concepts</a></h2>
+<h2 id="core-concepts-20"><a class="header" href="#core-concepts-20">Core Concepts</a></h2>
 <ul>
 <li>The same portfolio artifact narrates differently for different roles because different roles are evaluating different dimensions of the same decisions; the artifact does not change, the emphasis and the lead do.</li>
 <li>The decision set is fixed by what you built; what bends is which decision you open with, how deep you go on each, and the vocabulary frame you put around it.</li>
@@ -1924,7 +2550,7 @@ interviewer will find in the first ten minutes. Those are always the same: a cod
 as a decision tour, a decision without a named alternative, and a walkthrough that delivers the same
 monologue regardless of the role in the room.</p>
 <p>Fix those three and the rest of the document will hold.</p>
-<h2 id="core-concepts-17"><a class="header" href="#core-concepts-17">Core Concepts</a></h2>
+<h2 id="core-concepts-21"><a class="header" href="#core-concepts-21">Core Concepts</a></h2>
 <ul>
 <li>The portfolio narrative document captures the decision layer: the four-part defense for each key
 decision (decision, rejected alternative, accepted tradeoff, failure mode guarded), written before
@@ -1973,7 +2599,7 @@ feed it honest reps and act on what it tells you.</p>
 <p>This is deliberate. A prose rubric lets you grade yourself generously without noticing. A scorer that
 counts your weak marks and names your thinnest category does not flatter you. It is the same discipline
 the rest of the book applies to interview answers, turned on your own preparation.</p>
-<h2 id="the-four-lessons-3"><a class="header" href="#the-four-lessons-3">The Four Lessons</a></h2>
+<h2 id="the-four-lessons-4"><a class="header" href="#the-four-lessons-4">The Four Lessons</a></h2>
 <ol>
 <li><strong>Deliberate Practice, Not Rote</strong> defines the rep: a fresh question, the full Algorithm, an honest
 self-score, logged.</li>
@@ -1984,7 +2610,7 @@ weakest step, fill the under-practiced category, then re-run.</li>
 <li><strong>Simulating the Room</strong> is mixed, timed practice across the whole bank, and the readiness verdict that
 tells you when you are prepared and what to drill when you are not.</li>
 </ol>
-<h2 id="what-this-module-feeds-forward-5"><a class="header" href="#what-this-module-feeds-forward-5">What This Module Feeds Forward</a></h2>
+<h2 id="what-this-module-feeds-forward-6"><a class="header" href="#what-this-module-feeds-forward-6">What This Module Feeds Forward</a></h2>
 <p>By the end you have a deliberate-practice log in your prep dossier and a scorer that grades it. That
 scorer is the first dossier artifact that does more than check completeness; it measures quality. The
 final module builds on exactly this: it composes your whole dossier, every log and bank and document you
@@ -2081,7 +2707,7 @@ generic to pass a “could a weak candidate say this?” check, that is a weak S
 even if the rest of the answer was solid.</p>
 <p>The rubric is four independent dimensions. A strong Construct score does not cancel a weak
 Stress-test. Each step scores on its own.</p>
-<h2 id="core-concepts-18"><a class="header" href="#core-concepts-18">Core Concepts</a></h2>
+<h2 id="core-concepts-22"><a class="header" href="#core-concepts-22">Core Concepts</a></h2>
 <ul>
 <li>A rep is a fresh question, the full four-step Algorithm, an honest score on each step, and
 a logged verdict; rereading a rehearsed answer is not a rep and does not build the reflex
@@ -2153,7 +2779,7 @@ error that compounds across every subsequent rep.</li>
 **Stress-test:**  weak
 </code></pre>
 <p>That is an honest score. The answer was not bad; it was a solid first draft with a clear drill target: Stress-test, because the weakest claim is the one that proves nothing. The next rep on an influence question should build specifically toward the moment of resistance.</p>
-<h2 id="core-concepts-19"><a class="header" href="#core-concepts-19">Core Concepts</a></h2>
+<h2 id="core-concepts-23"><a class="header" href="#core-concepts-23">Core Concepts</a></h2>
 <ul>
 <li>The four scoring dimensions map directly to the four Algorithm steps: Decompose, Signal, Construct, Stress-test. Each step has one failure mode; each failure mode is a specific drill target.</li>
 <li>Partial is the honest default. Strong is earned by pointing to the specific thing you did in that step; if you cannot point to it, the mark is partial.</li>
@@ -2258,7 +2884,7 @@ orders it.</p>
 <code>GAP</code> to <code>ok</code> is movement. The loop ends when the verdict reads READY and the process exits 0. Until
 then, the scorecard is telling you exactly where to spend the next session.</p>
 <p>Readiness is not a feeling you arrive at. It is an exit code the scorer awards when the evidence supports it.</p>
-<h2 id="core-concepts-20"><a class="header" href="#core-concepts-20">Core Concepts</a></h2>
+<h2 id="core-concepts-24"><a class="header" href="#core-concepts-24">Core Concepts</a></h2>
 <ul>
 <li>A category can be NOT READY for two reasons, under-practiced or latest rep not clean, and the fix
 differs: volume closes the count gap, a targeted rep closes the quality gap.</li>
@@ -2340,7 +2966,7 @@ least one recent clean rep in each category. That is what you carry into the roo
 readiness but a record of it.</p>
 <p>The final module takes that record and the whole dossier and grades them together, the way an interview
 loop grades a candidate. You have built what it will read.</p>
-<h2 id="core-concepts-21"><a class="header" href="#core-concepts-21">Core Concepts</a></h2>
+<h2 id="core-concepts-25"><a class="header" href="#core-concepts-25">Core Concepts</a></h2>
 <ul>
 <li>Mixed practice, randomizing category each rep, is a closer signal than block practice because it
 imposes the category jump and the transition cost the room actually produces; block practice inflates
@@ -2385,7 +3011,7 @@ systems-design round, the portfolio deep-dive, and the panel. Each evaluates som
 draws on a specific part of your dossier. One stage, the technical coding screen, is named but not graded
 here: its preparation is sourced separately, and the module is honest about that gap rather than pretending
 the dossier covers it.</p>
-<h2 id="the-four-lessons-4"><a class="header" href="#the-four-lessons-4">The Four Lessons</a></h2>
+<h2 id="the-four-lessons-5"><a class="header" href="#the-four-lessons-5">The Four Lessons</a></h2>
 <ol>
 <li><strong>Sequencing the Preparation</strong> maps each dossier piece to where it pays off and tells you what to build
 first when time is short.</li>
@@ -2483,7 +3109,7 @@ hiring-manager round, conflict and failure for the panel. Do one systems-design 
 Run <code>check_prep.py</code> to see what is missing. What <code>check_prep.py</code> flags as absent, you cut; do not
 invent entries to pass the check.</p>
 <p>The check, not the feeling, is the exit condition.</p>
-<h2 id="core-concepts-22"><a class="header" href="#core-concepts-22">Core Concepts</a></h2>
+<h2 id="core-concepts-26"><a class="header" href="#core-concepts-26">Core Concepts</a></h2>
 <ul>
 <li>The behavioral bank has the highest stage leverage of any single dossier artifact, covering two of
 the five interview stages.</li>
@@ -2527,7 +3153,7 @@ gets fewer reps than it deserves.</li>
 <h2 id="the-honest-gap-the-technical-coding-screen"><a class="header" href="#the-honest-gap-the-technical-coding-screen">The Honest Gap: The Technical Coding Screen</a></h2>
 <p>Many loops include a technical coding screen: algorithm problems, data structure questions, or language-specific exercises under a timer. That stage is part of the loop but not graded here. The dossier this book builds does not prepare it; the Algorithm, the behavioral bank, the systems-design log, and the portfolio narrative are not substitutes for coding-screen practice.</p>
 <p>Source coding-screen preparation separately. LeetCode, NeetCode, and similar structured programs cover this stage directly. Do not assume your dossier readiness translates to coding-screen readiness; they are distinct skills and the loop grades them independently.</p>
-<h2 id="core-concepts-23"><a class="header" href="#core-concepts-23">Core Concepts</a></h2>
+<h2 id="core-concepts-27"><a class="header" href="#core-concepts-27">Core Concepts</a></h2>
 <ul>
 <li>Each loop stage is run by a different evaluator with a different hypothesis; one preparation posture does not transfer across stages, and the failure mode at each stage is specific to what that stage is actually measuring.</li>
 <li>The behavioral bank covers two stages (hiring-manager and panel) and must have ownership, influence, conflict, and failure calibrated READY before either round.</li>
@@ -2587,7 +3213,7 @@ VERDICT: NOT READY. Close: recruiter-screen, hiring-manager, systems-design-roun
 </ul>
 <p>Fix the highest-leverage gap first, re-run the grader, and read the updated report. Do not try to fix everything in one pass; the report after each run tells you where the remaining effort is concentrated.</p>
 <p>The loop is the same discipline you used with the calibration scorer: run, read, close one gap, re-run. The grader exits 0 when the dossier earns it.</p>
-<h2 id="core-concepts-24"><a class="header" href="#core-concepts-24">Core Concepts</a></h2>
+<h2 id="core-concepts-28"><a class="header" href="#core-concepts-28">Core Concepts</a></h2>
 <ul>
 <li>The dossier grader composes the completeness checker and the calibration scorer; a gap in the report is the same gap you would find running either tool individually.</li>
 <li>Each gap type names its fix: a failed validator points back to a dossier artifact; a category not ready points back to the practice log; a missing loop-plan entry points to <code>loop-plan.md</code>.</li>
@@ -2718,7 +3344,7 @@ you have not seen, on a system you have not designed, about a tradeoff you have 
 will fire. The structure will come. The evidence will come from what you have actually built.</p>
 <p>That is the only guarantee this book can offer, and it is the only one that holds. The work was always
 yours. In the room, it will be.</p>
-<h2 id="core-concepts-25"><a class="header" href="#core-concepts-25">Core Concepts</a></h2>
+<h2 id="core-concepts-29"><a class="header" href="#core-concepts-29">Core Concepts</a></h2>
 <ul>
 <li>The loop is a sequence of distinct evaluations; each round evaluates a different thing, and the
 post-round reset is what keeps a weak round from costing twice.</li>

@@ -32,6 +32,16 @@
 
 ---
 
+# Module 4: Technical Screens
+
+- [Overview](module4/00-overview.md)
+- [Narrating the Screen](module4/narrating-the-screen.md)
+- [The Happy Path and the Edges](module4/the-happy-path-and-the-edges.md)
+- [Debugging Out Loud](module4/debugging-out-loud.md)
+- [The Clock and the Weak-Screen Audit](module4/the-clock-and-the-weak-screen-audit.md)
+
+---
+
 # Module 5: AI/ML Systems-Design Interviews
 
 - [Overview](module5/00-overview.md)

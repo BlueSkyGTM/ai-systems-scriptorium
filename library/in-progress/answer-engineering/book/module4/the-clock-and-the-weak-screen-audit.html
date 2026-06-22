@@ -1,0 +1,377 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>The Clock and the Weak-Screen Audit - Answer Engineering — The AI Engineer&#x27;s Interview Framework</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/copy-to-claude-45921320.css">
+        <link rel="stylesheet" href="../theme/syntax-polish-53c427bd.css">
+        <link rel="stylesheet" href="../theme/readability-9f9ae6ec.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "rust";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "../searchindex-902e85da.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-6e889fb8.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Answer Engineering — The AI Engineer&#x27;s Interview Framework</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="the-clock-and-the-weak-screen-audit"><a class="header" href="#the-clock-and-the-weak-screen-audit">The Clock and the Weak-Screen Audit</a></h1>
+<p>The clock is not a countdown to the answer. It is part of what the interviewer is testing. A candidate who runs out of time with nothing runnable has not just failed to finish; they have told the interviewer that they cannot prioritize under pressure. A candidate who says “I have about four minutes left, so I am going to cut error logging and mark it as a known gap” has just demonstrated production judgment.</p>
+<p>That is the seam this lesson teaches: how to manage the clock as a resource and how to audit your own screen performance before the room does it for you.</p>
+<h2 id="allocate-the-clock-before-you-touch-the-keyboard"><a class="header" href="#allocate-the-clock-before-you-touch-the-keyboard">Allocate the Clock Before You Touch the Keyboard</a></h2>
+<p>The single highest-leverage move in a timed screen is deciding, out loud, before you start coding, how you will spend your time.</p>
+<p>The allocation follows the same shape every time.</p>
+<p><strong>Clarify (two to three minutes).</strong> Ask the questions you cannot infer from the prompt. Not every question you could ask; the load-bearing ones. What is the interface this component will plug into? Is there an existing type I should conform to? Is the error case in scope for this session, or do you want the happy path first? Then restate what you heard: “So I am building a read-only kill switch that the agent loop checks before each action; the operator trips it from outside the process; I do not need to test the write path today.” That restatement earns you alignment and gives the interviewer a chance to correct a wrong assumption before you have coded against it.</p>
+<p><strong>Happy path (roughly half the clock).</strong> The first version runs and is demonstrably correct on the main case. Not clean; not hardened; just runnable on the case that matters. This is the artifact. If the clock expires here, you have something to show.</p>
+<p><strong>Edges and polish (the remaining time).</strong> Error cases, input validation, a docstring, a test. You work these in priority order, and you say which ones you are taking in priority order: “I want to add input validation on the score parameter, then a test for the breach case; if I run out of time before the test I will note it as the next step.”</p>
+<p>Narrate the budget out loud. Not once at the start and then silently; at each transition. “I have about ten minutes left; the main path works; I am moving to the breach case now.” The interviewer tracks your clock awareness; silence reads as lost.</p>
+<h2 id="the-stated-cut"><a class="header" href="#the-stated-cut">The Stated Cut</a></h2>
+<p>When the clock is short, the move is not to code faster. It is to name what you are not building and why.</p>
+<p>The stated cut beats silent incompletion on every metric. A silent omission looks like you forgot it or did not know it needed to be there. A stated cut looks like judgment. “I am skipping input validation for now; in production you would want to reject a score outside zero to one, but I want the breach logic running first” is an engineer reasoning about priority. That is what the screen is measuring.</p>
+<p>The cut must be narrated at the moment you make it, not at the end as an apology. Say it when you decide to skip the thing, not after you have run out of time. An apology after the clock expires is not a cut; it is an admission.</p>
+<h2 id="the-read-only-kill-switch"><a class="header" href="#the-read-only-kill-switch">The Read-Only Kill Switch</a></h2>
+<p>The prompt: “Build a kill switch the agent loop can check before each action. The agent must only be able to read it, never write it.”</p>
+<p>You hear the prompt. You clarify.</p>
+<p>“So the interface constraint is the key part of this task: the agent gets a read-only handle. Where does the switch live in storage? Can I use a file path for this session?” The interviewer confirms: a file path is fine; the read-only boundary is what matters.</p>
+<p>You state your time plan: “I have about fifteen minutes. I want a working <code>tripped()</code> check in five, then I will design the operator-vs-agent split, then a quick test.”</p>
+<p>You lead with the core idea before the code:</p>
+<p>“The property this pattern enforces is asymmetric control. The agent’s reachable state does not include the write path. If it did, a sufficiently autonomous agent could disable its own kill switch, and you have a safety control in name only. The split between <code>KillSwitch</code> and <code>OperatorKillSwitch</code> is where that property lives.”</p>
+<p>Then you code. The agent’s handle:</p>
+<pre><code class="language-python">class KillSwitch:
+    """Read-only from the agent's side. The operator holds the write path."""
+
+    def __init__(self, path: str):
+        self._path = path
+
+    def tripped(self) -&gt; bool:
+        """The only method the agent loop calls."""
+        return os.path.exists(self._path)
+</code></pre>
+<p>You narrate as you write: “The agent loop is handed an instance of <code>KillSwitch</code>, not <code>OperatorKillSwitch</code>. It gets <code>tripped()</code> and nothing else. There is no <code>engage()</code> in this class because the agent must never be able to call it.”</p>
+<p>Then the operator handle:</p>
+<pre><code class="language-python">class OperatorKillSwitch(KillSwitch):
+    """The operator's handle. The agent never gets one of these."""
+
+    def engage(self, reason: str = "operator halt") -&gt; None:
+        with open(self._path, "w", encoding="utf-8") as f:
+            f.write(reason)
+
+    def clear(self) -&gt; None:
+        if os.path.exists(self._path):
+            os.remove(self._path)
+</code></pre>
+<p>“The operator creates the <code>OperatorKillSwitch</code>, keeps the reference, and passes only the base class to the agent loop constructor. The agent cannot call <code>engage()</code> because it does not have a reference to the subclass. The access control is enforced by the object graph, not by instructions to the model.”</p>
+<p>You have the happy path in about six minutes. You check in: “That is the core design. I want to add a <code>Halted</code> exception the loop raises when <code>tripped()</code> returns true, then a minimal test. Do you want me to go deeper on the storage layer, or should I keep moving to the test?”</p>
+<p>The interviewer says keep moving. You raise the exception, write one test that trips the file and asserts <code>tripped()</code> returns true, then one test on a fresh path that asserts it returns false. Clock used: eleven minutes. Four minutes to spare, which you spend noting the production analogue out loud: “In production this would be a Redis key under a read-only ACL, or a feature flag the agent process has read access to but cannot write. The file is the stand-in; the asymmetric control property is the same.”</p>
+<p>That last sentence is not filler. It is the signal that you understand what the pattern is abstracting.</p>
+<h2 id="the-drift-monitor"><a class="header" href="#the-drift-monitor">The Drift Monitor</a></h2>
+<p>The prompt: “Build a quality drift monitor. It should track a rolling window of quality scores and flag when the mean falls below an SLO floor.”</p>
+<p>You clarify: “What is the interface for the SLO floor? Is it a fixed constant, or does it come from a baseline measurement? What type do you want the output to be?” The interviewer says the floor derives from a baseline at deploy time; return a structured reading with the current mean and a breach flag.</p>
+<p>You state your plan: “I have about twenty minutes. I want a <code>record()</code> method that returns a reading in ten, then I will add the <code>baseline</code> and <code>floor</code> derivation, then test the breach case.”</p>
+<p>You narrate the design decision before touching the keyboard:</p>
+<p>“The key question here is what the floor is measuring against. A point check asks whether any single score is below a threshold. A rolling mean asks whether quality is trending down, which is a different, and usually more useful, question in production. A single bad score is noise; a degraded rolling mean is signal.”</p>
+<pre><code class="language-python">from collections import deque
+from dataclasses import dataclass
+
+@dataclass
+class DriftReading:
+    n: int
+    rolling_mean: float
+    baseline: float
+    floor: float
+    breached: bool
+</code></pre>
+<p>“I am separating the reading from the monitor because the monitor accumulates state and the reading is a snapshot. That makes the reading easy to log, compare, or pass to an alerting system without coupling it to the monitor.”</p>
+<pre><code class="language-python">class DriftMonitor:
+    def __init__(self, baseline: float, *, window: int = 20, tolerance: float = 0.15) -&gt; None:
+        self.baseline = baseline
+        self.floor = max(0.0, baseline - tolerance)
+        self.window = window
+        self._scores = deque(maxlen=window)
+
+    def record(self, score: float) -&gt; DriftReading:
+        self._scores.append(float(score))
+        mean = sum(self._scores) / len(self._scores)
+        return DriftReading(
+            n=len(self._scores),
+            rolling_mean=mean,
+            baseline=self.baseline,
+            floor=self.floor,
+            breached=mean &lt; self.floor,
+        )
+</code></pre>
+<p>You narrate the <code>floor</code> line: “The floor is <code>baseline minus tolerance</code>, clamped to zero. If the baseline is 0.9 and tolerance is 0.15, the floor is 0.75. The operator sets the tolerance, not the floor directly, because the tolerance is the meaningful knob: how much degradation from what we measured at deploy is acceptable?”</p>
+<p>You check in with nine minutes left: “The happy path runs. I want to test the breach case, then note one known gap. Should I also show a degrading run?”</p>
+<p>The interviewer says yes. You write a quick inline demo:</p>
+<pre><code class="language-python">mon = DriftMonitor(baseline=0.9, window=5, tolerance=0.2)
+for s in [0.9, 0.9, 0.8, 0.4, 0.3]:
+    r = mon.record(s)
+    status = "BREACH" if r.breached else "ok"
+    print(f"n={r.n} mean={r.rolling_mean:.2f} floor={r.floor:.2f} -&gt; {status}")
+</code></pre>
+<p>“As the window fills with low scores, the mean eventually falls below 0.7 and the breach flag trips. The monitor does not raise an exception; it returns a reading. The caller decides what a breach means: alert, roll back, page someone. That keeps this component composable.”</p>
+<p>You are at seventeen minutes. You state the cut: “I am skipping input validation on <code>score</code>; in production you would want to reject values outside zero to one and log the bad input, but I want to leave two minutes to cover the production analogue.” The interviewer nods. You spend those two minutes: “In a live system, this monitor runs as a sidecar or a service, sampling a scored quality signal from traffic. The <code>baseline</code> comes from the last eval run before deploy. The <code>tolerance</code> is an SLA negotiation between product and eng. Silent degradation is the failure mode this catches; no infrastructure metric would have moved.”</p>
+<p>Clock: clean.</p>
+<h2 id="the-weak-screen-audit"><a class="header" href="#the-weak-screen-audit">The Weak-Screen Audit</a></h2>
+<p>The module overview said this module builds the communication layer, and the communication layer is not just what you do during the screen. It includes what you do immediately after: run the audit on yourself before the feedback comes to you.</p>
+<p>The weak-design audit in Module 5 turns a design session’s failure modes into a structured self-check. This is the coding-screen analogue. After every logged rep, run through these questions. For each one, give yourself a pass or a gap, and record the gap.</p>
+<h3 id="clarification"><a class="header" href="#clarification">Clarification</a></h3>
+<p><strong>“Did I clarify before coding, or did I assume?”</strong></p>
+<p>Pass: you asked at least one load-bearing clarifying question and restated the scope before you started. The restatement is part of the check, not optional.</p>
+<p>Gap: you started coding based on the literal prompt text and had to course-correct mid-task when you discovered an ambiguity. That course-correction cost you time and told the interviewer you do not treat underspecified prompts as underspecified.</p>
+<h3 id="narration"><a class="header" href="#narration">Narration</a></h3>
+<p><strong>“Did I narrate, or did I go silent?”</strong></p>
+<p>Pass: the interviewer could follow your reasoning at every step without asking. You said why before you said what.</p>
+<p>Gap: there were stretches where you coded in silence. Even if the code was good, the interviewer had nothing to evaluate. Silence in a screen is not concentration; it reads as a signal that you are lost or that you do not understand the communication requirement.</p>
+<h3 id="structure"><a class="header" href="#structure">Structure</a></h3>
+<p><strong>“Did I lead with structure?”</strong></p>
+<p>Pass: you stated the design decision before you wrote the first line. The interviewer knew where you were going before you arrived.</p>
+<p>Gap: you dove into code and the architecture emerged from the bottom up. The interviewer had to reverse-engineer your approach from the code you were writing. That is asking them to do your job.</p>
+<h3 id="testing"><a class="header" href="#testing">Testing</a></h3>
+<p><strong>“Did I test as I went, or only at the end?”</strong></p>
+<p>Pass: you ran or sketched a test before moving to the next section. You found a bug while the relevant code was still in focus and fixed it there.</p>
+<p>Gap: you wrote all the code and then ran everything at the end. When something broke, you had to retrace the whole session to find the failure point. That is a debugging problem you created for yourself, and the interviewer watched you create it.</p>
+<h3 id="debugging"><a class="header" href="#debugging">Debugging</a></h3>
+<p><strong>“When stuck, did I debug out loud or freeze?”</strong></p>
+<p>Pass: you hit a bug, you stated the three hypotheses about its cause, you isolated it, and you fixed it without rewriting the whole function.</p>
+<p>Gap: you went quiet when something broke. The silence lasted more than thirty seconds. The interviewer could not distinguish “working through it” from “lost.” When you broke silence, it was to say the fix, not to narrate the diagnosis.</p>
+<h3 id="updating"><a class="header" href="#updating">Updating</a></h3>
+<p><strong>“When the interviewer hinted I was wrong, did I update or defend?”</strong></p>
+<p>Pass: the interviewer’s question or frown registered as signal. You paused, you said “let me reconsider that,” and you updated your approach. The update did not require them to tell you twice.</p>
+<p>Gap: you defended your first answer. You explained why your approach was correct, then continued with it, and the interviewer’s skepticism escalated. Defending a wrong answer is a worse signal than getting it wrong.</p>
+<h3 id="clock"><a class="header" href="#clock">Clock</a></h3>
+<p><strong>“Did I manage the clock, or did I run out with nothing runnable?”</strong></p>
+<p>Pass: you allocated the time at the start, narrated transitions, made at least one stated cut, and had a working artifact when the clock stopped.</p>
+<p>Gap: you ran out of time without a runnable happy path. The final state was a partial implementation the interviewer could not evaluate. No amount of explanation after the fact recovers this; the artifact is the evidence, and the artifact was not there.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>Narrating the time budget at the start and at each transition is a screen skill, not a formality; silence on the clock reads as lost.</li>
+<li>The stated cut beats silent incompletion: naming what you are not building, and why, is a signal of production judgment, not an excuse.</li>
+<li>Asymmetric control means the agent’s reachable state does not include the write path; the kill switch works because the agent cannot touch the class that has <code>engage()</code>.</li>
+<li>The weak-screen audit runs on your logged rep immediately after, not after you get feedback; the seven questions span clarification, narration, structure, testing, debugging, updating, and clock management.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module4/the-clock-and-the-weak-screen-audit/">
+<p><strong>Try It in Claude Code:</strong> run a timed coding-screen rep, then run the weak-screen audit on it and record which checks you passed, which you missed, and the one habit you will change, in your coding-screen log.</p>
+</div>
+
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../module4/debugging-out-loud.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../module5/00-overview.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../module4/debugging-out-loud.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../module5/00-overview.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/copy-to-claude-c257122c.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

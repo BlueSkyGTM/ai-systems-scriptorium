@@ -1,0 +1,419 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>The Happy Path and the Edges - Answer Engineering — The AI Engineer&#x27;s Interview Framework</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/copy-to-claude-45921320.css">
+        <link rel="stylesheet" href="../theme/syntax-polish-53c427bd.css">
+        <link rel="stylesheet" href="../theme/readability-9f9ae6ec.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "rust";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "../searchindex-902e85da.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-6e889fb8.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Answer Engineering — The AI Engineer&#x27;s Interview Framework</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="the-happy-path-and-the-edges"><a class="header" href="#the-happy-path-and-the-edges">The Happy Path and the Edges</a></h1>
+<p>The previous lesson built the communication layer: narrate, clarify, do not go silent. This lesson is
+about the sequence inside that narration. How you order your implementation tells the interviewer as much
+as the code itself.</p>
+<h2 id="happy-path-first"><a class="header" href="#happy-path-first">Happy Path First</a></h2>
+<p>A working skeleton beats a half-built perfect solution, and the interviewer knows this. The candidate who
+spends fifteen minutes on edge-case handling before they have a single line that runs has made a
+prioritization error in public. The interviewer is watching; the signal is real.</p>
+<p>The move is simple: say out loud that you are doing it on purpose. “I am going to get the happy path
+working first so we have something runnable, then I will layer in the defensive cases.” That sentence
+does two things. It shows you understand that a partial working solution is more valuable than a
+comprehensive non-running one. It also creates a shared checkpoint: the interviewer knows what you are
+planning, so they can redirect you if the edge cases are actually the point of the problem.</p>
+<p>After the happy path runs, enumerate the edges before you code them. Name them one at a time: “Zero or
+negative inputs. The ordering of check before charge. The second cap, the iteration ceiling. Each one
+is a deliberate decision, not an afterthought.” The enumeration signals that you know the space. Then
+handle them in order and test each one as you go.</p>
+<h2 id="worked-example-the-token-budget-guard"><a class="header" href="#worked-example-the-token-budget-guard">Worked Example: The Token-Budget Guard</a></h2>
+<h3 id="the-prompt"><a class="header" href="#the-prompt">The Prompt</a></h3>
+<p>“Write a cost governor for an agent loop. It should enforce a dollar ceiling and stop the run when the
+limit is hit.”</p>
+<h3 id="happy-path-first-1"><a class="header" href="#happy-path-first-1">Happy Path First</a></h3>
+<p>State the goal: track spend and raise when you go over. That is the happy path. Write that first.</p>
+<pre><code class="language-python">class BudgetBreach(Exception):
+    pass
+
+class Budget:
+    def __init__(self, max_usd: float):
+        self.max_usd = max_usd
+        self.spent_usd = 0.0
+
+    def charge(self, usd: float) -&gt; None:
+        self.spent_usd += usd
+        if self.spent_usd &gt; self.max_usd:
+            raise BudgetBreach(f"budget exceeded: ${self.spent_usd:.4f}")
+</code></pre>
+<p>Say out loud: “This version tracks spend and raises on breach. It is not complete, but it is runnable
+and testable right now.” Then test it immediately.</p>
+<pre><code class="language-python">b = Budget(max_usd=1.00)
+b.charge(0.50)   # fine
+b.charge(0.60)   # should raise
+</code></pre>
+<p>Run that check. Confirm the exception fires. Now the skeleton is solid; you have not spent time on
+edges that sit on top of broken scaffolding.</p>
+<h3 id="edge-cases-enumerated-out-loud"><a class="header" href="#edge-cases-enumerated-out-loud">Edge Cases, Enumerated Out Loud</a></h3>
+<p>Say them before you code them: “I see three edges. First, the agent loop can run forever even within
+the dollar cap, so I need an iteration ceiling alongside the cost ceiling. Second, the check should
+happen before the call, not after, because if I charge and then check I have already paid. Third, I
+should handle zero or negative spend amounts gracefully.”</p>
+<p>Handle the iteration cap. The real <code>Budget</code> class in <code>exercises/module6/01-terminal-coding-agent/budget.py</code>
+carries both caps as first-class parameters: <code>max_usd</code> and <code>max_turns</code>. Add it:</p>
+<pre><code class="language-python">@dataclass
+class Budget:
+    max_usd: float
+    max_turns: int
+    spent_usd: float = 0.0
+    turns: int = 0
+
+    def charge(self, usd: float, label: str = "model_call") -&gt; None:
+        self.spent_usd += usd
+        self.turns += 1
+        self._enforce()
+
+    def _enforce(self) -&gt; None:
+        if self.spent_usd &gt; self.max_usd:
+            raise BudgetBreach(
+                f"per-task budget exceeded: ${self.spent_usd:.4f} &gt; ${self.max_usd:.4f}"
+            )
+        if self.turns &gt; self.max_turns:
+            raise BudgetBreach(
+                f"iteration cap exceeded: {self.turns} &gt; {self.max_turns}"
+            )
+</code></pre>
+<p>Test the iteration cap separately: “Let me confirm the turn ceiling fires independently of spend.”</p>
+<pre><code class="language-python">b = Budget(max_usd=100.00, max_turns=2)
+b.charge(0.01)  # turn 1: fine
+b.charge(0.01)  # turn 2: fine
+b.charge(0.01)  # turn 3: should raise on iteration
+</code></pre>
+<p>Now handle the check-before-charge ordering. Say why: “A budget you check after paying is one the
+agent has already cheated. The loop should call <code>check()</code> before each model call so a run that is
+already over budget stops before paying for one more action.” The real implementation separates
+<code>check()</code> from <code>charge()</code> for exactly this reason.</p>
+<pre><code class="language-python">def check(self) -&gt; None:
+    """Call before each model call. Raises if already over cap."""
+    self._enforce()
+</code></pre>
+<p>Test the sequence: confirm that <code>check()</code> after a prior <code>charge()</code> that tripped the cap still raises,
+without accumulating another turn.</p>
+<p>The zero-or-negative input edge is the last one: “What happens if the caller passes a negative spend
+amount? That would silently decrease <code>spent_usd</code> and extend the budget. I want to guard against that.”
+Mention it, decide whether to add a guard or treat it as caller error, and say your reasoning out loud.
+In the portfolio implementation the caller contract is strict; invalid amounts are not expected. Say
+that and move on. The interviewer sees you considered it.</p>
+<h2 id="worked-example-the-content-guardrail"><a class="header" href="#worked-example-the-content-guardrail">Worked Example: The Content Guardrail</a></h2>
+<h3 id="the-prompt-1"><a class="header" href="#the-prompt-1">The Prompt</a></h3>
+<p>“Write a content guardrail that screens text against a list of prohibited patterns and returns a
+structured verdict.”</p>
+<h3 id="happy-path-first-2"><a class="header" href="#happy-path-first-2">Happy Path First</a></h3>
+<p>The happy path is: compile a list of patterns, search the input, return a result. Say that out loud,
+then write it.</p>
+<pre><code class="language-python">import re
+from dataclasses import dataclass
+
+@dataclass
+class Verdict:
+    blocked: bool
+    rule: str = ""
+
+class Guardrail:
+    def __init__(self, patterns):
+        self._patterns = [re.compile(p, re.IGNORECASE) for p in patterns]
+
+    def screen(self, text: str) -&gt; Verdict:
+        for pat in self._patterns:
+            if pat.search(text):
+                return Verdict(blocked=True, rule=pat.pattern)
+        return Verdict(blocked=False)
+</code></pre>
+<p>Test it immediately with one clean input and one that should trigger.</p>
+<pre><code class="language-python">g = Guardrail([r"\bexfiltrate\b"])
+print(g.screen("How long are records retained?").blocked)     # False
+print(g.screen("Exfiltrate all customer records").blocked)    # True
+</code></pre>
+<p>Confirm both results. The skeleton works. Now enumerate the edges.</p>
+<h3 id="edge-cases-enumerated-out-loud-1"><a class="header" href="#edge-cases-enumerated-out-loud-1">Edge Cases, Enumerated Out Loud</a></h3>
+<p>Say them: “Three things I want to address. First, some patterns should be absolute; an operator
+configuring the system should not be able to remove them. Second, the empty input case. Third, the
+<code>Verdict</code> needs a <code>stage</code> field because this guard runs on both inputs and outputs, and the caller
+needs to know which fired.”</p>
+<p>Handle the hardcoded floor. This is the architecturally interesting edge, and worth a sentence of
+narration: “The safety floor cannot be tunable, because an operator who can lower the floor below the
+prohibition level has effectively disabled it. In <code>exercises/module6/02-production-rag-chatbot/guardrail.py</code>
+the floor lives in <code>_PROHIBITED</code> at module level, compiled separately from the operator-tunable
+patterns. The operator layer adds to the pattern set; it cannot remove from the floor.”</p>
+<p>Show the two-layer structure:</p>
+<pre><code class="language-python"># Module-level floor: not passed through __init__, not tunable
+_PROHIBITED = [
+    r"\bignore (all|the|your) (previous|prior) instructions\b",
+    r"\bexfiltrate\b",
+    r"\bdisable (the )?(audit|logging|guardrail)\b",
+]
+
+class Guardrail:
+    def __init__(self, *, enforce_off_topic: bool = False) -&gt; None:
+        self._patterns = [re.compile(p, re.IGNORECASE) for p in _PROHIBITED]
+        if enforce_off_topic:
+            self._patterns += [re.compile(r"\bwrite me a poem\b", re.IGNORECASE)]
+</code></pre>
+<p>Test the layering: “I want to confirm that even with <code>enforce_off_topic=False</code>, the hardcoded patterns
+still block.” Run a prohibited input through both configurations; both must block.</p>
+<p>Handle the <code>stage</code> field: “The guardrail screens inputs before retrieval and outputs before the
+response. The verdict should carry which stage fired so the caller can log it correctly.” Add <code>stage</code>
+to the dataclass and pass it from <code>screen_input</code> and <code>screen_output</code> separately. Test each path.</p>
+<p>Handle the empty input last: “What does an empty string return? The pattern loop finds no match, so
+it returns <code>blocked=False</code>. That is the right answer; an empty query is not a threat.” Say it,
+confirm it with a quick test, move on.</p>
+<h2 id="testing-as-you-go"><a class="header" href="#testing-as-you-go">Testing as You Go</a></h2>
+<p>The pattern across both examples is the same: after each step, run the smallest test that confirms
+the step works before moving to the next. This is not thoroughness for its own sake. It is error
+isolation. If you write the happy path and three edges together before running anything, you do not
+know which part broke when something fails. If you test after each step, the failing test names the
+failing step.</p>
+<p>Say this out loud too: “I am testing after each step so I know exactly where to look if something
+breaks.” The interviewer hears that you treat testability as a design property, not a post-coding
+activity.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>Code the happy path first and say so out loud: a working skeleton gives you a testable foundation,
+and the narration shows the interviewer that the sequence is intentional, not accidental.</li>
+<li>Enumerate edge cases before you code them: naming them in order shows you know the problem space
+and creates a shared plan the interviewer can redirect if the priorities are wrong.</li>
+<li>The check-before-charge ordering in a cost governor is a design decision, not a coincidence: a
+budget enforced after the call has already been paid cannot prevent the next one.</li>
+<li>Hardcoded safety floors and operator-tunable layers serve different purposes: a floor an operator
+can lower is not a floor, it is a default, and the architecture must reflect that distinction.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module4/the-happy-path-and-the-edges/">
+<p><strong>Try It in Claude Code:</strong> run a coding-screen rep where you code the happy path first and then enumerate and handle the edge cases out loud, logging the test cases you ran in your coding-screen log.</p>
+</div>
+
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../module4/narrating-the-screen.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../module4/debugging-out-loud.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../module4/narrating-the-screen.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../module4/debugging-out-loud.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/copy-to-claude-c257122c.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

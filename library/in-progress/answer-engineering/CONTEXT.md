@@ -31,8 +31,11 @@ readiness verdict); first throughline artifact that scores rather than just chec
 grown to v6 in place (`--module 7`). M8 "The Hiring Loop End-to-End" (overview + 4 lessons + 4 exercises)
 is the capstone: it sequences the dossier across the five interview-loop stages and **grades it in code**
 via `grade_dossier.py` (which composes `check_prep` + `calibrate`, exit 0 = READY); validator grown to v7
-in place (`--module 8`). **The book is content-complete: 7 of 8 modules shipped; M4 (technical screens)
-deferred until live-coding-screen ore is sourced.** See `build-log/answer-engineering/build-progress.md`.
+in place (`--module 8`). M4 "Technical Screens" (overview + 4 lessons + 4 exercises) was authored last and
+resolved the deferral: the live-coding screen taught as the communication layer, worked tasks grounded in
+the real Sans Python portfolio code (no fabrication), validator grown to v8 in place (`--module 4`, a
+sibling gate). **The book is COMPLETE: all 8 modules shipped.** See
+`build-log/answer-engineering/build-progress.md`.
 
 ## Ore (in the vault — not yet distilled)
 
@@ -60,8 +63,6 @@ makes it especially legible to both.
 
 ## Handoff & gates
 
-`GATE-NAME-BOOK` cleared; M1–M3 + M5 + M6 + M7 + M8 shipped. **The book is content-complete (7 of 8
-modules; M4 deferred pending live-coding-screen ore).** Remaining options for Ray: (a) source M4's ore and
-author it (likely reframed around the real Sans Python portfolio code); (b) relocate the book to
-`library/completed/answer-engineering` once M4 is resolved or explicitly scoped out; (c) `GATE-PUBLISH` for
-a public copy. No further authoring is gated until Ray chooses. See `platform/HUMAN-GATES.md`.
+`GATE-NAME-BOOK` cleared; **all 8 modules (M1–M8) shipped. The book is COMPLETE.** No authoring remains.
+Remaining options for Ray: (a) relocate the book to `library/completed/answer-engineering` (a cataloguing
+move, no gate; run `route-lint` after); (b) `GATE-PUBLISH` for a public copy. See `platform/HUMAN-GATES.md`.

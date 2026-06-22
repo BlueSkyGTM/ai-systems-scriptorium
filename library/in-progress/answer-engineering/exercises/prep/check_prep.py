@@ -4,9 +4,9 @@ check_prep.py -- Validator for the Answer Engineering prep dossier.
 
 Validates the logs in the same directory as this script. Module 1 established
 the two core logs; Module 2 adds four more; Module 3 adds the behavioral bank;
+Module 4 adds the coding-screen log (sibling branch, not a prerequisite for M5-M8);
 Module 5 adds the systems-design log; Module 6 adds the portfolio narrative;
 Module 7 adds the deliberate-practice log; Module 8 adds the loop plan.
-(Module 4 is not yet a validator choice.)
 The --module flag controls which artifacts are required for the exit code.
 
   decomposition-log.md       (M1: ten question decompositions + calibration)
@@ -17,6 +17,10 @@ The --module flag controls which artifacts are required for the exit code.
   audit-log.md               (M2: two answers run through the pitfalls audit)
   behavioral-bank.md         (M3: four STAR-L stories covering all four categories,
                                   each with an audit verdict; no placeholders)
+  coding-screen-log.md       (M4: three or more coding-screen reps, each with all six
+                                  fields filled; no placeholders. M4 is a sibling gate:
+                                  --module 4 requires M1+M2+M3+coding-screen-log.
+                                  --module 5/6/7/8 do NOT require coding-screen-log.)
   systems-design-log.md      (M5: one complete design entry with all eight fields;
                                   no placeholders)
   portfolio-narrative.md     (M6: one complete artifact entry with all seven fields;
@@ -34,14 +38,17 @@ Usage:
   python check_prep.py --module 1   Require only M1 artifacts complete.
   python check_prep.py --module 2   Require M1 + all M2 artifacts complete.
   python check_prep.py --module 3   Require M1 + M2 + behavioral-bank.md complete.
+  python check_prep.py --module 4   Require M1 + M2 + M3 + coding-screen-log.md complete.
+                                    (M4 is a sibling gate; M5-M8 do not require it.)
   python check_prep.py --module 5   Require M1 + M2 + M3 + systems-design-log.md complete.
   python check_prep.py --module 6   Require M1 + M2 + M3 + M5 + portfolio-narrative.md complete.
   python check_prep.py --module 7   Require M1 + M2 + M3 + M5 + M6 + deliberate-practice.md complete.
   python check_prep.py --module 8   Require M1 + M2 + M3 + M5 + M6 + M7 + loop-plan.md complete.
-  python check_prep.py --module all Same as the default (all artifacts, including M8).
+  python check_prep.py --module all Same as the default (all artifacts, including M4 and M8).
   python check_prep.py --help       Show this help text.
 
-Note: --module 4 is intentionally not a choice; M4 validator is not yet built.
+Note: --module 4 is a sibling gate (M1+M2+M3+coding-screen-log). --module 5/6/7/8
+do not require coding-screen-log.md. --module all DOES require coding-screen-log.md.
 
 Section markers the validator expects
 --------------------------------------
@@ -114,6 +121,17 @@ behavioral-bank.md (M3):
   All four categories must appear across the entries.
   Minimum four entries. No placeholder text in any field.
 
+coding-screen-log.md (M4):
+  Each entry is headed by:  ## Screen <n>   (e.g. ## Screen 1, ## Screen 3)
+  Required fields per entry:
+    **Task:**
+    **Clarifying questions:**
+    **Approach narration:**
+    **Stuck and recovery:**
+    **Test cases:**
+    **Verdict:**
+  Minimum three entries. No placeholder text in any field.
+
 systems-design-log.md (M5):
   Each entry is headed by:  ## Design <n>   (e.g. ## Design 1)
   Required fields per entry:
@@ -180,6 +198,7 @@ SIGNAL_MAP = SCRIPT_DIR / "signal-map.md"
 PRACTICE_LOG = SCRIPT_DIR / "practice-log.md"
 AUDIT_LOG = SCRIPT_DIR / "audit-log.md"
 BEHAVIORAL_BANK = SCRIPT_DIR / "behavioral-bank.md"
+CODING_SCREEN_LOG = SCRIPT_DIR / "coding-screen-log.md"
 SYSTEMS_DESIGN_LOG = SCRIPT_DIR / "systems-design-log.md"
 PORTFOLIO_NARRATIVE = SCRIPT_DIR / "portfolio-narrative.md"
 DELIBERATE_PRACTICE = SCRIPT_DIR / "deliberate-practice.md"
@@ -809,6 +828,59 @@ def validate_behavioral_bank(path: Path) -> tuple[bool, list[str]]:
 
 
 # ---------------------------------------------------------------------------
+# Coding screen log validator (M4)
+# ---------------------------------------------------------------------------
+
+# Heading pattern: ## Screen <digits>
+CS_ENTRY_RE = re.compile(r"^##\s+Screen\s+(\d+)$")
+
+CS_REQUIRED_FIELDS = [
+    "**Task:**",
+    "**Clarifying questions:**",
+    "**Approach narration:**",
+    "**Stuck and recovery:**",
+    "**Test cases:**",
+    "**Verdict:**",
+]
+
+MIN_CS_ENTRIES = 3
+
+
+def validate_coding_screen_log(path: Path) -> tuple[bool, list[str]]:
+    """
+    Validate coding-screen-log.md.
+
+    Checks that the file has at least three ## Screen <n> entries, each with
+    all six required fields filled in and free of placeholder text.
+
+    Returns (passed: bool, messages: list[str]).
+    """
+    messages: list[str] = []
+
+    if not path.exists():
+        messages.append(f"NOT STARTED: {path.name} does not exist yet.")
+        messages.append(
+            "  Copy coding-screen-log.template.md to coding-screen-log.md and complete it."
+        )
+        return False, messages
+
+    text = path.read_text(encoding="utf-8")
+    passed = True
+
+    entries = split_into_entries(text, CS_ENTRY_RE)
+    entry_passed = validate_entries(
+        entries, CS_REQUIRED_FIELDS, MIN_CS_ENTRIES, path.name, messages,
+    )
+    if not entry_passed:
+        passed = False
+
+    if passed:
+        messages.append(f"PASS: {path.name} is complete.")
+
+    return passed, messages
+
+
+# ---------------------------------------------------------------------------
 # Systems design log validator (M5)
 # ---------------------------------------------------------------------------
 
@@ -1166,8 +1238,12 @@ def build_parser() -> argparse.ArgumentParser:
             "  --module 2   Require M1 artifacts + Hard Cases + signal-map.md +\n"
             "               practice-log.md + audit-log.md complete (M2 gate).\n"
             "  --module 3   Require M1 + M2 artifacts + behavioral-bank.md complete (M3 gate).\n"
+            "  --module 4   Require M1 + M2 + M3 artifacts + coding-screen-log.md complete\n"
+            "               (M4 gate). coding-screen-log.md must have >= 3 Screen entries,\n"
+            "               each with all six fields filled and free of placeholder text.\n"
+            "               M4 is a SIBLING gate: --module 5/6/7/8 do NOT require it.\n"
+            "               --module all DOES require coding-screen-log.md.\n"
             "  --module 5   Require M1 + M2 + M3 artifacts + systems-design-log.md complete (M5 gate).\n"
-            "               (--module 4 is not yet a choice; M4 validator not built.)\n"
             "  --module 6   Require M1 + M2 + M3 + M5 artifacts + portfolio-narrative.md complete\n"
             "               (M6 gate).\n"
             "  --module 7   Require M1 + M2 + M3 + M5 + M6 artifacts + deliberate-practice.md\n"
@@ -1177,23 +1253,24 @@ def build_parser() -> argparse.ArgumentParser:
             "               complete (M8 gate). loop-plan.md must have all five stage entries\n"
             "               (recruiter-screen, hiring-manager, systems-design-round,\n"
             "               portfolio-deep-dive, panel) with Readiness ready|gap and Plan filled.\n"
-            "               (--module 4 is not a choice; M4 validator not built.)\n"
-            "  --module all Same as omitting the flag: report all artifacts including M8.\n\n"
+            "  --module all Same as omitting the flag: report all artifacts including M4 and M8.\n\n"
             "Status values per artifact: PASS / INCOMPLETE / NOT STARTED\n"
         ),
     )
     parser.add_argument(
         "--module",
-        choices=["1", "2", "3", "5", "6", "7", "8", "all"],
+        choices=["1", "2", "3", "4", "5", "6", "7", "8", "all"],
         default="all",
         help=(
             "Module gate to enforce. '1' requires only M1 artifacts. "
             "'2' requires M1 + M2 artifacts. '3' requires M1 + M2 + M3 artifacts. "
+            "'4' requires M1 + M2 + M3 + coding-screen-log.md (sibling gate; "
+            "M5-M8 do not require coding-screen-log). "
             "'5' requires M1 + M2 + M3 + systems-design-log.md. "
             "'6' requires M1 + M2 + M3 + M5 + portfolio-narrative.md. "
             "'7' requires M1 + M2 + M3 + M5 + M6 + deliberate-practice.md. "
             "'8' requires M1 + M2 + M3 + M5 + M6 + M7 + loop-plan.md. "
-            "'all' requires all artifacts including loop-plan.md. "
+            "'all' requires all artifacts including coding-screen-log.md and loop-plan.md. "
             "Default: all."
         ),
     )
@@ -1204,9 +1281,10 @@ def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
 
-    module = args.module  # "1", "2", "3", "5", "6", "7", "8", or "all"
-    require_m2 = module in ("2", "3", "5", "6", "7", "8", "all")
-    require_m3 = module in ("3", "5", "6", "7", "8", "all")
+    module = args.module  # "1", "2", "3", "4", "5", "6", "7", "8", or "all"
+    require_m2 = module in ("2", "3", "4", "5", "6", "7", "8", "all")
+    require_m3 = module in ("3", "4", "5", "6", "7", "8", "all")
+    require_m4 = module in ("4", "all")
     require_m5 = module in ("5", "6", "7", "8", "all")
     require_m6 = module in ("6", "7", "8", "all")
     require_m7 = module in ("7", "8", "all")
@@ -1265,6 +1343,14 @@ def main() -> int:
             print(" ", msg)
         print()
 
+    if require_m4:
+        cs_passed, cs_messages = validate_coding_screen_log(CODING_SCREEN_LOG)
+
+        print(f"--- {CODING_SCREEN_LOG.name} ---")
+        for msg in cs_messages:
+            print(" ", msg)
+        print()
+
     if require_m5:
         sd_passed, sd_messages = validate_systems_design_log(SYSTEMS_DESIGN_LOG)
 
@@ -1298,8 +1384,34 @@ def main() -> int:
         print()
 
     # Build the required artifact lists and results based on module level.
-    # Gating is cumulative: M8 requires M1+M2+M3+M5+M6+M7+loop-plan.
-    if require_m8:
+    # Gating is cumulative within each branch.
+    # M4 is a sibling to M5-M8: --module 4 requires M1+M2+M3+coding-screen-log
+    # but does NOT require M5-M8 artifacts. --module 5/6/7/8 do NOT require
+    # coding-screen-log. --module all requires both M4 and M8 chains.
+    if require_m8 and require_m4:
+        # --module all: requires M1+M2+M3+M4(coding-screen-log)+M5+M6+M7+M8.
+        all_passed = (
+            decomp_passed and answers_passed
+            and sm_passed and pl_passed and al_passed
+            and bb_passed and cs_passed and sd_passed and pn_passed
+            and dp_passed and lp_passed
+        )
+        required_names = [
+            DECOMP_LOG.name, ANSWERS_LOG.name,
+            SIGNAL_MAP.name, PRACTICE_LOG.name, AUDIT_LOG.name,
+            BEHAVIORAL_BANK.name, CODING_SCREEN_LOG.name,
+            SYSTEMS_DESIGN_LOG.name,
+            PORTFOLIO_NARRATIVE.name, DELIBERATE_PRACTICE.name,
+            LOOP_PLAN.name,
+        ]
+        results = [
+            decomp_passed, answers_passed,
+            sm_passed, pl_passed, al_passed,
+            bb_passed, cs_passed, sd_passed, pn_passed, dp_passed,
+            lp_passed,
+        ]
+    elif require_m8:
+        # --module 8: requires M1+M2+M3+M5+M6+M7+loop-plan (no coding-screen-log).
         all_passed = (
             decomp_passed and answers_passed
             and sm_passed and pl_passed and al_passed
@@ -1369,6 +1481,23 @@ def main() -> int:
             decomp_passed, answers_passed,
             sm_passed, pl_passed, al_passed,
             bb_passed, sd_passed,
+        ]
+    elif require_m4:
+        # M4 sibling gate: requires M1+M2+M3+coding-screen-log only.
+        all_passed = (
+            decomp_passed and answers_passed
+            and sm_passed and pl_passed and al_passed
+            and bb_passed and cs_passed
+        )
+        required_names = [
+            DECOMP_LOG.name, ANSWERS_LOG.name,
+            SIGNAL_MAP.name, PRACTICE_LOG.name, AUDIT_LOG.name,
+            BEHAVIORAL_BANK.name, CODING_SCREEN_LOG.name,
+        ]
+        results = [
+            decomp_passed, answers_passed,
+            sm_passed, pl_passed, al_passed,
+            bb_passed, cs_passed,
         ]
     elif require_m3:
         all_passed = (

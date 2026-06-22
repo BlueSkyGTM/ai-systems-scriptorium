@@ -1991,6 +1991,496 @@ class TestModule7Flag:
 
 
 # ---------------------------------------------------------------------------
+# Fixture builders: M4 coding screen log
+# ---------------------------------------------------------------------------
+
+
+def _make_cs_entry(n: int) -> str:
+    """Return one complete ## Screen <n> entry with all six required fields filled."""
+    return f"""## Screen {n}
+
+**Task:** Implement a retrieval relevance floor that drops results below a min_score threshold so the generator only sees high-confidence context and can refuse when nothing clears the floor.
+
+**Clarifying questions:** What type does the function return when no results clear the floor -- an empty list or a sentinel? Is min_score inclusive or exclusive? What is the schema of a single result object?
+
+**Approach narration:** I started with the data shape to pin down the contract before touching any logic. I chose to return an empty list when nothing clears the floor because the caller can check len rather than a sentinel, which avoids a None-guard scattered across callers. I filtered before slicing top-k so the count reflects post-floor candidates, not pre-floor.
+
+**Stuck and recovery:** I initially placed the floor check after slicing top-k, which meant a high-scoring outlier could be hidden by the k limit. Hypothesis 1: the filter order is wrong. Hypothesis 2: the score comparison is inverted. I tested hypothesis 1 first by tracing through a small example -- it was correct. Moved the filter before the slice and the edge case passed.
+
+**Test cases:** empty input list -> return empty list; all results below floor -> return empty list; exactly at floor (inclusive) -> include in results; mixed above and below -> return only above-floor results; floor of 0.0 -> return all results.
+
+**Verdict:** Filter-before-slice ordering is the load-bearing decision; I missed it on the first pass. Carry forward: state the ordering decision in the narration before writing code, not after discovering the bug.
+"""
+
+
+def make_coding_screen_log_complete() -> str:
+    """
+    Return a coding-screen-log.md that passes all M4 checks: three Screen entries,
+    all six required fields filled in and free of placeholder text.
+    """
+    entries = [_make_cs_entry(n) for n in range(1, 4)]
+    return (
+        "# Coding-Screen Log\n\n"
+        + "\n".join(entries)
+    )
+
+
+def make_coding_screen_log_incomplete() -> str:
+    """
+    Return a coding-screen-log.md that fails: one entry with placeholder text in all fields.
+    """
+    return """# Coding-Screen Log
+
+## Screen 1
+
+**Task:** <fill in: the task you attempted>
+
+**Clarifying questions:** <fill in: the questions you asked before coding>
+
+**Approach narration:** <fill in: the reasoning you narrated as you coded>
+
+**Stuck and recovery:** <fill in: a point where you got stuck and what you did>
+
+**Test cases:** <fill in: the edge cases you wrote tests for>
+
+**Verdict:** <fill in: what the rep revealed>
+"""
+
+
+def make_coding_screen_log_missing_field() -> str:
+    """
+    Return a coding-screen-log.md that fails because the Verdict field is absent
+    from one entry.
+    """
+    entries = []
+    for n in range(1, 4):
+        if n == 2:
+            entries.append(f"""## Screen {n}
+
+**Task:** Implement a token-budget guard enforcing a dollar ceiling and an iteration cap.
+
+**Clarifying questions:** Are both caps enforced independently or as a combined budget? Is the check before or after each call?
+
+**Approach narration:** I modeled the guard as two independent checks so either cap alone is sufficient to halt the loop. Checked before the call so a call is never made when the budget is already exhausted.
+
+**Stuck and recovery:** none
+
+**Test cases:** both caps unexhausted -> allow; dollar ceiling exactly hit -> raise; iteration cap exactly hit -> raise; both exhausted simultaneously -> raise on dollar ceiling first.
+""")
+        else:
+            entries.append(_make_cs_entry(n))
+    return "# Coding-Screen Log\n\n" + "\n".join(entries)
+
+
+def make_coding_screen_log_fewer_than_three() -> str:
+    """
+    Return a coding-screen-log.md that fails because it has only two entries.
+    """
+    entries = [_make_cs_entry(n) for n in range(1, 3)]
+    return "# Coding-Screen Log\n\n" + "\n".join(entries)
+
+
+# ---------------------------------------------------------------------------
+# Tests: coding-screen-log.md (M4)
+# ---------------------------------------------------------------------------
+
+
+class TestCodingScreenLog:
+    def test_complete_log_passes(self, tmp_path: Path) -> None:
+        """A fully completed coding screen log must pass M4 validation."""
+        cs = tmp_path / "coding-screen-log.md"
+        cs.write_text(make_coding_screen_log_complete(), encoding="utf-8")
+
+        passed, messages = check_prep.validate_coding_screen_log(cs)
+
+        assert passed, f"Expected pass; got messages:\n" + "\n".join(messages)
+
+    def test_missing_log_fails(self, tmp_path: Path) -> None:
+        """An absent coding screen log must return fail with a not-started message."""
+        missing = tmp_path / "coding-screen-log.md"
+
+        passed, messages = check_prep.validate_coding_screen_log(missing)
+
+        assert not passed
+        combined = "\n".join(messages)
+        assert "NOT STARTED" in combined or "does not exist" in combined
+        assert "coding-screen-log.template.md" in combined
+
+    def test_missing_required_field_fails(self, tmp_path: Path) -> None:
+        """A log with a missing required field in one entry must fail."""
+        cs = tmp_path / "coding-screen-log.md"
+        cs.write_text(make_coding_screen_log_missing_field(), encoding="utf-8")
+
+        passed, messages = check_prep.validate_coding_screen_log(cs)
+
+        assert not passed, "Expected fail when a required field is absent."
+        combined = "\n".join(messages)
+        assert "FAIL" in combined, f"Expected FAIL in messages; got:\n{combined}"
+        assert "Verdict" in combined, (
+            f"Expected the missing 'Verdict' field to be named; got:\n{combined}"
+        )
+
+    def test_placeholder_fails(self, tmp_path: Path) -> None:
+        """A log with placeholder text in fields must fail."""
+        cs = tmp_path / "coding-screen-log.md"
+        cs.write_text(make_coding_screen_log_incomplete(), encoding="utf-8")
+
+        passed, messages = check_prep.validate_coding_screen_log(cs)
+
+        assert not passed, "Expected fail; validator incorrectly returned pass."
+        combined = "\n".join(messages)
+        assert "FAIL" in combined, f"Expected FAIL in messages; got:\n{combined}"
+
+    def test_fewer_than_three_entries_fails(self, tmp_path: Path) -> None:
+        """A log with only two entries must fail the minimum count check."""
+        cs = tmp_path / "coding-screen-log.md"
+        cs.write_text(make_coding_screen_log_fewer_than_three(), encoding="utf-8")
+
+        passed, messages = check_prep.validate_coding_screen_log(cs)
+
+        assert not passed, "Expected fail when fewer than three entries present."
+        combined = "\n".join(messages)
+        assert "FAIL" in combined, f"Expected FAIL in messages; got:\n{combined}"
+
+
+# ---------------------------------------------------------------------------
+# Tests: --module 4 flag behavior (M4)
+# ---------------------------------------------------------------------------
+
+
+class TestModule4Flag:
+    def _patch_m1_m2_m3(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Helper: patch all M1, M2, and M3 paths with complete content."""
+        decomp = tmp_path / "decomposition-log.md"
+        answers = tmp_path / "answers-log.md"
+        signal_map = tmp_path / "signal-map.md"
+        practice = tmp_path / "practice-log.md"
+        audit = tmp_path / "audit-log.md"
+        bank = tmp_path / "behavioral-bank.md"
+
+        decomp.write_text(make_decomp_log_with_hard_cases(), encoding="utf-8")
+        answers.write_text(make_answers_log_complete(), encoding="utf-8")
+        signal_map.write_text(make_signal_map_complete(), encoding="utf-8")
+        practice.write_text(make_practice_log_complete(), encoding="utf-8")
+        audit.write_text(make_audit_log_complete(), encoding="utf-8")
+        bank.write_text(make_behavioral_bank_complete(), encoding="utf-8")
+
+        monkeypatch.setattr(check_prep, "DECOMP_LOG", decomp)
+        monkeypatch.setattr(check_prep, "ANSWERS_LOG", answers)
+        monkeypatch.setattr(check_prep, "SIGNAL_MAP", signal_map)
+        monkeypatch.setattr(check_prep, "PRACTICE_LOG", practice)
+        monkeypatch.setattr(check_prep, "AUDIT_LOG", audit)
+        monkeypatch.setattr(check_prep, "BEHAVIORAL_BANK", bank)
+
+    def test_module4_fails_without_coding_screen_log(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module 4 must exit 1 when coding-screen-log.md is absent, even if M1-M3 complete."""
+        self._patch_m1_m2_m3(tmp_path, monkeypatch)
+        monkeypatch.setattr(
+            check_prep, "CODING_SCREEN_LOG", tmp_path / "coding-screen-log.md"
+        )
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "4"])
+
+        result = check_prep.main()
+        assert result == 1, (
+            f"Expected exit 1 with --module 4 and no coding-screen-log; got {result}"
+        )
+
+    def test_module4_fails_when_m3_missing(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module 4 must exit 1 when M3 (behavioral-bank.md) is absent, even if coding-screen-log present."""
+        decomp = tmp_path / "decomposition-log.md"
+        answers = tmp_path / "answers-log.md"
+        signal_map = tmp_path / "signal-map.md"
+        practice = tmp_path / "practice-log.md"
+        audit = tmp_path / "audit-log.md"
+        cs_log = tmp_path / "coding-screen-log.md"
+
+        decomp.write_text(make_decomp_log_with_hard_cases(), encoding="utf-8")
+        answers.write_text(make_answers_log_complete(), encoding="utf-8")
+        signal_map.write_text(make_signal_map_complete(), encoding="utf-8")
+        practice.write_text(make_practice_log_complete(), encoding="utf-8")
+        audit.write_text(make_audit_log_complete(), encoding="utf-8")
+        cs_log.write_text(make_coding_screen_log_complete(), encoding="utf-8")
+
+        monkeypatch.setattr(check_prep, "DECOMP_LOG", decomp)
+        monkeypatch.setattr(check_prep, "ANSWERS_LOG", answers)
+        monkeypatch.setattr(check_prep, "SIGNAL_MAP", signal_map)
+        monkeypatch.setattr(check_prep, "PRACTICE_LOG", practice)
+        monkeypatch.setattr(check_prep, "AUDIT_LOG", audit)
+        monkeypatch.setattr(check_prep, "BEHAVIORAL_BANK", tmp_path / "behavioral-bank.md")
+        monkeypatch.setattr(check_prep, "CODING_SCREEN_LOG", cs_log)
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "4"])
+
+        result = check_prep.main()
+        assert result == 1, (
+            f"Expected exit 1 with --module 4 when behavioral-bank.md absent; got {result}"
+        )
+
+    def test_module4_passes_with_m1_m2_m3_and_coding_screen_log(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module 4 must exit 0 when M1+M2+M3 and coding-screen-log.md are all complete."""
+        self._patch_m1_m2_m3(tmp_path, monkeypatch)
+
+        cs_log = tmp_path / "coding-screen-log.md"
+        cs_log.write_text(make_coding_screen_log_complete(), encoding="utf-8")
+        monkeypatch.setattr(check_prep, "CODING_SCREEN_LOG", cs_log)
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "4"])
+
+        result = check_prep.main()
+        assert result == 0, f"Expected exit 0 with --module 4 and all artifacts; got {result}"
+
+    def test_module4_passes_without_m5_artifacts(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module 4 must exit 0 even when M5/M6/M7/M8 artifacts are absent (sibling gate)."""
+        self._patch_m1_m2_m3(tmp_path, monkeypatch)
+
+        cs_log = tmp_path / "coding-screen-log.md"
+        cs_log.write_text(make_coding_screen_log_complete(), encoding="utf-8")
+        monkeypatch.setattr(check_prep, "CODING_SCREEN_LOG", cs_log)
+        # M5-M8 artifacts absent -- module 4 must not require them.
+        monkeypatch.setattr(
+            check_prep, "SYSTEMS_DESIGN_LOG", tmp_path / "systems-design-log.md"
+        )
+        monkeypatch.setattr(
+            check_prep, "PORTFOLIO_NARRATIVE", tmp_path / "portfolio-narrative.md"
+        )
+        monkeypatch.setattr(
+            check_prep, "DELIBERATE_PRACTICE", tmp_path / "deliberate-practice.md"
+        )
+        monkeypatch.setattr(check_prep, "LOOP_PLAN", tmp_path / "loop-plan.md")
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "4"])
+
+        result = check_prep.main()
+        assert result == 0, (
+            f"Expected exit 0 with --module 4 when M5-M8 artifacts absent; got {result}"
+        )
+
+    def test_module5_passes_without_coding_screen_log(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module 5 must exit 0 even when coding-screen-log.md is absent (M4 is sibling, not prereq)."""
+        # Patch M1, M2, M3, M5 complete; coding-screen-log absent.
+        decomp = tmp_path / "decomposition-log.md"
+        answers = tmp_path / "answers-log.md"
+        signal_map = tmp_path / "signal-map.md"
+        practice = tmp_path / "practice-log.md"
+        audit = tmp_path / "audit-log.md"
+        bank = tmp_path / "behavioral-bank.md"
+        sd_log = tmp_path / "systems-design-log.md"
+
+        decomp.write_text(make_decomp_log_with_hard_cases(), encoding="utf-8")
+        answers.write_text(make_answers_log_complete(), encoding="utf-8")
+        signal_map.write_text(make_signal_map_complete(), encoding="utf-8")
+        practice.write_text(make_practice_log_complete(), encoding="utf-8")
+        audit.write_text(make_audit_log_complete(), encoding="utf-8")
+        bank.write_text(make_behavioral_bank_complete(), encoding="utf-8")
+        sd_log.write_text(make_systems_design_log_complete(), encoding="utf-8")
+
+        monkeypatch.setattr(check_prep, "DECOMP_LOG", decomp)
+        monkeypatch.setattr(check_prep, "ANSWERS_LOG", answers)
+        monkeypatch.setattr(check_prep, "SIGNAL_MAP", signal_map)
+        monkeypatch.setattr(check_prep, "PRACTICE_LOG", practice)
+        monkeypatch.setattr(check_prep, "AUDIT_LOG", audit)
+        monkeypatch.setattr(check_prep, "BEHAVIORAL_BANK", bank)
+        monkeypatch.setattr(check_prep, "SYSTEMS_DESIGN_LOG", sd_log)
+        # coding-screen-log absent; --module 5 must not require it.
+        monkeypatch.setattr(
+            check_prep, "CODING_SCREEN_LOG", tmp_path / "coding-screen-log.md"
+        )
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "5"])
+
+        result = check_prep.main()
+        assert result == 0, (
+            f"Expected exit 0 with --module 5 when coding-screen-log.md is absent; got {result}"
+        )
+
+    def test_module6_passes_without_coding_screen_log(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module 6 must exit 0 even when coding-screen-log.md is absent."""
+        decomp = tmp_path / "decomposition-log.md"
+        answers = tmp_path / "answers-log.md"
+        signal_map = tmp_path / "signal-map.md"
+        practice = tmp_path / "practice-log.md"
+        audit = tmp_path / "audit-log.md"
+        bank = tmp_path / "behavioral-bank.md"
+        sd_log = tmp_path / "systems-design-log.md"
+        pn = tmp_path / "portfolio-narrative.md"
+
+        decomp.write_text(make_decomp_log_with_hard_cases(), encoding="utf-8")
+        answers.write_text(make_answers_log_complete(), encoding="utf-8")
+        signal_map.write_text(make_signal_map_complete(), encoding="utf-8")
+        practice.write_text(make_practice_log_complete(), encoding="utf-8")
+        audit.write_text(make_audit_log_complete(), encoding="utf-8")
+        bank.write_text(make_behavioral_bank_complete(), encoding="utf-8")
+        sd_log.write_text(make_systems_design_log_complete(), encoding="utf-8")
+        pn.write_text(make_portfolio_narrative_complete(), encoding="utf-8")
+
+        monkeypatch.setattr(check_prep, "DECOMP_LOG", decomp)
+        monkeypatch.setattr(check_prep, "ANSWERS_LOG", answers)
+        monkeypatch.setattr(check_prep, "SIGNAL_MAP", signal_map)
+        monkeypatch.setattr(check_prep, "PRACTICE_LOG", practice)
+        monkeypatch.setattr(check_prep, "AUDIT_LOG", audit)
+        monkeypatch.setattr(check_prep, "BEHAVIORAL_BANK", bank)
+        monkeypatch.setattr(check_prep, "SYSTEMS_DESIGN_LOG", sd_log)
+        monkeypatch.setattr(check_prep, "PORTFOLIO_NARRATIVE", pn)
+        monkeypatch.setattr(
+            check_prep, "CODING_SCREEN_LOG", tmp_path / "coding-screen-log.md"
+        )
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "6"])
+
+        result = check_prep.main()
+        assert result == 0, (
+            f"Expected exit 0 with --module 6 when coding-screen-log.md is absent; got {result}"
+        )
+
+    def test_module7_passes_without_coding_screen_log(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module 7 must exit 0 even when coding-screen-log.md is absent."""
+        decomp = tmp_path / "decomposition-log.md"
+        answers = tmp_path / "answers-log.md"
+        signal_map = tmp_path / "signal-map.md"
+        practice = tmp_path / "practice-log.md"
+        audit = tmp_path / "audit-log.md"
+        bank = tmp_path / "behavioral-bank.md"
+        sd_log = tmp_path / "systems-design-log.md"
+        pn = tmp_path / "portfolio-narrative.md"
+        dp = tmp_path / "deliberate-practice.md"
+
+        decomp.write_text(make_decomp_log_with_hard_cases(), encoding="utf-8")
+        answers.write_text(make_answers_log_complete(), encoding="utf-8")
+        signal_map.write_text(make_signal_map_complete(), encoding="utf-8")
+        practice.write_text(make_practice_log_complete(), encoding="utf-8")
+        audit.write_text(make_audit_log_complete(), encoding="utf-8")
+        bank.write_text(make_behavioral_bank_complete(), encoding="utf-8")
+        sd_log.write_text(make_systems_design_log_complete(), encoding="utf-8")
+        pn.write_text(make_portfolio_narrative_complete(), encoding="utf-8")
+        dp.write_text(make_deliberate_practice_complete(), encoding="utf-8")
+
+        monkeypatch.setattr(check_prep, "DECOMP_LOG", decomp)
+        monkeypatch.setattr(check_prep, "ANSWERS_LOG", answers)
+        monkeypatch.setattr(check_prep, "SIGNAL_MAP", signal_map)
+        monkeypatch.setattr(check_prep, "PRACTICE_LOG", practice)
+        monkeypatch.setattr(check_prep, "AUDIT_LOG", audit)
+        monkeypatch.setattr(check_prep, "BEHAVIORAL_BANK", bank)
+        monkeypatch.setattr(check_prep, "SYSTEMS_DESIGN_LOG", sd_log)
+        monkeypatch.setattr(check_prep, "PORTFOLIO_NARRATIVE", pn)
+        monkeypatch.setattr(check_prep, "DELIBERATE_PRACTICE", dp)
+        monkeypatch.setattr(
+            check_prep, "CODING_SCREEN_LOG", tmp_path / "coding-screen-log.md"
+        )
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "7"])
+
+        result = check_prep.main()
+        assert result == 0, (
+            f"Expected exit 0 with --module 7 when coding-screen-log.md is absent; got {result}"
+        )
+
+    def test_module8_passes_without_coding_screen_log(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module 8 must exit 0 even when coding-screen-log.md is absent."""
+        decomp = tmp_path / "decomposition-log.md"
+        answers = tmp_path / "answers-log.md"
+        signal_map = tmp_path / "signal-map.md"
+        practice = tmp_path / "practice-log.md"
+        audit = tmp_path / "audit-log.md"
+        bank = tmp_path / "behavioral-bank.md"
+        sd_log = tmp_path / "systems-design-log.md"
+        pn = tmp_path / "portfolio-narrative.md"
+        dp = tmp_path / "deliberate-practice.md"
+        lp = tmp_path / "loop-plan.md"
+
+        decomp.write_text(make_decomp_log_with_hard_cases(), encoding="utf-8")
+        answers.write_text(make_answers_log_complete(), encoding="utf-8")
+        signal_map.write_text(make_signal_map_complete(), encoding="utf-8")
+        practice.write_text(make_practice_log_complete(), encoding="utf-8")
+        audit.write_text(make_audit_log_complete(), encoding="utf-8")
+        bank.write_text(make_behavioral_bank_complete(), encoding="utf-8")
+        sd_log.write_text(make_systems_design_log_complete(), encoding="utf-8")
+        pn.write_text(make_portfolio_narrative_complete(), encoding="utf-8")
+        dp.write_text(make_deliberate_practice_complete(), encoding="utf-8")
+        lp.write_text(make_loop_plan_complete(), encoding="utf-8")
+
+        monkeypatch.setattr(check_prep, "DECOMP_LOG", decomp)
+        monkeypatch.setattr(check_prep, "ANSWERS_LOG", answers)
+        monkeypatch.setattr(check_prep, "SIGNAL_MAP", signal_map)
+        monkeypatch.setattr(check_prep, "PRACTICE_LOG", practice)
+        monkeypatch.setattr(check_prep, "AUDIT_LOG", audit)
+        monkeypatch.setattr(check_prep, "BEHAVIORAL_BANK", bank)
+        monkeypatch.setattr(check_prep, "SYSTEMS_DESIGN_LOG", sd_log)
+        monkeypatch.setattr(check_prep, "PORTFOLIO_NARRATIVE", pn)
+        monkeypatch.setattr(check_prep, "DELIBERATE_PRACTICE", dp)
+        monkeypatch.setattr(check_prep, "LOOP_PLAN", lp)
+        monkeypatch.setattr(
+            check_prep, "CODING_SCREEN_LOG", tmp_path / "coding-screen-log.md"
+        )
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "8"])
+
+        result = check_prep.main()
+        assert result == 0, (
+            f"Expected exit 0 with --module 8 when coding-screen-log.md is absent; got {result}"
+        )
+
+    def test_module_all_fails_without_coding_screen_log(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module all must exit 1 when coding-screen-log.md is absent, even if all other artifacts complete."""
+        decomp = tmp_path / "decomposition-log.md"
+        answers = tmp_path / "answers-log.md"
+        signal_map = tmp_path / "signal-map.md"
+        practice = tmp_path / "practice-log.md"
+        audit = tmp_path / "audit-log.md"
+        bank = tmp_path / "behavioral-bank.md"
+        sd_log = tmp_path / "systems-design-log.md"
+        pn = tmp_path / "portfolio-narrative.md"
+        dp = tmp_path / "deliberate-practice.md"
+        lp = tmp_path / "loop-plan.md"
+
+        decomp.write_text(make_decomp_log_with_hard_cases(), encoding="utf-8")
+        answers.write_text(make_answers_log_complete(), encoding="utf-8")
+        signal_map.write_text(make_signal_map_complete(), encoding="utf-8")
+        practice.write_text(make_practice_log_complete(), encoding="utf-8")
+        audit.write_text(make_audit_log_complete(), encoding="utf-8")
+        bank.write_text(make_behavioral_bank_complete(), encoding="utf-8")
+        sd_log.write_text(make_systems_design_log_complete(), encoding="utf-8")
+        pn.write_text(make_portfolio_narrative_complete(), encoding="utf-8")
+        dp.write_text(make_deliberate_practice_complete(), encoding="utf-8")
+        lp.write_text(make_loop_plan_complete(), encoding="utf-8")
+
+        monkeypatch.setattr(check_prep, "DECOMP_LOG", decomp)
+        monkeypatch.setattr(check_prep, "ANSWERS_LOG", answers)
+        monkeypatch.setattr(check_prep, "SIGNAL_MAP", signal_map)
+        monkeypatch.setattr(check_prep, "PRACTICE_LOG", practice)
+        monkeypatch.setattr(check_prep, "AUDIT_LOG", audit)
+        monkeypatch.setattr(check_prep, "BEHAVIORAL_BANK", bank)
+        monkeypatch.setattr(check_prep, "SYSTEMS_DESIGN_LOG", sd_log)
+        monkeypatch.setattr(check_prep, "PORTFOLIO_NARRATIVE", pn)
+        monkeypatch.setattr(check_prep, "DELIBERATE_PRACTICE", dp)
+        monkeypatch.setattr(check_prep, "LOOP_PLAN", lp)
+        # coding-screen-log absent
+        monkeypatch.setattr(
+            check_prep, "CODING_SCREEN_LOG", tmp_path / "coding-screen-log.md"
+        )
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "all"])
+
+        result = check_prep.main()
+        assert result == 1, (
+            f"Expected exit 1 with --module all when coding-screen-log.md is absent; got {result}"
+        )
+
+
+# ---------------------------------------------------------------------------
 # Fixture builders: M8 loop plan
 # ---------------------------------------------------------------------------
 
@@ -2381,6 +2871,10 @@ class TestModule8Flag:
     ) -> None:
         """--module all (default) must exit 1 when loop-plan.md is absent."""
         self._patch_all_through_m7(tmp_path, monkeypatch)
+        # coding-screen-log.md is present; only loop-plan.md is absent.
+        cs_log = tmp_path / "coding-screen-log.md"
+        cs_log.write_text(make_coding_screen_log_complete(), encoding="utf-8")
+        monkeypatch.setattr(check_prep, "CODING_SCREEN_LOG", cs_log)
         monkeypatch.setattr(check_prep, "LOOP_PLAN", tmp_path / "loop-plan.md")
         monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "all"])
 
@@ -2392,8 +2886,12 @@ class TestModule8Flag:
     def test_module_all_passes_with_loop_plan(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """--module all must exit 0 when all artifacts including loop-plan.md are complete."""
+        """--module all must exit 0 when all artifacts including loop-plan.md and coding-screen-log.md are complete."""
         self._patch_all_through_m7(tmp_path, monkeypatch)
+
+        cs_log = tmp_path / "coding-screen-log.md"
+        cs_log.write_text(make_coding_screen_log_complete(), encoding="utf-8")
+        monkeypatch.setattr(check_prep, "CODING_SCREEN_LOG", cs_log)
 
         lp = tmp_path / "loop-plan.md"
         lp.write_text(make_loop_plan_complete(), encoding="utf-8")
