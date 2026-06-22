@@ -9,14 +9,6 @@ Only what is still open. Resolved items live in git history and `build-log/`; th
   import `BlueSkyGTM/ai-systems-scriptorium`, build, move the subdomain onto it, verify.
 - **Set `book.toml` `git-repository-url`** — only when the repo goes public (else it 404s for visitors).
 
-## Strategic (deferred)
-
-- **Bot Bottega** — the engine for building **AI Operating Systems** (Claude-documented systems an AI can
-  manage and operate, e.g. the GTM engine), not content mills like ICM. Salvaged from the Scriptorium's
-  machinery (gates + orchestration + contract pattern + optional ICM) plus an onboard-for-autonomy,
-  fail-fast intake. **Decided 2026-06-21: build it, ship it to its own repo, then scrub it from this repo**
-  (it does not belong in the book factory). Next: `/autoplan` the build. See the bot-bottega auto-memory.
-
 ## Lab
 
 - **Name the permanent Enhancers shelf** once Open Brain (the first production enhancer) completes; until
