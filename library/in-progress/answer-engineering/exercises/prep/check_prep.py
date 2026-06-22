@@ -4,7 +4,8 @@ check_prep.py -- Validator for the Answer Engineering prep dossier.
 
 Validates the logs in the same directory as this script. Module 1 established
 the two core logs; Module 2 adds four more; Module 3 adds the behavioral bank;
-Module 5 adds the systems-design log. (Module 4 is not yet a validator choice.)
+Module 5 adds the systems-design log; Module 6 adds the portfolio narrative.
+(Module 4 is not yet a validator choice.)
 The --module flag controls which artifacts are required for the exit code.
 
   decomposition-log.md    (M1: ten question decompositions + calibration)
@@ -17,6 +18,8 @@ The --module flag controls which artifacts are required for the exit code.
                                each with an audit verdict; no placeholders)
   systems-design-log.md   (M5: one complete design entry with all eight fields;
                                no placeholders)
+  portfolio-narrative.md  (M6: one complete artifact entry with all seven fields;
+                               no placeholders)
 
 Exits 0 only when the required logs for the selected module are complete and
 free of placeholder text. Exits 1 otherwise, with a clear per-file report.
@@ -27,7 +30,8 @@ Usage:
   python check_prep.py --module 2   Require M1 + all M2 artifacts complete.
   python check_prep.py --module 3   Require M1 + M2 + behavioral-bank.md complete.
   python check_prep.py --module 5   Require M1 + M2 + M3 + systems-design-log.md complete.
-  python check_prep.py --module all Same as the default (all artifacts, including M5).
+  python check_prep.py --module 6   Require M1 + M2 + M3 + M5 + portfolio-narrative.md complete.
+  python check_prep.py --module all Same as the default (all artifacts, including M6).
   python check_prep.py --help       Show this help text.
 
 Note: --module 4 is intentionally not a choice; M4 validator is not yet built.
@@ -115,6 +119,18 @@ systems-design-log.md (M5):
     **Evaluation:**
     **Audit verdict:**
   Minimum one entry. No placeholder text in any field.
+
+portfolio-narrative.md (M6):
+  Each entry is headed by:  ## Artifact <n>   (e.g. ## Artifact 1)
+  Required fields per entry:
+    **Artifact:**
+    **Overview:**
+    **Key decisions:**
+    **Tradeoffs:**
+    **Failure modes handled:**
+    **Role tailoring:**
+    **Audit verdict:**
+  Minimum one entry. No placeholder text in any field.
 """
 
 import argparse
@@ -135,6 +151,7 @@ PRACTICE_LOG = SCRIPT_DIR / "practice-log.md"
 AUDIT_LOG = SCRIPT_DIR / "audit-log.md"
 BEHAVIORAL_BANK = SCRIPT_DIR / "behavioral-bank.md"
 SYSTEMS_DESIGN_LOG = SCRIPT_DIR / "systems-design-log.md"
+PORTFOLIO_NARRATIVE = SCRIPT_DIR / "portfolio-narrative.md"
 
 # Placeholder text patterns: any required field containing these fails.
 PLACEHOLDER_PATTERNS = re.compile(
@@ -815,6 +832,60 @@ def validate_systems_design_log(path: Path) -> tuple[bool, list[str]]:
 
 
 # ---------------------------------------------------------------------------
+# Portfolio narrative validator (M6)
+# ---------------------------------------------------------------------------
+
+# Heading pattern: ## Artifact <digits>
+PN_ENTRY_RE = re.compile(r"^##\s+Artifact\s+(\d+)$")
+
+PN_REQUIRED_FIELDS = [
+    "**Artifact:**",
+    "**Overview:**",
+    "**Key decisions:**",
+    "**Tradeoffs:**",
+    "**Failure modes handled:**",
+    "**Role tailoring:**",
+    "**Audit verdict:**",
+]
+
+MIN_PN_ENTRIES = 1
+
+
+def validate_portfolio_narrative(path: Path) -> tuple[bool, list[str]]:
+    """
+    Validate portfolio-narrative.md.
+
+    Checks that the file has at least one ## Artifact <n> entry with all seven
+    required fields filled in and free of placeholder text.
+
+    Returns (passed: bool, messages: list[str]).
+    """
+    messages: list[str] = []
+
+    if not path.exists():
+        messages.append(f"NOT STARTED: {path.name} does not exist yet.")
+        messages.append(
+            "  Copy portfolio-narrative.template.md to portfolio-narrative.md and complete it."
+        )
+        return False, messages
+
+    text = path.read_text(encoding="utf-8")
+    passed = True
+
+    entries = split_into_entries(text, PN_ENTRY_RE)
+    entry_passed = validate_entries(
+        entries, PN_REQUIRED_FIELDS, MIN_PN_ENTRIES, path.name, messages,
+    )
+    if not entry_passed:
+        passed = False
+
+    if passed:
+        messages.append(f"PASS: {path.name} is complete.")
+
+    return passed, messages
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -838,19 +909,22 @@ def build_parser() -> argparse.ArgumentParser:
             "  --module 3   Require M1 + M2 artifacts + behavioral-bank.md complete (M3 gate).\n"
             "  --module 5   Require M1 + M2 + M3 artifacts + systems-design-log.md complete (M5 gate).\n"
             "               (--module 4 is not yet a choice; M4 validator not built.)\n"
-            "  --module all Same as omitting the flag: report all artifacts including M5.\n\n"
+            "  --module 6   Require M1 + M2 + M3 + M5 artifacts + portfolio-narrative.md complete\n"
+            "               (M6 gate).\n"
+            "  --module all Same as omitting the flag: report all artifacts including M6.\n\n"
             "Status values per artifact: PASS / INCOMPLETE / NOT STARTED\n"
         ),
     )
     parser.add_argument(
         "--module",
-        choices=["1", "2", "3", "5", "all"],
+        choices=["1", "2", "3", "5", "6", "all"],
         default="all",
         help=(
             "Module gate to enforce. '1' requires only M1 artifacts. "
             "'2' requires M1 + M2 artifacts. '3' requires M1 + M2 + M3 artifacts. "
             "'5' requires M1 + M2 + M3 + systems-design-log.md. "
-            "'all' requires all artifacts including systems-design-log.md. "
+            "'6' requires M1 + M2 + M3 + M5 + portfolio-narrative.md. "
+            "'all' requires all artifacts including portfolio-narrative.md. "
             "Default: all."
         ),
     )
@@ -861,10 +935,11 @@ def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
 
-    module = args.module  # "1", "2", "3", "5", or "all"
-    require_m2 = module in ("2", "3", "5", "all")
-    require_m3 = module in ("3", "5", "all")
-    require_m5 = module in ("5", "all")
+    module = args.module  # "1", "2", "3", "5", "6", or "all"
+    require_m2 = module in ("2", "3", "5", "6", "all")
+    require_m3 = module in ("3", "5", "6", "all")
+    require_m5 = module in ("5", "6", "all")
+    require_m6 = module in ("6", "all")
 
     print("Answer Engineering Prep Dossier Validator")
     print("=" * 44)
@@ -927,9 +1002,34 @@ def main() -> int:
             print(" ", msg)
         print()
 
+    if require_m6:
+        pn_passed, pn_messages = validate_portfolio_narrative(PORTFOLIO_NARRATIVE)
+
+        print(f"--- {PORTFOLIO_NARRATIVE.name} ---")
+        for msg in pn_messages:
+            print(" ", msg)
+        print()
+
     # Build the required artifact lists and results based on module level.
-    # Gating is cumulative: M5 requires M1+M2+M3+systems-design-log.
-    if require_m5:
+    # Gating is cumulative: M6 requires M1+M2+M3+M5+portfolio-narrative.
+    if require_m6:
+        all_passed = (
+            decomp_passed and answers_passed
+            and sm_passed and pl_passed and al_passed
+            and bb_passed and sd_passed and pn_passed
+        )
+        required_names = [
+            DECOMP_LOG.name, ANSWERS_LOG.name,
+            SIGNAL_MAP.name, PRACTICE_LOG.name, AUDIT_LOG.name,
+            BEHAVIORAL_BANK.name, SYSTEMS_DESIGN_LOG.name,
+            PORTFOLIO_NARRATIVE.name,
+        ]
+        results = [
+            decomp_passed, answers_passed,
+            sm_passed, pl_passed, al_passed,
+            bb_passed, sd_passed, pn_passed,
+        ]
+    elif require_m5:
         all_passed = (
             decomp_passed and answers_passed
             and sm_passed and pl_passed and al_passed

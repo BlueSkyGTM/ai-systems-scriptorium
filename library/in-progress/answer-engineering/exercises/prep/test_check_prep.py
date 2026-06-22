@@ -1262,3 +1262,309 @@ class TestModule5Flag:
 
         result = check_prep.main()
         assert result == 0, f"Expected exit 0 with --module 5 and all artifacts; got {result}"
+
+
+# ---------------------------------------------------------------------------
+# Fixture builders: M6 portfolio narrative
+# ---------------------------------------------------------------------------
+
+
+def make_portfolio_narrative_complete() -> str:
+    """
+    Return a portfolio-narrative.md that passes all M6 checks: one Artifact entry
+    with all seven required fields filled in and free of placeholder text.
+    """
+    return """# Portfolio Narrative
+
+## Artifact 1
+
+**Artifact:** The Production RAG Chatbot -- a citation-enforced, guardrailed retrieval-augmented
+generation system for regulated verticals that screens input/output against hardcoded prohibitions,
+monitors quality drift, and gates acceptance on retrieval precision and answer faithfulness.
+
+**Overview:** The chatbot is a citation-and-refusal machine, not a chatbot with citations tacked
+on. The differentiating decision is the relevance floor: if every retrieved chunk falls below the
+minimum score threshold, the system refuses rather than grounding the answer in low-relevance
+context. This decision directly prevents hallucinated citations -- the failure mode that collapses
+trust in regulated deployments. The cost is that some valid questions receive "I don't have a
+source for that" rather than an answer. The tradeoff is proven by the eval gate: inject a
+low-relevance corpus and the gate fails; the refusal is tested, not assumed.
+
+**Key decisions:** (1) The relevance floor (CRAG-style refusal). Decision: return no hits if
+top-k all fall below min_score, forcing a refusal. Rejected: always returning top-k results.
+Tradeoff: valid questions occasionally receive a refusal instead of an answer. Failure mode
+guarded: hallucinated citations grounded in low-relevance chunks. (2) The guardrail with
+hardcoded-prohibitions floor. Decision: split rules into un-lowerable hardcoded prohibitions
+(prompt injection, PII exfiltration) and operator-tunable defaults (topical scope). Rejected:
+making all guardrails operator-configurable. Tradeoff: the operator can tune scope but cannot
+disable the security floor. Failure mode guarded: a misconfigured or pressured operator lowering
+the security floor.
+
+**Tradeoffs:** The two primary tradeoffs compound: the refusal floor trades answer coverage for
+citation trustworthiness; the hardcoded guardrail floor trades operator flexibility for
+security-floor stability. Both are worth the cost because the system targets regulated verticals
+where a hallucinated citation or a PII leak is a compliance event, not a quality demerit. The
+tradeoff changes at lower stakes: for an internal wiki with no compliance exposure, both floors
+could be relaxed.
+
+**Failure modes handled:** (1) Hallucinated citations grounded in low-relevance context: the
+relevance floor structurally prevents this by refusing when no chunk clears the minimum score;
+the refusal is tested by injecting a low-relevance corpus and confirming the gate rejects the
+build. (2) Operator-induced security regression: the hardcoded-prohibitions floor cannot be
+lowered by operator config; the guardrail tests inject a prohibited request and confirm the
+system blocks it regardless of operator settings.
+
+**Role tailoring:** **Applied-AI / product engineer:** The system's reliability in production
+comes from the citation-and-refusal contract: the Chunk contract binds every downstream layer to
+one shape, so a parser change cannot silently degrade citations, and the relevance floor means
+users see an honest "no source" rather than a confident hallucination. The drift monitor samples
+quality over a rolling window and flags SLO breaches before users report them. **ML-platform /
+infra engineer:** The system is built on two protocol seams: the VectorIndex interface (add,
+search) lets you swap in Azure AI Search with one constructor change, and the model seam lets
+you swap any LLM backend behind the same generation interface. Both seams are tested: the
+eval gate runs offline without a live model, so the CI gate is deterministic and cheap.
+
+**Audit verdict:** Checked all six red flags. Passes: no generic lead (Overview opens with the
+refusal mechanism, not "I built a RAG chatbot"); rejected alternatives are named (always-top-k
+for the relevance floor, fully-configurable guardrails for the prohibitions floor); role tailoring
+opens with different decisions (refusal + drift for applied-AI, seams + CI gate for platform).
+Risks: the tradeoffs field states costs but does not name the break-even condition explicitly --
+at what retrieval quality does the refusal floor become more costly than useful? One specific
+change with two more minutes: add one sentence to Tradeoffs naming the metric that would prompt
+revisiting the min_score threshold (e.g. if refusal rate exceeds 15% on production queries, the
+floor is too aggressive).
+"""
+
+
+def make_portfolio_narrative_incomplete() -> str:
+    """
+    Return a portfolio-narrative.md that fails: one entry with placeholder text in all fields.
+    """
+    return """# Portfolio Narrative
+
+## Artifact 1
+
+**Artifact:** <fill in: the artifact you chose>
+
+**Overview:** <fill in: sixty-second overview leading with the differentiator>
+
+**Key decisions:** <fill in: load-bearing decisions>
+
+**Tradeoffs:** <fill in: tradeoffs accepted>
+
+**Failure modes handled:** <fill in: failure modes guarded>
+
+**Role tailoring:** <fill in: two role-tailored framings>
+
+**Audit verdict:** <fill in: weak-walkthrough red flags and one change>
+"""
+
+
+def make_portfolio_narrative_missing_field() -> str:
+    """
+    Return a portfolio-narrative.md that fails because the Role tailoring field is absent.
+    """
+    return """# Portfolio Narrative
+
+## Artifact 1
+
+**Artifact:** The Production RAG Chatbot -- a citation-enforced retrieval system.
+
+**Overview:** The chatbot is a citation-and-refusal machine. The differentiator is the relevance
+floor: if every retrieved chunk falls below the minimum score, the system refuses rather than
+fabricating from low-relevance context. This prevents hallucinated citations.
+
+**Key decisions:** The relevance floor. Decision: refuse when top-k all fall below min_score.
+Rejected: always returning top-k. Tradeoff: valid questions occasionally get a refusal. Failure
+mode guarded: hallucinated citations from low-relevance chunks.
+
+**Tradeoffs:** The refusal floor trades answer coverage for citation trustworthiness. Worth it
+in regulated verticals where a hallucinated citation is a compliance event.
+
+**Failure modes handled:** Hallucinated citations from low-relevance context: structurally
+prevented by the relevance floor. Operator-induced security regression: prevented by the
+hardcoded-prohibitions floor that operator config cannot lower.
+
+**Audit verdict:** Passes generic-lead check (opens with refusal mechanism). Risks: role
+tailoring not present. One change: add two role-tailored framings distinguishing applied-AI
+emphasis (refusal + drift) from platform emphasis (seams + CI gate).
+"""
+
+
+# ---------------------------------------------------------------------------
+# Tests: portfolio-narrative.md (M6)
+# ---------------------------------------------------------------------------
+
+
+class TestPortfolioNarrative:
+    def test_complete_narrative_passes(self, tmp_path: Path) -> None:
+        """A fully completed portfolio narrative must pass M6 validation."""
+        pn = tmp_path / "portfolio-narrative.md"
+        pn.write_text(make_portfolio_narrative_complete(), encoding="utf-8")
+
+        passed, messages = check_prep.validate_portfolio_narrative(pn)
+
+        assert passed, f"Expected pass; got messages:\n" + "\n".join(messages)
+
+    def test_incomplete_narrative_fails(self, tmp_path: Path) -> None:
+        """A portfolio narrative with placeholder text must fail."""
+        pn = tmp_path / "portfolio-narrative.md"
+        pn.write_text(make_portfolio_narrative_incomplete(), encoding="utf-8")
+
+        passed, messages = check_prep.validate_portfolio_narrative(pn)
+
+        assert not passed, "Expected fail; validator incorrectly returned pass."
+        combined = "\n".join(messages)
+        assert "FAIL" in combined, f"Expected FAIL in messages; got:\n{combined}"
+
+    def test_missing_narrative_fails(self, tmp_path: Path) -> None:
+        """An absent portfolio narrative must return fail with a not-started message."""
+        missing = tmp_path / "portfolio-narrative.md"
+
+        passed, messages = check_prep.validate_portfolio_narrative(missing)
+
+        assert not passed
+        combined = "\n".join(messages)
+        assert "NOT STARTED" in combined or "does not exist" in combined
+
+    def test_missing_field_fails(self, tmp_path: Path) -> None:
+        """A portfolio narrative with a missing required field must fail."""
+        pn = tmp_path / "portfolio-narrative.md"
+        pn.write_text(make_portfolio_narrative_missing_field(), encoding="utf-8")
+
+        passed, messages = check_prep.validate_portfolio_narrative(pn)
+
+        assert not passed, "Expected fail when a required field is absent."
+        combined = "\n".join(messages)
+        assert "FAIL" in combined, f"Expected FAIL in messages; got:\n{combined}"
+        assert "Role tailoring" in combined, (
+            f"Expected the missing 'Role tailoring' field to be named; got:\n{combined}"
+        )
+
+    def test_zero_entries_fails(self, tmp_path: Path) -> None:
+        """A file with no Artifact entries must fail."""
+        pn = tmp_path / "portfolio-narrative.md"
+        pn.write_text("# Portfolio Narrative\n\nNo entries here.\n", encoding="utf-8")
+
+        passed, messages = check_prep.validate_portfolio_narrative(pn)
+
+        assert not passed, "Expected fail when no entries are present."
+        combined = "\n".join(messages)
+        assert "FAIL" in combined, f"Expected FAIL in messages; got:\n{combined}"
+
+
+# ---------------------------------------------------------------------------
+# Tests: --module 6 flag behavior (M6)
+# ---------------------------------------------------------------------------
+
+
+class TestModule6Flag:
+    def _patch_all_through_m5(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Helper: patch all M1, M2, M3, and M5 paths with complete content."""
+        decomp = tmp_path / "decomposition-log.md"
+        answers = tmp_path / "answers-log.md"
+        signal_map = tmp_path / "signal-map.md"
+        practice = tmp_path / "practice-log.md"
+        audit = tmp_path / "audit-log.md"
+        bank = tmp_path / "behavioral-bank.md"
+        sd_log = tmp_path / "systems-design-log.md"
+
+        decomp.write_text(make_decomp_log_with_hard_cases(), encoding="utf-8")
+        answers.write_text(make_answers_log_complete(), encoding="utf-8")
+        signal_map.write_text(make_signal_map_complete(), encoding="utf-8")
+        practice.write_text(make_practice_log_complete(), encoding="utf-8")
+        audit.write_text(make_audit_log_complete(), encoding="utf-8")
+        bank.write_text(make_behavioral_bank_complete(), encoding="utf-8")
+        sd_log.write_text(make_systems_design_log_complete(), encoding="utf-8")
+
+        monkeypatch.setattr(check_prep, "DECOMP_LOG", decomp)
+        monkeypatch.setattr(check_prep, "ANSWERS_LOG", answers)
+        monkeypatch.setattr(check_prep, "SIGNAL_MAP", signal_map)
+        monkeypatch.setattr(check_prep, "PRACTICE_LOG", practice)
+        monkeypatch.setattr(check_prep, "AUDIT_LOG", audit)
+        monkeypatch.setattr(check_prep, "BEHAVIORAL_BANK", bank)
+        monkeypatch.setattr(check_prep, "SYSTEMS_DESIGN_LOG", sd_log)
+
+    def test_module6_fails_without_portfolio_narrative(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module 6 must exit 1 when portfolio-narrative.md is absent, even if M1-M5 complete."""
+        self._patch_all_through_m5(tmp_path, monkeypatch)
+        monkeypatch.setattr(
+            check_prep, "PORTFOLIO_NARRATIVE", tmp_path / "portfolio-narrative.md"
+        )
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "6"])
+
+        result = check_prep.main()
+        assert result == 1, (
+            f"Expected exit 1 with --module 6 and no portfolio-narrative; got {result}"
+        )
+
+    def test_module6_fails_when_m5_missing(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module 6 must exit 1 when M5 (systems-design-log.md) is absent, even if portfolio present."""
+        decomp = tmp_path / "decomposition-log.md"
+        answers = tmp_path / "answers-log.md"
+        signal_map = tmp_path / "signal-map.md"
+        practice = tmp_path / "practice-log.md"
+        audit = tmp_path / "audit-log.md"
+        bank = tmp_path / "behavioral-bank.md"
+        pn = tmp_path / "portfolio-narrative.md"
+
+        decomp.write_text(make_decomp_log_with_hard_cases(), encoding="utf-8")
+        answers.write_text(make_answers_log_complete(), encoding="utf-8")
+        signal_map.write_text(make_signal_map_complete(), encoding="utf-8")
+        practice.write_text(make_practice_log_complete(), encoding="utf-8")
+        audit.write_text(make_audit_log_complete(), encoding="utf-8")
+        bank.write_text(make_behavioral_bank_complete(), encoding="utf-8")
+        pn.write_text(make_portfolio_narrative_complete(), encoding="utf-8")
+
+        monkeypatch.setattr(check_prep, "DECOMP_LOG", decomp)
+        monkeypatch.setattr(check_prep, "ANSWERS_LOG", answers)
+        monkeypatch.setattr(check_prep, "SIGNAL_MAP", signal_map)
+        monkeypatch.setattr(check_prep, "PRACTICE_LOG", practice)
+        monkeypatch.setattr(check_prep, "AUDIT_LOG", audit)
+        monkeypatch.setattr(check_prep, "BEHAVIORAL_BANK", bank)
+        monkeypatch.setattr(check_prep, "SYSTEMS_DESIGN_LOG", tmp_path / "systems-design-log.md")
+        monkeypatch.setattr(check_prep, "PORTFOLIO_NARRATIVE", pn)
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "6"])
+
+        result = check_prep.main()
+        assert result == 1, (
+            f"Expected exit 1 with --module 6 when systems-design-log.md absent; got {result}"
+        )
+
+    def test_module6_passes_with_all_artifacts(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module 6 must exit 0 when all M1, M2, M3, M5, and M6 artifacts are complete."""
+        self._patch_all_through_m5(tmp_path, monkeypatch)
+
+        pn = tmp_path / "portfolio-narrative.md"
+        pn.write_text(make_portfolio_narrative_complete(), encoding="utf-8")
+        monkeypatch.setattr(check_prep, "PORTFOLIO_NARRATIVE", pn)
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "6"])
+
+        result = check_prep.main()
+        assert result == 0, f"Expected exit 0 with --module 6 and all artifacts; got {result}"
+
+    def test_module5_passes_without_portfolio_narrative(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module 5 must exit 0 even when portfolio-narrative.md is absent (backward compat)."""
+        self._patch_all_through_m5(tmp_path, monkeypatch)
+        # portfolio-narrative.md is absent; --module 5 must not require it.
+        monkeypatch.setattr(
+            check_prep, "PORTFOLIO_NARRATIVE", tmp_path / "portfolio-narrative.md"
+        )
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "5"])
+
+        result = check_prep.main()
+        assert result == 0, (
+            f"Expected exit 0 with --module 5 when portfolio-narrative.md is absent; got {result}"
+        )

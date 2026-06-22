@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Answer Engineering - Answer Engineering — The AI Engineer&#x27;s Interview Framework</title>
+        <title>Foreground the Decisions - Answer Engineering — The AI Engineer&#x27;s Interview Framework</title>
 
 
         <!-- Custom HTML head -->
@@ -12,36 +12,36 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon-de23e50b.svg">
-        <link rel="shortcut icon" href="favicon-8114d1fc.png">
-        <link rel="stylesheet" href="css/variables-8adf115d.css">
-        <link rel="stylesheet" href="css/general-0392ca55.css">
-        <link rel="stylesheet" href="css/chrome-fc474251.css">
-        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="theme/copy-to-claude-45921320.css">
-        <link rel="stylesheet" href="theme/syntax-polish-53c427bd.css">
-        <link rel="stylesheet" href="theme/readability-9f9ae6ec.css">
+        <link rel="stylesheet" href="../theme/copy-to-claude-45921320.css">
+        <link rel="stylesheet" href="../theme/syntax-polish-53c427bd.css">
+        <link rel="stylesheet" href="../theme/readability-9f9ae6ec.css">
 
 
         <!-- Provide site root and default themes to javascript -->
         <script>
-            const path_to_root = "";
+            const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-ac315a66.js";
+            window.path_to_searchindex_js = "../searchindex-ac315a66.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-295af4a6.js"></script>
+        <script src="../toc-295af4a6.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -108,7 +108,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
             </noscript>
             <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -143,7 +143,7 @@
                     <h1 class="menu-title">Answer Engineering — The AI Engineer&#x27;s Interview Framework</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
                         </a>
 
@@ -177,53 +177,156 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
-<p>You built the thing. A terminal coding agent that ships real diffs, a governed fleet that runs under
-a budget, an exam system that grades itself. The other books in this library taught you to build AI
-systems that hold under production load. This book teaches the last skill the job actually screens for:
-explaining what you built to someone who did not watch you build it, under time pressure, in a room
-where the offer is decided.</p>
-<p>That skill is not the same as the building. Strong engineers lose offers every week because the
-interview is a different game with different rules, and nobody taught them the rules. They reach for
-memorized answers, the stock STAR story rehearsed until it sounds fluent, the list of talking points.
-Then a question arrives in a form they never rehearsed, and the list runs out.</p>
-<p>Answer Engineering replaces the list. It treats answering as an engineering discipline: a question is
-an input, the interviewer’s hiring decision is the output, and there is a process that reliably gets
-from one to the other. The process is internal, transferable, and it works on questions you have never
-seen. You will not memorize answers. You will learn why excellent answers are excellent, so you can
-construct one on demand.</p>
-<h2 id="the-argument-in-the-name"><a class="header" href="#the-argument-in-the-name">The Argument in the Name</a></h2>
-<p>Engineering is the discipline of building reliably to a spec, under constraints, and proving it works.
-That is exactly what a strong interview answer requires. The spec is the signal the interviewer is
-collecting. The constraint is two minutes and your nerves. The proof is specificity no weak candidate
-could fake. Most interview prep treats the answer as a performance to rehearse; this book treats it as
-an artifact to engineer. Same word, same rigor, applied to the thing that gets you hired.</p>
-<h2 id="you-interview-on-the-portfolio"><a class="header" href="#you-interview-on-the-portfolio">You Interview on the Portfolio</a></h2>
-<p>This book does not exist in a vacuum. The artifacts you built in the rest of the library are the
-resume: the coding agent, the fleet, the eval engine, the exam. They are not exercises to discard once
-the course ends; they are the evidence you walk an interviewer through. A reader mid-way through the
-other books can start here today; a reader who finished them already has the artifacts and can treat
-this as the final unlock. The building and the proving compound.</p>
-<h2 id="what-you-build"><a class="header" href="#what-you-build">What You Build</a></h2>
-<p>The book runs in three phases. First the framework: an internal four-step Algorithm for any interview
-question, behavioral, technical, or systems-design. Then the example banks, where you watch the
-Algorithm applied across the question types an AI Engineer faces until the moves become automatic.
-Then the portfolio layer, where you turn your own artifacts into interview-ready narratives.</p>
-<p>Your portfolio artifact here is not code; it is a <strong>prep dossier</strong>, the career analogue of a project
-repo. Every lesson ends in a Claude Code exercise that adds to it: decomposition logs, full answer
-constructions, self-scored against a rubric, deliberate-practice records. By the end you can prove your
-readiness the same way the exam book proves a system: against a checker, not a feeling.</p>
-<p>You already did the hard part. You built something real. Now you learn to make a stranger see it in
-the time it takes to answer one question.</p>
-<p>Turn the page. Module 1 starts where every answer starts: with the question, and the instinct you have
-to unlearn.</p>
+                        <h1 id="foreground-the-decisions"><a class="header" href="#foreground-the-decisions">Foreground the Decisions</a></h1>
+<p>The code is where the decisions left marks. The interview is about the decisions themselves.</p>
+<p>An interviewer can read your repository. They can follow the retrieval chain, count the classes, and
+trace the guardrail logic in five minutes. What they cannot read from your code is your judgment: why
+this design instead of a simpler one, which alternative you considered and set aside, what would go
+wrong if you had chosen differently. That judgment is what the walkthrough has to surface, because the
+code alone does not carry it.</p>
+<h2 id="why-decisions-are-the-signal"><a class="header" href="#why-decisions-are-the-signal">Why Decisions Are the Signal</a></h2>
+<p>When an interviewer says “walk me through how the RAG system works,” they are not asking for a class
+diagram. They are testing whether you can tell the difference between a component you reached for by
+habit and one you chose by reasoning. The candidate who explains every component as an obvious part of
+a standard RAG pipeline scores the same as the candidate who reads the docstrings aloud. The candidate
+who names a choice, the alternative it beat, and the failure mode it prevents scores higher, because
+that narration cannot be faked from a tutorial.</p>
+<p>The discipline here is identical to justifying every box in a systems-design round. In that context you
+defend a component you just drew. In a portfolio walkthrough you defend a component you actually
+shipped, which is easier: the decisions are already made, the failure modes already handled. The work is
+foregrounding them, making the reasoning visible to someone who was not in the room when you made the
+calls.</p>
+<h2 id="the-shape-of-a-defended-decision"><a class="header" href="#the-shape-of-a-defended-decision">The Shape of a Defended Decision</a></h2>
+<p>Every load-bearing component in your walkthrough earns its place through four moves.</p>
+<p>First, name the decision: what you built and what it does. Second, name the alternative you rejected:
+the simpler or more obvious path that you did not take. Third, name the tradeoff you accepted: what the
+chosen design costs. Fourth, name the failure mode it guards against: the specific thing that goes wrong
+if you had made the other choice.</p>
+<p>That four-part shape is not a formula to recite. It is a test of whether you understand the component
+you shipped. If you cannot name the alternative, you may have reached for a default. If you cannot name
+the failure mode, you may not know what the design is protecting. Both gaps surface immediately under
+follow-up, which is exactly when a portfolio walkthrough becomes an interview.</p>
+<h2 id="worked-example-the-production-rag-chatbot"><a class="header" href="#worked-example-the-production-rag-chatbot">Worked Example: The Production RAG Chatbot</a></h2>
+<p>The production RAG chatbot you built in Sans Python is a citation-enforced, guardrailed retrieval
+system for regulated verticals. It retrieves from a corpus, grounds every answer in retrieved chunks
+with explicit citations, screens inputs and outputs against a prohibition floor, and gates a build on
+retrieval precision and answer faithfulness. Here is what the decision layer looks like.</p>
+<h3 id="the-chunk-citation-contract"><a class="header" href="#the-chunk-citation-contract">The Chunk Citation Contract</a></h3>
+<p><strong>Decision:</strong> every piece of text in the pipeline binds to a <code>Chunk</code>: a struct carrying document ID,
+section, and text. Nothing downstream ever handles a raw document object.</p>
+<p><strong>Alternative rejected:</strong> passing raw document or file objects through the pipeline and deriving
+citations when needed.</p>
+<p><strong>Tradeoff accepted:</strong> ingest is responsible for mapping every input format onto the one <code>Chunk</code>
+shape. A new format means a new parser, not a new pipeline branch.</p>
+<p><strong>Failure mode guarded:</strong> a format change (swapping a scanned contract for a native PDF, adding a new
+document source) rippling through retrieval, generation, and citation rendering. When the contract is
+the <code>Chunk</code> shape, a format change is a one-layer problem: the parser adapts, and the rest of the
+pipeline sees no change.</p>
+<p>A follow-up an interviewer will ask: “What happens when you add a new document type?” You have the
+answer: you write a parser that produces <code>Chunk</code> objects. The retriever, the guardrail, and the citation
+renderer do not know a new type exists.</p>
+<h3 id="the-relevance-floor"><a class="header" href="#the-relevance-floor">The Relevance Floor</a></h3>
+<p><strong>Decision:</strong> the retriever returns an empty set when all retrieved candidates fall below a
+minimum-score threshold, which forces the chatbot to refuse rather than answer from low-relevance
+context.</p>
+<p><strong>Alternative rejected:</strong> always returning the top-k results regardless of their scores, as most
+off-the-shelf retrieval implementations do.</p>
+<p><strong>Tradeoff accepted:</strong> some valid questions get a “I don’t have a source for that” response. The
+system trades recall on low-relevance queries for honesty about its knowledge boundary.</p>
+<p><strong>Failure mode guarded:</strong> hallucinated citations. A model asked to answer from low-relevance chunks
+has to fill the gap somehow. In regulated verticals, a confident wrong answer grounded in a
+tangentially relevant chunk is worse than an explicit refusal. The relevance floor makes refusal
+the structural default when the corpus does not support an answer.</p>
+<p>A follow-up: “Isn’t that too conservative? You’re dropping valid questions.” You have the tradeoff
+ready: yes, and that is the deliberate choice for a regulated vertical where a fabricated citation has
+compliance consequences. Adjusting the threshold is a tunable dial; setting the dial to zero recreates
+the failure mode.</p>
+<h3 id="the-guardrail-with-a-hardcoded-prohibitions-floor"><a class="header" href="#the-guardrail-with-a-hardcoded-prohibitions-floor">The Guardrail with a Hardcoded-Prohibitions Floor</a></h3>
+<p><strong>Decision:</strong> the guardrail splits rules into two tiers. Hardcoded prohibitions covering prompt
+injection and PII exfiltration sit beneath all operator configuration, unchangeable by runtime settings.
+Operator-tunable rules covering topical scope and style sit above them, adjustable per deployment.</p>
+<p><strong>Alternative rejected:</strong> making all guardrail rules operator-configurable, which is the simpler
+architecture: one config surface, no hidden floor.</p>
+<p><strong>Tradeoff accepted:</strong> the operator cannot disable security-critical prohibitions. For a
+multi-tenant deployment this may feel limiting; for a regulated vertical it is the point.</p>
+<p><strong>Failure mode guarded:</strong> a misconfigured or pressured operator lowering the security floor. If every
+rule is configurable, a deployment with a misconfigured scope check silently removes the
+prompt-injection check at the same time. Splitting the tiers means the operator’s scope changes cannot
+reach the security controls, by construction.</p>
+<p>A follow-up: “How do you handle a tenant that needs a custom prohibition?” The answer is: they add to
+the operator-tunable layer. The hardcoded floor is not negotiable, and that is precisely its value.</p>
+<h3 id="the-deterministic-eval-gate"><a class="header" href="#the-deterministic-eval-gate">The Deterministic Eval Gate</a></h3>
+<p><strong>Decision:</strong> the acceptance gate scores retrieval precision and answer faithfulness offline, without
+an LLM judge, and defaults to FAIL. A degraded build cannot ship; the test suite includes a case where
+a bad answerer is injected and the gate must reject it.</p>
+<p><strong>Alternative rejected:</strong> an LLM-as-judge setup or manual post-deployment evaluation.</p>
+<p><strong>Tradeoff accepted:</strong> the metrics are simpler than an LLM judge would provide. They will miss
+sophisticated hallucinations that a model evaluator might catch.</p>
+<p><strong>Failure mode guarded:</strong> a degraded build shipping because the eval is expensive to run, requires a
+live model, or is only done manually after deployment. When the gate runs offline in CI, it is
+mandatory, not optional. Defaulting to FAIL means a broken eval configuration does not become a green
+pass.</p>
+<p>A follow-up: “Doesn’t a simple precision and faithfulness metric miss too much?” You have the tradeoff
+ready: yes, and you chose it deliberately so the gate runs in CI on every build without a model call.
+Sophisticated hallucination detection belongs in a separate, slower eval loop, not in the gate the
+build depends on.</p>
+<h2 id="what-foregrounding-looks-like-under-probing"><a class="header" href="#what-foregrounding-looks-like-under-probing">What Foregrounding Looks Like Under Probing</a></h2>
+<p>The four-part shape is also what saves you when the interviewer digs.</p>
+<p>Suppose they ask: “Why not just return top-k results? Isn’t that simpler?” You do not need to think of
+an answer on the spot. You made the decision; you know the alternative you rejected; you know what goes
+wrong without the floor. The answer is immediate: “The alternative is always returning top-k. The
+failure mode is a model answering from low-relevance context with a confident citation, which in a
+regulated vertical has compliance consequences. The tradeoff is a stricter refusal rate; we set the
+threshold deliberately.”</p>
+<p>That answer is not rehearsed. It is reconstructed from the four parts you already know. This is the
+difference between memorizing a monologue and owning a design: a memorized walkthrough breaks under the
+first novel question; a decision-layer walkthrough holds because every component has a reason behind it
+that you can reconstruct from first principles.</p>
+<p>The follow-up is where candidates separate. A strong interviewer will follow every major component with
+“why not the simpler thing?” or “what breaks if you had done it differently?” If you foregrounded the
+decisions, you already answered those questions in your head when you built the artifact. The interview
+is just making that reasoning audible.</p>
+<h2 id="extracting-the-decision-set-from-any-artifact"><a class="header" href="#extracting-the-decision-set-from-any-artifact">Extracting the Decision Set From Any Artifact</a></h2>
+<p>Before a portfolio round, do this for every artifact you plan to walk through.</p>
+<p>List the load-bearing components: the pieces where a different choice would have produced a different
+system. Not every class or method; the three or four places where you made a real architectural call.</p>
+<p>For each component, write out the four parts: what you chose, what you rejected, what the choice cost,
+what it guards. If you cannot fill in all four, you have found a gap in your own understanding of your
+system. That gap will surface under follow-up. Fill it now, by reading the code and asking why each
+piece exists, before you are across a table from someone asking the same question.</p>
+<p>Then sort by importance. Lead with the component that shows the most judgment, the decision that
+distinguishes your design from a naive version of the same system. For the production RAG chatbot, that
+is the citation and refusal contract: the combination of the <code>Chunk</code> shape, the relevance floor, and the
+eval gate is what makes this a regulated-vertical system rather than a chatbot with a search bar.</p>
+<p>The artifacts you built in Sans Python are already strong. The decision layer is already there. The work
+before a portfolio round is not inventing reasoning; it is writing down the reasoning you did when you
+shipped the system, in four parts, so it comes out clean when an interviewer asks.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>A defended decision has four parts: what you chose, what you rejected, the tradeoff you accepted,
+and the failure mode it guards against; a walkthrough that runs this shape for every load-bearing
+component cannot be faked from a tutorial.</li>
+<li>The relevance floor is a structural refusal mechanism: returning an empty set when no candidate
+clears the minimum score trades recall on marginal queries for honesty about the corpus boundary.</li>
+<li>Splitting guardrail rules into a hardcoded-prohibitions floor and an operator-tunable layer above
+it makes the security controls unreachable from misconfigured operator settings, by construction.</li>
+<li>Defaulting an eval gate to FAIL means a broken eval configuration does not become a silent pass;
+running it offline without an LLM judge makes it mandatory rather than expensive.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module6/foreground-the-decisions/">
+<p><strong>Try It in Claude Code:</strong> for the artifact in your portfolio-narrative document, write its key decisions, the tradeoffs each accepted, and the failure modes each guards against, in the four-part shape.</p>
+</div>
+
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../module6/the-artifact-walkthrough.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
 
-                            <a rel="next prefetch" href="module1/00-overview.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module6/tailoring-to-the-role.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -233,8 +336,11 @@ to unlearn.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../module6/the-artifact-walkthrough.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
 
-                    <a rel="next prefetch" href="module1/00-overview.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module6/tailoring-to-the-role.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
@@ -254,16 +360,16 @@ to unlearn.</p>
         </script>
 
 
-        <script src="elasticlunr-ef4e11c1.min.js"></script>
-        <script src="mark-09e88c2c.min.js"></script>
-        <script src="searcher-09f2665d.js"></script>
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
 
-        <script src="clipboard-1626706a.min.js"></script>
-        <script src="highlight-abc7f01d.js"></script>
-        <script src="book-c22b7243.js"></script>
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="theme/copy-to-claude-c257122c.js"></script>
+        <script src="../theme/copy-to-claude-c257122c.js"></script>
 
 
 

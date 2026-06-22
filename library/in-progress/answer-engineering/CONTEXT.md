@@ -20,9 +20,13 @@ different stress" anti-memorization coda; validator grown to v4 in place (`--mod
 before M4 (Ray-confirmed reorder):** the vault has rich systems-design ore but no live-coding-screen ore,
 so M4 is deferred until its ore is sourced. M5 introduced the Haiku-fetch / Sonnet-author tier. All
 authored conductor-direct, reviewed to STYLE + STANDARDS with MS-Learn citations verified live, built
-clean (`mdbook build`), and shipped (`GATE-APPROVE-SHIP`, 2026-06-21). See
-`build-log/answer-engineering/build-progress.md`. Next: Module 6 (the portfolio-as-resume layer); Module 4
-(technical screens) deferred.
+clean (`mdbook build`), and shipped (`GATE-APPROVE-SHIP`, 2026-06-21). M6 "The Sans Python Portfolio as
+Resume" (overview + 4 lessons + 4 exercises) opens Phase 3: walking an interviewer through a real artifact
+as a decision tour (not a code reading), the four-beat defended decision, the same artifact narrated three
+ways per role, and the written portfolio-narrative document + a weak-walkthrough audit; worked examples are
+the real Sans Python portfolio artifacts; validator grown to v5 in place (`--module 6`). See
+`build-log/answer-engineering/build-progress.md`. Next: Module 7 (live practice and calibration, a
+self-review rubric in code); Module 4 (technical screens) deferred.
 
 ## Ore (in the vault — not yet distilled)
 
@@ -50,7 +54,7 @@ makes it especially legible to both.
 
 ## Handoff & gates
 
-`GATE-NAME-BOOK` cleared; M1–M3 + M5 shipped (M4 deferred, see above). For the next module: draft its
-`build-log/answer-engineering/m6/PLAN.md`, stop at `GATE-LOCK-PLAN`, then the fleet authors via
+`GATE-NAME-BOOK` cleared; M1–M3 + M5 + M6 shipped (M4 deferred, see above). For the next module: draft its
+`build-log/answer-engineering/m7/PLAN.md`, stop at `GATE-LOCK-PLAN`, then the fleet authors via
 `platform/pipeline/CONTEXT.md`, and stop at `GATE-APPROVE-SHIP` per stage. See
 `platform/HUMAN-GATES.md`.

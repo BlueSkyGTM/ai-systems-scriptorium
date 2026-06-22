@@ -9,7 +9,8 @@ Per-stage authoring status. One row per module.
 | M3 | Behavioral Interviews | ✅ Shipped | 2026-06-21 | Overview + 4 lessons (ownership-stories, conflict-stories, failure-stories, influence-stories) + 4 exercises. The behavioral example bank: each lesson runs two worked examples that show the Algorithm reasoning to a STAR-L answer (not canned scripts), names the category-specific signal + failure modes, and ends in a weak-answer audit. Examples 5 and 6 are intentionally reused across two lessons, constructed toward **different** signals, to demonstrate the book's thesis (method transfers, words do not). **Extends the prep dossier and grows `check_prep.py` to v3 in place** (`--module 3` gates the four behavioral-bank artifacts: STAR-L category, fields, audit verdict; M1/M2 checks intact; 31/31 tests). Plan: `m3/PLAN.md`. |
 | M5 | AI/ML Systems-Design Interviews | ✅ Shipped | 2026-06-21 | Overview + 4 lessons (reading-the-design-prompt, justify-every-box, production-reasoning-as-the-differentiator, the-full-design-under-pressure) + 4 exercises. The systems-design example bank: SPIDER is taught as the domain-specific "construct" motion (the analogue of M3's STAR-L), the worked designs reason from production constraints rather than reproduce reference architectures, and the finale lesson runs one full timed design + a weak-design audit + the "same prompt, different stress" coda that makes the anti-memorization thesis concrete. **Authored M5 before M4 (Ray-confirmed reorder)** because the vault has abundant systems-design ore but no live-coding-screen ore; M4 deferred until its ore is sourced. **Grows `check_prep.py` to v4 in place** (`--module 5` gates the systems-design log: SPIDER scope, justified design, the four production-reasoning pillars, audit verdict; M1-3 byte-identical; 40/40 tests). Plan: `m5/PLAN.md`. |
 | M4 | Technical Screens | ⏸️ Deferred | — | Reordered after M5. The vault interview-prep chapter has no live-coding-screen worked examples; building M4 as scoped would require fabricating coding problems, which the no-fabrication rule forbids. Deferred until its ore is sourced (likely reframed around the real Sans Python portfolio code). |
-| M6–M8 | per blueprint | ⬜ Not started | — | Phase 3 portfolio layer (portfolio-as-resume, live practice/calibration, the hiring loop end-to-end). The prep dossier + `check_prep.py` extend through these; M8 composes and grades the full dossier. |
+| M6 | The Sans Python Portfolio as Resume | ✅ Shipped | 2026-06-21 | Overview + 4 lessons (the-artifact-walkthrough, foreground-the-decisions, tailoring-to-the-role, the-portfolio-narrative-document) + 4 exercises. **Phase 3 opens.** Teaches the reader to walk an interviewer through a real artifact as a decision tour (the reasoning), not a code reading: the 60-second overview + the four-beat defended decision (decision / alternative / tradeoff / failure mode guarded), the same artifact narrated three ways for three role types (the anti-memorization thesis on the portfolio), and the written portfolio-narrative document + a 7-category weak-walkthrough audit. Worked examples are the REAL Sans Python portfolio artifacts (terminal coding agent; production RAG chatbot). **Grows `check_prep.py` to v5 in place** (`--module 6` gates the portfolio-narrative: artifact, overview, key decisions, tradeoffs, failure modes, role tailoring, audit verdict; M1-3+M5 byte-identical; 49/49 tests). Plan: `m6/PLAN.md`. |
+| M7–M8 | per blueprint | ⬜ Not started | — | Phase 3 finale: M7 Live Practice and Calibration (a self-review **rubric in code** + deliberate-practice scorecards), M8 The Hiring Loop End-to-End (composes + **grades the full dossier in code**). Code-don't-write: these throughline/capstone artifacts are scorers, not essays. |
 
 ## Provenance
 
@@ -85,3 +86,18 @@ pytest (M1-3 backward-compat + the M5 systems-design log + the `--module 5` gate
 --module 5` exits 1 cleanly against an empty dossier. `GATE-APPROVE-SHIP` cleared via Ray's standing
 "finish the job" directive (the same directive under which the concurrent Local Metal session shipped per
 module); committed and pushed as it landed.
+
+M6 opened Phase 3 (the portfolio layer) and ran on the Haiku-fetch / Sonnet-author tier. `GATE-LOCK-PLAN`
+self-cleared under the standing directive ("you're doing fine keep it up" = go for Phase 3). Round 1: a
+read-only Haiku surveyed the two featured Sans Python portfolio artifacts (terminal coding agent +
+production RAG chatbot) for their decisions/tradeoffs/failure-modes; the conductor (Opus) wrote the
+`portfolio-artifact-catalog.md` ingredient from that survey and authored `00-overview` + SUMMARY. Round 2:
+four Sonnet lesson-writers + one Sonnet exercises/validator worker, parallel. VERIFY (conductor): clean,
+zero fixes — no em-dashes, no fourth-wall leaks, no fabrication, the walkthrough-is-reasoning-not-code
+guardrail held in every lesson, MS-Learn correctly not forced (portfolio narration is interview craft).
+BUILD/TEST: `mdbook build` clean; `check_prep.py` v5 with 49/49 pytest (M1-3+M5 backward-compat + the M6
+portfolio-narrative + the `--module 6` gate); `check_prep.py --module 6` exits 1 cleanly against an empty
+dossier. This module marks Ray's sharpened mandate: **code, don't write; good writing is one big schema
+handoff** — the ingredient is the schema, the Sonnet authoring is the handoff, and the M7/M8 throughline
+artifacts ahead are scorers in code, not essays. `GATE-APPROVE-SHIP` cleared under the standing directive;
+committed and pushed as it landed.

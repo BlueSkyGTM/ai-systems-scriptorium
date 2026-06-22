@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-6ff4cf88.js";
+            window.path_to_searchindex_js = "searchindex-ac315a66.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-d23a6253.js"></script>
+        <script src="toc-295af4a6.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -1452,6 +1452,495 @@ tradeoff depth), treating prompts as magic, and one-size-fits-all model selectio
 </ul>
 <div class="claude-handoff" data-exercise="exercises/module5/the-full-design-under-pressure/">
 <p><strong>Try It in Claude Code:</strong> run the full SPIDER motion on your systems-design-log design under a 45-minute timer, then turn the weak-design audit on your own design and record the verdict: which red flags it risks, and the one change you made after the audit.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-6-the-sans-python-portfolio-as-resume"><a class="header" href="#module-6-the-sans-python-portfolio-as-resume">Module 6: The Sans Python Portfolio as Resume</a></h1>
+<p>Phase 2 prepared you to reason to a strong answer when you are put on the spot. This phase is about the
+thing you bring into the room with you: the work you already built. If you have worked through Sans
+Python, you have a portfolio of runnable systems, a terminal coding agent, a production RAG chatbot, a
+governed multi-agent fleet. Those are not exercises to leave behind. They are the resume. This module
+teaches you to walk an interviewer through one of them in a way that makes them trust your judgment.</p>
+<p>The mistake most engineers make with a portfolio is treating the walkthrough as a code reading. They
+open the file and narrate what each function does. The interviewer did not ask what the code does; they
+can read code. They asked what you built and why, and the gap between those two answers is where offers
+are won. A walkthrough is the reasoning behind the artifact, told to someone who was not there when you
+made the decisions.</p>
+<h2 id="what-the-interviewer-is-actually-evaluating-1"><a class="header" href="#what-the-interviewer-is-actually-evaluating-1">What the Interviewer Is Actually Evaluating</a></h2>
+<p>When an interviewer says “walk me through a project,” they are running a hypothesis: can this person make
+me understand a system I have never seen, quickly, and then show me the judgment that went into it? They
+are listening for the decisions you made, the alternatives you rejected, the tradeoffs you accepted, and
+the failure modes you designed against. A walkthrough that lists components scores low. A walkthrough that
+defends choices scores high. It is the same discipline as justifying every box in a systems-design round,
+except now the system is real and you are the one who shipped it.</p>
+<h2 id="how-to-read-a-worked-walkthrough"><a class="header" href="#how-to-read-a-worked-walkthrough">How to Read a Worked Walkthrough</a></h2>
+<p>Every worked walkthrough in this module runs the same motion: the sixty-second overview that orients the
+listener, then the decision tour that goes deep on the three or four choices that mattered. Read each one
+for the reasoning being foregrounded, not for the artifact’s source code. The failure mode of portfolio
+prep is a memorized monologue, the same speech delivered to every interviewer regardless of the role or
+the follow-up. The walkthroughs here are demonstrations of how to construct the narration from the
+artifact and the role in front of you, so you can do it for your own work and adapt when the interviewer
+steers.</p>
+<h2 id="the-four-lessons-2"><a class="header" href="#the-four-lessons-2">The Four Lessons</a></h2>
+<ol>
+<li><strong>The Artifact Walkthrough</strong> builds the shape: the sixty-second overview, then the decision tour, and
+the discipline of what to foreground versus what to skip.</li>
+<li><strong>Foreground the Decisions</strong> goes to the decision layer at depth: every component was a choice, and the
+interviewer is buying the why, not the code.</li>
+<li><strong>Tailoring to the Role</strong> narrates the same artifact differently for an applied-AI role, a platform
+role, and a research-adjacent role, because the walkthrough bends to the signal the role values.</li>
+<li><strong>The Portfolio Narrative Document</strong> composes the written walkthrough you bring to interviews, then
+turns the weak-walkthrough audit on it the way earlier modules audited an answer and a design.</li>
+</ol>
+<h2 id="what-this-module-feeds-forward-4"><a class="header" href="#what-this-module-feeds-forward-4">What This Module Feeds Forward</a></h2>
+<p>By the end you have a portfolio-narrative document in your prep dossier: a structured, interview-ready
+walkthrough of at least one artifact, with the decisions, tradeoffs, failure modes, and role-tailoring
+written down and self-audited. That document is what you rehearse from before a portfolio round, and the
+last two modules build on it directly: live practice puts it under pressure, and the hiring-loop module
+composes it with everything else in the dossier into the full preparation you walk in with.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-artifact-walkthrough"><a class="header" href="#the-artifact-walkthrough">The Artifact Walkthrough</a></h1>
+<p>The walkthrough is not a code reading. That gap, between narrating what each function does and narrating the reasoning behind the decisions, is where offers are won or lost.</p>
+<p>Every engineer who interviews on a portfolio tends toward the same mistake: they open the code and begin describing it. The interviewer can read code. What they cannot learn from the code alone is whether you made the choices on purpose, whether you understood the failure modes you were guarding against, and whether you can explain all of that to someone who was not there. The walkthrough is that explanation, and its shape is not the shape of the code.</p>
+<h2 id="the-signal-the-interviewer-is-reading"><a class="header" href="#the-signal-the-interviewer-is-reading">The Signal the Interviewer Is Reading</a></h2>
+<p>When an interviewer asks you to walk them through a project, they are running a two-part test. First: can you make them understand a system they have never seen, quickly? Second: can you show them the judgment that went into it?</p>
+<p>The failure mode looks like preparation from the outside. The candidate names the components in order. The terminology is fluent. The architecture sounds plausible. Then the interviewer asks: “Why did you make the agent’s kill switch read-only?” If the answer is “that’s how the lesson did it,” or a blank pause, the walkthrough is over. The candidate memorized the artifact. They did not own it.</p>
+<p>The interviewer is listening for three things in particular: the decisions you made (and could have made differently), the alternatives you rejected (and why), and the failure modes you designed against (and how). A walkthrough that lists components scores low. A walkthrough that defends choices scores high. It is the same discipline as justifying every box in a systems-design round, except now the system is real, the constraints were real, and you are the one who shipped it.</p>
+<h2 id="the-sixty-second-overview"><a class="header" href="#the-sixty-second-overview">The Sixty-Second Overview</a></h2>
+<p>A walkthrough opens with an overview, and the overview has one job: orient the listener fast. You are not summarizing every feature. You are giving the interviewer the frame they need to hear the decisions.</p>
+<p>The overview has three beats:</p>
+<ol>
+<li>What the artifact is (one sentence on purpose).</li>
+<li>What it does (one sentence on mechanism).</li>
+<li>The one impressive thing: the single decision that makes this artifact interesting, stated plainly and led with.</li>
+</ol>
+<p>Lead with the differentiator. The first thing out of your mouth should be the decision that most clearly shows judgment, not the component list. If you bury the impressive thing at the end of a component tour, the interviewer may have already formed their impression.</p>
+<p>Here is the sixty-second overview for the terminal coding agent you built in Sans Python:</p>
+<blockquote>
+<p>“This is a terminal coding agent: it reads a failing file, writes a fix, runs the real test suite in a subprocess, and loops until a deterministic verification gate accepts the result. The most important design decision is that gate, which defaults to REJECT and runs the actual tests, not the model’s self-assessment. The agent also holds a read-only kill switch the operator owns, and a budget with two hard caps, dollar cost and iteration count, checked before every model call to guard against runaway billing.”</p>
+</blockquote>
+<p>That overview runs about forty-five seconds spoken. It orients the listener on what the system does, then immediately foregrounds the three decisions that give the artifact its character: the verification gate, the kill switch, and the budget. The interviewer now has the frame to hear the decision tour.</p>
+<p>Notice what the overview does not include: the tool registry, the mock model seam, the path-jailing logic, the subprocess wall-clock timeout. Those are real parts of the system. They are not what makes the system interesting to an interviewer. You lead with the judgment; you skip the inventory.</p>
+<h2 id="the-decision-tour"><a class="header" href="#the-decision-tour">The Decision Tour</a></h2>
+<p>After the overview, you go deep on three or four choices that mattered. Not every choice. Not the obvious ones. The ones where you had a real alternative, made a call, accepted a tradeoff, and guarded against a specific failure mode.</p>
+<p>Each decision in the tour follows the same four beats:</p>
+<ol>
+<li>State the decision.</li>
+<li>Name the alternative you rejected.</li>
+<li>Name the tradeoff you accepted.</li>
+<li>Name the failure mode you guarded against.</li>
+</ol>
+<p>You do not read the code. You narrate the reasoning.</p>
+<h3 id="the-verification-gate"><a class="header" href="#the-verification-gate">The Verification Gate</a></h3>
+<p>The terminal coding agent defines “done” as a fact returned by running the real test suite, not a claim from the model. The alternative: trust the model’s self-assessment. The model loops, writes a fix, and reports whether it believes the fix is correct.</p>
+<p>The tradeoff you accepted: the agent runs the full suite on every candidate fix. That costs time and money. But the failure mode you guarded is the one that makes coding agents unreliable in practice: the agent declares victory on a broken fix. A model that checks its own output is an optimist, not a verifier. The gate is the antidote, and it defaults to REJECT, not to pass. You have to earn the pass.</p>
+<p>That default matters. A gate that defaults to pass with a threshold is a gate that can be gamed by an agent that barely tries. A gate that defaults to REJECT can only be cleared by running the tests and having them pass. The distinction is architectural, not a detail.</p>
+<h3 id="the-read-only-kill-switch"><a class="header" href="#the-read-only-kill-switch">The Read-Only Kill Switch</a></h3>
+<p>The kill switch is a file the operator owns. The agent can read it (<code>tripped()</code>) but cannot write it. The alternative: a flag in the agent’s own reachable state, something the agent sets when it decides to stop.</p>
+<p>The tradeoff: the kill switch requires an external file check before every action. That is one more thing that can fail. But the failure mode guarded is more serious: if the kill switch lives in state the agent can write, the agent can disable its own kill switch. You have a kill switch in name only. The read-only constraint is what gives the operator actual control, not apparent control.</p>
+<p>This is the kind of decision an interviewer cannot infer from the code. Reading the source, they see a file check. They do not see the reasoning: that write access was considered and removed because write access defeats the purpose.</p>
+<h3 id="the-budget-with-two-caps"><a class="header" href="#the-budget-with-two-caps">The Budget With Two Caps</a></h3>
+<p>The agent checks a budget before every model call. The budget has two ceilings: total dollar cost and total iteration count. Both are checked before paying for another action, not after. The alternative: check the budget after the call, or ask the model to monitor its own spend.</p>
+<p>The tradeoff: the pre-call check means the agent stops one action sooner than a post-call check would. You occasionally leave a loop on the table. The failure mode guarded is Denial of Wallet: a runaway loop billing indefinitely because no hard ceiling was enforced. A budget you ask a model to enforce is a budget the model can reason its way past. Two deterministic ceilings, checked before the cost is incurred, cannot be argued with.</p>
+<h3 id="what-you-skip"><a class="header" href="#what-you-skip">What You Skip</a></h3>
+<p>Notice what the decision tour did not cover: the tool registry’s schema validation and path jailing, the subprocess sandbox timeout, the mock model seam. Those are real decisions with real reasoning. They are not the decisions that show interviewer-relevant judgment in a portfolio walkthrough.</p>
+<p>You skip them not because they are unimportant, but because the walkthrough is not exhaustive. You are demonstrating judgment, and part of that demonstration is choosing which decisions to surface. An interviewer who asks about the tool registry gets a full answer; but you do not volunteer it in the tour when you have only ten minutes and three stronger decisions to make the case.</p>
+<p>You also do not read the code aloud. Saying “line 47 calls <code>budget.check()</code> and then…” is the failure mode the overview warned against. The decision is not the line; the decision is the reasoning that put that line there.</p>
+<h2 id="the-transfer-any-artifact-same-shape"><a class="header" href="#the-transfer-any-artifact-same-shape">The Transfer: Any Artifact, Same Shape</a></h2>
+<p>The walkthrough shape you just saw works for any portfolio artifact. The structure is fixed; the content is the artifact.</p>
+<p>Open with the sixty-second overview: purpose in one sentence, mechanism in one sentence, the differentiator first. The differentiator is whichever decision most clearly shows that you understood the hard part of the problem, not the flashy part.</p>
+<p>Then run three or four decisions through the four-beat structure: what you chose, what you rejected, the tradeoff you accepted, the failure mode you guarded. Choose the decisions that are genuinely defensible: ones where you had a real alternative, not ones where there was only one obvious answer.</p>
+<p>Close the decision tour before the interviewer’s attention runs out. Ten minutes is about right for a portfolio walkthrough in an interview setting. If you are running longer, you have too many decisions in the tour; cut to the three that are strongest.</p>
+<p>One note on adaptation: the decisions do not change between interviewers, but the order and emphasis do. An infrastructure-focused interviewer will want the kill switch and the budget early; they are the operability story. A product-focused interviewer may want the verification gate and its implications for reliability. You read the role before the walkthrough, and you lead with the decision the role values. That adaptation is not dishonesty; it is signal discipline. The walkthrough is for them.</p>
+<h2 id="core-concepts-14"><a class="header" href="#core-concepts-14">Core Concepts</a></h2>
+<ul>
+<li>A walkthrough is the reasoning behind an artifact told to someone who was not there, not a narration of what each function does; that distinction is where interviews turn.</li>
+<li>The sixty-second overview orients fast and leads with the single most differentiating decision, not a component list.</li>
+<li>Each decision in the tour follows four beats: what you chose, what you rejected, the tradeoff accepted, the failure mode guarded.</li>
+<li>Choosing which decisions to surface is itself a demonstration of judgment; the candidate who volunteers every decision buries the three that matter.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module6/the-artifact-walkthrough/">
+<p><strong>Try It in Claude Code:</strong> pick one portfolio artifact (a Sans Python one you built, or your own) and write its sixty-second overview and the one decision you would lead with into your portfolio-narrative document.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="foreground-the-decisions"><a class="header" href="#foreground-the-decisions">Foreground the Decisions</a></h1>
+<p>The code is where the decisions left marks. The interview is about the decisions themselves.</p>
+<p>An interviewer can read your repository. They can follow the retrieval chain, count the classes, and
+trace the guardrail logic in five minutes. What they cannot read from your code is your judgment: why
+this design instead of a simpler one, which alternative you considered and set aside, what would go
+wrong if you had chosen differently. That judgment is what the walkthrough has to surface, because the
+code alone does not carry it.</p>
+<h2 id="why-decisions-are-the-signal"><a class="header" href="#why-decisions-are-the-signal">Why Decisions Are the Signal</a></h2>
+<p>When an interviewer says “walk me through how the RAG system works,” they are not asking for a class
+diagram. They are testing whether you can tell the difference between a component you reached for by
+habit and one you chose by reasoning. The candidate who explains every component as an obvious part of
+a standard RAG pipeline scores the same as the candidate who reads the docstrings aloud. The candidate
+who names a choice, the alternative it beat, and the failure mode it prevents scores higher, because
+that narration cannot be faked from a tutorial.</p>
+<p>The discipline here is identical to justifying every box in a systems-design round. In that context you
+defend a component you just drew. In a portfolio walkthrough you defend a component you actually
+shipped, which is easier: the decisions are already made, the failure modes already handled. The work is
+foregrounding them, making the reasoning visible to someone who was not in the room when you made the
+calls.</p>
+<h2 id="the-shape-of-a-defended-decision"><a class="header" href="#the-shape-of-a-defended-decision">The Shape of a Defended Decision</a></h2>
+<p>Every load-bearing component in your walkthrough earns its place through four moves.</p>
+<p>First, name the decision: what you built and what it does. Second, name the alternative you rejected:
+the simpler or more obvious path that you did not take. Third, name the tradeoff you accepted: what the
+chosen design costs. Fourth, name the failure mode it guards against: the specific thing that goes wrong
+if you had made the other choice.</p>
+<p>That four-part shape is not a formula to recite. It is a test of whether you understand the component
+you shipped. If you cannot name the alternative, you may have reached for a default. If you cannot name
+the failure mode, you may not know what the design is protecting. Both gaps surface immediately under
+follow-up, which is exactly when a portfolio walkthrough becomes an interview.</p>
+<h2 id="worked-example-the-production-rag-chatbot"><a class="header" href="#worked-example-the-production-rag-chatbot">Worked Example: The Production RAG Chatbot</a></h2>
+<p>The production RAG chatbot you built in Sans Python is a citation-enforced, guardrailed retrieval
+system for regulated verticals. It retrieves from a corpus, grounds every answer in retrieved chunks
+with explicit citations, screens inputs and outputs against a prohibition floor, and gates a build on
+retrieval precision and answer faithfulness. Here is what the decision layer looks like.</p>
+<h3 id="the-chunk-citation-contract"><a class="header" href="#the-chunk-citation-contract">The Chunk Citation Contract</a></h3>
+<p><strong>Decision:</strong> every piece of text in the pipeline binds to a <code>Chunk</code>: a struct carrying document ID,
+section, and text. Nothing downstream ever handles a raw document object.</p>
+<p><strong>Alternative rejected:</strong> passing raw document or file objects through the pipeline and deriving
+citations when needed.</p>
+<p><strong>Tradeoff accepted:</strong> ingest is responsible for mapping every input format onto the one <code>Chunk</code>
+shape. A new format means a new parser, not a new pipeline branch.</p>
+<p><strong>Failure mode guarded:</strong> a format change (swapping a scanned contract for a native PDF, adding a new
+document source) rippling through retrieval, generation, and citation rendering. When the contract is
+the <code>Chunk</code> shape, a format change is a one-layer problem: the parser adapts, and the rest of the
+pipeline sees no change.</p>
+<p>A follow-up an interviewer will ask: “What happens when you add a new document type?” You have the
+answer: you write a parser that produces <code>Chunk</code> objects. The retriever, the guardrail, and the citation
+renderer do not know a new type exists.</p>
+<h3 id="the-relevance-floor"><a class="header" href="#the-relevance-floor">The Relevance Floor</a></h3>
+<p><strong>Decision:</strong> the retriever returns an empty set when all retrieved candidates fall below a
+minimum-score threshold, which forces the chatbot to refuse rather than answer from low-relevance
+context.</p>
+<p><strong>Alternative rejected:</strong> always returning the top-k results regardless of their scores, as most
+off-the-shelf retrieval implementations do.</p>
+<p><strong>Tradeoff accepted:</strong> some valid questions get a “I don’t have a source for that” response. The
+system trades recall on low-relevance queries for honesty about its knowledge boundary.</p>
+<p><strong>Failure mode guarded:</strong> hallucinated citations. A model asked to answer from low-relevance chunks
+has to fill the gap somehow. In regulated verticals, a confident wrong answer grounded in a
+tangentially relevant chunk is worse than an explicit refusal. The relevance floor makes refusal
+the structural default when the corpus does not support an answer.</p>
+<p>A follow-up: “Isn’t that too conservative? You’re dropping valid questions.” You have the tradeoff
+ready: yes, and that is the deliberate choice for a regulated vertical where a fabricated citation has
+compliance consequences. Adjusting the threshold is a tunable dial; setting the dial to zero recreates
+the failure mode.</p>
+<h3 id="the-guardrail-with-a-hardcoded-prohibitions-floor"><a class="header" href="#the-guardrail-with-a-hardcoded-prohibitions-floor">The Guardrail with a Hardcoded-Prohibitions Floor</a></h3>
+<p><strong>Decision:</strong> the guardrail splits rules into two tiers. Hardcoded prohibitions covering prompt
+injection and PII exfiltration sit beneath all operator configuration, unchangeable by runtime settings.
+Operator-tunable rules covering topical scope and style sit above them, adjustable per deployment.</p>
+<p><strong>Alternative rejected:</strong> making all guardrail rules operator-configurable, which is the simpler
+architecture: one config surface, no hidden floor.</p>
+<p><strong>Tradeoff accepted:</strong> the operator cannot disable security-critical prohibitions. For a
+multi-tenant deployment this may feel limiting; for a regulated vertical it is the point.</p>
+<p><strong>Failure mode guarded:</strong> a misconfigured or pressured operator lowering the security floor. If every
+rule is configurable, a deployment with a misconfigured scope check silently removes the
+prompt-injection check at the same time. Splitting the tiers means the operator’s scope changes cannot
+reach the security controls, by construction.</p>
+<p>A follow-up: “How do you handle a tenant that needs a custom prohibition?” The answer is: they add to
+the operator-tunable layer. The hardcoded floor is not negotiable, and that is precisely its value.</p>
+<h3 id="the-deterministic-eval-gate"><a class="header" href="#the-deterministic-eval-gate">The Deterministic Eval Gate</a></h3>
+<p><strong>Decision:</strong> the acceptance gate scores retrieval precision and answer faithfulness offline, without
+an LLM judge, and defaults to FAIL. A degraded build cannot ship; the test suite includes a case where
+a bad answerer is injected and the gate must reject it.</p>
+<p><strong>Alternative rejected:</strong> an LLM-as-judge setup or manual post-deployment evaluation.</p>
+<p><strong>Tradeoff accepted:</strong> the metrics are simpler than an LLM judge would provide. They will miss
+sophisticated hallucinations that a model evaluator might catch.</p>
+<p><strong>Failure mode guarded:</strong> a degraded build shipping because the eval is expensive to run, requires a
+live model, or is only done manually after deployment. When the gate runs offline in CI, it is
+mandatory, not optional. Defaulting to FAIL means a broken eval configuration does not become a green
+pass.</p>
+<p>A follow-up: “Doesn’t a simple precision and faithfulness metric miss too much?” You have the tradeoff
+ready: yes, and you chose it deliberately so the gate runs in CI on every build without a model call.
+Sophisticated hallucination detection belongs in a separate, slower eval loop, not in the gate the
+build depends on.</p>
+<h2 id="what-foregrounding-looks-like-under-probing"><a class="header" href="#what-foregrounding-looks-like-under-probing">What Foregrounding Looks Like Under Probing</a></h2>
+<p>The four-part shape is also what saves you when the interviewer digs.</p>
+<p>Suppose they ask: “Why not just return top-k results? Isn’t that simpler?” You do not need to think of
+an answer on the spot. You made the decision; you know the alternative you rejected; you know what goes
+wrong without the floor. The answer is immediate: “The alternative is always returning top-k. The
+failure mode is a model answering from low-relevance context with a confident citation, which in a
+regulated vertical has compliance consequences. The tradeoff is a stricter refusal rate; we set the
+threshold deliberately.”</p>
+<p>That answer is not rehearsed. It is reconstructed from the four parts you already know. This is the
+difference between memorizing a monologue and owning a design: a memorized walkthrough breaks under the
+first novel question; a decision-layer walkthrough holds because every component has a reason behind it
+that you can reconstruct from first principles.</p>
+<p>The follow-up is where candidates separate. A strong interviewer will follow every major component with
+“why not the simpler thing?” or “what breaks if you had done it differently?” If you foregrounded the
+decisions, you already answered those questions in your head when you built the artifact. The interview
+is just making that reasoning audible.</p>
+<h2 id="extracting-the-decision-set-from-any-artifact"><a class="header" href="#extracting-the-decision-set-from-any-artifact">Extracting the Decision Set From Any Artifact</a></h2>
+<p>Before a portfolio round, do this for every artifact you plan to walk through.</p>
+<p>List the load-bearing components: the pieces where a different choice would have produced a different
+system. Not every class or method; the three or four places where you made a real architectural call.</p>
+<p>For each component, write out the four parts: what you chose, what you rejected, what the choice cost,
+what it guards. If you cannot fill in all four, you have found a gap in your own understanding of your
+system. That gap will surface under follow-up. Fill it now, by reading the code and asking why each
+piece exists, before you are across a table from someone asking the same question.</p>
+<p>Then sort by importance. Lead with the component that shows the most judgment, the decision that
+distinguishes your design from a naive version of the same system. For the production RAG chatbot, that
+is the citation and refusal contract: the combination of the <code>Chunk</code> shape, the relevance floor, and the
+eval gate is what makes this a regulated-vertical system rather than a chatbot with a search bar.</p>
+<p>The artifacts you built in Sans Python are already strong. The decision layer is already there. The work
+before a portfolio round is not inventing reasoning; it is writing down the reasoning you did when you
+shipped the system, in four parts, so it comes out clean when an interviewer asks.</p>
+<h2 id="core-concepts-15"><a class="header" href="#core-concepts-15">Core Concepts</a></h2>
+<ul>
+<li>A defended decision has four parts: what you chose, what you rejected, the tradeoff you accepted,
+and the failure mode it guards against; a walkthrough that runs this shape for every load-bearing
+component cannot be faked from a tutorial.</li>
+<li>The relevance floor is a structural refusal mechanism: returning an empty set when no candidate
+clears the minimum score trades recall on marginal queries for honesty about the corpus boundary.</li>
+<li>Splitting guardrail rules into a hardcoded-prohibitions floor and an operator-tunable layer above
+it makes the security controls unreachable from misconfigured operator settings, by construction.</li>
+<li>Defaulting an eval gate to FAIL means a broken eval configuration does not become a silent pass;
+running it offline without an LLM judge makes it mandatory rather than expensive.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module6/foreground-the-decisions/">
+<p><strong>Try It in Claude Code:</strong> for the artifact in your portfolio-narrative document, write its key decisions, the tradeoffs each accepted, and the failure modes each guards against, in the four-part shape.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="tailoring-to-the-role"><a class="header" href="#tailoring-to-the-role">Tailoring to the Role</a></h1>
+<p>The production RAG chatbot you built in Sans Python is a single artifact. It is also three different stories, depending on who is sitting across the table. Delivering the identical walkthrough to every interviewer, regardless of the role, is not confidence; it is a failure to read the room, and it costs you offers.</p>
+<p>This is the anti-memorization thesis applied to the portfolio. The decisions are fixed: you built what you built, the choices are on disk, and nothing about your narrative changes the artifact itself. What bends is which decisions you lead with, how deep you go on each, and the vocabulary you reach for. Reading the role and calibrating the narration to it is the skill the lesson builds.</p>
+<h2 id="why-the-same-artifact-is-a-different-story"><a class="header" href="#why-the-same-artifact-is-a-different-story">Why the Same Artifact Is a Different Story</a></h2>
+<p>An interviewer from an applied-AI product team and an interviewer from an ML-platform team are running different hypotheses when they ask you to walk them through a project.</p>
+<p>The product-team interviewer wants to know whether you understood the user-facing failure modes. Can this system stay reliable for the people who depend on it? Do you know what “reliable” means for a citation-enforced chatbot in a regulated vertical? They are listening for the decisions that protected the user: the refusal when nothing retrieval-worthy surfaced, the guardrails that held a floor the operator could not lower, the eval that ran in CI so the chatbot could not regress silently.</p>
+<p>The platform-team interviewer wants to know whether you understood the operational structure. Can this system be maintained, extended, and integrated with infrastructure that did not exist when you built it? They are listening for the seams: the <code>VectorIndex</code> protocol that made Azure AI Search a one-constructor swap, the deterministic gates that ran without a live model, the drift monitor that turned a diffuse quality signal into a concrete operational flag.</p>
+<p>The research-adjacent interviewer wants to know whether you built rigorous measurement into the system itself. Do you know the difference between a test that passes and an eval that means something? They are listening for the metrics: precision and faithfulness scored offline, a gate that defaulted to FAIL rather than PASS, a drift monitor with a named window and a named SLO.</p>
+<p>None of these interviewers are wrong about what matters. They are each listening for a different dimension of the same artifact. The candidate who knows that, and adjusts, is demonstrating the judgment a senior engineer brings: you can translate the work for the audience in front of you.</p>
+<h2 id="the-worked-example-three-rooms-one-chatbot"><a class="header" href="#the-worked-example-three-rooms-one-chatbot">The Worked Example: Three Rooms, One Chatbot</a></h2>
+<p>The production RAG chatbot has seven load-bearing decisions. Every walkthrough covers all of them, in the sense that the interviewer will ask follow-ups and you must be able to speak to any of them. What changes is your opening, your depth allocation, and the frame you put on each decision before you explain it.</p>
+<h3 id="applied-ai-and-product-engineer-lead-with-reliability"><a class="header" href="#applied-ai-and-product-engineer-lead-with-reliability">Applied-AI and Product Engineer: Lead With Reliability</a></h3>
+<p>The opening orients around what the user experiences: “This system retrieves from a corpus, grounds every answer in retrieved chunks with explicit citations, and refuses rather than fabricates when nothing retrieval-worthy surfaces. I want to walk you through how I kept it reliable for the people depending on it.”</p>
+<p>The first decision you foreground is the relevance floor. The retriever holds a minimum similarity score; if the top results all fall below it, the system returns a refusal instead of returning low-confidence chunks and letting the model paper over the gap. You explain the tradeoff plainly: some valid questions receive “I don’t have a source for that.” The failure mode guarded is more important than the cost: hallucinated citations in a regulated vertical are not a quality miss, they are a liability. The decision is to accept the false-negative cost to eliminate the false-positive risk.</p>
+<p>From there you move to the citation contract: every answer carries the <code>doc_id</code> and section of the chunk it came from, not as a decoration but as a verifiable claim the user can check. The guardrail pairs with this; it splits rules into a hardcoded floor (prompt injection, PII exfiltration) and operator-tunable scope, and the floor is bounded so an operator under pressure cannot configure their way below it. You spend real time on this split: the product interviewer understands that configurable guardrails are only as strong as the people configuring them.</p>
+<p>The drift monitor and eval gate are where you answer “does it stay reliable over time?” The drift monitor samples quality over a rolling window and flags an SLO breach when the mean drops below tolerance. You say explicitly that infrastructure metrics would not have caught this failure mode; corpus shifts and model updates degrade answer quality while uptime stays green. The eval gate, scoring retrieval precision and answer faithfulness, runs in CI so a degraded build cannot ship. Those two together are your answer to “how did you know it was staying good in production?”</p>
+<p>Notice what you spend less time on: the <code>VectorIndex</code> protocol seam, the deterministic mock at the generation seam, the path jailing in the tool registry. Those are real decisions. A product interviewer will follow up on them if they probe the architecture. But they are not what the role is evaluating as the lead.</p>
+<h3 id="ml-platform-and-infra-engineer-lead-with-seams-and-operability"><a class="header" href="#ml-platform-and-infra-engineer-lead-with-seams-and-operability">ML-Platform and Infra Engineer: Lead With Seams and Operability</a></h3>
+<p>The opening reframes: “This is a citation-enforced RAG system built around two clean seams that separate the retrieval backend from the application and the generation model from the pipeline. I want to walk you through how it’s designed to be maintained and extended.”</p>
+<p>The first decision you foreground is the <code>VectorIndex</code> protocol: a two-method interface, <code>add</code> and <code>search</code>, that both the in-memory default and Azure AI Search satisfy. You walk through why the seam is there: a pipeline without a seam couples every downstream component to one backend, so migrating storage touches every layer. With the seam, migrating is one constructor call. The platform interviewer has lived this problem; they know the migration cost, and they are listening for whether you do.</p>
+<p>From there you move to the deterministic gates. The eval gate scores precision and faithfulness offline, without a live model, so it runs in CI and means the same thing every time. You say “deterministic” deliberately: the platform interviewer’s concern is operational consistency. A gate that behaves differently in CI than in production is not a gate; it is a suggestion. The <code>Chunk</code> contract feeds this: ingest maps every format onto one shape, so a document parser change does not propagate downstream and cannot cause the gate to behave differently on a different run.</p>
+<p>The drift monitor translates differently in this room. You frame it not as a quality story but as an operational signal: the monitor turns “something got worse” into a named metric with a defined threshold and a binary outcome. That is what makes it operable; a diffuse quality perception cannot trigger an alert or a runbook.</p>
+<p>The guardrail’s two-tier split matters here in a specific way: the hardcoded floor holds regardless of operator configuration, which means the security contract is stable and testable. You can write a test that verifies the floor holds. That is a different property than “the operator did not configure anything bad.”</p>
+<p>What you spend less time on: the refusal behavior for low-relevance queries, the user-facing citation contract, the specific metrics the eval gate measures. Those decisions are real and answerable on follow-up. But the platform interviewer’s signal is the structural properties of the system, not the user-experience implications of the refusal.</p>
+<h3 id="research-adjacent-and-applied-science-lead-with-eval-rigor"><a class="header" href="#research-adjacent-and-applied-science-lead-with-eval-rigor">Research-Adjacent and Applied Science: Lead With Eval Rigor</a></h3>
+<p>The opening centers measurement: “This system has a deterministic eval gate that scores retrieval precision and answer faithfulness offline, a drift monitor that tracks quality over a rolling window against a defined SLO, and a refusal mechanism built on a principled threshold rather than a confidence heuristic. I want to walk you through the measurement layer.”</p>
+<p>The first decision you foreground is the eval gate. It scores two things: retrieval precision (did the retrieved chunks actually match the query?) and answer faithfulness (did the generated answer stay within what the retrieved chunks support?). It does not use an LLM judge, because an LLM judge is not deterministic; the same test can pass and fail across runs without any change to the system. The gate defaults to FAIL; a passing score must be earned, not assumed. You explain the tradeoff: simple metrics miss sophisticated hallucinations. But the tradeoff you accepted is the one that gives you a gate with the property you need for CI: it runs the same way every time.</p>
+<p>The relevance floor is where you connect refusal to measurement. The threshold is a named number, not a feeling. Setting it too low and you are generating answers from low-relevance context; setting it too high and you are refusing valid queries. The refusal rate is measurable, the threshold is tunable, and the failure mode (fabrication from weak context) is not recoverable after the fact in a regulated vertical.</p>
+<p>The drift monitor closes the loop: you specify the window size, the quality metric, and the breach threshold in advance. “Something degraded” is not a useful signal; “the rolling precision mean dropped below 0.75 in the last 100 queries” is. The research-adjacent interviewer hears this and knows you understand the difference between an observation and a measurement.</p>
+<p>The <code>Chunk</code> contract supports reproducibility: because every ingested document maps to the same shape before it enters the index, the eval is running against a stable unit. A change to the parser does not change the eval target. That is not a performance property; it is a measurement property.</p>
+<p>What you spend less time on: the seam architecture, the CI operability of the gates, the user-facing citation UI. Those are real properties of the system. The applied-science interviewer will follow up if they probe the implementation. But what they are buying in this room is evidence that you built rigorous measurement in, not as a retrofit, but as a load-bearing component.</p>
+<h2 id="reading-the-role"><a class="header" href="#reading-the-role">Reading the Role</a></h2>
+<p>The three narrations above were not invented after the interview. They were prepared before it. The skill is reading the signal early enough to calibrate the lead.</p>
+<p>Three inputs give you most of what you need before the interview starts.</p>
+<p><strong>The job description.</strong> Look for the words that recur in the responsibilities and requirements. A description heavy on “reliability,” “user experience,” and “production quality” is signaling the applied-AI frame. One heavy on “infrastructure,” “platform,” “scalability,” and “integrations” is signaling the platform frame. One heavy on “evaluation,” “measurement,” “benchmarks,” and “rigor” is signaling the research-adjacent frame. The JD is a public statement of what the team values; read it that way.</p>
+<p><strong>The interviewer’s team.</strong> If you know the interviewer’s current project or team, that is a stronger signal than the JD. A platform engineer working on vector search infrastructure will listen for seams. A product engineer working on a user-facing AI feature will listen for reliability and user trust. A researcher working on eval methodology will listen for measurement rigor. LinkedIn and the company’s engineering blog often tell you enough before the call.</p>
+<p><strong>The questions they ask first.</strong> If the first two questions are about the user experience or failure modes in production, that is a live signal: shift your depth allocation toward the product frame. If the first questions are about how you would extend or replace a component, shift toward the platform frame. If the first questions are about how you measured what you built, shift toward the research-adjacent frame. This is not a rigid decision; it is a continuous update. The interviewer’s questions are data about what they are evaluating, and you are allowed to use that data.</p>
+<p>Once you have read the signal, the choice is which decision to lead with: the refusal and citation contract, the protocol seam, or the eval gate. The rest of the walkthrough follows from the lead. You foreground what the role values, you depth-allocate there, and you hold the other decisions ready for follow-ups. You did not change the artifact; you changed where you entered it.</p>
+<p>This is what makes the portfolio narration a live skill rather than a speech. A memorized monologue has one entry point. A walkthrough built from the decision layer has seven, and you choose the right one for the room.</p>
+<h2 id="core-concepts-16"><a class="header" href="#core-concepts-16">Core Concepts</a></h2>
+<ul>
+<li>The same portfolio artifact narrates differently for different roles because different roles are evaluating different dimensions of the same decisions; the artifact does not change, the emphasis and the lead do.</li>
+<li>The decision set is fixed by what you built; what bends is which decision you open with, how deep you go on each, and the vocabulary frame you put around it.</li>
+<li>Three inputs let you read the role before and during the interview: the job description’s recurring vocabulary, the interviewer’s team and current work, and the first questions they ask; treat all three as live data.</li>
+<li>A walkthrough built from the decision layer has multiple entry points; a memorized monologue has one, which is why the monologue fails at least one room.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module6/tailoring-to-the-role/">
+<p><strong>Try It in Claude Code:</strong> take the artifact in your portfolio-narrative document and write two role-tailored versions of its walkthrough, leading with different decisions for two different role types, and note what changed and what did not.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-portfolio-narrative-document"><a class="header" href="#the-portfolio-narrative-document">The Portfolio Narrative Document</a></h1>
+<p>The portfolio round is not an oral exam you improvise. The engineers who walk in and win it are the
+ones who wrote their walkthrough down first.</p>
+<p>This lesson does two things. It teaches you to compose the written document that becomes your interview
+preparation artifact: a structured, peer-reviewable walkthrough of one portfolio project that captures
+the decision layer, not the code. Then it turns the weak-walkthrough audit on that document the way
+earlier lessons turned the weak-answer audit on behavioral answers and the weak-design audit on system
+designs. You write the document, then you break it before the room does.</p>
+<h2 id="why-a-written-document"><a class="header" href="#why-a-written-document">Why a Written Document</a></h2>
+<p>Rehearsal alone has a structural flaw. You rehearse what you remember, and memory is not flat: the
+first decision you made on a project is easier to recall than the third, the happy path is easier to
+recall than the failure mode, and the thing you are proud of is easier to recall than the thing that
+almost didn’t work. The rehearsed walkthrough drifts toward the peaks of your memory, not toward the
+structure the interviewer is evaluating.</p>
+<p>A written document fixes this. When the reasoning is on the page, you can see what is missing. A
+decision you thought you could defend turns out to have no named alternative. A failure mode you
+believed was addressed turns out to be implied, not stated. Your peer can read the document and ask
+the obvious follow-up; your rehearsal can’t do that.</p>
+<p>The document is also revisable between interviews. After a portfolio round where an interviewer probed
+your evaluation story and found it thin, you open the document and add a section. After a round where
+your role-tailoring note was wrong for the room, you revise it. A rehearsed monologue is hard to
+update in a targeted way; a document has sections you can edit.</p>
+<p>The result is what you rehearse from, not what you perform in the room. The room will steer you off
+the script. You need the document solid enough that you can leave it and come back.</p>
+<h2 id="the-documents-structure"><a class="header" href="#the-documents-structure">The Document’s Structure</a></h2>
+<p>A portfolio narrative document covers one artifact. Write one document per artifact you plan to walk
+through. The document has six sections.</p>
+<p><strong>The Artifact and One-Paragraph Overview.</strong> Name the artifact, what it does, and why you built it.
+One paragraph, sixty seconds aloud. The overview is not an architecture diagram in prose. It is the
+answer to: what problem did this solve, who was the user, and what makes it different from a toy? For
+your production RAG chatbot, that paragraph names the regulated-vertical problem, the citation
+contract as the design constraint, and the eval gate as the thing that makes it shippable rather than
+experimental. For your terminal coding agent, it names the plan/act/observe loop, the cost ceiling,
+and the fact that “done” is a test verdict from the harness, not a claim from the model. The overview
+is what orients the interviewer before you go deep.</p>
+<p><strong>The Key Decisions with the Four-Part Defense.</strong> This is the center of the document. For each
+load-bearing decision, you write four things: the decision itself, the alternative you rejected, the
+tradeoff you accepted, and the failure mode it guards against. You are not describing the code; you
+are describing the reasoning that produced the code.</p>
+<p>For the terminal coding agent, that means writing out why the verification gate defaults to REJECT
+rather than ACCEPT, what trusting the model’s self-assessment would have cost, what running the full
+suite every loop iteration costs you, and what happens when you get it wrong, which is the agent
+declaring a broken fix a success. You write all four parts for every decision that would stop an
+interviewer. Two or three decisions per artifact is right; five is too many unless you can move
+quickly through them.</p>
+<p>The four-part structure is not a formula to recite aloud. It is the structure your reasoning should
+have when you write it down, so you know it before you go into the room. In the room you use your
+judgment about how much of it to surface and when.</p>
+<p><strong>The Tradeoffs.</strong> List the tradeoffs the decisions accepted. Not all tradeoffs live inside one
+decision; some span the artifact. The terminal coding agent’s budget with two caps (dollars and
+iterations, checked before each call) means a task that would finish on the next call gets killed
+early. That is a tradeoff you named and accepted; it belongs in this section with the reason you
+accepted it. For the RAG chatbot, the relevance floor that refuses when no chunk clears the threshold
+means some valid questions get a refusal instead of an answer. Write that down. The interviewer who
+asks “what would you change?” is looking for this section.</p>
+<p><strong>The Failure Modes Handled.</strong> Name the failure modes the artifact explicitly defends against, and
+for each one, how. This is different from the tradeoffs: a failure mode is something that could go
+wrong at runtime; a tradeoff is something that is always true. The coding agent’s kill switch is
+read-only from the agent’s perspective because a writable kill switch the agent can set is a kill
+switch in name only. That is a failure mode handled. The RAG chatbot’s hardcoded prohibitions floor
+cannot be lowered by operator configuration; that guards against a pressured or misconfigured
+operator disabling the security layer. Write these down explicitly. The interviewer who asks “what
+could go wrong?” is coming to this section.</p>
+<p><strong>The Role-Tailoring Note.</strong> The same artifact narrates differently for different roles. Write
+explicit notes for the two or three roles you are most likely to interview with. For an applied-AI or
+product-engineering role, you foreground the user-facing reliability story: the RAG refusal floor,
+the citation contract, the guardrail split between hardcoded prohibitions and tunable defaults, the
+drift monitor. For an ML-platform or infrastructure role, you foreground the seams and operability:
+the model seam that lets you swap any vendor with zero loop changes, the <code>VectorIndex</code> protocol that
+makes a cloud migration a one-line constructor change, the eval gate running in CI. For a
+research-adjacent role, you foreground the rigor: precision and faithfulness metrics, the
+deterministic gate that needs no LLM judge, the refusal-rather-than-fabricate design.</p>
+<p>The decisions do not change. The emphasis and the lead change. Write the role note as a short
+paragraph per role, starting with: “Lead with X, because this role is evaluating for Y.”</p>
+<p><strong>What to Leave Out.</strong> Write a short list of things you chose not to include in the walkthrough: the
+scaffolding that does not bear load, the implementation details that are not decisions, the components
+that are downstream consequences of a decision rather than decisions themselves. For the coding agent,
+the specific tool handlers (read, write, test) are implementations of the tool registry decision, not
+separate decisions. For the RAG chatbot, the ingest pipeline’s format-specific parsers are
+implementations of the chunk contract decision. You leave these out of the walkthrough because the
+interviewer cannot evaluate your judgment on implementation details; they can only evaluate it on
+decisions. Writing down what you are leaving out keeps the walkthrough focused and prevents you from
+drifting into code narration when you are nervous.</p>
+<h2 id="the-throughline"><a class="header" href="#the-throughline">The Throughline</a></h2>
+<p>The document is the thing the module’s exercises have been building toward. The walkthrough shape from
+Lesson 1, the decision layer from Lesson 2, and the role-tailoring note from Lesson 3 all land in
+this document. It is the throughline artifact you carry into the preparation dossier, revise between
+interviews, and return to when you need to know what you actually built and why.</p>
+<h2 id="the-weak-walkthrough-audit"><a class="header" href="#the-weak-walkthrough-audit">The Weak-Walkthrough Audit</a></h2>
+<p>Now you turn the audit on your own document. The questions below are what the interviewer runs on
+your walkthrough; you run them first. For each question, the verdict is pass or gap. A gap is not
+failure; it is the thing you fix before the room finds it.</p>
+<p>The audit runs by category.</p>
+<h3 id="is-it-a-decision-tour-or-a-code-reading"><a class="header" href="#is-it-a-decision-tour-or-a-code-reading">Is It a Decision Tour or a Code Reading?</a></h3>
+<p><strong>“Can I identify the three decisions that mattered most in this artifact without looking at the
+code?”</strong> If the answer is no, the document is still a code narration with decision language on top.
+The decisions should be extractable as claims: “I built the verification gate to default to REJECT
+rather than ACCEPT, because…” If your document requires the code to be legible, it is not a
+decision tour.</p>
+<p><strong>“Does each key decision appear in one place in the document, or is it scattered across the
+overview, the tradeoffs, and the failure modes?”</strong> A decision should have a home: the four-part
+defense section. The overview names the artifact; the tradeoffs and failure modes sections can
+reference decisions, but the decision itself lives in one place. If you have to read three sections
+to reconstruct one decision, the document is understructured.</p>
+<h3 id="does-every-decision-have-all-four-parts"><a class="header" href="#does-every-decision-have-all-four-parts">Does Every Decision Have All Four Parts?</a></h3>
+<p><strong>“For each key decision, have I named the alternative I rejected?”</strong> A decision without a rejected
+alternative is not a decision; it is a description of what you built. The alternative is what makes
+the decision legible: you could have done X, you did Y, here is why.</p>
+<p><strong>“For each key decision, have I named the tradeoff I accepted?”</strong> The tradeoff is what the
+alternative would have gotten you and what your decision cost you. If you cannot name the cost, you
+did not fully analyze the decision.</p>
+<p><strong>“For each key decision, have I named the specific failure mode it guards against?”</strong> This is the
+most commonly missing part. “I used a sandbox for tests” becomes defensible when you say: “I used a
+subprocess sandbox with a wall-clock timeout to guard against a model-generated test suite that loops
+forever or calls out to the network.” The failure mode is the why.</p>
+<h3 id="did-you-lead-with-the-differentiator"><a class="header" href="#did-you-lead-with-the-differentiator">Did You Lead with the Differentiator?</a></h3>
+<p><strong>“What is the first decision in your document? Is it the one that demonstrates your judgment, or
+is it the one you built first?”</strong> The first decision you name sets the interviewer’s hypothesis about
+you. For the terminal coding agent, leading with the model seam (because it was the first thing you
+built) is weaker than leading with the verification gate (because it shows you understand that the
+hard problem in a coding agent is not the model, it is the harness). Lead with the decision that most
+directly answers: what makes this system trustworthy?</p>
+<p><strong>“Does the overview bury the lead?”</strong> The overview paragraph names the artifact. If it spends three
+sentences on what the components are and one on what problem they solve, it is not oriented toward
+the interviewer’s hypothesis. The one-paragraph overview should be deliverable in sixty seconds with
+the differentiating problem front-loaded.</p>
+<h3 id="is-it-tailored-to-a-role-or-is-it-a-generic-monologue"><a class="header" href="#is-it-tailored-to-a-role-or-is-it-a-generic-monologue">Is It Tailored to a Role or Is It a Generic Monologue?</a></h3>
+<p><strong>“Does the document have a role-tailoring note, and is it specific?”</strong> A role note that says “for
+platform roles, talk about the seams” is a category, not a note. A useful role note names the
+specific lead decision for that role: “For an ML-platform interview, lead with the <code>VectorIndex</code>
+protocol seam, because the interviewer is evaluating whether you can design for replaceability across
+the full stack.” Specificity is what separates a tailoring note from a reminder to yourself.</p>
+<p><strong>“If I removed the role-tailoring note and delivered the document as written, what role would it
+be optimized for?”</strong> Every document has a default emphasis. Know what yours is. An artifact that
+leads with the eval gate and the precision/faithfulness metrics by default is optimized for a
+research-adjacent or evaluation-focused role. If you are walking into an infra interview, the lead
+should move to the protocol seam and the deterministic gates running in CI.</p>
+<h3 id="can-you-defend-the-follow-up"><a class="header" href="#can-you-defend-the-follow-up">Can You Defend the Follow-Up?</a></h3>
+<p><strong>“For each key decision, what is the most obvious follow-up, and is the answer in the document?”</strong>
+The coding agent’s kill switch being read-only will draw: “What if the operator loses the file?”
+The RAG chatbot’s relevance floor will draw: “How do you set the threshold, and how do you know when
+it is wrong?” Write the obvious follow-up for each decision. If you cannot answer it from what is in
+the document, the decision defense is incomplete.</p>
+<p><strong>“What would an interviewer ask about the failure mode I did not include?”</strong> The absence of a named
+failure mode is itself a probe target. If you built a multi-agent system and your document names no
+failure mode around budget runaway, the interviewer will go there. The what-to-leave-out section
+keeps you honest: if you chose not to address it, know why.</p>
+<h3 id="did-you-claim-work-you-cannot-defend"><a class="header" href="#did-you-claim-work-you-cannot-defend">Did You Claim Work You Cannot Defend?</a></h3>
+<p><strong>“Is every decision in the document one I made, not one I read about?”</strong> The document is a
+walkthrough of your work. A candidate who says “and we used a relevance floor to prevent fabricated
+citations” can defend: what threshold, how was it calibrated, what happened when it refused valid
+questions, and how was it tuned. A candidate who borrowed the architecture without building it cannot
+answer the third question. Write only the decisions you can defend under probing.</p>
+<p><strong>“Can I describe what a specific failure would have looked like if I had not made each decision?”</strong>
+If you cannot, the decision is a pattern you named but did not actually implement. The verification
+gate’s failure mode is not “the agent might give wrong results”; it is “the agent called
+<code>verify_done()</code> on a fix that broke three other tests, and without the gate running the real suite,
+it returned success.” That specificity is only available if you built the thing.</p>
+<h2 id="verdict-and-repair"><a class="header" href="#verdict-and-repair">Verdict and Repair</a></h2>
+<p>Run the audit by category. Each gap is one edit to the document. If a decision is missing its
+rejected alternative, add it. If the overview buries the lead, reorder it. If the role-tailoring
+note is a category reminder rather than a specific lead, make it specific. The document is not done
+when you finish writing it; it is done when it passes all seven categories.</p>
+<p>The audit does not need to surface every possible weakness. It needs to surface the ones the
+interviewer will find in the first ten minutes. Those are always the same: a code narration masking
+as a decision tour, a decision without a named alternative, and a walkthrough that delivers the same
+monologue regardless of the role in the room.</p>
+<p>Fix those three and the rest of the document will hold.</p>
+<h2 id="core-concepts-17"><a class="header" href="#core-concepts-17">Core Concepts</a></h2>
+<ul>
+<li>The portfolio narrative document captures the decision layer: the four-part defense for each key
+decision (decision, rejected alternative, accepted tradeoff, failure mode guarded), written before
+rehearsal so the reasoning is explicit, peer-reviewable, and editable between interviews.</li>
+<li>A written document reveals structural gaps that rehearsal conceals: a decision without a named
+alternative, a failure mode implied rather than stated, and an overview that buries the lead are
+invisible in practice and visible on the page.</li>
+<li>The weak-walkthrough audit runs by category before the room does: decision tour vs. code reading;
+four-part completeness; whether the differentiator leads; role specificity; follow-up defensibility;
+and whether every claimed decision can survive targeted probing.</li>
+<li>The role-tailoring note does not change the decisions; it changes the lead decision and the emphasis,
+because the interviewer for an applied-AI role and the interviewer for an ML-platform role are
+evaluating different signals from the same artifact.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module6/the-portfolio-narrative-document/">
+<p><strong>Try It in Claude Code:</strong> finish your portfolio-narrative document for one artifact, then run the weak-walkthrough audit on it and record the verdict: which checks it passes, which it fails, and the one change you made.</p>
 </div>
 
 

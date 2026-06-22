@@ -39,3 +39,13 @@
 - [Justify Every Box](module5/justify-every-box.md)
 - [Production Reasoning as the Differentiator](module5/production-reasoning-as-the-differentiator.md)
 - [The Full Design Under Pressure](module5/the-full-design-under-pressure.md)
+
+---
+
+# Module 6: The Sans Python Portfolio as Resume
+
+- [Overview](module6/00-overview.md)
+- [The Artifact Walkthrough](module6/the-artifact-walkthrough.md)
+- [Foreground the Decisions](module6/foreground-the-decisions.md)
+- [Tailoring to the Role](module6/tailoring-to-the-role.md)
+- [The Portfolio Narrative Document](module6/the-portfolio-narrative-document.md)

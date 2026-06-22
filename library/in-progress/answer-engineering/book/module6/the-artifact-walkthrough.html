@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Answer Engineering - Answer Engineering — The AI Engineer&#x27;s Interview Framework</title>
+        <title>The Artifact Walkthrough - Answer Engineering — The AI Engineer&#x27;s Interview Framework</title>
 
 
         <!-- Custom HTML head -->
@@ -12,36 +12,36 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon-de23e50b.svg">
-        <link rel="shortcut icon" href="favicon-8114d1fc.png">
-        <link rel="stylesheet" href="css/variables-8adf115d.css">
-        <link rel="stylesheet" href="css/general-0392ca55.css">
-        <link rel="stylesheet" href="css/chrome-fc474251.css">
-        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="theme/copy-to-claude-45921320.css">
-        <link rel="stylesheet" href="theme/syntax-polish-53c427bd.css">
-        <link rel="stylesheet" href="theme/readability-9f9ae6ec.css">
+        <link rel="stylesheet" href="../theme/copy-to-claude-45921320.css">
+        <link rel="stylesheet" href="../theme/syntax-polish-53c427bd.css">
+        <link rel="stylesheet" href="../theme/readability-9f9ae6ec.css">
 
 
         <!-- Provide site root and default themes to javascript -->
         <script>
-            const path_to_root = "";
+            const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-ac315a66.js";
+            window.path_to_searchindex_js = "../searchindex-ac315a66.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-295af4a6.js"></script>
+        <script src="../toc-295af4a6.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -108,7 +108,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
             </noscript>
             <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -143,7 +143,7 @@
                     <h1 class="menu-title">Answer Engineering — The AI Engineer&#x27;s Interview Framework</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
                         </a>
 
@@ -177,53 +177,80 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
-<p>You built the thing. A terminal coding agent that ships real diffs, a governed fleet that runs under
-a budget, an exam system that grades itself. The other books in this library taught you to build AI
-systems that hold under production load. This book teaches the last skill the job actually screens for:
-explaining what you built to someone who did not watch you build it, under time pressure, in a room
-where the offer is decided.</p>
-<p>That skill is not the same as the building. Strong engineers lose offers every week because the
-interview is a different game with different rules, and nobody taught them the rules. They reach for
-memorized answers, the stock STAR story rehearsed until it sounds fluent, the list of talking points.
-Then a question arrives in a form they never rehearsed, and the list runs out.</p>
-<p>Answer Engineering replaces the list. It treats answering as an engineering discipline: a question is
-an input, the interviewer’s hiring decision is the output, and there is a process that reliably gets
-from one to the other. The process is internal, transferable, and it works on questions you have never
-seen. You will not memorize answers. You will learn why excellent answers are excellent, so you can
-construct one on demand.</p>
-<h2 id="the-argument-in-the-name"><a class="header" href="#the-argument-in-the-name">The Argument in the Name</a></h2>
-<p>Engineering is the discipline of building reliably to a spec, under constraints, and proving it works.
-That is exactly what a strong interview answer requires. The spec is the signal the interviewer is
-collecting. The constraint is two minutes and your nerves. The proof is specificity no weak candidate
-could fake. Most interview prep treats the answer as a performance to rehearse; this book treats it as
-an artifact to engineer. Same word, same rigor, applied to the thing that gets you hired.</p>
-<h2 id="you-interview-on-the-portfolio"><a class="header" href="#you-interview-on-the-portfolio">You Interview on the Portfolio</a></h2>
-<p>This book does not exist in a vacuum. The artifacts you built in the rest of the library are the
-resume: the coding agent, the fleet, the eval engine, the exam. They are not exercises to discard once
-the course ends; they are the evidence you walk an interviewer through. A reader mid-way through the
-other books can start here today; a reader who finished them already has the artifacts and can treat
-this as the final unlock. The building and the proving compound.</p>
-<h2 id="what-you-build"><a class="header" href="#what-you-build">What You Build</a></h2>
-<p>The book runs in three phases. First the framework: an internal four-step Algorithm for any interview
-question, behavioral, technical, or systems-design. Then the example banks, where you watch the
-Algorithm applied across the question types an AI Engineer faces until the moves become automatic.
-Then the portfolio layer, where you turn your own artifacts into interview-ready narratives.</p>
-<p>Your portfolio artifact here is not code; it is a <strong>prep dossier</strong>, the career analogue of a project
-repo. Every lesson ends in a Claude Code exercise that adds to it: decomposition logs, full answer
-constructions, self-scored against a rubric, deliberate-practice records. By the end you can prove your
-readiness the same way the exam book proves a system: against a checker, not a feeling.</p>
-<p>You already did the hard part. You built something real. Now you learn to make a stranger see it in
-the time it takes to answer one question.</p>
-<p>Turn the page. Module 1 starts where every answer starts: with the question, and the instinct you have
-to unlearn.</p>
+                        <h1 id="the-artifact-walkthrough"><a class="header" href="#the-artifact-walkthrough">The Artifact Walkthrough</a></h1>
+<p>The walkthrough is not a code reading. That gap, between narrating what each function does and narrating the reasoning behind the decisions, is where offers are won or lost.</p>
+<p>Every engineer who interviews on a portfolio tends toward the same mistake: they open the code and begin describing it. The interviewer can read code. What they cannot learn from the code alone is whether you made the choices on purpose, whether you understood the failure modes you were guarding against, and whether you can explain all of that to someone who was not there. The walkthrough is that explanation, and its shape is not the shape of the code.</p>
+<h2 id="the-signal-the-interviewer-is-reading"><a class="header" href="#the-signal-the-interviewer-is-reading">The Signal the Interviewer Is Reading</a></h2>
+<p>When an interviewer asks you to walk them through a project, they are running a two-part test. First: can you make them understand a system they have never seen, quickly? Second: can you show them the judgment that went into it?</p>
+<p>The failure mode looks like preparation from the outside. The candidate names the components in order. The terminology is fluent. The architecture sounds plausible. Then the interviewer asks: “Why did you make the agent’s kill switch read-only?” If the answer is “that’s how the lesson did it,” or a blank pause, the walkthrough is over. The candidate memorized the artifact. They did not own it.</p>
+<p>The interviewer is listening for three things in particular: the decisions you made (and could have made differently), the alternatives you rejected (and why), and the failure modes you designed against (and how). A walkthrough that lists components scores low. A walkthrough that defends choices scores high. It is the same discipline as justifying every box in a systems-design round, except now the system is real, the constraints were real, and you are the one who shipped it.</p>
+<h2 id="the-sixty-second-overview"><a class="header" href="#the-sixty-second-overview">The Sixty-Second Overview</a></h2>
+<p>A walkthrough opens with an overview, and the overview has one job: orient the listener fast. You are not summarizing every feature. You are giving the interviewer the frame they need to hear the decisions.</p>
+<p>The overview has three beats:</p>
+<ol>
+<li>What the artifact is (one sentence on purpose).</li>
+<li>What it does (one sentence on mechanism).</li>
+<li>The one impressive thing: the single decision that makes this artifact interesting, stated plainly and led with.</li>
+</ol>
+<p>Lead with the differentiator. The first thing out of your mouth should be the decision that most clearly shows judgment, not the component list. If you bury the impressive thing at the end of a component tour, the interviewer may have already formed their impression.</p>
+<p>Here is the sixty-second overview for the terminal coding agent you built in Sans Python:</p>
+<blockquote>
+<p>“This is a terminal coding agent: it reads a failing file, writes a fix, runs the real test suite in a subprocess, and loops until a deterministic verification gate accepts the result. The most important design decision is that gate, which defaults to REJECT and runs the actual tests, not the model’s self-assessment. The agent also holds a read-only kill switch the operator owns, and a budget with two hard caps, dollar cost and iteration count, checked before every model call to guard against runaway billing.”</p>
+</blockquote>
+<p>That overview runs about forty-five seconds spoken. It orients the listener on what the system does, then immediately foregrounds the three decisions that give the artifact its character: the verification gate, the kill switch, and the budget. The interviewer now has the frame to hear the decision tour.</p>
+<p>Notice what the overview does not include: the tool registry, the mock model seam, the path-jailing logic, the subprocess wall-clock timeout. Those are real parts of the system. They are not what makes the system interesting to an interviewer. You lead with the judgment; you skip the inventory.</p>
+<h2 id="the-decision-tour"><a class="header" href="#the-decision-tour">The Decision Tour</a></h2>
+<p>After the overview, you go deep on three or four choices that mattered. Not every choice. Not the obvious ones. The ones where you had a real alternative, made a call, accepted a tradeoff, and guarded against a specific failure mode.</p>
+<p>Each decision in the tour follows the same four beats:</p>
+<ol>
+<li>State the decision.</li>
+<li>Name the alternative you rejected.</li>
+<li>Name the tradeoff you accepted.</li>
+<li>Name the failure mode you guarded against.</li>
+</ol>
+<p>You do not read the code. You narrate the reasoning.</p>
+<h3 id="the-verification-gate"><a class="header" href="#the-verification-gate">The Verification Gate</a></h3>
+<p>The terminal coding agent defines “done” as a fact returned by running the real test suite, not a claim from the model. The alternative: trust the model’s self-assessment. The model loops, writes a fix, and reports whether it believes the fix is correct.</p>
+<p>The tradeoff you accepted: the agent runs the full suite on every candidate fix. That costs time and money. But the failure mode you guarded is the one that makes coding agents unreliable in practice: the agent declares victory on a broken fix. A model that checks its own output is an optimist, not a verifier. The gate is the antidote, and it defaults to REJECT, not to pass. You have to earn the pass.</p>
+<p>That default matters. A gate that defaults to pass with a threshold is a gate that can be gamed by an agent that barely tries. A gate that defaults to REJECT can only be cleared by running the tests and having them pass. The distinction is architectural, not a detail.</p>
+<h3 id="the-read-only-kill-switch"><a class="header" href="#the-read-only-kill-switch">The Read-Only Kill Switch</a></h3>
+<p>The kill switch is a file the operator owns. The agent can read it (<code>tripped()</code>) but cannot write it. The alternative: a flag in the agent’s own reachable state, something the agent sets when it decides to stop.</p>
+<p>The tradeoff: the kill switch requires an external file check before every action. That is one more thing that can fail. But the failure mode guarded is more serious: if the kill switch lives in state the agent can write, the agent can disable its own kill switch. You have a kill switch in name only. The read-only constraint is what gives the operator actual control, not apparent control.</p>
+<p>This is the kind of decision an interviewer cannot infer from the code. Reading the source, they see a file check. They do not see the reasoning: that write access was considered and removed because write access defeats the purpose.</p>
+<h3 id="the-budget-with-two-caps"><a class="header" href="#the-budget-with-two-caps">The Budget With Two Caps</a></h3>
+<p>The agent checks a budget before every model call. The budget has two ceilings: total dollar cost and total iteration count. Both are checked before paying for another action, not after. The alternative: check the budget after the call, or ask the model to monitor its own spend.</p>
+<p>The tradeoff: the pre-call check means the agent stops one action sooner than a post-call check would. You occasionally leave a loop on the table. The failure mode guarded is Denial of Wallet: a runaway loop billing indefinitely because no hard ceiling was enforced. A budget you ask a model to enforce is a budget the model can reason its way past. Two deterministic ceilings, checked before the cost is incurred, cannot be argued with.</p>
+<h3 id="what-you-skip"><a class="header" href="#what-you-skip">What You Skip</a></h3>
+<p>Notice what the decision tour did not cover: the tool registry’s schema validation and path jailing, the subprocess sandbox timeout, the mock model seam. Those are real decisions with real reasoning. They are not the decisions that show interviewer-relevant judgment in a portfolio walkthrough.</p>
+<p>You skip them not because they are unimportant, but because the walkthrough is not exhaustive. You are demonstrating judgment, and part of that demonstration is choosing which decisions to surface. An interviewer who asks about the tool registry gets a full answer; but you do not volunteer it in the tour when you have only ten minutes and three stronger decisions to make the case.</p>
+<p>You also do not read the code aloud. Saying “line 47 calls <code>budget.check()</code> and then…” is the failure mode the overview warned against. The decision is not the line; the decision is the reasoning that put that line there.</p>
+<h2 id="the-transfer-any-artifact-same-shape"><a class="header" href="#the-transfer-any-artifact-same-shape">The Transfer: Any Artifact, Same Shape</a></h2>
+<p>The walkthrough shape you just saw works for any portfolio artifact. The structure is fixed; the content is the artifact.</p>
+<p>Open with the sixty-second overview: purpose in one sentence, mechanism in one sentence, the differentiator first. The differentiator is whichever decision most clearly shows that you understood the hard part of the problem, not the flashy part.</p>
+<p>Then run three or four decisions through the four-beat structure: what you chose, what you rejected, the tradeoff you accepted, the failure mode you guarded. Choose the decisions that are genuinely defensible: ones where you had a real alternative, not ones where there was only one obvious answer.</p>
+<p>Close the decision tour before the interviewer’s attention runs out. Ten minutes is about right for a portfolio walkthrough in an interview setting. If you are running longer, you have too many decisions in the tour; cut to the three that are strongest.</p>
+<p>One note on adaptation: the decisions do not change between interviewers, but the order and emphasis do. An infrastructure-focused interviewer will want the kill switch and the budget early; they are the operability story. A product-focused interviewer may want the verification gate and its implications for reliability. You read the role before the walkthrough, and you lead with the decision the role values. That adaptation is not dishonesty; it is signal discipline. The walkthrough is for them.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>A walkthrough is the reasoning behind an artifact told to someone who was not there, not a narration of what each function does; that distinction is where interviews turn.</li>
+<li>The sixty-second overview orients fast and leads with the single most differentiating decision, not a component list.</li>
+<li>Each decision in the tour follows four beats: what you chose, what you rejected, the tradeoff accepted, the failure mode guarded.</li>
+<li>Choosing which decisions to surface is itself a demonstration of judgment; the candidate who volunteers every decision buries the three that matter.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module6/the-artifact-walkthrough/">
+<p><strong>Try It in Claude Code:</strong> pick one portfolio artifact (a Sans Python one you built, or your own) and write its sixty-second overview and the one decision you would lead with into your portfolio-narrative document.</p>
+</div>
+
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../module6/00-overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
 
-                            <a rel="next prefetch" href="module1/00-overview.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module6/foreground-the-decisions.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -233,8 +260,11 @@ to unlearn.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../module6/00-overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
 
-                    <a rel="next prefetch" href="module1/00-overview.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module6/foreground-the-decisions.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
@@ -254,16 +284,16 @@ to unlearn.</p>
         </script>
 
 
-        <script src="elasticlunr-ef4e11c1.min.js"></script>
-        <script src="mark-09e88c2c.min.js"></script>
-        <script src="searcher-09f2665d.js"></script>
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
 
-        <script src="clipboard-1626706a.min.js"></script>
-        <script src="highlight-abc7f01d.js"></script>
-        <script src="book-c22b7243.js"></script>
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="theme/copy-to-claude-c257122c.js"></script>
+        <script src="../theme/copy-to-claude-c257122c.js"></script>
 
 
 
