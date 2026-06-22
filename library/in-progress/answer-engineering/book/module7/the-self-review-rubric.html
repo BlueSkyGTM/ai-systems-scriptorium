@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Overview - Answer Engineering — The AI Engineer&#x27;s Interview Framework</title>
+        <title>The Self-Review Rubric - Answer Engineering — The AI Engineer&#x27;s Interview Framework</title>
 
 
         <!-- Custom HTML head -->
@@ -177,52 +177,80 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="module-1-the-framework"><a class="header" href="#module-1-the-framework">Module 1: The Framework</a></h1>
-<p>Most candidates walk into an interview carrying a list: stock answers, projects to name-drop, phrases
-that tested well in a mock session. The list feels like preparation. It is preparation for the
-questions that arrive exactly as rehearsed, which is a far smaller fraction than candidates expect.</p>
-<p>This module does not add to the list. It replaces the strategy.</p>
-<h2 id="what-this-module-teaches"><a class="header" href="#what-this-module-teaches">What This Module Teaches</a></h2>
-<p>The Algorithm is a four-step reasoning process for any interview question you have never seen. It is
-not a template you fill in; it is the thing you run in the first ten seconds after a question lands.</p>
-<ol>
-<li><strong>Decompose the question.</strong> Strip the framing words and find what the question actually names. What
-category does it belong to?</li>
-<li><strong>Identify the signal.</strong> Every question exists to collect evidence for or against a hiring
-hypothesis. Name the hypothesis.</li>
-<li><strong>Construct the answer.</strong> Build toward the signal, not the question’s surface form. Say what
-demonstrates the evidence; cut what does not.</li>
-<li><strong>Stress-test it.</strong> Before you finish, check: could a weak candidate give this same answer? If so,
-add specificity.</li>
-</ol>
-<p>The failure modes this guards against are not hypothetical. The most common interview mistakes are
-structural: jumping to a solution before understanding the problem, answering a question the
-interviewer did not ask, describing a happy path with no failure modes. Each is a candidate answering
-the surface of the question instead of the signal beneath it. The Algorithm is how you stop doing that.</p>
-<h2 id="the-two-lessons"><a class="header" href="#the-two-lessons">The Two Lessons</a></h2>
-<ol>
-<li><strong>Decompose the Question</strong> reads what a question is actually asking beneath the words it uses, and
-introduces the signal taxonomy for AI Engineering hiring loops: the four categories every question
-draws from.</li>
-<li><strong>Construct the Answer</strong> moves from an identified signal to a response that demonstrates it, with
-worked examples across behavioral, technical, and systems-design questions, and the named
-construction frameworks that scaffold each.</li>
-</ol>
-<h2 id="what-this-module-feeds-forward"><a class="header" href="#what-this-module-feeds-forward">What This Module Feeds Forward</a></h2>
-<p>Every later module assumes you can run these four steps without effort. The behavioral, technical, and
-systems-design example banks ahead are the framework loaded into practice; the worked examples are
-inert without the framework as the lens that reads them. Install the Algorithm here, and the rest of
-the book is repetition until it becomes reflex.</p>
+                        <h1 id="the-self-review-rubric"><a class="header" href="#the-self-review-rubric">The Self-Review Rubric</a></h1>
+<p>A rubric you grade yourself on generously is a rubric that lies. It tells you what you want to hear, confirms the readiness you already feel, and leaves the real gaps exactly where they were before you picked up the pen.</p>
+<p>The self-review rubric in <code>calibrate.py</code> is designed to prevent that. It is not a checklist you eyeball; it is a schema that scores each of your four Algorithm steps as strong, partial, or weak, and it counts the marks honestly whether you like the count or not. Your job is to apply that schema to your own reps before the scorer ever sees them, and to apply it without inflation.</p>
+<h2 id="why-the-four-algorithm-steps-are-the-scoring-axes"><a class="header" href="#why-the-four-algorithm-steps-are-the-scoring-axes">Why the Four Algorithm Steps Are the Scoring Axes</a></h2>
+<p>The rubric scores the four steps you already know: Decompose, Signal, Construct, Stress-test. Those are not arbitrary categories. They map to the four places an interview answer can break: you misread the question, you aimed at the wrong signal, you built a generic answer, or you left the weakest part undefended. A rep that passes all four is a rep that could not have been better without more knowledge. A rep that fails one tells you exactly where to drill.</p>
+<p>Each step has one job in the Algorithm. Each step therefore has one failure mode in the rubric. Scoring them separately keeps the diagnosis precise. If you collapsed all four into a single “how did that go?” rating, you would always average your strengths against your weaknesses and never fix either.</p>
+<h2 id="the-strongpartialweak-scale-step-by-step"><a class="header" href="#the-strongpartialweak-scale-step-by-step">The Strong/Partial/Weak Scale, Step by Step</a></h2>
+<p>These definitions are what <code>calibrate.py</code> expects you to have applied before you write your scores into the log. Read them as a decision procedure, not as aspirational descriptions.</p>
+<p><strong>Decompose.</strong> This step asks: did you surface the real question inside the question asked?</p>
+<ul>
+<li>Strong: you named the latent signal or hypothesis the question is designed to surface, not just the surface topic. For an “ownership” question, strong means you identified that the interviewer is collecting evidence of initiative taken without a mandate, not just “tell me about a project you owned.”</li>
+<li>Partial: you got the surface ask right but stopped there. You knew it was a behavioral question about ownership and structured your answer accordingly. You did not name what specifically the interviewer is trying to separate strong candidates from weak candidates on.</li>
+<li>Weak: you answered the literal words of the question without decomposing it at all. The question was a container you filled without examining what it was designed to hold.</li>
+</ul>
+<p><strong>Signal.</strong> This step asks: did you aim your answer at what the interviewer is actually collecting?</p>
+<ul>
+<li>Strong: you identified the specific evidence the interviewer needs to mark “yes” on this signal, and you pointed your answer directly at that evidence. You knew, going in, what a yes looks like and built toward it.</li>
+<li>Partial: you had a general sense of the category (influence, conflict, failure) and shaped your answer in that direction, but you could not have named the specific evidence the question is designed to surface before you started speaking.</li>
+<li>Weak: you answered without identifying any target signal. The answer may have been competent, but it was not aimed; you were hoping the signal would emerge from the content rather than building toward it.</li>
+</ul>
+<p><strong>Construct.</strong> This step asks: did you build toward the signal with specific, unfakeable evidence?</p>
+<ul>
+<li>Strong: every claim in the answer is grounded in a detail only you could supply. The numbers, the names, the constraints, the decision you made under pressure: these cannot be recycled from a generic template. A weak candidate with the same job title could not give the same answer.</li>
+<li>Partial: the structure is correct and the story follows the right shape, but the specifics are thin. “I aligned the team around the goal” instead of “I ran three working sessions over two weeks to get the backend lead and the data team to a shared definition of done, because they had been operating on different assumptions about what the feature required.” The first is a label; the second is evidence.</li>
+<li>Weak: you rambled, recited the question back, or gave a sequence of assertions without grounding any of them in real detail. The answer has shape but no substance the interviewer can weigh.</li>
+</ul>
+<p><strong>Stress-test.</strong> This step asks: did you find and fix the part a weak candidate could also have said?</p>
+<ul>
+<li>Strong: you found the weakest sentence in your answer, the one that sounds like a competent answer but contains no specific evidence, and you replaced it with something unfakeable. You named the specific reason your contribution was necessary, not just present.</li>
+<li>Partial: you noticed the weak point. You might have flagged it to yourself: “that part was vague.” You did not fix it before the answer ended. Noticing is not the same as drilling.</li>
+<li>Weak: no stress-test. The answer ended without you looking for the sentence a weak candidate could also have given. The weakest part is still in the answer, unexamined.</li>
+</ul>
+<h2 id="how-to-score-honestly"><a class="header" href="#how-to-score-honestly">How to Score Honestly</a></h2>
+<p>Partial is the honest default. Not because you are a bad candidate, but because partial is what a solid, well-structured answer that lacks the final layer of specificity looks like. Most reps from most candidates in preparation are partial on at least two steps. That is not discouraging; it is information.</p>
+<p>Strong is earned, not assigned. You earned a strong on a step when you can point to the specific thing you did in that rep that passes the step’s test: the latent signal you named before answering, the unfakeable detail you embedded in the construct, the weak sentence you found and replaced. If you cannot point to it, the mark is partial.</p>
+<p>Weak is information, not failure. A weak mark on Stress-test across five reps tells you Stress-test is your drill target. That is exactly what the rubric is for. The candidate who assigns weak marks accurately and drills them is better off than the candidate who assigns partial to everything and never identifies a drill target.</p>
+<p>The inflation trap works like this: you finish a rep that went reasonably well, and you score it strong/strong/strong/partial because it felt clean and you do not want to assign weak marks to a rep you are proud of. Then you do it again on the next rep. After ten reps scored this way, <code>calibrate.py</code> shows no weak steps and a readiness verdict that does not match what happens when you try the same questions cold. The trap is not dishonesty; it is the same availability bias that makes the feeling of readiness unreliable. You remember the strong parts and assign the score from the feeling.</p>
+<p>The countermeasure is simple: score before you read the verdict. Write your four marks into the log before you run the scorer. If you score after seeing output, you will curve. Write the marks, commit to them, then run. The harsh mark you assigned before the output is the honest one.</p>
+<h2 id="worked-scoring-example"><a class="header" href="#worked-scoring-example">Worked Scoring Example</a></h2>
+<p>Here is a practice answer to the question: “Tell me about a time you had to influence a decision you didn’t have authority over.”</p>
+<p>The answer: “I was on a team where we were about to launch a feature without doing performance testing because the timeline was tight. I thought that was risky, so I put together a quick analysis showing what could go wrong and shared it with the tech lead. They agreed we should do the testing, and we found some issues before launch.”</p>
+<p>Now score each step.</p>
+<p><strong>Decompose: partial.</strong> The candidate correctly identified this as an influence question and built an answer about influencing a technical decision. What they did not name is the specific signal the question is collecting: evidence of influence exercised across an authority gap, with a real cost to the decision-maker. “Told the tech lead and they agreed” is low-resistance influence. It does not show the candidate navigating resistance, making a case to someone with competing priorities, or absorbing a cost to see the decision land right. The surface ask was answered; the latent signal was not.</p>
+<p><strong>Signal: partial.</strong> The candidate aimed at “influence” as a category. They did not aim at the specific evidence the question needs: that the candidate can move a decision when the person who holds it has a reason not to move. The answer describes agreement, not persuasion under resistance. The signal was identified at the category level but not at the specificity level needed to earn a strong mark.</p>
+<p><strong>Construct: partial.</strong> The structure is sound. The setup is clear, the action is present, the outcome is named. But “put together a quick analysis” is a label. What was in the analysis? What numbers, what scenarios, what made it persuasive rather than just concerning? “Found some issues” is the same problem: what issues, at what severity, and what would have happened at launch? The answer has shape with thin specifics.</p>
+<p><strong>Stress-test: weak.</strong> The candidate did not stress-test this answer. The weakest sentence, “They agreed we should do the testing,” is also the most important one, and it goes completely unexamined. A weak candidate who had simply raised a concern to a tech lead could give exactly this answer. The stress-test step requires finding that sentence and replacing it with evidence that the tech lead had a reason to say no and here is what the candidate did about that reason. The answer ended without that move.</p>
+<p>The log entry for this rep reads:</p>
+<pre><code>**Decompose:**    partial
+**Signal:**       partial
+**Construct:**    partial
+**Stress-test:**  weak
+</code></pre>
+<p>That is an honest score. The answer was not bad; it was a solid first draft with a clear drill target: Stress-test, because the weakest claim is the one that proves nothing. The next rep on an influence question should build specifically toward the moment of resistance.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>The four scoring dimensions map directly to the four Algorithm steps: Decompose, Signal, Construct, Stress-test. Each step has one failure mode; each failure mode is a specific drill target.</li>
+<li>Partial is the honest default. Strong is earned by pointing to the specific thing you did in that step; if you cannot point to it, the mark is partial.</li>
+<li>Weak is information: a weak mark across multiple reps on the same step names your drill target with more precision than any amount of rereading.</li>
+<li>Score before you run the scorer. The mark you write before seeing <code>calibrate.py</code>’s output is the one that keeps the calibration loop honest.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module7/the-self-review-rubric/">
+<p><strong>Try It in Claude Code:</strong> re-score three reps in your deliberate-practice log strictly against the rubric, downgrading any step you cannot defend as strong, and write one line on what a strong version of each weak step would require.</p>
+</div>
+
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module7/deliberate-practice-not-rote.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module1/decompose-the-question.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module7/reading-your-calibration.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -232,11 +260,11 @@ the book is repetition until it becomes reflex.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module7/deliberate-practice-not-rote.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module1/decompose-the-question.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module7/reading-your-calibration.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

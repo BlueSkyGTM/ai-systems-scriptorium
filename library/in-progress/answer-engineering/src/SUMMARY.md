@@ -49,3 +49,13 @@
 - [Foreground the Decisions](module6/foreground-the-decisions.md)
 - [Tailoring to the Role](module6/tailoring-to-the-role.md)
 - [The Portfolio Narrative Document](module6/the-portfolio-narrative-document.md)
+
+---
+
+# Module 7: Live Practice and Calibration
+
+- [Overview](module7/00-overview.md)
+- [Deliberate Practice, Not Rote](module7/deliberate-practice-not-rote.md)
+- [The Self-Review Rubric](module7/the-self-review-rubric.md)
+- [Reading Your Calibration](module7/reading-your-calibration.md)
+- [Simulating the Room](module7/simulating-the-room.md)

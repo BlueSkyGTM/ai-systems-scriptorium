@@ -4,22 +4,25 @@ check_prep.py -- Validator for the Answer Engineering prep dossier.
 
 Validates the logs in the same directory as this script. Module 1 established
 the two core logs; Module 2 adds four more; Module 3 adds the behavioral bank;
-Module 5 adds the systems-design log; Module 6 adds the portfolio narrative.
+Module 5 adds the systems-design log; Module 6 adds the portfolio narrative;
+Module 7 adds the deliberate-practice log.
 (Module 4 is not yet a validator choice.)
 The --module flag controls which artifacts are required for the exit code.
 
-  decomposition-log.md    (M1: ten question decompositions + calibration)
-                          (M2 extension: Hard Cases section with >=3 HC entries)
-  answers-log.md          (M1: five full Algorithm runs with scores)
-  signal-map.md           (M2: three questions mapped across two company contexts)
-  practice-log.md         (M2: two answers recorded and self-scored)
-  audit-log.md            (M2: two answers run through the pitfalls audit)
-  behavioral-bank.md      (M3: four STAR-L stories covering all four categories,
-                               each with an audit verdict; no placeholders)
-  systems-design-log.md   (M5: one complete design entry with all eight fields;
-                               no placeholders)
-  portfolio-narrative.md  (M6: one complete artifact entry with all seven fields;
-                               no placeholders)
+  decomposition-log.md       (M1: ten question decompositions + calibration)
+                             (M2 extension: Hard Cases section with >=3 HC entries)
+  answers-log.md             (M1: five full Algorithm runs with scores)
+  signal-map.md              (M2: three questions mapped across two company contexts)
+  practice-log.md            (M2: two answers recorded and self-scored)
+  audit-log.md               (M2: two answers run through the pitfalls audit)
+  behavioral-bank.md         (M3: four STAR-L stories covering all four categories,
+                                  each with an audit verdict; no placeholders)
+  systems-design-log.md      (M5: one complete design entry with all eight fields;
+                                  no placeholders)
+  portfolio-narrative.md     (M6: one complete artifact entry with all seven fields;
+                                  no placeholders)
+  deliberate-practice.md     (M7: five practice reps across all five signal categories;
+                                  step scores strong|partial|weak; no placeholders)
 
 Exits 0 only when the required logs for the selected module are complete and
 free of placeholder text. Exits 1 otherwise, with a clear per-file report.
@@ -31,7 +34,8 @@ Usage:
   python check_prep.py --module 3   Require M1 + M2 + behavioral-bank.md complete.
   python check_prep.py --module 5   Require M1 + M2 + M3 + systems-design-log.md complete.
   python check_prep.py --module 6   Require M1 + M2 + M3 + M5 + portfolio-narrative.md complete.
-  python check_prep.py --module all Same as the default (all artifacts, including M6).
+  python check_prep.py --module 7   Require M1 + M2 + M3 + M5 + M6 + deliberate-practice.md complete.
+  python check_prep.py --module all Same as the default (all artifacts, including M7).
   python check_prep.py --help       Show this help text.
 
 Note: --module 4 is intentionally not a choice; M4 validator is not yet built.
@@ -131,6 +135,19 @@ portfolio-narrative.md (M6):
     **Role tailoring:**
     **Audit verdict:**
   Minimum one entry. No placeholder text in any field.
+
+deliberate-practice.md (M7):
+  Each entry is headed by:  ### DP<n>   (e.g. ### DP1, ### DP7)
+  Required fields per entry:
+    **Question:**
+    **Signal category:**   (must be one of: ownership, conflict, failure, influence, systems-design)
+    **Decompose:**         (must be one of: strong, partial, weak)
+    **Signal:**            (must be one of: strong, partial, weak)
+    **Construct:**         (must be one of: strong, partial, weak)
+    **Stress-test:**       (must be one of: strong, partial, weak)
+    **Verdict:**
+  All five signal categories must appear across the entries.
+  Minimum five entries. No placeholder text in any field.
 """
 
 import argparse
@@ -152,6 +169,7 @@ AUDIT_LOG = SCRIPT_DIR / "audit-log.md"
 BEHAVIORAL_BANK = SCRIPT_DIR / "behavioral-bank.md"
 SYSTEMS_DESIGN_LOG = SCRIPT_DIR / "systems-design-log.md"
 PORTFOLIO_NARRATIVE = SCRIPT_DIR / "portfolio-narrative.md"
+DELIBERATE_PRACTICE = SCRIPT_DIR / "deliberate-practice.md"
 
 # Placeholder text patterns: any required field containing these fails.
 PLACEHOLDER_PATTERNS = re.compile(
@@ -886,6 +904,117 @@ def validate_portfolio_narrative(path: Path) -> tuple[bool, list[str]]:
 
 
 # ---------------------------------------------------------------------------
+# Deliberate practice log validator (M7)
+# ---------------------------------------------------------------------------
+
+# Heading pattern: ### DP<digits>
+DP_ENTRY_RE = re.compile(r"^###\s+DP(\d+)$")
+
+DP_REQUIRED_FIELDS = [
+    "**Question:**",
+    "**Signal category:**",
+    "**Decompose:**",
+    "**Signal:**",
+    "**Construct:**",
+    "**Stress-test:**",
+    "**Verdict:**",
+]
+
+# Valid signal categories for the deliberate practice log.
+VALID_DP_CATEGORIES = {"ownership", "conflict", "failure", "influence", "systems-design"}
+
+# Step fields that must hold strong|partial|weak values.
+DP_STEP_FIELDS = ["**Decompose:**", "**Signal:**", "**Construct:**", "**Stress-test:**"]
+
+MIN_DP_ENTRIES = 5
+
+
+def validate_deliberate_practice(path: Path) -> tuple[bool, list[str]]:
+    """
+    Validate deliberate-practice.md.
+
+    Checks that the file has at least five ### DP<n> entries, each with all seven
+    required fields filled in and free of placeholder text; that all five signal
+    categories (ownership, conflict, failure, influence, systems-design) appear across
+    the entries; and that each of the four step fields (Decompose, Signal, Construct,
+    Stress-test) holds one of: strong, partial, weak.
+
+    Returns (passed: bool, messages: list[str]).
+    """
+    messages: list[str] = []
+
+    if not path.exists():
+        messages.append(f"NOT STARTED: {path.name} does not exist yet.")
+        messages.append(
+            "  Copy deliberate-practice.template.md to deliberate-practice.md and complete it."
+        )
+        return False, messages
+
+    text = path.read_text(encoding="utf-8")
+    passed = True
+
+    entries = split_into_entries(text, DP_ENTRY_RE)
+
+    # --- Count and field checks ---
+    entry_passed = validate_entries(
+        entries, DP_REQUIRED_FIELDS, MIN_DP_ENTRIES, path.name, messages,
+    )
+    if not entry_passed:
+        passed = False
+
+    # --- Category check: all five must appear ---
+    categories_found: set[str] = set()
+    for heading, entry_lines in entries:
+        raw = extract_field_value(entry_lines, "**Signal category:**")
+        if raw:
+            categories_found.add(raw.strip().lower())
+
+    missing_categories = VALID_DP_CATEGORIES - categories_found
+    if missing_categories:
+        missing_sorted = sorted(missing_categories)
+        messages.append(
+            f"FAIL: {path.name}: missing signal categories: "
+            + ", ".join(missing_sorted)
+            + ". Each of ownership, conflict, failure, influence, systems-design must appear."
+        )
+        passed = False
+    else:
+        messages.append(
+            f"OK:   {path.name}: all five signal categories present "
+            f"({', '.join(sorted(categories_found))})."
+        )
+
+    # --- Per-entry category value check ---
+    for heading, entry_lines in entries:
+        raw = extract_field_value(entry_lines, "**Signal category:**")
+        if raw and not is_placeholder(raw):
+            cat = raw.strip().lower()
+            if cat not in VALID_DP_CATEGORIES:
+                messages.append(
+                    f"FAIL: {heading}: **Signal category:** value {raw!r} is not one of: "
+                    + ", ".join(sorted(VALID_DP_CATEGORIES)) + "."
+                )
+                passed = False
+
+    # --- Step score value check: each must be strong|partial|weak ---
+    for heading, entry_lines in entries:
+        for field in DP_STEP_FIELDS:
+            value = extract_field_value(entry_lines, field)
+            if value is not None and not is_placeholder(value) and value:
+                if value.lower() not in VALID_SCORES:
+                    messages.append(
+                        f"FAIL: {heading}: {field} value {value!r} is not "
+                        f"one of: strong, partial, weak."
+                    )
+                    passed = False
+
+    if passed:
+        messages.append(f"PASS: {path.name} is complete.")
+
+    return passed, messages
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -911,20 +1040,24 @@ def build_parser() -> argparse.ArgumentParser:
             "               (--module 4 is not yet a choice; M4 validator not built.)\n"
             "  --module 6   Require M1 + M2 + M3 + M5 artifacts + portfolio-narrative.md complete\n"
             "               (M6 gate).\n"
-            "  --module all Same as omitting the flag: report all artifacts including M6.\n\n"
+            "  --module 7   Require M1 + M2 + M3 + M5 + M6 artifacts + deliberate-practice.md\n"
+            "               complete (M7 gate). deliberate-practice.md must have >= 5 reps\n"
+            "               covering all five signal categories with valid step scores.\n"
+            "  --module all Same as omitting the flag: report all artifacts including M7.\n\n"
             "Status values per artifact: PASS / INCOMPLETE / NOT STARTED\n"
         ),
     )
     parser.add_argument(
         "--module",
-        choices=["1", "2", "3", "5", "6", "all"],
+        choices=["1", "2", "3", "5", "6", "7", "all"],
         default="all",
         help=(
             "Module gate to enforce. '1' requires only M1 artifacts. "
             "'2' requires M1 + M2 artifacts. '3' requires M1 + M2 + M3 artifacts. "
             "'5' requires M1 + M2 + M3 + systems-design-log.md. "
             "'6' requires M1 + M2 + M3 + M5 + portfolio-narrative.md. "
-            "'all' requires all artifacts including portfolio-narrative.md. "
+            "'7' requires M1 + M2 + M3 + M5 + M6 + deliberate-practice.md. "
+            "'all' requires all artifacts including deliberate-practice.md. "
             "Default: all."
         ),
     )
@@ -935,11 +1068,12 @@ def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
 
-    module = args.module  # "1", "2", "3", "5", "6", or "all"
-    require_m2 = module in ("2", "3", "5", "6", "all")
-    require_m3 = module in ("3", "5", "6", "all")
-    require_m5 = module in ("5", "6", "all")
-    require_m6 = module in ("6", "all")
+    module = args.module  # "1", "2", "3", "5", "6", "7", or "all"
+    require_m2 = module in ("2", "3", "5", "6", "7", "all")
+    require_m3 = module in ("3", "5", "6", "7", "all")
+    require_m5 = module in ("5", "6", "7", "all")
+    require_m6 = module in ("6", "7", "all")
+    require_m7 = module in ("7", "all")
 
     print("Answer Engineering Prep Dossier Validator")
     print("=" * 44)
@@ -1010,9 +1144,35 @@ def main() -> int:
             print(" ", msg)
         print()
 
+    if require_m7:
+        dp_passed, dp_messages = validate_deliberate_practice(DELIBERATE_PRACTICE)
+
+        print(f"--- {DELIBERATE_PRACTICE.name} ---")
+        for msg in dp_messages:
+            print(" ", msg)
+        print()
+
     # Build the required artifact lists and results based on module level.
-    # Gating is cumulative: M6 requires M1+M2+M3+M5+portfolio-narrative.
-    if require_m6:
+    # Gating is cumulative: M7 requires M1+M2+M3+M5+M6+deliberate-practice.
+    if require_m7:
+        all_passed = (
+            decomp_passed and answers_passed
+            and sm_passed and pl_passed and al_passed
+            and bb_passed and sd_passed and pn_passed
+            and dp_passed
+        )
+        required_names = [
+            DECOMP_LOG.name, ANSWERS_LOG.name,
+            SIGNAL_MAP.name, PRACTICE_LOG.name, AUDIT_LOG.name,
+            BEHAVIORAL_BANK.name, SYSTEMS_DESIGN_LOG.name,
+            PORTFOLIO_NARRATIVE.name, DELIBERATE_PRACTICE.name,
+        ]
+        results = [
+            decomp_passed, answers_passed,
+            sm_passed, pl_passed, al_passed,
+            bb_passed, sd_passed, pn_passed, dp_passed,
+        ]
+    elif require_m6:
         all_passed = (
             decomp_passed and answers_passed
             and sm_passed and pl_passed and al_passed

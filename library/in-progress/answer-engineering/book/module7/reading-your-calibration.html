@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Overview - Answer Engineering — The AI Engineer&#x27;s Interview Framework</title>
+        <title>Reading Your Calibration - Answer Engineering — The AI Engineer&#x27;s Interview Framework</title>
 
 
         <!-- Custom HTML head -->
@@ -177,52 +177,123 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="module-1-the-framework"><a class="header" href="#module-1-the-framework">Module 1: The Framework</a></h1>
-<p>Most candidates walk into an interview carrying a list: stock answers, projects to name-drop, phrases
-that tested well in a mock session. The list feels like preparation. It is preparation for the
-questions that arrive exactly as rehearsed, which is a far smaller fraction than candidates expect.</p>
-<p>This module does not add to the list. It replaces the strategy.</p>
-<h2 id="what-this-module-teaches"><a class="header" href="#what-this-module-teaches">What This Module Teaches</a></h2>
-<p>The Algorithm is a four-step reasoning process for any interview question you have never seen. It is
-not a template you fill in; it is the thing you run in the first ten seconds after a question lands.</p>
-<ol>
-<li><strong>Decompose the question.</strong> Strip the framing words and find what the question actually names. What
-category does it belong to?</li>
-<li><strong>Identify the signal.</strong> Every question exists to collect evidence for or against a hiring
-hypothesis. Name the hypothesis.</li>
-<li><strong>Construct the answer.</strong> Build toward the signal, not the question’s surface form. Say what
-demonstrates the evidence; cut what does not.</li>
-<li><strong>Stress-test it.</strong> Before you finish, check: could a weak candidate give this same answer? If so,
-add specificity.</li>
-</ol>
-<p>The failure modes this guards against are not hypothetical. The most common interview mistakes are
-structural: jumping to a solution before understanding the problem, answering a question the
-interviewer did not ask, describing a happy path with no failure modes. Each is a candidate answering
-the surface of the question instead of the signal beneath it. The Algorithm is how you stop doing that.</p>
-<h2 id="the-two-lessons"><a class="header" href="#the-two-lessons">The Two Lessons</a></h2>
-<ol>
-<li><strong>Decompose the Question</strong> reads what a question is actually asking beneath the words it uses, and
-introduces the signal taxonomy for AI Engineering hiring loops: the four categories every question
-draws from.</li>
-<li><strong>Construct the Answer</strong> moves from an identified signal to a response that demonstrates it, with
-worked examples across behavioral, technical, and systems-design questions, and the named
-construction frameworks that scaffold each.</li>
-</ol>
-<h2 id="what-this-module-feeds-forward"><a class="header" href="#what-this-module-feeds-forward">What This Module Feeds Forward</a></h2>
-<p>Every later module assumes you can run these four steps without effort. The behavioral, technical, and
-systems-design example banks ahead are the framework loaded into practice; the worked examples are
-inert without the framework as the lens that reads them. Install the Algorithm here, and the rest of
-the book is repetition until it becomes reflex.</p>
+                        <h1 id="reading-your-calibration"><a class="header" href="#reading-your-calibration">Reading Your Calibration</a></h1>
+<p>The scorecard is a mirror. It does not flatter you, and it does not care how confident you felt
+after your last rep. It counts.</p>
+<p>Once you have reps in your deliberate-practice log, you run the scorer from the <code>exercises/prep/</code>
+directory:</p>
+<pre><code>python calibrate.py
+</code></pre>
+<p>What comes back is not a grade. It is a diagnosis, section by section, ending in a single verdict
+and a drill list. Here is a real scorecard, and here is what each section tells you.</p>
+<h2 id="the-sample-scorecard"><a class="header" href="#the-sample-scorecard">The Sample Scorecard</a></h2>
+<pre><code>Answer Engineering Calibration Scorecard
+========================================
+
+Reps logged: 10 across 5 categories
+  (1 malformed rep(s) skipped: check the field names and scores.)
+
+Per-category reps (need &gt;= 3 each):
+  ownership        3  ok 
+  conflict         3  ok 
+  failure          1  GAP  need 2 more
+  influence        0  GAP  need 3 more
+  systems-design   3  ok 
+
+Step calibration (across all reps):
+  Decompose    strong 8   partial 2   weak 0
+  Signal       strong 6   partial 3   weak 1
+  Construct    strong 5   partial 5   weak 0
+  Stress-test  strong 2   partial 4   weak 4    &lt;- weakest step
+
+Readiness by category (latest rep must have no weak step):
+  ownership       READY
+  conflict        NOT READY (latest rep has a weak step)
+  failure         NOT READY (need 2 more rep(s))
+  influence       NOT READY (need 3 more rep(s))
+  systems-design  READY
+
+VERDICT: NOT READY. Drill: conflict (clean rep); failure (reps); influence (reps); Stress-test step across the bank.
+</code></pre>
+<h2 id="reading-each-section"><a class="header" href="#reading-each-section">Reading Each Section</a></h2>
+<p><strong>Reps logged.</strong> Ten valid reps were parsed; one was skipped because a field name or score value did
+not match the schema. If you see a skipped count, open your log and find the malformed entry. The
+scorer tells you exactly what to check.</p>
+<p><strong>Per-category reps.</strong> The categories the book covers are ownership, conflict, failure, influence, and
+systems-design. Each needs at least three reps before the scorer will consider it practiced. In this
+scorecard, failure has one rep and influence has none: both show <code>GAP</code> with the shortfall printed. The
+<code>ok</code> mark on ownership, conflict, and systems-design only means the count is satisfied; it says nothing
+yet about quality.</p>
+<p><strong>Step calibration.</strong> This is the section most people underread. It shows, across all ten reps, how
+often each of the four Algorithm steps scored strong, partial, or weak. In this scorecard, Decompose
+is nearly clean. Stress-test has four weak marks out of ten, flagged as the weakest step. That number
+means something specific: on four of ten reps, you reached the final step and the answer did not hold.
+That is not a conflict problem or a failure problem. It is a method problem, and it shows up the same
+way everywhere.</p>
+<p><strong>Readiness by category.</strong> This is where the count and the quality check combine. A category is READY
+only when it has at least three reps and its most recent rep has no weak step. In this scorecard, conflict
+has the count, but the latest conflict rep has a weak step: NOT READY. Failure and influence are NOT READY
+because the reps are not there yet. The reason matters because the fix differs.</p>
+<p><strong>Verdict.</strong> The scorer names your drill list explicitly. Here it is three items: get a clean conflict
+rep, log two more failure reps, log three more influence reps, and address the Stress-test step across
+the whole bank. When every category clears both thresholds, the verdict flips to READY and the scorer
+exits 0.</p>
+<h2 id="two-different-reasons-a-category-is-not-ready"><a class="header" href="#two-different-reasons-a-category-is-not-ready">Two Different Reasons a Category Is Not Ready</a></h2>
+<p>A category can fail readiness for two reasons, and the fix is not the same for both.</p>
+<p><strong>Under-practiced</strong> means the count is below three. The fix is volume: log more reps in that category,
+on fresh questions, scored honestly. Do not log the same question twice.</p>
+<p><strong>Not clean</strong> means the count is fine but the most recent rep had a weak step. The fix is quality: do
+one rep on a fresh question in that category and clear the weak step. Adding volume without fixing the
+step will not move the verdict; the scorer checks the latest rep, not the average.</p>
+<p>The distinction also matters for how you prioritize. If a category is both under-practiced and weak on
+a step, fix the volume first; you cannot have a clean “latest rep” when there is only one.</p>
+<h2 id="the-weakest-step-signal"><a class="header" href="#the-weakest-step-signal">The Weakest-Step Signal</a></h2>
+<p>When a step is flagged as weakest across the whole bank, that is a different kind of problem from a
+thin category. Four weak Stress-test marks spread across ownership, conflict, failure, and systems-design
+means the step itself is not landing. You are not forgetting to do it; you are doing it and it is not
+working.</p>
+<p>The targeted fix is to run reps specifically to practice that step, across categories. Take a question
+from any category where you have at least one rep, run the full Algorithm, and hold yourself to a clear
+standard on Stress-test before you log the score. A category rep that clears the weakest step does
+double work: it counts toward readiness and it tightens the step distribution.</p>
+<h2 id="the-practice-loop"><a class="header" href="#the-practice-loop">The Practice Loop</a></h2>
+<p>The loop is not complicated. Read the scorecard, identify the single biggest gap, drill it, and re-run
+the scorer.</p>
+<p>Pick one gap at a time. If influence is empty, that outweighs a weak Stress-test mark in conflict; fill
+the empty category first. If every category has the count but one has a dirty latest rep, fix that rep
+before you log volume elsewhere. The verdict tells you what the scorer sees as the bloat; the drill list
+orders it.</p>
+<p>After each set of reps, run the scorer again:</p>
+<pre><code>python calibrate.py
+</code></pre>
+<p>Watch the numbers. A weak mark that drops from four to two is movement. A category that clears from
+<code>GAP</code> to <code>ok</code> is movement. The loop ends when the verdict reads READY and the process exits 0. Until
+then, the scorecard is telling you exactly where to spend the next session.</p>
+<p>Readiness is not a feeling you arrive at. It is an exit code the scorer awards when the evidence supports it.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>A category can be NOT READY for two reasons, under-practiced or latest rep not clean, and the fix
+differs: volume closes the count gap, a targeted rep closes the quality gap.</li>
+<li>A step that is weak across many categories signals a method gap, not a category gap; drill the step
+itself across the whole bank.</li>
+<li>The practice loop is score, identify the single biggest gap, drill it, re-run; the scorer exits 0
+only when every category is both practiced and clean.</li>
+<li>Readiness is an exit code, not a confidence level.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module7/reading-your-calibration/">
+<p><strong>Try It in Claude Code:</strong> run the calibration scorer on your log, identify your single biggest gap (weakest step or thinnest category), run three targeted reps to close it, and re-run the scorer to confirm the numbers moved.</p>
+</div>
+
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module7/the-self-review-rubric.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module1/decompose-the-question.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module7/simulating-the-room.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -232,11 +303,11 @@ the book is repetition until it becomes reflex.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module7/the-self-review-rubric.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module1/decompose-the-question.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module7/simulating-the-room.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

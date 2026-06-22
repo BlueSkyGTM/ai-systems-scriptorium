@@ -24,9 +24,13 @@ clean (`mdbook build`), and shipped (`GATE-APPROVE-SHIP`, 2026-06-21). M6 "The S
 Resume" (overview + 4 lessons + 4 exercises) opens Phase 3: walking an interviewer through a real artifact
 as a decision tour (not a code reading), the four-beat defended decision, the same artifact narrated three
 ways per role, and the written portfolio-narrative document + a weak-walkthrough audit; worked examples are
-the real Sans Python portfolio artifacts; validator grown to v5 in place (`--module 6`). See
-`build-log/answer-engineering/build-progress.md`. Next: Module 7 (live practice and calibration, a
-self-review rubric in code); Module 4 (technical screens) deferred.
+the real Sans Python portfolio artifacts; validator grown to v5 in place (`--module 6`). M7 "Live Practice and Calibration"
+(overview + 4 lessons + 4 exercises) is the practice engine: deliberate reps run through the Algorithm and
+self-scored, with the self-review rubric realized as code (`calibrate.py`, a calibration scorer with a
+readiness verdict); first throughline artifact that scores rather than just checks completeness; validator
+grown to v6 in place (`--module 7`). See `build-log/answer-engineering/build-progress.md`. Next: Module 8
+(the hiring loop end-to-end, a full-dossier grader in code, the capstone); Module 4 (technical screens)
+deferred.
 
 ## Ore (in the vault — not yet distilled)
 
@@ -54,7 +58,7 @@ makes it especially legible to both.
 
 ## Handoff & gates
 
-`GATE-NAME-BOOK` cleared; M1–M3 + M5 + M6 shipped (M4 deferred, see above). For the next module: draft its
-`build-log/answer-engineering/m7/PLAN.md`, stop at `GATE-LOCK-PLAN`, then the fleet authors via
+`GATE-NAME-BOOK` cleared; M1–M3 + M5 + M6 + M7 shipped (M4 deferred, see above). For the final module:
+draft its `build-log/answer-engineering/m8/PLAN.md`, stop at `GATE-LOCK-PLAN`, then the fleet authors via
 `platform/pipeline/CONTEXT.md`, and stop at `GATE-APPROVE-SHIP` per stage. See
-`platform/HUMAN-GATES.md`.
+`platform/HUMAN-GATES.md`. After M8 the book is content-complete (M4 still deferred pending ore).

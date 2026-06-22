@@ -1568,3 +1568,423 @@ class TestModule6Flag:
         assert result == 0, (
             f"Expected exit 0 with --module 5 when portfolio-narrative.md is absent; got {result}"
         )
+
+
+# ---------------------------------------------------------------------------
+# Fixture builders: M7 deliberate practice log
+# ---------------------------------------------------------------------------
+
+
+def _make_dp_entry(n: int, category: str) -> str:
+    """Return one complete ### DP<n> entry with all seven required fields filled."""
+    return f"""### DP{n}
+
+**Question:** Tell me about a time you pushed a technical decision that turned out to be wrong. What did you do when you realized it?
+
+**Signal category:** {category}
+
+**Decompose:** strong
+
+**Signal:** strong
+
+**Construct:** strong
+
+**Stress-test:** strong
+
+**Verdict:** Decompose and Signal were both strong; the question maps cleanly to ownership. Construct named a concrete metric (cost ran four times the projection) and a structural lesson (kill criteria on own proposals). No gaps to drill from this rep; next rep should be in a different category.
+"""
+
+
+def make_deliberate_practice_complete() -> str:
+    """
+    Return a deliberate-practice.md that passes all M7 checks: five DP entries
+    covering all five signal categories, all fields filled, valid step scores.
+    """
+    categories = ["ownership", "conflict", "failure", "influence", "systems-design"]
+    entries = [_make_dp_entry(i + 1, cat) for i, cat in enumerate(categories)]
+    return (
+        "# Deliberate Practice Log\n\n"
+        + "\n".join(entries)
+    )
+
+
+def make_deliberate_practice_incomplete() -> str:
+    """
+    Return a deliberate-practice.md that fails: only two entries with placeholder text.
+    """
+    return """# Deliberate Practice Log
+
+### DP1
+
+**Question:** <fill in: the interview question you practiced on>
+
+**Signal category:** <fill in: one of ownership, conflict, failure, influence, systems-design>
+
+**Decompose:** <fill in: strong | partial | weak>
+
+**Signal:** <fill in: strong | partial | weak>
+
+**Construct:** <fill in: strong | partial | weak>
+
+**Stress-test:** <fill in: strong | partial | weak>
+
+**Verdict:** <fill in: what the rep revealed and what to drill next>
+
+### DP2
+
+**Question:** Walk me through a production system you designed.
+
+**Signal category:** systems-design
+
+**Decompose:** partial
+
+**Signal:** strong
+
+**Construct:** partial
+
+**Stress-test:** weak
+
+**Verdict:** Construct was thin: named the components but not the load-bearing decision or a concrete metric. Stress-test was weak: did not name what a weak candidate could not replicate. Drill next: Construct step for systems-design questions -- lead with the key tradeoff, not the component list.
+"""
+
+
+def make_deliberate_practice_missing_field() -> str:
+    """
+    Return a deliberate-practice.md that fails because the Verdict field is absent
+    from one entry.
+    """
+    categories = ["ownership", "conflict", "failure", "influence", "systems-design"]
+    entries = []
+    for i, cat in enumerate(categories):
+        if i == 2:
+            # Entry 3 is missing the Verdict field.
+            entries.append(f"""### DP{i + 1}
+
+**Question:** Tell me about a project that failed.
+
+**Signal category:** {cat}
+
+**Decompose:** partial
+
+**Signal:** partial
+
+**Construct:** weak
+
+**Stress-test:** weak
+""")
+        else:
+            entries.append(_make_dp_entry(i + 1, cat))
+    return "# Deliberate Practice Log\n\n" + "\n".join(entries)
+
+
+def make_deliberate_practice_missing_category() -> str:
+    """
+    Return a deliberate-practice.md that fails because only four of five categories
+    appear (systems-design is missing; ownership appears twice).
+    """
+    entries = [
+        _make_dp_entry(1, "ownership"),
+        _make_dp_entry(2, "conflict"),
+        _make_dp_entry(3, "failure"),
+        _make_dp_entry(4, "influence"),
+        _make_dp_entry(5, "ownership"),  # duplicate instead of systems-design
+    ]
+    return "# Deliberate Practice Log\n\n" + "\n".join(entries)
+
+
+def make_deliberate_practice_invalid_step_score() -> str:
+    """
+    Return a deliberate-practice.md that fails because one step score is invalid
+    ('great' is not a valid score value).
+    """
+    categories = ["ownership", "conflict", "failure", "influence", "systems-design"]
+    entries = []
+    for i, cat in enumerate(categories):
+        if i == 0:
+            entries.append(f"""### DP{i + 1}
+
+**Question:** Tell me about a time you owned a wrong call.
+
+**Signal category:** {cat}
+
+**Decompose:** great
+
+**Signal:** strong
+
+**Construct:** strong
+
+**Stress-test:** strong
+
+**Verdict:** Strong across Signal, Construct, and Stress-test. Decompose was solid too.
+""")
+        else:
+            entries.append(_make_dp_entry(i + 1, cat))
+    return "# Deliberate Practice Log\n\n" + "\n".join(entries)
+
+
+def make_deliberate_practice_invalid_category() -> str:
+    """
+    Return a deliberate-practice.md that fails because one entry has an invalid
+    signal category value ('judgment' is not in the allowed set).
+    """
+    categories = ["ownership", "conflict", "failure", "influence", "systems-design"]
+    entries = []
+    for i, cat in enumerate(categories):
+        if i == 1:
+            entries.append(f"""### DP{i + 1}
+
+**Question:** Tell me about a time you had to make a decision with incomplete information.
+
+**Signal category:** judgment
+
+**Decompose:** strong
+
+**Signal:** partial
+
+**Construct:** partial
+
+**Stress-test:** partial
+
+**Verdict:** Signal was partial: I named the category but not the exact hypothesis. Next rep: write the hypothesis in the form "The interviewer is trying to determine whether..."
+""")
+        else:
+            entries.append(_make_dp_entry(i + 1, cat))
+    return "# Deliberate Practice Log\n\n" + "\n".join(entries)
+
+
+def make_deliberate_practice_fewer_than_five() -> str:
+    """
+    Return a deliberate-practice.md that fails because it has only three entries,
+    even though the entries themselves are otherwise valid.
+    """
+    categories = ["ownership", "conflict", "failure"]
+    entries = [_make_dp_entry(i + 1, cat) for i, cat in enumerate(categories)]
+    return "# Deliberate Practice Log\n\n" + "\n".join(entries)
+
+
+# ---------------------------------------------------------------------------
+# Tests: deliberate-practice.md (M7)
+# ---------------------------------------------------------------------------
+
+
+class TestDeliberatePractice:
+    def test_complete_log_passes(self, tmp_path: Path) -> None:
+        """A fully completed deliberate practice log must pass M7 validation."""
+        dp = tmp_path / "deliberate-practice.md"
+        dp.write_text(make_deliberate_practice_complete(), encoding="utf-8")
+
+        passed, messages = check_prep.validate_deliberate_practice(dp)
+
+        assert passed, f"Expected pass; got messages:\n" + "\n".join(messages)
+
+    def test_missing_log_fails(self, tmp_path: Path) -> None:
+        """An absent deliberate practice log must return fail with a not-started message."""
+        missing = tmp_path / "deliberate-practice.md"
+
+        passed, messages = check_prep.validate_deliberate_practice(missing)
+
+        assert not passed
+        combined = "\n".join(messages)
+        assert "NOT STARTED" in combined or "does not exist" in combined
+
+    def test_missing_required_field_fails(self, tmp_path: Path) -> None:
+        """A log with a missing required field in one entry must fail."""
+        dp = tmp_path / "deliberate-practice.md"
+        dp.write_text(make_deliberate_practice_missing_field(), encoding="utf-8")
+
+        passed, messages = check_prep.validate_deliberate_practice(dp)
+
+        assert not passed, "Expected fail when a required field is absent."
+        combined = "\n".join(messages)
+        assert "FAIL" in combined, f"Expected FAIL in messages; got:\n{combined}"
+        assert "Verdict" in combined, (
+            f"Expected the missing 'Verdict' field to be named; got:\n{combined}"
+        )
+
+    def test_placeholder_fails(self, tmp_path: Path) -> None:
+        """A log with placeholder text in fields must fail."""
+        dp = tmp_path / "deliberate-practice.md"
+        dp.write_text(make_deliberate_practice_incomplete(), encoding="utf-8")
+
+        passed, messages = check_prep.validate_deliberate_practice(dp)
+
+        assert not passed, "Expected fail; validator incorrectly returned pass."
+        combined = "\n".join(messages)
+        assert "FAIL" in combined, f"Expected FAIL in messages; got:\n{combined}"
+
+    def test_fewer_than_five_entries_fails(self, tmp_path: Path) -> None:
+        """A log with only three entries must fail the minimum count check."""
+        dp = tmp_path / "deliberate-practice.md"
+        dp.write_text(make_deliberate_practice_fewer_than_five(), encoding="utf-8")
+
+        passed, messages = check_prep.validate_deliberate_practice(dp)
+
+        assert not passed, "Expected fail when fewer than five entries present."
+        combined = "\n".join(messages)
+        assert "FAIL" in combined, f"Expected FAIL in messages; got:\n{combined}"
+
+    def test_missing_category_fails(self, tmp_path: Path) -> None:
+        """A log with five entries but only four categories must fail."""
+        dp = tmp_path / "deliberate-practice.md"
+        dp.write_text(make_deliberate_practice_missing_category(), encoding="utf-8")
+
+        passed, messages = check_prep.validate_deliberate_practice(dp)
+
+        assert not passed, "Expected fail when a signal category is missing."
+        combined = "\n".join(messages)
+        assert "systems-design" in combined.lower(), (
+            f"Expected 'systems-design' named in failure messages; got:\n{combined}"
+        )
+
+    def test_invalid_step_score_fails(self, tmp_path: Path) -> None:
+        """A log with an invalid step score value must fail."""
+        dp = tmp_path / "deliberate-practice.md"
+        dp.write_text(make_deliberate_practice_invalid_step_score(), encoding="utf-8")
+
+        passed, messages = check_prep.validate_deliberate_practice(dp)
+
+        assert not passed, "Expected fail when step score is not strong/partial/weak."
+        combined = "\n".join(messages)
+        assert "FAIL" in combined, f"Expected FAIL in messages; got:\n{combined}"
+        assert "great" in combined.lower(), (
+            f"Expected invalid score 'great' named in failure messages; got:\n{combined}"
+        )
+
+    def test_invalid_signal_category_fails(self, tmp_path: Path) -> None:
+        """A log with an invalid signal category value must fail."""
+        dp = tmp_path / "deliberate-practice.md"
+        dp.write_text(make_deliberate_practice_invalid_category(), encoding="utf-8")
+
+        passed, messages = check_prep.validate_deliberate_practice(dp)
+
+        assert not passed, "Expected fail when signal category is not in the allowed set."
+        combined = "\n".join(messages)
+        assert "FAIL" in combined, f"Expected FAIL in messages; got:\n{combined}"
+        assert "judgment" in combined.lower(), (
+            f"Expected invalid category 'judgment' named in failure messages; got:\n{combined}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Tests: --module 7 flag behavior (M7)
+# ---------------------------------------------------------------------------
+
+
+class TestModule7Flag:
+    def _patch_all_through_m6(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Helper: patch all M1, M2, M3, M5, and M6 paths with complete content."""
+        decomp = tmp_path / "decomposition-log.md"
+        answers = tmp_path / "answers-log.md"
+        signal_map = tmp_path / "signal-map.md"
+        practice = tmp_path / "practice-log.md"
+        audit = tmp_path / "audit-log.md"
+        bank = tmp_path / "behavioral-bank.md"
+        sd_log = tmp_path / "systems-design-log.md"
+        pn = tmp_path / "portfolio-narrative.md"
+
+        decomp.write_text(make_decomp_log_with_hard_cases(), encoding="utf-8")
+        answers.write_text(make_answers_log_complete(), encoding="utf-8")
+        signal_map.write_text(make_signal_map_complete(), encoding="utf-8")
+        practice.write_text(make_practice_log_complete(), encoding="utf-8")
+        audit.write_text(make_audit_log_complete(), encoding="utf-8")
+        bank.write_text(make_behavioral_bank_complete(), encoding="utf-8")
+        sd_log.write_text(make_systems_design_log_complete(), encoding="utf-8")
+        pn.write_text(make_portfolio_narrative_complete(), encoding="utf-8")
+
+        monkeypatch.setattr(check_prep, "DECOMP_LOG", decomp)
+        monkeypatch.setattr(check_prep, "ANSWERS_LOG", answers)
+        monkeypatch.setattr(check_prep, "SIGNAL_MAP", signal_map)
+        monkeypatch.setattr(check_prep, "PRACTICE_LOG", practice)
+        monkeypatch.setattr(check_prep, "AUDIT_LOG", audit)
+        monkeypatch.setattr(check_prep, "BEHAVIORAL_BANK", bank)
+        monkeypatch.setattr(check_prep, "SYSTEMS_DESIGN_LOG", sd_log)
+        monkeypatch.setattr(check_prep, "PORTFOLIO_NARRATIVE", pn)
+
+    def test_module7_fails_without_deliberate_practice(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module 7 must exit 1 when deliberate-practice.md is absent, even if M1-M6 complete."""
+        self._patch_all_through_m6(tmp_path, monkeypatch)
+        monkeypatch.setattr(
+            check_prep, "DELIBERATE_PRACTICE", tmp_path / "deliberate-practice.md"
+        )
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "7"])
+
+        result = check_prep.main()
+        assert result == 1, (
+            f"Expected exit 1 with --module 7 and no deliberate-practice; got {result}"
+        )
+
+    def test_module7_fails_when_m6_missing(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module 7 must exit 1 when M6 (portfolio-narrative.md) is absent."""
+        decomp = tmp_path / "decomposition-log.md"
+        answers = tmp_path / "answers-log.md"
+        signal_map = tmp_path / "signal-map.md"
+        practice = tmp_path / "practice-log.md"
+        audit = tmp_path / "audit-log.md"
+        bank = tmp_path / "behavioral-bank.md"
+        sd_log = tmp_path / "systems-design-log.md"
+        dp = tmp_path / "deliberate-practice.md"
+
+        decomp.write_text(make_decomp_log_with_hard_cases(), encoding="utf-8")
+        answers.write_text(make_answers_log_complete(), encoding="utf-8")
+        signal_map.write_text(make_signal_map_complete(), encoding="utf-8")
+        practice.write_text(make_practice_log_complete(), encoding="utf-8")
+        audit.write_text(make_audit_log_complete(), encoding="utf-8")
+        bank.write_text(make_behavioral_bank_complete(), encoding="utf-8")
+        sd_log.write_text(make_systems_design_log_complete(), encoding="utf-8")
+        dp.write_text(make_deliberate_practice_complete(), encoding="utf-8")
+
+        monkeypatch.setattr(check_prep, "DECOMP_LOG", decomp)
+        monkeypatch.setattr(check_prep, "ANSWERS_LOG", answers)
+        monkeypatch.setattr(check_prep, "SIGNAL_MAP", signal_map)
+        monkeypatch.setattr(check_prep, "PRACTICE_LOG", practice)
+        monkeypatch.setattr(check_prep, "AUDIT_LOG", audit)
+        monkeypatch.setattr(check_prep, "BEHAVIORAL_BANK", bank)
+        monkeypatch.setattr(check_prep, "SYSTEMS_DESIGN_LOG", sd_log)
+        monkeypatch.setattr(
+            check_prep, "PORTFOLIO_NARRATIVE", tmp_path / "portfolio-narrative.md"
+        )
+        monkeypatch.setattr(check_prep, "DELIBERATE_PRACTICE", dp)
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "7"])
+
+        result = check_prep.main()
+        assert result == 1, (
+            f"Expected exit 1 with --module 7 when portfolio-narrative.md absent; got {result}"
+        )
+
+    def test_module7_passes_with_all_artifacts(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module 7 must exit 0 when all M1, M2, M3, M5, M6, and M7 artifacts are complete."""
+        self._patch_all_through_m6(tmp_path, monkeypatch)
+
+        dp = tmp_path / "deliberate-practice.md"
+        dp.write_text(make_deliberate_practice_complete(), encoding="utf-8")
+        monkeypatch.setattr(check_prep, "DELIBERATE_PRACTICE", dp)
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "7"])
+
+        result = check_prep.main()
+        assert result == 0, f"Expected exit 0 with --module 7 and all artifacts; got {result}"
+
+    def test_module6_passes_without_deliberate_practice(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--module 6 must exit 0 even when deliberate-practice.md is absent (backward compat)."""
+        self._patch_all_through_m6(tmp_path, monkeypatch)
+        # deliberate-practice.md is absent; --module 6 must not require it.
+        monkeypatch.setattr(
+            check_prep, "DELIBERATE_PRACTICE", tmp_path / "deliberate-practice.md"
+        )
+        monkeypatch.setattr(sys, "argv", ["check_prep.py", "--module", "6"])
+
+        result = check_prep.main()
+        assert result == 0, (
+            f"Expected exit 0 with --module 6 when deliberate-practice.md is absent; got {result}"
+        )

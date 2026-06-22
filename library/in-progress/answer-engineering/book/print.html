@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-ac315a66.js";
+            window.path_to_searchindex_js = "searchindex-78f2b97b.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-295af4a6.js"></script>
+        <script src="toc-c313bbf0.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -1941,6 +1941,421 @@ evaluating different signals from the same artifact.</li>
 </ul>
 <div class="claude-handoff" data-exercise="exercises/module6/the-portfolio-narrative-document/">
 <p><strong>Try It in Claude Code:</strong> finish your portfolio-narrative document for one artifact, then run the weak-walkthrough audit on it and record the verdict: which checks it passes, which it fails, and the one change you made.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-7-live-practice-and-calibration"><a class="header" href="#module-7-live-practice-and-calibration">Module 7: Live Practice and Calibration</a></h1>
+<p>You can know the Algorithm cold and still walk into the room uncalibrated. Knowing the method is not the
+same as having run it enough times that it fires under pressure, and it is not the same as knowing which
+kinds of questions you are actually strong on. This module closes both gaps. It turns the example banks
+into a practice loop, and it replaces the feeling of readiness with a count.</p>
+<p>Most interview prep ends at “I read the material and I feel ready.” That feeling is the least reliable
+signal you have. You feel ready on the questions you happened to rehearse, in the categories you enjoy,
+on the days you slept well. Calibration is the opposite of a feeling: it is evidence, gathered by
+scoring your own reps, that tells you precisely where you are strong and where you are still guessing.</p>
+<h2 id="practice-is-reps-not-rereading"><a class="header" href="#practice-is-reps-not-rereading">Practice Is Reps, Not Rereading</a></h2>
+<p>A rep is not rereading a lesson. A rep is taking a question you have not rehearsed, running the full
+four-step Algorithm on it out loud or on paper, and scoring the result honestly against the rubric. The
+distinction matters because rereading builds recognition, and recognition collapses under a novel
+question. Reps build the reflex that survives a question you have never seen, which is the only kind the
+room will give you that counts.</p>
+<p>The example bank you have built across this book is your practice material: the behavioral categories
+from the behavioral module, the systems-design prompts from the systems-design module. You do not need
+new questions. You need to run the ones you have, again, scoring each rep so the practice is deliberate
+rather than a comfortable reread of your best answer.</p>
+<h2 id="the-rubric-is-code"><a class="header" href="#the-rubric-is-code">The Rubric Is Code</a></h2>
+<p>Your self-review rubric in this module is not a checklist you eyeball. It is a script. You log each rep
+in your prep dossier with a self-score for each of the four Algorithm steps, and <code>calibrate.py</code> reads
+those reps and prints a scorecard: how many reps you have logged per signal category, how each step
+scores across them, which step is your weakest, which categories are under-practiced, and a single
+readiness verdict. The rubric, the scale, and the readiness thresholds live in the code. Your job is to
+feed it honest reps and act on what it tells you.</p>
+<p>This is deliberate. A prose rubric lets you grade yourself generously without noticing. A scorer that
+counts your weak marks and names your thinnest category does not flatter you. It is the same discipline
+the rest of the book applies to interview answers, turned on your own preparation.</p>
+<h2 id="the-four-lessons-3"><a class="header" href="#the-four-lessons-3">The Four Lessons</a></h2>
+<ol>
+<li><strong>Deliberate Practice, Not Rote</strong> defines the rep: a fresh question, the full Algorithm, an honest
+self-score, logged.</li>
+<li><strong>The Self-Review Rubric</strong> is the scoring schema: the four step dimensions, the strong/partial/weak
+scale, and how to score yourself without inflation.</li>
+<li><strong>Reading Your Calibration</strong> runs the scorer and teaches you to act on the scorecard: drill the
+weakest step, fill the under-practiced category, then re-run.</li>
+<li><strong>Simulating the Room</strong> is mixed, timed practice across the whole bank, and the readiness verdict that
+tells you when you are prepared and what to drill when you are not.</li>
+</ol>
+<h2 id="what-this-module-feeds-forward-5"><a class="header" href="#what-this-module-feeds-forward-5">What This Module Feeds Forward</a></h2>
+<p>By the end you have a deliberate-practice log in your prep dossier and a scorer that grades it. That
+scorer is the first dossier artifact that does more than check completeness; it measures quality. The
+final module builds on exactly this: it composes your whole dossier, every log and bank and document you
+have built, and grades the complete preparation against a rubric in code, the way an interview loop grades
+a candidate.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="deliberate-practice-not-rote"><a class="header" href="#deliberate-practice-not-rote">Deliberate Practice, Not Rote</a></h1>
+<p>A rep is not a reread. That distinction is worth stating plainly at the start, because most
+interview prep collapses the two, and the collapse is why so many people walk into the room
+feeling ready and then seize on the first question they did not rehearse.</p>
+<p>Rereading builds recognition. Recognition feels like fluency, because the answer surfaces
+quickly on the questions you have already seen. The problem is that recognition collapses
+under novelty. The room will not give you the exact question you rehearsed. It will give you
+a variant, a pivot, a follow-up you did not predict, and recognition has no grip on any of
+those. What survives a question you have never seen is a reflex: the four-step Algorithm
+firing in sequence, aimed at whatever prompt the interviewer just delivered. A reflex is not
+built by rereading. It is built by reps.</p>
+<h2 id="what-a-rep-is"><a class="header" href="#what-a-rep-is">What a Rep Is</a></h2>
+<p>A rep is five moves in sequence:</p>
+<ol>
+<li>Pull a question from your example bank that you have not practiced recently. Fresh means
+unfamiliar enough that you cannot recall your last answer verbatim.</li>
+<li>Run the full four-step Algorithm: decompose the question into its signal and structure,
+identify the signal category the question is collecting, construct a full answer grounded
+in specific evidence, then stress-test it for weak spots before you stop.</li>
+<li>Say or write the answer out loud, as if the interviewer is in the room. If you are
+thinking through it silently, you are not doing a rep.</li>
+<li>Score each of the four steps: strong, partial, or weak.</li>
+<li>Log the rep with its scores and a one-line verdict on what to fix next time.</li>
+</ol>
+<p>That is a rep. Rereading your best answer to a question you already nailed is not a rep. It
+is confirmation of something you already know, and it does nothing for the step you are
+actually weak on.</p>
+<h2 id="why-volume-is-not-the-point"><a class="header" href="#why-volume-is-not-the-point">Why Volume Is Not the Point</a></h2>
+<p>The trap is practicing the category you enjoy on the question you already have an answer for.
+It is comfortable. The scores come back strong. You feel sharp. But calibration is not a
+feeling; it is a count.</p>
+<p>If you have twenty reps logged in ownership and zero in conflict, you have practiced the
+category that comes naturally and avoided the one that does not. You have also built a false
+readiness signal, because the scorecard will show high marks in the easy categories and a gap
+in the hard one. The interviewer will not know or care which categories you skipped. They
+will ask a conflict question and watch you reach for a framework you never actually ran under
+pressure.</p>
+<p>The unit that moves you is a rep on a fresh question, scored honestly. One uncomfortable rep
+in a thin category is worth more than five confident reps in the category you already own.</p>
+<h2 id="your-practice-material-is-already-built"><a class="header" href="#your-practice-material-is-already-built">Your Practice Material Is Already Built</a></h2>
+<p>You do not need new questions. The example bank you built earlier in this book is your
+practice material: the behavioral questions across ownership, conflict, failure, and influence;
+the systems-design prompts in your systems-design log. The work is not to find new questions.
+The work is to run the ones you have again, on different days, with honest scores.</p>
+<p>Pull from the behavioral bank first. If you have five ownership questions and you have
+practiced three of them, the other two are your next reps. When the bank runs out, recycle:
+a question you last ran six weeks ago is effectively fresh, because the muscle memory has
+faded and you will catch the gaps you papered over the first time.</p>
+<p>For systems-design, the same rule holds. Reprompt yourself from the log and run the full
+SPIDER motion again, under a clock, on a prompt you have not touched recently. The design
+you produce the second time should be better than the first; if it is the same, you memorized
+it instead of internalizing it.</p>
+<h2 id="how-to-log-a-rep"><a class="header" href="#how-to-log-a-rep">How to Log a Rep</a></h2>
+<p>You cannot calibrate what you did not record. A score that lives only in your head does not
+carry forward; a weak Stress-test mark that disappears when you close the session means you
+will repeat the same weakness on the next rep without knowing it.</p>
+<p>Log every rep in your deliberate-practice log. Each entry follows this schema:</p>
+<pre><code>### DP1
+**Question:** &lt;the question you practiced&gt;
+**Signal category:** ownership | conflict | failure | influence | systems-design
+**Decompose:** strong | partial | weak
+**Signal:** strong | partial | weak
+**Construct:** strong | partial | weak
+**Stress-test:** strong | partial | weak
+**Verdict:** &lt;one line: what to fix next time&gt;
+</code></pre>
+<p>The numbering runs sequentially across all your reps: DP1, DP2, DP3, and so on. The signal
+category is one of the five values the scorer recognizes: ownership, conflict, failure,
+influence, or systems-design. The four step scores use exactly three values: strong, partial,
+weak. The verdict is one line, written immediately after the rep while the gap is fresh.</p>
+<p>The format is not administrative overhead. Your prep scorer reads this file and produces a
+calibration report: how many reps you have per category, how each Algorithm step scores
+across all reps, which step is your weakest, which categories are under-practiced, and a
+readiness verdict. It cannot produce that report from memory. It reads what you logged, and
+it counts your weak marks without softening them.</p>
+<p>Write the verdict before you move to the next question. “Construct was weak: answer opened
+with setup instead of the result. Start with the outcome next time.” That sentence, written
+now, is the instruction you need for the next rep in this category.</p>
+<h2 id="the-honest-score"><a class="header" href="#the-honest-score">The Honest Score</a></h2>
+<p>The scoring only works if the scores are honest. A partial that you mark strong because the
+answer felt adequate is a calibration error that compounds. You will log ten more reps, see
+strong scores across the board, run the scorer, and get a readiness verdict that does not
+match how you actually perform under pressure.</p>
+<p>Score what happened, not what you meant to do. If you decomposed the question and correctly
+identified the signal category but hedged on the structure, that is a partial, not a strong.
+If you constructed a full answer but then stress-tested it and found the opening was too
+generic to pass a “could a weak candidate say this?” check, that is a weak Stress-test,
+even if the rest of the answer was solid.</p>
+<p>The rubric is four independent dimensions. A strong Construct score does not cancel a weak
+Stress-test. Each step scores on its own.</p>
+<h2 id="core-concepts-18"><a class="header" href="#core-concepts-18">Core Concepts</a></h2>
+<ul>
+<li>A rep is a fresh question, the full four-step Algorithm, an honest score on each step, and
+a logged verdict; rereading a rehearsed answer is not a rep and does not build the reflex
+that survives a novel question.</li>
+<li>Practicing the category you enjoy on the question you already own produces comfort, not
+calibration; the unit that moves you is one honest rep on a question from a thin category.</li>
+<li>Your example bank is already your practice material: the behavioral questions (ownership,
+conflict, failure, influence) and the systems-design log are the source; you do not need
+new questions, you need more honest runs on the ones you have.</li>
+<li>You cannot calibrate what you did not record: the deliberate-practice log is the input your
+prep scorer reads to produce a readiness verdict, and an inflated score is a calibration
+error that compounds across every subsequent rep.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module7/deliberate-practice-not-rote/">
+<p><strong>Try It in Claude Code:</strong> run your first three deliberate-practice reps on fresh questions from your example bank, score each of the four Algorithm steps honestly, and log them in your deliberate-practice log.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-self-review-rubric"><a class="header" href="#the-self-review-rubric">The Self-Review Rubric</a></h1>
+<p>A rubric you grade yourself on generously is a rubric that lies. It tells you what you want to hear, confirms the readiness you already feel, and leaves the real gaps exactly where they were before you picked up the pen.</p>
+<p>The self-review rubric in <code>calibrate.py</code> is designed to prevent that. It is not a checklist you eyeball; it is a schema that scores each of your four Algorithm steps as strong, partial, or weak, and it counts the marks honestly whether you like the count or not. Your job is to apply that schema to your own reps before the scorer ever sees them, and to apply it without inflation.</p>
+<h2 id="why-the-four-algorithm-steps-are-the-scoring-axes"><a class="header" href="#why-the-four-algorithm-steps-are-the-scoring-axes">Why the Four Algorithm Steps Are the Scoring Axes</a></h2>
+<p>The rubric scores the four steps you already know: Decompose, Signal, Construct, Stress-test. Those are not arbitrary categories. They map to the four places an interview answer can break: you misread the question, you aimed at the wrong signal, you built a generic answer, or you left the weakest part undefended. A rep that passes all four is a rep that could not have been better without more knowledge. A rep that fails one tells you exactly where to drill.</p>
+<p>Each step has one job in the Algorithm. Each step therefore has one failure mode in the rubric. Scoring them separately keeps the diagnosis precise. If you collapsed all four into a single “how did that go?” rating, you would always average your strengths against your weaknesses and never fix either.</p>
+<h2 id="the-strongpartialweak-scale-step-by-step"><a class="header" href="#the-strongpartialweak-scale-step-by-step">The Strong/Partial/Weak Scale, Step by Step</a></h2>
+<p>These definitions are what <code>calibrate.py</code> expects you to have applied before you write your scores into the log. Read them as a decision procedure, not as aspirational descriptions.</p>
+<p><strong>Decompose.</strong> This step asks: did you surface the real question inside the question asked?</p>
+<ul>
+<li>Strong: you named the latent signal or hypothesis the question is designed to surface, not just the surface topic. For an “ownership” question, strong means you identified that the interviewer is collecting evidence of initiative taken without a mandate, not just “tell me about a project you owned.”</li>
+<li>Partial: you got the surface ask right but stopped there. You knew it was a behavioral question about ownership and structured your answer accordingly. You did not name what specifically the interviewer is trying to separate strong candidates from weak candidates on.</li>
+<li>Weak: you answered the literal words of the question without decomposing it at all. The question was a container you filled without examining what it was designed to hold.</li>
+</ul>
+<p><strong>Signal.</strong> This step asks: did you aim your answer at what the interviewer is actually collecting?</p>
+<ul>
+<li>Strong: you identified the specific evidence the interviewer needs to mark “yes” on this signal, and you pointed your answer directly at that evidence. You knew, going in, what a yes looks like and built toward it.</li>
+<li>Partial: you had a general sense of the category (influence, conflict, failure) and shaped your answer in that direction, but you could not have named the specific evidence the question is designed to surface before you started speaking.</li>
+<li>Weak: you answered without identifying any target signal. The answer may have been competent, but it was not aimed; you were hoping the signal would emerge from the content rather than building toward it.</li>
+</ul>
+<p><strong>Construct.</strong> This step asks: did you build toward the signal with specific, unfakeable evidence?</p>
+<ul>
+<li>Strong: every claim in the answer is grounded in a detail only you could supply. The numbers, the names, the constraints, the decision you made under pressure: these cannot be recycled from a generic template. A weak candidate with the same job title could not give the same answer.</li>
+<li>Partial: the structure is correct and the story follows the right shape, but the specifics are thin. “I aligned the team around the goal” instead of “I ran three working sessions over two weeks to get the backend lead and the data team to a shared definition of done, because they had been operating on different assumptions about what the feature required.” The first is a label; the second is evidence.</li>
+<li>Weak: you rambled, recited the question back, or gave a sequence of assertions without grounding any of them in real detail. The answer has shape but no substance the interviewer can weigh.</li>
+</ul>
+<p><strong>Stress-test.</strong> This step asks: did you find and fix the part a weak candidate could also have said?</p>
+<ul>
+<li>Strong: you found the weakest sentence in your answer, the one that sounds like a competent answer but contains no specific evidence, and you replaced it with something unfakeable. You named the specific reason your contribution was necessary, not just present.</li>
+<li>Partial: you noticed the weak point. You might have flagged it to yourself: “that part was vague.” You did not fix it before the answer ended. Noticing is not the same as drilling.</li>
+<li>Weak: no stress-test. The answer ended without you looking for the sentence a weak candidate could also have given. The weakest part is still in the answer, unexamined.</li>
+</ul>
+<h2 id="how-to-score-honestly"><a class="header" href="#how-to-score-honestly">How to Score Honestly</a></h2>
+<p>Partial is the honest default. Not because you are a bad candidate, but because partial is what a solid, well-structured answer that lacks the final layer of specificity looks like. Most reps from most candidates in preparation are partial on at least two steps. That is not discouraging; it is information.</p>
+<p>Strong is earned, not assigned. You earned a strong on a step when you can point to the specific thing you did in that rep that passes the step’s test: the latent signal you named before answering, the unfakeable detail you embedded in the construct, the weak sentence you found and replaced. If you cannot point to it, the mark is partial.</p>
+<p>Weak is information, not failure. A weak mark on Stress-test across five reps tells you Stress-test is your drill target. That is exactly what the rubric is for. The candidate who assigns weak marks accurately and drills them is better off than the candidate who assigns partial to everything and never identifies a drill target.</p>
+<p>The inflation trap works like this: you finish a rep that went reasonably well, and you score it strong/strong/strong/partial because it felt clean and you do not want to assign weak marks to a rep you are proud of. Then you do it again on the next rep. After ten reps scored this way, <code>calibrate.py</code> shows no weak steps and a readiness verdict that does not match what happens when you try the same questions cold. The trap is not dishonesty; it is the same availability bias that makes the feeling of readiness unreliable. You remember the strong parts and assign the score from the feeling.</p>
+<p>The countermeasure is simple: score before you read the verdict. Write your four marks into the log before you run the scorer. If you score after seeing output, you will curve. Write the marks, commit to them, then run. The harsh mark you assigned before the output is the honest one.</p>
+<h2 id="worked-scoring-example"><a class="header" href="#worked-scoring-example">Worked Scoring Example</a></h2>
+<p>Here is a practice answer to the question: “Tell me about a time you had to influence a decision you didn’t have authority over.”</p>
+<p>The answer: “I was on a team where we were about to launch a feature without doing performance testing because the timeline was tight. I thought that was risky, so I put together a quick analysis showing what could go wrong and shared it with the tech lead. They agreed we should do the testing, and we found some issues before launch.”</p>
+<p>Now score each step.</p>
+<p><strong>Decompose: partial.</strong> The candidate correctly identified this as an influence question and built an answer about influencing a technical decision. What they did not name is the specific signal the question is collecting: evidence of influence exercised across an authority gap, with a real cost to the decision-maker. “Told the tech lead and they agreed” is low-resistance influence. It does not show the candidate navigating resistance, making a case to someone with competing priorities, or absorbing a cost to see the decision land right. The surface ask was answered; the latent signal was not.</p>
+<p><strong>Signal: partial.</strong> The candidate aimed at “influence” as a category. They did not aim at the specific evidence the question needs: that the candidate can move a decision when the person who holds it has a reason not to move. The answer describes agreement, not persuasion under resistance. The signal was identified at the category level but not at the specificity level needed to earn a strong mark.</p>
+<p><strong>Construct: partial.</strong> The structure is sound. The setup is clear, the action is present, the outcome is named. But “put together a quick analysis” is a label. What was in the analysis? What numbers, what scenarios, what made it persuasive rather than just concerning? “Found some issues” is the same problem: what issues, at what severity, and what would have happened at launch? The answer has shape with thin specifics.</p>
+<p><strong>Stress-test: weak.</strong> The candidate did not stress-test this answer. The weakest sentence, “They agreed we should do the testing,” is also the most important one, and it goes completely unexamined. A weak candidate who had simply raised a concern to a tech lead could give exactly this answer. The stress-test step requires finding that sentence and replacing it with evidence that the tech lead had a reason to say no and here is what the candidate did about that reason. The answer ended without that move.</p>
+<p>The log entry for this rep reads:</p>
+<pre><code>**Decompose:**    partial
+**Signal:**       partial
+**Construct:**    partial
+**Stress-test:**  weak
+</code></pre>
+<p>That is an honest score. The answer was not bad; it was a solid first draft with a clear drill target: Stress-test, because the weakest claim is the one that proves nothing. The next rep on an influence question should build specifically toward the moment of resistance.</p>
+<h2 id="core-concepts-19"><a class="header" href="#core-concepts-19">Core Concepts</a></h2>
+<ul>
+<li>The four scoring dimensions map directly to the four Algorithm steps: Decompose, Signal, Construct, Stress-test. Each step has one failure mode; each failure mode is a specific drill target.</li>
+<li>Partial is the honest default. Strong is earned by pointing to the specific thing you did in that step; if you cannot point to it, the mark is partial.</li>
+<li>Weak is information: a weak mark across multiple reps on the same step names your drill target with more precision than any amount of rereading.</li>
+<li>Score before you run the scorer. The mark you write before seeing <code>calibrate.py</code>’s output is the one that keeps the calibration loop honest.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module7/the-self-review-rubric/">
+<p><strong>Try It in Claude Code:</strong> re-score three reps in your deliberate-practice log strictly against the rubric, downgrading any step you cannot defend as strong, and write one line on what a strong version of each weak step would require.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="reading-your-calibration"><a class="header" href="#reading-your-calibration">Reading Your Calibration</a></h1>
+<p>The scorecard is a mirror. It does not flatter you, and it does not care how confident you felt
+after your last rep. It counts.</p>
+<p>Once you have reps in your deliberate-practice log, you run the scorer from the <code>exercises/prep/</code>
+directory:</p>
+<pre><code>python calibrate.py
+</code></pre>
+<p>What comes back is not a grade. It is a diagnosis, section by section, ending in a single verdict
+and a drill list. Here is a real scorecard, and here is what each section tells you.</p>
+<h2 id="the-sample-scorecard"><a class="header" href="#the-sample-scorecard">The Sample Scorecard</a></h2>
+<pre><code>Answer Engineering Calibration Scorecard
+========================================
+
+Reps logged: 10 across 5 categories
+  (1 malformed rep(s) skipped: check the field names and scores.)
+
+Per-category reps (need &gt;= 3 each):
+  ownership        3  ok 
+  conflict         3  ok 
+  failure          1  GAP  need 2 more
+  influence        0  GAP  need 3 more
+  systems-design   3  ok 
+
+Step calibration (across all reps):
+  Decompose    strong 8   partial 2   weak 0
+  Signal       strong 6   partial 3   weak 1
+  Construct    strong 5   partial 5   weak 0
+  Stress-test  strong 2   partial 4   weak 4    &lt;- weakest step
+
+Readiness by category (latest rep must have no weak step):
+  ownership       READY
+  conflict        NOT READY (latest rep has a weak step)
+  failure         NOT READY (need 2 more rep(s))
+  influence       NOT READY (need 3 more rep(s))
+  systems-design  READY
+
+VERDICT: NOT READY. Drill: conflict (clean rep); failure (reps); influence (reps); Stress-test step across the bank.
+</code></pre>
+<h2 id="reading-each-section"><a class="header" href="#reading-each-section">Reading Each Section</a></h2>
+<p><strong>Reps logged.</strong> Ten valid reps were parsed; one was skipped because a field name or score value did
+not match the schema. If you see a skipped count, open your log and find the malformed entry. The
+scorer tells you exactly what to check.</p>
+<p><strong>Per-category reps.</strong> The categories the book covers are ownership, conflict, failure, influence, and
+systems-design. Each needs at least three reps before the scorer will consider it practiced. In this
+scorecard, failure has one rep and influence has none: both show <code>GAP</code> with the shortfall printed. The
+<code>ok</code> mark on ownership, conflict, and systems-design only means the count is satisfied; it says nothing
+yet about quality.</p>
+<p><strong>Step calibration.</strong> This is the section most people underread. It shows, across all ten reps, how
+often each of the four Algorithm steps scored strong, partial, or weak. In this scorecard, Decompose
+is nearly clean. Stress-test has four weak marks out of ten, flagged as the weakest step. That number
+means something specific: on four of ten reps, you reached the final step and the answer did not hold.
+That is not a conflict problem or a failure problem. It is a method problem, and it shows up the same
+way everywhere.</p>
+<p><strong>Readiness by category.</strong> This is where the count and the quality check combine. A category is READY
+only when it has at least three reps and its most recent rep has no weak step. In this scorecard, conflict
+has the count, but the latest conflict rep has a weak step: NOT READY. Failure and influence are NOT READY
+because the reps are not there yet. The reason matters because the fix differs.</p>
+<p><strong>Verdict.</strong> The scorer names your drill list explicitly. Here it is three items: get a clean conflict
+rep, log two more failure reps, log three more influence reps, and address the Stress-test step across
+the whole bank. When every category clears both thresholds, the verdict flips to READY and the scorer
+exits 0.</p>
+<h2 id="two-different-reasons-a-category-is-not-ready"><a class="header" href="#two-different-reasons-a-category-is-not-ready">Two Different Reasons a Category Is Not Ready</a></h2>
+<p>A category can fail readiness for two reasons, and the fix is not the same for both.</p>
+<p><strong>Under-practiced</strong> means the count is below three. The fix is volume: log more reps in that category,
+on fresh questions, scored honestly. Do not log the same question twice.</p>
+<p><strong>Not clean</strong> means the count is fine but the most recent rep had a weak step. The fix is quality: do
+one rep on a fresh question in that category and clear the weak step. Adding volume without fixing the
+step will not move the verdict; the scorer checks the latest rep, not the average.</p>
+<p>The distinction also matters for how you prioritize. If a category is both under-practiced and weak on
+a step, fix the volume first; you cannot have a clean “latest rep” when there is only one.</p>
+<h2 id="the-weakest-step-signal"><a class="header" href="#the-weakest-step-signal">The Weakest-Step Signal</a></h2>
+<p>When a step is flagged as weakest across the whole bank, that is a different kind of problem from a
+thin category. Four weak Stress-test marks spread across ownership, conflict, failure, and systems-design
+means the step itself is not landing. You are not forgetting to do it; you are doing it and it is not
+working.</p>
+<p>The targeted fix is to run reps specifically to practice that step, across categories. Take a question
+from any category where you have at least one rep, run the full Algorithm, and hold yourself to a clear
+standard on Stress-test before you log the score. A category rep that clears the weakest step does
+double work: it counts toward readiness and it tightens the step distribution.</p>
+<h2 id="the-practice-loop"><a class="header" href="#the-practice-loop">The Practice Loop</a></h2>
+<p>The loop is not complicated. Read the scorecard, identify the single biggest gap, drill it, and re-run
+the scorer.</p>
+<p>Pick one gap at a time. If influence is empty, that outweighs a weak Stress-test mark in conflict; fill
+the empty category first. If every category has the count but one has a dirty latest rep, fix that rep
+before you log volume elsewhere. The verdict tells you what the scorer sees as the bloat; the drill list
+orders it.</p>
+<p>After each set of reps, run the scorer again:</p>
+<pre><code>python calibrate.py
+</code></pre>
+<p>Watch the numbers. A weak mark that drops from four to two is movement. A category that clears from
+<code>GAP</code> to <code>ok</code> is movement. The loop ends when the verdict reads READY and the process exits 0. Until
+then, the scorecard is telling you exactly where to spend the next session.</p>
+<p>Readiness is not a feeling you arrive at. It is an exit code the scorer awards when the evidence supports it.</p>
+<h2 id="core-concepts-20"><a class="header" href="#core-concepts-20">Core Concepts</a></h2>
+<ul>
+<li>A category can be NOT READY for two reasons, under-practiced or latest rep not clean, and the fix
+differs: volume closes the count gap, a targeted rep closes the quality gap.</li>
+<li>A step that is weak across many categories signals a method gap, not a category gap; drill the step
+itself across the whole bank.</li>
+<li>The practice loop is score, identify the single biggest gap, drill it, re-run; the scorer exits 0
+only when every category is both practiced and clean.</li>
+<li>Readiness is an exit code, not a confidence level.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module7/reading-your-calibration/">
+<p><strong>Try It in Claude Code:</strong> run the calibration scorer on your log, identify your single biggest gap (weakest step or thinnest category), run three targeted reps to close it, and re-run the scorer to confirm the numbers moved.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="simulating-the-room"><a class="header" href="#simulating-the-room">Simulating the Room</a></h1>
+<p>The room does not give you ownership questions in a block, then conflict questions in a block, then a
+systems-design prompt with a polite warning that the systems-design section is starting. It mixes
+categories, imposes a clock, and follows up on whatever you just said. Practice that does not do the
+same thing is rehearsal in a mirror: it shows you your reflection, not the room.</p>
+<h2 id="mixed-practice-is-the-real-signal"><a class="header" href="#mixed-practice-is-the-real-signal">Mixed Practice Is the Real Signal</a></h2>
+<p>Block practice, ten ownership reps in a row, inflates your scores because the first two reps warm you
+up. By rep four you are calibrated on ownership framing. You feel ready, and you are ready, but only for
+the tenth ownership question in a sequence. That is not a situation you will encounter.</p>
+<p>The signal you actually need is this: a random category, a clock, and no warmup. Pick a question from
+the bank without looking at the label first. Run the full Algorithm. Score it. Then pick another
+question from a different category and do it again. The category jump is the real test, because the
+room will jump categories without announcement and watch whether your framing holds.</p>
+<p>Mixed practice also surfaces the transition cost, the mental shift between “what did I own and deliver?”
+and “how would you design a retrieval-augmented generation pipeline at scale?” That cost is real. You
+want to find it in practice, not in the room.</p>
+<p>After you run a rep, add one follow-up you did not prepare. Not a question from your bank; a probe that
+your answer invited. If you said “I drove the rollout decision,” the follow-up is: “what did you do when
+someone senior disagreed?” If you described a three-tier memory architecture, the follow-up is: “what
+breaks first at ten times the load?” The follow-up exposes the seam between your rehearsed answer and
+your actual reasoning.</p>
+<h2 id="timed-practice-is-compression-not-speed"><a class="header" href="#timed-practice-is-compression-not-speed">Timed Practice Is Compression, Not Speed</a></h2>
+<p>A behavioral answer has a two-minute budget in most interview loops. Two minutes is enough for a
+complete answer; it is not enough for a complete answer plus hedging, plus restating the question, plus
+asking whether the interviewer wants more detail at each phase transition. The clock forces compression.
+Compression forces you to decide what the answer’s center of gravity is, which is a reasoning act, not a
+speaking act.</p>
+<p>Time yourself. Start the clock when you hear the question. Stop it when you stop talking. If you land
+past the two-minute mark, the problem is not that you spoke too fast; it is that you included content
+that the answer did not need. Find it and cut it before the next rep.</p>
+<p>A systems-design prompt gets more time, roughly 40 to 45 minutes in a real loop. The constraint there is
+not total time but phase allocation: you have five minutes for scope, three for prioritization, ten for
+initial architecture, 15 for the deep dive, five for evaluation, and five for reliability. Run a
+complete SPIDER motion under a timer and look at where you overran. Most candidates overrun the initial
+architecture phase because they want to finish drawing before moving on. The room will pull you into the
+deep dive before you are satisfied with the drawing. Practice leaving the drawing incomplete on purpose.</p>
+<h2 id="the-readiness-verdict"><a class="header" href="#the-readiness-verdict">The Readiness Verdict</a></h2>
+<p>When you believe you are prepared, you run the calibration scorer.</p>
+<pre><code>python calibrate.py
+</code></pre>
+<p>The scorer reads your practice log and checks two conditions for every category in the bank:
+ownership, conflict, failure, influence, and systems-design. First, you have logged at least the
+minimum number of reps. Second, your most recent rep in that category has no weak step. Both conditions
+must hold for every category before the verdict is READY.</p>
+<p>Exit code 0 means READY. Exit code 1 means NOT READY, and the verdict line names exactly what to drill.
+It reads like this:</p>
+<pre><code>VERDICT: NOT READY. Drill: conflict (clean rep); failure (reps); Stress-test step across the bank.
+</code></pre>
+<p>Read the drill list as a to-do, in order. The scorer is not editorializing; it is reporting facts from
+your log. “Conflict (clean rep)” means your most recent conflict rep had a weak step: go run one clean
+conflict rep and log it. “Failure (reps)” means you have not reached the minimum rep count in that
+category: log more failure reps. “Stress-test step across the bank” means that step is your weakest
+across all reps: drill it explicitly across categories until the distribution shifts.</p>
+<p>After each drill, re-run the scorer. The verdict updates when the log updates. You are not trying to
+satisfy the scorer; you are moving the numbers by doing the work, and the scorer reads the result.</p>
+<p>What READY does not claim is that you will answer every question cleanly in the room. It claims that
+you have covered every category recently enough, and that your most recent rep in each category was
+clean. That is a stronger claim than “I feel prepared,” but it is not a guarantee. A question you have
+not seen can still surprise you. What the verdict removes is the possibility that you walked in
+under-practiced on a whole category and did not know it.</p>
+<h2 id="the-honest-close"><a class="header" href="#the-honest-close">The Honest Close</a></h2>
+<p>Calibration replaces a feeling with evidence. By the time the scorer exits 0, you have run every
+category under a clock, you know which step is your weakest across the bank, and you have logged at
+least one recent clean rep in each category. That is what you carry into the room: not a sense of
+readiness but a record of it.</p>
+<p>The final module takes that record and the whole dossier and grades them together, the way an interview
+loop grades a candidate. You have built what it will read.</p>
+<h2 id="core-concepts-21"><a class="header" href="#core-concepts-21">Core Concepts</a></h2>
+<ul>
+<li>Mixed practice, randomizing category each rep, is a closer signal than block practice because it
+imposes the category jump and the transition cost the room actually produces; block practice inflates
+scores by warming you up inside a single category.</li>
+<li>Timed compression is a reasoning act: running a behavioral answer inside two minutes forces you to
+identify the answer’s center of gravity, and overrunning tells you what to cut, not that you spoke
+too fast.</li>
+<li>Exit code 0 from the scorer means every category meets the minimum rep count and its most recent rep
+has no weak step; it does not mean you will answer every question cleanly, only that no category is
+uncovered.</li>
+<li>The NOT READY drill list is a to-do in order of what to fix: log the missing reps, run a clean rep
+in the category with a weak latest result, drill the weakest step; re-run the scorer after each.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module7/simulating-the-room/">
+<p><strong>Try It in Claude Code:</strong> run a mixed, timed practice session across all five categories, log and score each rep, then run the calibration scorer and drill whatever the verdict names until it reports READY.</p>
 </div>
 
 

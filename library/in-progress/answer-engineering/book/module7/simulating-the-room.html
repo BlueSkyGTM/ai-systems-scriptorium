@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Overview - Answer Engineering — The AI Engineer&#x27;s Interview Framework</title>
+        <title>Simulating the Room - Answer Engineering — The AI Engineer&#x27;s Interview Framework</title>
 
 
         <!-- Custom HTML head -->
@@ -177,54 +177,100 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="module-1-the-framework"><a class="header" href="#module-1-the-framework">Module 1: The Framework</a></h1>
-<p>Most candidates walk into an interview carrying a list: stock answers, projects to name-drop, phrases
-that tested well in a mock session. The list feels like preparation. It is preparation for the
-questions that arrive exactly as rehearsed, which is a far smaller fraction than candidates expect.</p>
-<p>This module does not add to the list. It replaces the strategy.</p>
-<h2 id="what-this-module-teaches"><a class="header" href="#what-this-module-teaches">What This Module Teaches</a></h2>
-<p>The Algorithm is a four-step reasoning process for any interview question you have never seen. It is
-not a template you fill in; it is the thing you run in the first ten seconds after a question lands.</p>
-<ol>
-<li><strong>Decompose the question.</strong> Strip the framing words and find what the question actually names. What
-category does it belong to?</li>
-<li><strong>Identify the signal.</strong> Every question exists to collect evidence for or against a hiring
-hypothesis. Name the hypothesis.</li>
-<li><strong>Construct the answer.</strong> Build toward the signal, not the question’s surface form. Say what
-demonstrates the evidence; cut what does not.</li>
-<li><strong>Stress-test it.</strong> Before you finish, check: could a weak candidate give this same answer? If so,
-add specificity.</li>
-</ol>
-<p>The failure modes this guards against are not hypothetical. The most common interview mistakes are
-structural: jumping to a solution before understanding the problem, answering a question the
-interviewer did not ask, describing a happy path with no failure modes. Each is a candidate answering
-the surface of the question instead of the signal beneath it. The Algorithm is how you stop doing that.</p>
-<h2 id="the-two-lessons"><a class="header" href="#the-two-lessons">The Two Lessons</a></h2>
-<ol>
-<li><strong>Decompose the Question</strong> reads what a question is actually asking beneath the words it uses, and
-introduces the signal taxonomy for AI Engineering hiring loops: the four categories every question
-draws from.</li>
-<li><strong>Construct the Answer</strong> moves from an identified signal to a response that demonstrates it, with
-worked examples across behavioral, technical, and systems-design questions, and the named
-construction frameworks that scaffold each.</li>
-</ol>
-<h2 id="what-this-module-feeds-forward"><a class="header" href="#what-this-module-feeds-forward">What This Module Feeds Forward</a></h2>
-<p>Every later module assumes you can run these four steps without effort. The behavioral, technical, and
-systems-design example banks ahead are the framework loaded into practice; the worked examples are
-inert without the framework as the lens that reads them. Install the Algorithm here, and the rest of
-the book is repetition until it becomes reflex.</p>
+                        <h1 id="simulating-the-room"><a class="header" href="#simulating-the-room">Simulating the Room</a></h1>
+<p>The room does not give you ownership questions in a block, then conflict questions in a block, then a
+systems-design prompt with a polite warning that the systems-design section is starting. It mixes
+categories, imposes a clock, and follows up on whatever you just said. Practice that does not do the
+same thing is rehearsal in a mirror: it shows you your reflection, not the room.</p>
+<h2 id="mixed-practice-is-the-real-signal"><a class="header" href="#mixed-practice-is-the-real-signal">Mixed Practice Is the Real Signal</a></h2>
+<p>Block practice, ten ownership reps in a row, inflates your scores because the first two reps warm you
+up. By rep four you are calibrated on ownership framing. You feel ready, and you are ready, but only for
+the tenth ownership question in a sequence. That is not a situation you will encounter.</p>
+<p>The signal you actually need is this: a random category, a clock, and no warmup. Pick a question from
+the bank without looking at the label first. Run the full Algorithm. Score it. Then pick another
+question from a different category and do it again. The category jump is the real test, because the
+room will jump categories without announcement and watch whether your framing holds.</p>
+<p>Mixed practice also surfaces the transition cost, the mental shift between “what did I own and deliver?”
+and “how would you design a retrieval-augmented generation pipeline at scale?” That cost is real. You
+want to find it in practice, not in the room.</p>
+<p>After you run a rep, add one follow-up you did not prepare. Not a question from your bank; a probe that
+your answer invited. If you said “I drove the rollout decision,” the follow-up is: “what did you do when
+someone senior disagreed?” If you described a three-tier memory architecture, the follow-up is: “what
+breaks first at ten times the load?” The follow-up exposes the seam between your rehearsed answer and
+your actual reasoning.</p>
+<h2 id="timed-practice-is-compression-not-speed"><a class="header" href="#timed-practice-is-compression-not-speed">Timed Practice Is Compression, Not Speed</a></h2>
+<p>A behavioral answer has a two-minute budget in most interview loops. Two minutes is enough for a
+complete answer; it is not enough for a complete answer plus hedging, plus restating the question, plus
+asking whether the interviewer wants more detail at each phase transition. The clock forces compression.
+Compression forces you to decide what the answer’s center of gravity is, which is a reasoning act, not a
+speaking act.</p>
+<p>Time yourself. Start the clock when you hear the question. Stop it when you stop talking. If you land
+past the two-minute mark, the problem is not that you spoke too fast; it is that you included content
+that the answer did not need. Find it and cut it before the next rep.</p>
+<p>A systems-design prompt gets more time, roughly 40 to 45 minutes in a real loop. The constraint there is
+not total time but phase allocation: you have five minutes for scope, three for prioritization, ten for
+initial architecture, 15 for the deep dive, five for evaluation, and five for reliability. Run a
+complete SPIDER motion under a timer and look at where you overran. Most candidates overrun the initial
+architecture phase because they want to finish drawing before moving on. The room will pull you into the
+deep dive before you are satisfied with the drawing. Practice leaving the drawing incomplete on purpose.</p>
+<h2 id="the-readiness-verdict"><a class="header" href="#the-readiness-verdict">The Readiness Verdict</a></h2>
+<p>When you believe you are prepared, you run the calibration scorer.</p>
+<pre><code>python calibrate.py
+</code></pre>
+<p>The scorer reads your practice log and checks two conditions for every category in the bank:
+ownership, conflict, failure, influence, and systems-design. First, you have logged at least the
+minimum number of reps. Second, your most recent rep in that category has no weak step. Both conditions
+must hold for every category before the verdict is READY.</p>
+<p>Exit code 0 means READY. Exit code 1 means NOT READY, and the verdict line names exactly what to drill.
+It reads like this:</p>
+<pre><code>VERDICT: NOT READY. Drill: conflict (clean rep); failure (reps); Stress-test step across the bank.
+</code></pre>
+<p>Read the drill list as a to-do, in order. The scorer is not editorializing; it is reporting facts from
+your log. “Conflict (clean rep)” means your most recent conflict rep had a weak step: go run one clean
+conflict rep and log it. “Failure (reps)” means you have not reached the minimum rep count in that
+category: log more failure reps. “Stress-test step across the bank” means that step is your weakest
+across all reps: drill it explicitly across categories until the distribution shifts.</p>
+<p>After each drill, re-run the scorer. The verdict updates when the log updates. You are not trying to
+satisfy the scorer; you are moving the numbers by doing the work, and the scorer reads the result.</p>
+<p>What READY does not claim is that you will answer every question cleanly in the room. It claims that
+you have covered every category recently enough, and that your most recent rep in each category was
+clean. That is a stronger claim than “I feel prepared,” but it is not a guarantee. A question you have
+not seen can still surprise you. What the verdict removes is the possibility that you walked in
+under-practiced on a whole category and did not know it.</p>
+<h2 id="the-honest-close"><a class="header" href="#the-honest-close">The Honest Close</a></h2>
+<p>Calibration replaces a feeling with evidence. By the time the scorer exits 0, you have run every
+category under a clock, you know which step is your weakest across the bank, and you have logged at
+least one recent clean rep in each category. That is what you carry into the room: not a sense of
+readiness but a record of it.</p>
+<p>The final module takes that record and the whole dossier and grades them together, the way an interview
+loop grades a candidate. You have built what it will read.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>Mixed practice, randomizing category each rep, is a closer signal than block practice because it
+imposes the category jump and the transition cost the room actually produces; block practice inflates
+scores by warming you up inside a single category.</li>
+<li>Timed compression is a reasoning act: running a behavioral answer inside two minutes forces you to
+identify the answer’s center of gravity, and overrunning tells you what to cut, not that you spoke
+too fast.</li>
+<li>Exit code 0 from the scorer means every category meets the minimum rep count and its most recent rep
+has no weak step; it does not mean you will answer every question cleanly, only that no category is
+uncovered.</li>
+<li>The NOT READY drill list is a to-do in order of what to fix: log the missing reps, run a clean rep
+in the category with a weak latest result, drill the weakest step; re-run the scorer after each.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module7/simulating-the-room/">
+<p><strong>Try It in Claude Code:</strong> run a mixed, timed practice session across all five categories, log and score each rep, then run the calibration scorer and drill whatever the verdict names until it reports READY.</p>
+</div>
+
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module7/reading-your-calibration.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module1/decompose-the-question.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -232,13 +278,10 @@ the book is repetition until it becomes reflex.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module7/reading-your-calibration.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module1/decompose-the-question.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                    </a>
             </nav>
 
         </div>
