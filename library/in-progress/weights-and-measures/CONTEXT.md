@@ -11,10 +11,10 @@ are the deliverable.
 
 ## Status
 
-- **M1 "The PyTorch Operator" shipped 2026-06-21** (overview + 4 lessons + 4 exercises). PLAN locked
-  at `build-log/weights-and-measures/m1/PLAN.md`; ship record at the same path.
-- **M2–M8 to author.** The 8-module arc is in `README.md` (the blueprint). M2 "Fitting and Not
-  Fitting" opens on the loss-curve material; `draft/02-loss-curves-overfit.md` is M2 input.
+- **M1 "The PyTorch Operator" + M2 "Fitting and Not Fitting" shipped 2026-06-21** (each overview + 4
+  lessons + 4 exercises). PLANs + ship records under `build-log/weights-and-measures/m1/` and `m2/`.
+- **M3–M8 to author.** The 8-module arc is in `README.md` (the blueprint). M3 is "Dataset Craft"
+  (curating fine-tuning data: quality signals, dedup, the JSONL contract, held-out set design).
 
 ## The throughline (the runnable spine)
 
