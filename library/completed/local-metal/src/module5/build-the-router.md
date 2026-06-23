@@ -82,6 +82,11 @@ def route(request):
     # Context that does not fit the local window must escalate.
     if request.prompt_tokens > LOCAL_CONTEXT_LIMIT:
         return Decision("cloud", f"context {request.prompt_tokens} tokens exceeds local limit {LOCAL_CONTEXT_LIMIT}")
+    # A tight interactive deadline keeps the request local: the local arm has no
+    # network round-trip, so a sub-budget request that fits the window lands faster
+    # on-card than a cloud escalation would, even for otherwise high-stakes work.
+    if request.latency_budget_ms < LATENCY_BUDGET_MS:
+        return Decision("local", f"interactive budget {request.latency_budget_ms}ms under {LATENCY_BUDGET_MS}ms; local avoids the cloud round-trip")
     # High-stakes one-offs go to the frontier model.
     if request.high_stakes:
         return Decision("cloud", "high-stakes request wants the best answer regardless of cost")
@@ -97,6 +102,7 @@ def selftest():
         (Request(prompt_tokens=500, high_stakes=True), "cloud"),
         (Request(prompt_tokens=500, sensitive=True), "local"),
         (Request(prompt_tokens=200_000, sensitive=True), "local"),
+        (Request(prompt_tokens=500, high_stakes=True, latency_budget_ms=500), "local"),
     ]
     for request, expected in cases:
         decision = route(request)
@@ -155,14 +161,20 @@ routing outcome carries a justification, not just a label.
 The `route()` function reads the signals in a deliberate order. Sensitivity comes first because it
 is the only signal that acts as an override: if the data must stay on the machine, it stays on the
 machine, regardless of context size or stakes. After that, context fit is checked, because a
-request that does not fit the local window has no local option. High-stakes comes last among the
-escalation conditions; everything that clears all three checks goes local by default.
+request that does not fit the local window has no local option. Next, the latency budget is
+checked: a request with a deadline below `LATENCY_BUDGET_MS` stays local, because the local arm
+has no network round-trip and can beat the deadline even for otherwise high-stakes work.
+High-stakes comes last among the escalation conditions; everything that clears all four checks
+goes local by default.
 
-`selftest()` covers five fixed cases. Two confirm the default paths (small routine goes local,
+`selftest()` covers six fixed cases. Two confirm the default paths (small routine goes local,
 huge context goes cloud). Two confirm the override properties (high-stakes escalates, sensitive
 always stays local). The fifth case is the interesting one: a sensitive request that is also over
 the context limit still goes local, because sensitivity beats context size in the ordering. Read
-that case before you run it; it captures the design intent of the priority order.
+that case before you run it; it captures the design intent of the priority order. The sixth case
+proves that a tight interactive budget keeps an otherwise high-stakes request local: when
+`latency_budget_ms` is below the threshold, the local arm wins because it has no network
+round-trip to add to the clock.
 
 `run()` estimates prompt tokens by dividing character count by four, a rough but consistent
 heuristic. When the decision is local, it imports `call` from `ollama_client`. The import is
@@ -180,7 +192,7 @@ python route.py --selftest
 What you should see:
 
 ```
-selftest passed: 5 routing decisions correct
+selftest passed: 6 routing decisions correct
 ```
 
 With the rig running and `ollama_client.py` from Module 3 on the path:

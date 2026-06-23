@@ -51,8 +51,10 @@ Source: [docs.ollama.com/api/introduction](https://docs.ollama.com/api/introduct
 
 ## Step 3: Point Model Storage at the Linux Partition
 
-By default, Ollama stores downloaded models at `/usr/share/ollama/.ollama/models`. That
-path lives on whichever partition your root filesystem occupies, which may be small. The
+By default, Ollama stores downloaded models at `/usr/share/ollama/.ollama/models` when
+installed as a systemd service (the `ollama` user's home); a plain user install without the
+service defaults to `~/.ollama/models` instead. Either way, that path lives on whichever
+partition your root filesystem occupies, which may be small. The
 model library you build through this book will outgrow a modest root partition quickly.
 
 Override the storage location with the `OLLAMA_MODELS` environment variable. The right way
@@ -141,8 +143,9 @@ calls.
   `ollama` user; `sudo systemctl enable ollama` ensures it survives reboots.
 - The default endpoint is `http://localhost:11434`; `curl /api/version` returning a JSON
   version string is the proof the server is up, not just installed.
-- Model storage defaults to `/usr/share/ollama/.ollama/models` and belongs on the roomy
-  Linux partition, set via `OLLAMA_MODELS` in a `systemctl edit` drop-in.
+- Model storage defaults to `/usr/share/ollama/.ollama/models` (systemd service) or
+  `~/.ollama/models` (plain user install); either belongs on the roomy Linux partition,
+  set via `OLLAMA_MODELS` in a `systemctl edit` drop-in.
 - In this book Ollama runs natively for direct GPU access; the `--gpus=all` Docker image
   exists and is named here, but the native service is the path we take.
 

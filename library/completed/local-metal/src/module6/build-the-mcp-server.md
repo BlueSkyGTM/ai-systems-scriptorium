@@ -61,7 +61,7 @@ uses the official `mcp` SDK; this stdlib server is the readable, testable versio
 
 Usage:
   python mcp_server.py             # run as an MCP stdio server (Claude Code launches this)
-  python mcp_server.py --selftest  # offline: assert the JSON-RPC dispatch for the 3 core methods
+  python mcp_server.py --selftest  # offline: assert JSON-RPC dispatch against an injected responder (live wiring exercised by the real stdio run)
 """
 
 import argparse
@@ -213,8 +213,11 @@ tests, leave it defaulted in production.
 
 `selftest` covers five cases. The `initialize` check verifies both the protocol version and the
 server name. The notification check verifies `None`. The `tools/list` check verifies `ask_local`
-is advertised. The `tools/call` check with a fake responder verifies the content array shape. The
-missing-prompt check verifies that a bad call returns an error, not a crash.
+is advertised. The `tools/call` check uses an injected fake responder (not `default_responder`),
+so it verifies the JSON-RPC content array shape without touching `route.py` or `ollama_client`.
+The missing-prompt check verifies that a bad call returns an error, not a crash. The live
+`default_responder` path (which imports `route` and `call` and runs the real routing decision)
+is exercised by the stdio run, not by `--selftest`.
 
 ## Run It
 

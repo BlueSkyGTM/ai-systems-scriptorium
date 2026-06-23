@@ -45,7 +45,7 @@ The server replies with its own `protocolVersion`, `capabilities`, and `serverIn
     "tools": [
       {
         "name": "ask_local",
-        "description": "Send a prompt to the local model via the router.",
+        "description": "Delegate a prompt to the local inference rig (routed local vs cloud by policy).",
         "inputSchema": {
           "type": "object",
           "properties": {

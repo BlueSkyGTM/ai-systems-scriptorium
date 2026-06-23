@@ -54,7 +54,7 @@ Here is what it enforces, in order:
 - The `Tuned` section has `Aggregate tok/s` and `Levers` filled.
 - No placeholder tokens (`TODO`, `TBD`, `xxx`, angle brackets, ellipses).
 - The `## Levers Applied` table has at least one complete row: all three columns filled.
-- The key gate: the tuned `Aggregate tok/s` must be at least the baseline. You keep a lever only if it improved the number; if tuning regressed throughput, the validator exits 1 and names the gap.
+- The key gate: the tuned `Aggregate tok/s` must be at least the baseline (equal passes). You keep a lever only if it did not regress the number; if tuning dropped throughput below baseline, the validator exits 1 and names the gap.
 
 The complete validator:
 
@@ -165,7 +165,7 @@ def main() -> None:
         fail("Aggregate tok/s must be a number in both ## Baseline and ## Tuned")
     if tuned_tps < base_tps:
         fail(f"tuned throughput {tuned_tps} is below baseline {base_tps}; "
-             "keep a lever only if it improved the number, then re-record")
+             "keep a lever only if it does not regress the number, then re-record")
     print("TUNING.md complete")
     sys.exit(0)
 
@@ -185,7 +185,7 @@ Seven modules ago this was a parts list at a counter. Now it is a documented, ro
 ## Core Concepts
 
 - A before-and-after record is the proof tuning worked: a number without a comparison point is a claim, not a result.
-- The tuned-at-least-baseline gate catches regressions that feel like progress; you keep a lever only when the number it produced is better than the number you started with.
+- The tuned-at-least-baseline gate catches regressions that feel like progress; you keep a lever only when the number it produced is at least the number you started with (equal counts as no regression).
 - Aggregate throughput, not single-stream tokens per second, is the server metric: it measures what happens when the rig has to serve real concurrent load.
 - The seven-file portfolio (HARDWARE.md through TUNING.md) is the complete artifact: each file is validator-backed, each records a decision, and together they tell the full story of the build.
 

@@ -42,6 +42,12 @@ Create `.mcp.json` at your repo root with this content:
 }
 ```
 
+Note: `"args": ["mcp_server.py"]` with no directory prefix only resolves if Claude Code is
+launched from the exercise directory (`exercises/module6/build-the-mcp-server/`). If you start
+Claude Code from the repo root, use the relative or absolute path to the file instead, for
+example `"args": ["exercises/module6/build-the-mcp-server/mcp_server.py"]`, to avoid a
+`FileNotFoundError` on startup.
+
 The schema is straightforward. `mcpServers` maps a name, here `local-rig`, to a server entry.
 `type: "stdio"` tells Claude Code to use the local stdio transport: it launches the process,
 writes JSON-RPC messages to its stdin, and reads responses from its stdout. `command` is the
