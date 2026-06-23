@@ -46,6 +46,8 @@ pressure.
 The unit that moves you is a rep on a fresh question, scored honestly. One uncomfortable rep
 in a thin category is worth more than five confident reps in the category you already own.
 
+These five signal categories (ownership, conflict, failure, influence, systems-design) are the practice lens, not the decomposition lens: Module 1's four decomposition categories (ownership; judgment under uncertainty; technical depth; communication/influence) are how you parse what a question is collecting, while the five practice categories here are how you drill behavioral coverage across your bank. They are two different tools applied at two different moments, not a contradiction.
+
 ## Your Practice Material Is Already Built
 
 You do not need new questions. The example bank you built earlier in this book is your

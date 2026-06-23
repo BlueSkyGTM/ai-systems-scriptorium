@@ -37,9 +37,7 @@ appear on that list is not the order to build them.
 
 The dossier's leverage is unequal, and the sequencing guidance tells you exactly where it sits.
 
-**Build the framework and the answers log first.** They feed everything. The Algorithm is how you
-think on your feet in every round; the answers log is how you have practiced that thinking. Without
-them, the rest of the dossier is decoration.
+**Build the framework and the answers log first.** The Algorithm is how you think on your feet in every round; the answers log is where you have practiced that thinking. Without them, the rest of the dossier is decoration. Note that the grader maps the answers log to a specific stage check (recruiter-screen readiness), so "feeds everything" is a description of its foundational role in building fluency, not a claim that it substitutes for the stage-specific artifacts that follow.
 
 **Build the behavioral bank next.** It covers two stages: the hiring-manager round and the panel.
 That is the highest stage coverage of any single artifact, which makes it the highest-leverage thing
