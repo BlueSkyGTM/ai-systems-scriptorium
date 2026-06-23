@@ -285,7 +285,7 @@ The `fit` loop is the algorithm made literal. `self.base_` is `F_0`. `current` t
 `F_m(x)` for the training set. `residuals = y - current` computes the negative gradient.
 `current = current + self.learning_rate * tree.predict(X)` is the update step.
 `self.train_losses_` stores the per-round training MSE so the acceptance gate can verify
-that loss is monotonically non-increasing.
+that loss typically decreases each round.
 
 ## Measured Results
 
@@ -312,9 +312,10 @@ the residual-fitting mechanics are correct.
 
 ## What This Cost
 
-Monotone training loss is a guarantee of gradient boosting. Every new tree reduces the
-training MSE by at least as much as the learning rate allows; training error cannot
-increase. Test error is a different story. Run too many rounds with a high learning rate
+Training loss typically decreases each round and is non-increasing in practice on
+smooth data, but it is not a strict per-step mathematical guarantee: a round with
+shallow trees and a nonzero learning rate can occasionally overshoot before later
+rounds correct it. Test error is a different story. Run too many rounds with a high learning rate
 and the ensemble memorizes the training set: training MSE keeps falling, test MSE starts
 climbing. The learning rate is a regularizer, not just a step size. A smaller rate
 demands more trees for the same training error, but the ensemble stays closer to the true
@@ -328,8 +329,9 @@ function. That tension is exactly the subject of the next lesson.
 - The update rule `F_m = F_{m-1} + lr * h_m` is gradient descent in function space: each
   tree is a step downhill on the loss surface, with `learning_rate` playing the role of
   step size.
-- Training MSE is guaranteed to be monotonically non-increasing across rounds; test error
-  can increase if learning rate is too high or rounds are too many.
+- Training MSE typically decreases each round and is non-increasing in practice on smooth
+  data, but a strict per-step decrease is not guaranteed; test error can increase if
+  learning rate is too high or rounds are too many.
 - A from-scratch `GradientBoostingRegressor` and scikit-learn's equivalent agree to a
   Pearson correlation of 0.9999 on the Friedman-1 test set, confirming the residual loop
   is mechanically correct.

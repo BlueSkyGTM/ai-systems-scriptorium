@@ -152,8 +152,9 @@ def information_gain(
 ```
 
 The `entropy` function handles the pure-node edge case explicitly: when `len(probs) <= 1`
-it returns `0.0` rather than computing `-1 * log2(1)`, which avoids a `0 * -inf`
-floating-point edge. The `gini` function has no such edge case because `1 - 1.0 = 0.0`
+it returns `0.0` rather than evaluating `0 * log2(0)`, the indeterminate form that
+information theory conventionally defines as 0 but that floating-point arithmetic
+cannot resolve cleanly. The `gini` function has no such edge case because `1 - 1.0 = 0.0`
 falls out of the arithmetic naturally.
 
 ## Measured Values

@@ -105,8 +105,11 @@ class GaussianNB:
             self.means_[i] = X_cls.mean(axis=0)
             # ddof=0: MLE variance (matches sklearn GaussianNB)
             raw_var = X_cls.var(axis=0)
-            # Variance floor: add smoothing * max_variance_across_all_features
-            # (mirrors sklearn's epsilon = var_smoothing * max(var over all data))
+            # Variance floor: add var_smoothing as a small flat floor to each
+            # feature's variance, preventing divide-by-zero when a feature is
+            # nearly constant within a class. Same motivation as sklearn's
+            # var_smoothing parameter; sklearn scales it by max(all feature
+            # variances), but this implementation adds it directly.
             self.vars_[i] = raw_var + self.var_smoothing
 
         return self
