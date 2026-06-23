@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-fc5510bc.js";
+            window.path_to_searchindex_js = "searchindex-c4cf9639.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-fb86ada5.js"></script>
+        <script src="toc-54810559.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -1932,7 +1932,7 @@ which copy was the one the model was actually reading.</p>
 <h2 id="tier-chosen-by-workload"><a class="header" href="#tier-chosen-by-workload">Tier-Chosen by Workload</a></h2>
 <p>The read is not just read-only; it is tier-chosen. You pick the surface based on what the downstream job needs, not what is convenient.</p>
 <p>Structured BI goes to the warehouse. An AI engineer building a compliance dashboard queries the warehouse surface, where governed SQL runs aggregates that a Power BI report or a stakeholder query can consume without format negotiation.</p>
-<pre><code class="language-python"># warehouse.py — the warehouse is READ-ONLY in this module; writes go through the Delta table.
+<pre><code class="language-python"># warehouse.py: the warehouse is READ-ONLY in this module; writes go through the Delta table.
 def doc_count_by_category(df):
     return duckdb.query("SELECT category, COUNT(*) AS doc_count FROM df GROUP BY category ORDER BY doc_count DESC").df()
 </code></pre>
@@ -1957,6 +1957,316 @@ choose_tier("feature-store extraction for model training")  # -&gt; "lakehouse"
 <p>The access contract you hold here, read a versioned corpus you did not write, on a surface someone else built, is the same contract that lets Module 6 trace any AI system answer back to the exact corpus version it cited.</p>
 <div class="claude-handoff" data-exercise="exercises/module5/the-ai-engineers-access-pattern/">
 <p><strong>Build It in Claude Code</strong>: Write a read-only access helper (<code>doc_count_by_category</code>) that queries the gold corpus through the warehouse surface without mutating it, and a tier router (<code>choose_tier</code>) that, given a workload description, returns <code>"warehouse"</code> for BI workloads and <code>"lakehouse"</code> for ML and RAG workloads; prove the read does not change the Delta table’s version (assert the version before and after the query is identical), and prove the router picks <code>"warehouse"</code> for compliance reporting and <code>"lakehouse"</code> for RAG corpus and feature-store workloads.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-6-lineage-from-document-to-eval-verdict"><a class="header" href="#module-6-lineage-from-document-to-eval-verdict">Module 6: Lineage: From Document to Eval Verdict</a></h1>
+<p>Module 1 walked lineage by hand: a query that reconstructed, after the fact, which source-document
+version an answer cited. That works once, for one answer, when you already suspect where to look. It
+does not scale to a production incident where a hundred answers degraded overnight and you need to know
+why, fast. This module builds the automated version: a lineage store that captures the full provenance
+chain as the pipeline runs, then answers the two questions every corpus incident asks.</p>
+<p>The chain runs from a source-document version through the chunk, the embedding, the retrieval, and the
+answer, to the eval verdict that graded it. You record each link as the step that produces it runs, so
+the chain is complete by construction, not reconstructed under pressure. Then you query it two ways:
+backward, from a failed answer to the exact source version it cited; and forward, from a source version
+about to change to the answers it will affect. Module 5’s Delta time-travel is what gives those source
+versions their content hashes; this module is where they become a queryable graph.</p>
+<h2 id="what-this-module-covers-5"><a class="header" href="#what-this-module-covers-5">What This Module Covers</a></h2>
+<p><strong>The Lineage Graph</strong> is the schema: six tables forming the chain, each foreign key an edge. The
+load-bearing detail is that chunks anchor to a source-document version, not just a document id, so a
+reload creates new chunks and an old answer still traces to the old version. Lineage never blurs across
+versions.</p>
+<p><strong>Capturing Lineage Automatically</strong> is the <code>LineageCapture</code> wrapper. Each pipeline step calls a record
+method before it returns, so the link is written as the work happens. Lineage you reconstruct after an
+incident is lineage you might not have; captured lineage is always there when you need it.</p>
+<p><strong>Querying the Lineage Store</strong> is the payoff. The backward query resolves an answer to the exact source
+versions and content hashes it cited, plus its verdict. The forward query is impact analysis: which
+answers cited a chunk from a version you are about to change. And a gap check flags any chain with a
+missing link, so an incomplete answer is quarantined, not served.</p>
+<p><strong>Lineage as Governance: Purview</strong> closes the module. At enterprise scale, lineage is a governance
+surface: Microsoft Purview Unified Catalog tracks lineage across systems, supports column-level lineage,
+and powers impact analysis. You learn what it does, and you learn the honest boundary: Purview does not
+yet track RAG answer-to-verdict lineage, so the store you built is the AI-specific layer it would report
+into.</p>
+<h2 id="who-this-is-for-6"><a class="header" href="#who-this-is-for-6">Who This Is For</a></h2>
+<p>You finished Module 5: you have versioned documents in an open table format. Now you make the provenance
+from a source version to an eval verdict a first-class, queryable store. This is the chain that turns
+“the corpus changed” into “this version of this document changed this answer.”</p>
+<h2 id="the-artifact-5"><a class="header" href="#the-artifact-5">The Artifact</a></h2>
+<p>You build <code>module6-lineage/</code>: a SQLite lineage store, a <code>LineageCapture</code> wrapper that records each link
+automatically, and the two queries plus gap detection. It composes Module 1’s lineage shape and Module
+5’s versioned content hashes. Module 7 puts this store at the end of the full pipeline, writing a lineage
+row for every indexed document.</p>
+<h2 id="prerequisites-5"><a class="header" href="#prerequisites-5">Prerequisites</a></h2>
+<ul>
+<li>Module 1 (the manual lineage walk) and Module 5 (versioned documents via Delta time-travel)</li>
+<li>Python 3.11+; the lineage store is standard library only (<code>sqlite3</code>), fully offline</li>
+<li>Comfort with joins and the content-hash versioning from earlier modules</li>
+</ul>
+<h2 id="time-estimate-5"><a class="header" href="#time-estimate-5">Time Estimate</a></h2>
+<p>Each lesson runs 60 to 95 minutes including its exercise. The querying lesson is where the module pays
+off; the two queries are the ones an interviewer asks you to write.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-lineage-graph"><a class="header" href="#the-lineage-graph">The Lineage Graph</a></h1>
+<p>When an eval verdict comes back “fail,” the first question is: what did the model actually read? “The corpus” is not an answer. You need the exact document version, the exact chunk, the rank it held in the retrieval list, and the verdict that closed the chain. Lineage is the graph that gives you all of that, row by row.</p>
+<p>Module 1 reconstructed this graph by hand with a CTE query, walking backward from an answer through comma-separated chunk IDs to a source document version. M6 records it as a first-class store as the pipeline runs, so the walk is a join, not a reconstruction.</p>
+<h2 id="the-graph-table-by-table"><a class="header" href="#the-graph-table-by-table">The Graph, Table by Table</a></h2>
+<p>Six tables, six node types. Every foreign key is an edge. Read the chain left to right.</p>
+<pre><code class="language-sql">-- Versioned source documents (the M1/M5 shape).
+CREATE TABLE source_documents (
+    doc_id TEXT NOT NULL, version_id TEXT NOT NULL, content_hash TEXT NOT NULL,
+    PRIMARY KEY (doc_id, version_id)
+);
+-- Chunks anchored to a specific source-doc VERSION.
+CREATE TABLE chunks (
+    chunk_id TEXT PRIMARY KEY, source_doc_id TEXT NOT NULL, source_doc_version TEXT NOT NULL, text TEXT NOT NULL,
+    FOREIGN KEY (source_doc_id, source_doc_version) REFERENCES source_documents(doc_id, version_id)
+);
+-- Embeddings pin the model AND the content_hash of the chunk text at encode time.
+CREATE TABLE embeddings (
+    embedding_id TEXT PRIMARY KEY, chunk_id TEXT NOT NULL REFERENCES chunks(chunk_id),
+    model_pin TEXT NOT NULL, content_hash TEXT NOT NULL, created_at TEXT NOT NULL
+);
+CREATE TABLE answers (
+    answer_id TEXT PRIMARY KEY, query TEXT NOT NULL, answer_text TEXT NOT NULL, created_at TEXT NOT NULL
+);
+-- Which chunks were retrieved for each answer (the join table).
+CREATE TABLE retrievals (
+    retrieval_id INTEGER PRIMARY KEY AUTOINCREMENT, answer_id TEXT NOT NULL REFERENCES answers(answer_id),
+    chunk_id TEXT NOT NULL REFERENCES chunks(chunk_id), rank INTEGER NOT NULL, score REAL NOT NULL
+);
+-- Eval verdicts: the terminal node of the chain.
+CREATE TABLE eval_verdicts (
+    verdict_id INTEGER PRIMARY KEY AUTOINCREMENT, answer_id TEXT NOT NULL REFERENCES answers(answer_id),
+    criterion TEXT NOT NULL, verdict TEXT NOT NULL, score REAL NOT NULL, created_at TEXT NOT NULL
+);
+</code></pre>
+<p><code>source_documents</code> is the origin: a document at a version, identified by its <code>content_hash</code>. <code>chunks</code> are the fragments of that document, and they carry <code>source_doc_version</code> in their own row. <code>embeddings</code> pin the encoding model and hash the chunk text at encode time. <code>answers</code> are the RAG responses. <code>retrievals</code> is the join table that records which chunks an answer drew on, their rank, and their score. <code>eval_verdicts</code> is the terminal node: a criterion, a verdict, a score.</p>
+<p>That is the whole chain. Source doc at a version produces chunks; a chunk is embedded; an answer retrieves chunks via the <code>retrievals</code> edge; the answer receives a verdict.</p>
+<h2 id="the-load-bearing-detail-chunk-anchoring"><a class="header" href="#the-load-bearing-detail-chunk-anchoring">The Load-Bearing Detail: Chunk Anchoring</a></h2>
+<p>The reason lineage stays honest across corpus reloads is a single column: <code>source_doc_version</code> in <code>chunks</code>.</p>
+<p>When a document is re-ingested at a new version, the pipeline writes a new row in <code>source_documents</code> with a new <code>content_hash</code> and a new <code>version_id</code>. It also writes new chunk rows, carrying that new <code>version_id</code>. The old chunk rows are untouched; their <code>source_doc_version</code> still points at the old version.</p>
+<p>An answer produced before the reload retrieved old chunks. Those chunks still foreign-key to the old document version. The lineage graph for that answer resolves cleanly to the corpus state that produced it, not the current state. Without version anchoring on the chunk, any reload would silently sever that connection: the chunk would re-point at the new version, and the walk would lie.</p>
+<p>M5’s Delta time-travel gives you this same guarantee at the warehouse layer. Here it lives in the SQLite foreign key. The mechanism differs; the commitment is identical.</p>
+<h2 id="what-m1-did-and-what-m6-does"><a class="header" href="#what-m1-did-and-what-m6-does">What M1 Did, and What M6 Does</a></h2>
+<p>M1’s CTE query reconstructed the source-to-answer chain from tables that weren’t designed to record it. It worked because the schema had the right keys, but the lineage was a query against an existing store, not a property the pipeline wrote down as it ran.</p>
+<p>M6 inverts that. The pipeline captures each link as it creates it: a chunk capture writes to <code>chunks</code>, a retrieval capture writes to <code>retrievals</code>, a verdict capture writes to <code>eval_verdicts</code>. The graph accumulates in real time. Lessons 2 and 3 build the capture wrapper and the queries; this lesson defines the schema those lessons depend on.</p>
+<h2 id="core-concepts-20"><a class="header" href="#core-concepts-20">Core Concepts</a></h2>
+<ul>
+<li>Lineage is a graph: each table is a node type (<code>source_documents</code>, <code>chunks</code>, <code>embeddings</code>, <code>answers</code>, <code>retrievals</code>, <code>eval_verdicts</code>), and each foreign key is a directed edge from origin to terminal.</li>
+<li>Chunks carry <code>source_doc_version</code>, not just <code>source_doc_id</code>; when a document reloads at a new version, old chunks still foreign-key to the old version, so every answer traces to the corpus state that produced it.</li>
+<li><code>eval_verdicts</code> is the terminal node: it closes the chain at the judgment the pipeline made about the answer’s quality.</li>
+<li>M1 reconstructed this chain from existing tables by query; M6 records it row by row as the pipeline runs, making the walk a join rather than a reconstruction.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module6/the-lineage-graph/">
+<p><strong>Build It in Claude Code</strong>: Seed <code>module6-lineage/</code> with <code>schema.py</code> containing the six-table DDL above and an <code>init_schema(conn)</code> function; then insert a complete chain by hand (one source document at one version, one chunk anchored to that version, one embedding, one answer, one retrieval, one eval verdict) and assert each table holds its row and every foreign key resolves via join, from source document through to verdict.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="capturing-lineage-automatically"><a class="header" href="#capturing-lineage-automatically">Capturing Lineage Automatically</a></h1>
+<p>Lineage you reconstruct after an incident is lineage you might not have. The tables you need may have been overwritten, the version ids may not match, and the join you were counting on resolves to nothing. Capture it as the pipeline runs and the chain is always there, complete, by the time you need it.</p>
+<p>The lesson 1 schema gave you the graph. This lesson puts a wrapper around the pipeline so every step writes its own node as it executes. By the time an answer reaches the user, <code>source_documents</code>, <code>chunks</code>, <code>embeddings</code>, <code>answers</code>, <code>retrievals</code>, and <code>eval_verdicts</code> all hold matching rows. Nothing needs to be reconstructed; the lineage simply is.</p>
+<h2 id="the-wrappers-job"><a class="header" href="#the-wrappers-job">The Wrapper’s Job</a></h2>
+<p><code>LineageCapture</code> holds one connection and exposes one method per pipeline step. Each method writes exactly one row and commits before returning. The step that called it does not need to know the schema; it just calls the method.</p>
+<pre><code class="language-python">class LineageCapture:
+    def __init__(self, conn): self._conn = conn
+
+    def record_source(self, doc_id, version_id, content_hash):
+        self._conn.execute("INSERT OR IGNORE INTO source_documents (doc_id, version_id, content_hash) VALUES (?, ?, ?)",
+                           (doc_id, version_id, content_hash)); self._conn.commit()
+
+    def record_chunk(self, chunk_id, doc_id, version_id, text):
+        self._conn.execute("INSERT OR IGNORE INTO chunks (chunk_id, source_doc_id, source_doc_version, text) VALUES (?, ?, ?, ?)",
+                           (chunk_id, doc_id, version_id, text)); self._conn.commit()
+
+    def record_embedding(self, embedding_id, chunk_id, model_pin):
+        """Computes content_hash from the chunk text so the hash is verifiable without storing the vector."""
+        row = self._conn.execute("SELECT text FROM chunks WHERE chunk_id = ?", (chunk_id,)).fetchone()
+        if row is None:
+            raise ValueError(f"record_embedding: chunk_id '{chunk_id}' not found. Call record_chunk first.")
+        content_hash = _sha256(row[0])
+        self._conn.execute("INSERT OR IGNORE INTO embeddings (embedding_id, chunk_id, model_pin, content_hash, created_at) VALUES (?, ?, ?, ?, ?)",
+                           (embedding_id, chunk_id, model_pin, content_hash, _now())); self._conn.commit()
+        return content_hash
+
+    def record_answer(self, query, answer_text, answer_id=None):
+        aid = answer_id or _uid()
+        self._conn.execute("INSERT OR IGNORE INTO answers (answer_id, query, answer_text, created_at) VALUES (?, ?, ?, ?)",
+                           (aid, query, answer_text, _now())); self._conn.commit()
+        return aid
+
+    def record_retrieval(self, answer_id, chunk_id, rank, score):
+        self._conn.execute("INSERT INTO retrievals (answer_id, chunk_id, rank, score) VALUES (?, ?, ?, ?)",
+                           (answer_id, chunk_id, rank, score)); self._conn.commit()
+
+    def record_verdict(self, answer_id, criterion, verdict, score):
+        if verdict not in ("pass", "fail"):
+            raise ValueError(f"record_verdict: verdict must be 'pass' or 'fail', got '{verdict}'")
+        self._conn.execute("INSERT INTO eval_verdicts (answer_id, criterion, verdict, score, created_at) VALUES (?, ?, ?, ?, ?)",
+                           (answer_id, criterion, verdict, score, _now())); self._conn.commit()
+</code></pre>
+<p>Six methods, six tables. The order is not arbitrary: <code>record_embedding</code> reads from <code>chunks</code> to derive the content hash, so it raises <code>ValueError</code> if you call it before <code>record_chunk</code>. The wrapper enforces the chain order at runtime rather than relying on you to remember it.</p>
+<h2 id="why-insert-or-ignore"><a class="header" href="#why-insert-or-ignore">Why <code>INSERT OR IGNORE</code></a></h2>
+<p>Four of the six methods use <code>INSERT OR IGNORE</code>. If the same source document at the same version is ingested twice, the second call finds the primary key already present and does nothing. The run is idempotent on the rows that represent stable facts: a source document either exists at a given version or it does not.</p>
+<p><code>retrievals</code> does not use <code>INSERT OR IGNORE</code> because the same chunk can legitimately be retrieved at different ranks across different answers. <code>eval_verdicts</code> likewise accepts one row per criterion per answer, not one row total. The distinction matters: idempotency applies to the stable nodes in the graph, not the edges that connect them.</p>
+<h2 id="the-end-to-end-driver"><a class="header" href="#the-end-to-end-driver">The End-to-End Driver</a></h2>
+<p><code>simulate_rag_run</code> drives the full sequence through the wrapper. It is a minimal but complete RAG run: one source document, one chunk, one embedding, one answer, one retrieval, one eval verdict.</p>
+<pre><code class="language-python">def simulate_rag_run(conn, *, doc_id="doc-1", version_id="v1", content_hash=None, chunk_id="chunk-1",
+                     chunk_text="Paris is the capital of France.", embedding_id="emb-1",
+                     model_pin="text-embedding-3-small@2024-03", query="What is the capital of France?",
+                     answer_text="The capital of France is Paris.", answer_id=None,
+                     retrieval_rank=1, retrieval_score=0.92, criterion="groundedness", verdict="pass", verdict_score=0.95):
+    if content_hash is None: content_hash = _sha256(chunk_text)
+    cap = LineageCapture(conn)
+    cap.record_source(doc_id, version_id, content_hash)
+    cap.record_chunk(chunk_id, doc_id, version_id, chunk_text)
+    cap.record_embedding(embedding_id, chunk_id, model_pin)
+    aid = cap.record_answer(query, answer_text, answer_id=answer_id)
+    cap.record_retrieval(aid, chunk_id, rank=retrieval_rank, score=retrieval_score)
+    cap.record_verdict(aid, criterion, verdict, verdict_score)
+    return aid
+</code></pre>
+<p>Every parameter is keyword-only so tests can override a single field without touching the rest. The function returns the <code>answer_id</code> so the caller can use it immediately as a query key for the backward walk you will build in lesson 3.</p>
+<h2 id="what-this-buys"><a class="header" href="#what-this-buys">What This Buys</a></h2>
+<p>In lesson 1 you built the schema from existing tables, reconstructing a lineage chain that was already complete. Here the chain is complete by construction: every step writes before returning. The difference is not academic. When you need to audit an answer at 2 a.m., capture-by-construction means the lineage is already there and <code>trace_answer_to_sources</code> will resolve every join. Reconstructed lineage means you are relying on a pipeline that did not know lineage mattered at the time it ran.</p>
+<p>A system that captures as it goes treats lineage as a first-class output of every step, not an afterthought. That is the production standard.</p>
+<h2 id="core-concepts-21"><a class="header" href="#core-concepts-21">Core Concepts</a></h2>
+<ul>
+<li><code>LineageCapture</code> writes one row per pipeline step; the chain is complete the moment the step returns, not after a reconstruction pass.</li>
+<li><code>record_embedding</code> reads the chunk text from the store to compute <code>content_hash</code>, so calling it before <code>record_chunk</code> raises <code>ValueError</code>; the wrapper enforces order at runtime.</li>
+<li><code>INSERT OR IGNORE</code> on the stable nodes (source documents, chunks, embeddings, answers) makes each method idempotent; re-running the same pipeline step is a silent no-op on rows that already exist.</li>
+<li><code>simulate_rag_run</code> is a keyword-only driver that exercises the full six-step sequence and returns the <code>answer_id</code> so callers can query or assert against the populated store immediately.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module6/capturing-lineage-automatically/">
+<p><strong>Build It in Claude Code</strong>: Extend <code>module6-lineage/</code> with a <code>LineageCapture</code> class whose six <code>record_*</code> methods each write one row to the lineage store as the pipeline step executes, plus a <code>simulate_rag_run</code> driver that calls all six in order and returns the <code>answer_id</code>; prove that a single <code>simulate_rag_run(conn)</code> call leaves a matching row in every table (<code>source_documents</code>, <code>chunks</code>, <code>embeddings</code>, <code>answers</code>, <code>retrievals</code>, <code>eval_verdicts</code>), that <code>record_embedding</code> for an unknown <code>chunk_id</code> raises <code>ValueError</code>, and that <code>record_verdict</code> with a verdict other than <code>"pass"</code> or <code>"fail"</code> raises <code>ValueError</code>.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="querying-the-lineage-store"><a class="header" href="#querying-the-lineage-store">Querying the Lineage Store</a></h1>
+<p>Two questions decide every corpus incident. Which exact source versions did this answer cite? And which
+answers break if you change this source version? The lineage store answers both with a query, before
+you touch anything.</p>
+<h2 id="two-directions-one-store"><a class="header" href="#two-directions-one-store">Two Directions, One Store</a></h2>
+<p>The schema records the chain as it runs: source document to chunk to retrieval to answer to verdict.
+Once the chain is in the store, you can walk it in either direction.</p>
+<p><strong>Backward</strong> starts at an answer and walks toward the source. You have a failed eval verdict. You need
+to know which document version, at which content hash, the model read. That is root-cause: not “the
+corpus,” but the exact row in <code>source_documents</code> that seeded the chunk the retriever ranked first.</p>
+<p><strong>Forward</strong> starts at a source version and walks toward answers. You are about to update a document.
+Before you do, you want to know which answers cited a chunk from it. That is impact analysis: the
+list of answers you will need to re-evaluate after the change lands.</p>
+<p>Both directions are joins, not reconstructions. The capture wrapper wrote every link as the pipeline
+ran, so the store guarantees the chain resolves.</p>
+<h2 id="the-backward-query"><a class="header" href="#the-backward-query">The Backward Query</a></h2>
+<p><code>trace_answer_to_sources</code> walks from an answer through retrievals, chunks, and source documents to the
+content hash, and joins in the eval verdicts so you see the terminal judgment alongside the provenance.</p>
+<pre><code class="language-python">def trace_answer_to_sources(conn, answer_id):
+    cur = conn.execute("""
+        SELECT a.answer_id, a.query, r.chunk_id, r.rank, r.score AS retrieval_score,
+               c.source_doc_id, c.source_doc_version, sd.content_hash,
+               ev.criterion, ev.verdict, ev.score AS verdict_score
+        FROM answers a
+        JOIN retrievals r      ON r.answer_id  = a.answer_id
+        JOIN chunks c          ON c.chunk_id   = r.chunk_id
+        JOIN source_documents sd ON sd.doc_id = c.source_doc_id AND sd.version_id = c.source_doc_version
+        LEFT JOIN eval_verdicts ev ON ev.answer_id = a.answer_id
+        WHERE a.answer_id = ?
+        ORDER BY r.rank, ev.criterion
+    """, (answer_id,))
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, row)) for row in cur.fetchall()]
+</code></pre>
+<p>The result gives you one row per (chunk, verdict) combination, ordered by retrieval rank. The
+<code>content_hash</code> column is the anchor: if the same document was re-ingested at a new version after this
+answer was produced, the hash still points at the version the model actually read. A <code>LEFT JOIN</code> on
+<code>eval_verdicts</code> means you see the verdict rows alongside the source rows, not in a separate query. For
+an unknown <code>answer_id</code>, the result is an empty list.</p>
+<h2 id="the-forward-query"><a class="header" href="#the-forward-query">The Forward Query</a></h2>
+<p><code>impact_of_version</code> walks the other direction: from a source document version through its chunks,
+through the retrievals that cited them, to the answers that cited those retrievals.</p>
+<pre><code class="language-python">def impact_of_version(conn, doc_id, version_id):
+    cur = conn.execute("""
+        SELECT DISTINCT a.answer_id, a.query, a.answer_text, c.chunk_id
+        FROM source_documents sd
+        JOIN chunks c     ON c.source_doc_id = sd.doc_id AND c.source_doc_version = sd.version_id
+        JOIN retrievals r ON r.chunk_id      = c.chunk_id
+        JOIN answers a    ON a.answer_id      = r.answer_id
+        WHERE sd.doc_id = ? AND sd.version_id = ?
+        ORDER BY a.answer_id
+    """, (doc_id, version_id))
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, row)) for row in cur.fetchall()]
+</code></pre>
+<p>Call this before you update the document. The list it returns is the re-evaluation queue: every answer
+that now needs a fresh eval run. <code>DISTINCT</code> collapses the case where an answer cited multiple chunks
+from the same version. For a version no answer ever cited, the result is an empty list.</p>
+<h2 id="the-regression-trace"><a class="header" href="#the-regression-trace">The Regression Trace</a></h2>
+<p>Combine the two directions and you have a regression trace. An answer surfaces a <code>fail</code> verdict. You
+run <code>trace_answer_to_sources</code> and read the <code>content_hash</code>. You compare that hash to the current value
+for that document version. They differ. The source changed after this answer was produced, and the
+original hash proves it. That is the explanation the on-call engineer needs: not a guess about what
+changed, but the exact version the model cited when the verdict was recorded.</p>
+<p>M1’s CTE query did this reconstruction by hand, from tables that happened to have the right keys. Here
+the lineage is a property the pipeline wrote down as it ran, so the trace is a read, not a derivation.</p>
+<h2 id="gap-detection"><a class="header" href="#gap-detection">Gap Detection</a></h2>
+<p>A chain is only useful if it is complete. An answer missing a retrieval or a verdict is a silent
+failure: the store has the answer row, but the backward walk dead-ends and the forward walk is invisible.</p>
+<pre><code class="language-python">def find_lineage_gaps(conn):
+    """For every answer, report missing links: no_retrieval, no_verdict, or unresolved_chunks."""
+    # returns a list of LineageGap(answer_id, missing_links=[...]); [] when all chains are complete
+</code></pre>
+<p><code>find_lineage_gaps</code> scans every answer and flags three conditions: no retrieval row, no verdict row,
+and any retrieved chunk that does not resolve to a <code>source_documents</code> row. An incomplete chain is
+flagged here, not silently served. The on-call engineer sees a <code>LineageGap</code> with the specific missing
+links, not an empty trace that looks like a valid result.</p>
+<h2 id="core-concepts-22"><a class="header" href="#core-concepts-22">Core Concepts</a></h2>
+<ul>
+<li>Backward lineage (<code>trace_answer_to_sources</code>) walks from an answer to the exact source document
+version and content hash it cited, plus the eval verdict: the root-cause read for any failed answer.</li>
+<li>Forward lineage (<code>impact_of_version</code>) walks from a source document version to every answer that cited
+a chunk from it, producing the re-evaluation queue before any corpus change lands.</li>
+<li>The regression trace combines both directions: a failed verdict, traced backward, surfaces the content
+hash the model read; compared against the current hash, it explains the regression without
+guesswork.</li>
+<li><code>find_lineage_gaps</code> flags any answer whose chain is incomplete, so an answer with no retrieval or no
+verdict is quarantined rather than returned as a valid trace.</li>
+</ul>
+<p>When backward and forward both answer in one query, the lineage store pays for itself the first time an
+incident fires and no one has to ask which version the model read.</p>
+<div class="claude-handoff" data-exercise="exercises/module6/querying-the-lineage-store/">
+<p><strong>Build It in Claude Code</strong>: Implement <code>trace_answer_to_sources</code> (backward: walk from an answer to the source document versions and content hashes it cited, plus its eval verdicts, ordered by retrieval rank), <code>impact_of_version</code> (forward: return every answer that cited a chunk from a given source document version), and <code>find_lineage_gaps</code> (flag every answer missing a retrieval row, a verdict row, or an unresolved chunk); then seed a regression scenario where a <code>fail</code> verdict traces back to a changed content hash and an answer with no retrieval is flagged by the gap checker.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="lineage-as-a-governance-surface-microsoft-purview"><a class="header" href="#lineage-as-a-governance-surface-microsoft-purview">Lineage as a Governance Surface: Microsoft Purview</a></h1>
+<p>A regulator reviewing an AI system does not accept “the model read the corpus.” It asks which exact version of which document, which chunks were retrieved, and who verified the answer met the quality threshold. At enterprise scale, the system that answers those questions is not a local SQLite store: it is a governed catalog that spans every data system in the organization.</p>
+<p>That catalog is Microsoft Purview Unified Catalog, and lineage is one of its core surfaces.</p>
+<h2 id="what-microsoft-purview-unified-catalog-is"><a class="header" href="#what-microsoft-purview-unified-catalog-is">What Microsoft Purview Unified Catalog Is</a></h2>
+<p>Microsoft Purview Unified Catalog is Microsoft’s governance catalog for discovering, governing, and tracking data assets across systems. It spans on-premises stores, Azure data services, and third-party sources. Within it, data lineage tracks data from its source through transformations to its destination, so a reviewer can follow the path a record traveled without reconstructing it from logs. [MS-Learn unified catalog: https://learn.microsoft.com/purview/unified-catalog]</p>
+<p>The lineage view in Purview is not a report you author: it is captured automatically from pipeline execution. Azure Data Factory and Synapse pipelines report lineage to Purview as they run, writing the source-to-destination edges in real time. [MS-Learn lineage from Azure Data Factory: https://learn.microsoft.com/purview/data-map-lineage-azure-data-factory]</p>
+<p>That automatic capture is exactly what <code>LineageCapture</code> does for your local RAG store. The principle is the same; the scope is the enterprise.</p>
+<h2 id="column-level-lineage"><a class="header" href="#column-level-lineage">Column-Level Lineage</a></h2>
+<p>Purview supports lineage at column granularity: it can trace not just that data moved from table A to table B, but that a specific column in A contributed to a specific column in B. This matters when a downstream consumer needs to know which source field produced the value that failed an audit. Support varies by source system; not every connector reports at column level, but where it does, the trace is precise. [MS-Learn column-level lineage: https://learn.microsoft.com/purview/data-gov-classic-lineage-user-guide]</p>
+<p>The local store has an analogue: <code>content_hash</code> in <code>embeddings</code> ties a chunk’s encoding to the exact text at encode time. If a document version changes and the chunk text changes, the <code>content_hash</code> changes. That is a column-level signal: the field that changed, and when.</p>
+<h2 id="impact-analysis"><a class="header" href="#impact-analysis">Impact Analysis</a></h2>
+<p>Lineage’s most direct operational use is impact analysis: given an asset that is about to change, which downstream consumers are affected? Purview surfaces this through its lineage graph. You navigate to a source asset, scan the forward lineage, and see every table, report, or service that reads from it. [MS-Learn data lineage overview: https://learn.microsoft.com/purview/data-gov-classic-lineage]</p>
+<p><code>impact_of_version</code> runs the same motion against the local store. You pass a <code>doc_id</code> and <code>version_id</code>, and it returns every answer that cited a chunk from that version. Before you reload a corpus version, you run impact analysis; you know exactly which answers will need re-evaluation.</p>
+<p><code>find_lineage_gaps</code> is the completeness check governance requires: it scans every answer and reports which are missing a retrieval, a verdict, or a source resolution. An incomplete chain is a governance failure, not just a data quality one.</p>
+<h2 id="the-honest-boundary"><a class="header" href="#the-honest-boundary">The Honest Boundary</a></h2>
+<p>Purview does not yet offer lineage features specific to AI inference or RAG pipelines. There is no built-in Purview surface that traces the path from a user query through retrieval through LLM generation to an eval verdict. Purview covers traditional data lineage and ML training-data lineage; RAG-step lineage is not a product feature.</p>
+<p>The local <code>module6-lineage</code> store is the AI-pipeline-specific layer that Purview does not provide. In an enterprise deployment, you would surface that store’s data into Purview as a custom lineage source: your store captures the RAG chain; Purview holds the enterprise view of what systems contributed to it. The two complement each other rather than replace each other. Do not claim Purview handles the answer-to-chunk-to-verdict path out of the box: it does not.</p>
+<h2 id="core-concepts-23"><a class="header" href="#core-concepts-23">Core Concepts</a></h2>
+<ul>
+<li>Microsoft Purview Unified Catalog is the enterprise governance surface for discovering, governing, and tracking data assets across systems; data lineage within it traces data from source through transformations to destination.</li>
+<li>Purview captures lineage automatically from Azure Data Factory and Synapse pipelines; support for column-level lineage varies by source but traces which source fields contributed to which destination fields where available.</li>
+<li>Impact analysis in Purview answers “which downstream assets are affected if this source changes?”; <code>impact_of_version</code> runs the same motion against the local RAG lineage store.</li>
+<li>Purview does not yet provide lineage for AI inference or RAG steps; the local lineage store is the AI-pipeline-specific layer, and in production it would report into Purview as a custom lineage source.</li>
+</ul>
+<p>The store you built in this module is the layer Purview cannot yet see. Knowing where enterprise tooling ends and custom capture begins is how a data engineer decides what to build versus what to buy.</p>
+<p>Module 7 composes the whole pipeline: batch and streaming legs through the lakehouse, lineage captured on every indexed document, the governance surface connected at the end, all in one runnable portfolio artifact.</p>
+<div class="claude-handoff" data-exercise="exercises/module6/lineage-as-governance-purview/">
+<p><strong>Build It in Claude Code</strong>: Write a <code>governance_report(conn, doc_id, version_id)</code> function in <code>module6-lineage/</code> that calls <code>impact_of_version</code> to return the set of answers affected by the given source version and calls <code>find_lineage_gaps</code> to return any incomplete chains across all answers in the store; finalize <code>smoke.py</code> and tests to assert that the report names at least one affected answer when a known version is queried and that it flags a gap when an answer is missing its verdict; then write a <code>PURVIEW.md</code> note (grounded only in the MS-Learn URLs provided in the lesson) that maps <code>impact_of_version</code> to Purview impact analysis, <code>content_hash</code> column tracking to Purview column-level lineage, and the full local store to Purview Unified Catalog as a custom lineage source, and states plainly that RAG-step lineage (query through retrieval through generation through eval verdict) is not a built-in Purview feature.</p>
 </div>
 
 
