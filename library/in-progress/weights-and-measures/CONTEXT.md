@@ -11,10 +11,10 @@ are the deliverable.
 
 ## Status
 
-- **M1 "The PyTorch Operator" + M2 "Fitting and Not Fitting" shipped 2026-06-21** (each overview + 4
-  lessons + 4 exercises). PLANs + ship records under `build-log/weights-and-measures/m1/` and `m2/`.
-- **M3–M8 to author.** The 8-module arc is in `README.md` (the blueprint). M3 is "Dataset Craft"
-  (curating fine-tuning data: quality signals, dedup, the JSONL contract, held-out set design).
+- **M1–M3 shipped 2026-06-21** (The PyTorch Operator; Fitting and Not Fitting; Dataset Craft; each
+  overview + 4 lessons + 4 exercises). PLANs + ship records under `build-log/weights-and-measures/m1..m3/`.
+- **M4–M8 to author.** The 8-module arc is in `README.md` (the blueprint). M4 is "Adapters and the
+  Fine-Tune Build" (LoRA / QLoRA / PEFT; the fine-tuning loop end to end; adapter merging; AMP).
 
 ## The throughline (the runnable spine)
 

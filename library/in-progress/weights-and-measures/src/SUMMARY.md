@@ -21,3 +21,13 @@
 - [Reading Loss Curves](module2/reading-loss-curves.md)
 - [Early Stopping as a Policy](module2/early-stopping-as-a-policy.md)
 - [Instrumenting the Run](module2/instrumenting-the-run.md)
+
+---
+
+# Module 3: Dataset Craft
+
+- [Overview](module3/00-overview.md)
+- [Quality over Quantity](module3/quality-over-quantity.md)
+- [The JSONL Contract](module3/the-jsonl-contract.md)
+- [Deduplication and Leakage](module3/deduplication-and-leakage.md)
+- [Building the Curation Gate](module3/building-the-curation-gate.md)
