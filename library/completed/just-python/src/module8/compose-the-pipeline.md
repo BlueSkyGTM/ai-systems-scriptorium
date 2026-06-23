@@ -130,7 +130,7 @@ n_clean = stats.rows_out          # 10 on the locked sample
 ```python
 import pandas as pd
 
-clean_df = pd.read_parquet(clean_path)   # columns: id, label (+ text dropped by wrangle)
+clean_df = pd.read_parquet(clean_path)   # columns: id, text, label, score (wrangle keeps text)
 ```
 
 **Step 3: merge predictions with labels.**

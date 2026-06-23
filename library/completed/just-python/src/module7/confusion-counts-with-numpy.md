@@ -82,7 +82,7 @@ The locked sample in `exercises/module7/predictions.csv` has 10 rows. Walk throu
 | 8   | dog       | cat   | F | T | | | 1 |
 | 9   | bird      | bird  | F | F | | | |
 
-`confusion_counts(df, "cat", config)` returns `(3, 1, 1)`. Three masks, no loop.
+`confusion_counts(df, "cat", config)` returns `(3, 1, 2)`. Three masks, no loop.
 
 Azure AI Language's evaluation-metrics reference defines these three cells in identical terms for per-class evaluation of custom classifiers: the diagonal value is TP, the row sum excluding the diagonal is FP, and the column sum excluding the diagonal is FN ([learn.microsoft.com/azure/ai-services/language-service/custom-text-classification/concepts/evaluation-metrics](https://learn.microsoft.com/azure/ai-services/language-service/custom-text-classification/concepts/evaluation-metrics#confusion-matrix)).
 

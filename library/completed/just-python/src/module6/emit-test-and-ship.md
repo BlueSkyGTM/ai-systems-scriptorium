@@ -48,8 +48,8 @@ class WrangleStats:
 No `frozen=True` here: stats are a report, not a config. The four fields map one-to-one to what the pipeline can measure:
 
 - `rows_in`: the count after `ingest`, before anything else.
-- `dropped_nulls`: rows removed by `clean` (8 rows in, 7 after null drop for the sample).
-- `dropped_dupes`: rows removed by `clean`'s dedup pass (7 to 6 on the sample).
+- `dropped_dupes`: rows removed by `clean`'s dedup pass (8 rows in, 7 after dedup for the sample).
+- `dropped_nulls`: rows removed by `clean`'s null drop (7 to 6 on the sample).
 - `rows_out`: the count that reaches `emit`.
 
 The smoke test asserts these four numbers exactly. When a field is wrong, the failure message names the field, not a key string.
@@ -65,10 +65,10 @@ def run(config: WrangleConfig) -> WrangleStats:
 
     df_clean = clean(df_raw)
     # derive dropped counts by diffing row counts
-    dropped_nulls = rows_in - len(df_clean) - ???
+    dropped_nulls = rows_in - len(df_clean) - ...  # TODO: compute dropped_dupes separately
 ```
 
-The counting requires care. `clean` drops nulls first, then deduplicates. To get `dropped_nulls` and `dropped_dupes` separately, track the intermediate length:
+The counting requires care. `clean` deduplicates first, then drops nulls. To get `dropped_dupes` and `dropped_nulls` separately, track the intermediate length:
 
 ```python
 def run(config: WrangleConfig) -> WrangleStats:

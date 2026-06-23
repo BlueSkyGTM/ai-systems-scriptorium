@@ -42,7 +42,7 @@ The locked oracle for R3:
 | bird | 0.667 | 1.000 | 0.800 | 2 |
 | **macro avg** | **0.694** | **0.750** | **0.707** | **10** |
 
-The weakest class is `dog` at recall 0.500. R5 passes only when the report names it.
+The weakest class on the canonical sample is `dog` at recall 0.500. R5 passes only when the report names it; the check is pinned to `dog` because the locked oracle fixes the sample's weakest class.
 
 ## The rubric.py Shape
 
