@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-ac768c50.js";
+            window.path_to_searchindex_js = "searchindex-0f2066e1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-3a2ac421.js"></script>
+        <script src="toc-7f00e70d.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -1130,6 +1130,276 @@ for row in rows:
 <p>Module 3 orchestrates these loads on a schedule with retries and alerting, so the gate fires automatically rather than requiring a manual run.</p>
 <div class="claude-handoff" data-exercise="exercises/module2/the-batch-freshness-slo/">
 <p><strong>Build It in Claude Code</strong>: Extend <code>ingest.py</code> to append a <code>corpus_loads</code> row (with <code>load_id</code>, <code>source_id</code>, <code>status</code>, <code>loaded_at</code>, and <code>rows_ingested</code>) on every run; seed <code>freshness_slos</code> with two targets (<code>corpus_raw</code> at 25 hours for the nightly batch, <code>corpus_raw_realtime</code> at 2 hours for the near-real-time source); build <code>freshness_check.py</code> that queries the last successful load age for each source against its SLO and exits non-zero when any source is stale; then finalize <code>smoke.py</code> to assert that a fresh source passes the check, a source whose load timestamp is seeded in the past beyond its SLO fails the check, and that M1’s freshness-breach query run against the same tables returns exactly the stale source.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-3-orchestration"><a class="header" href="#module-3-orchestration">Module 3: Orchestration</a></h1>
+<p>Module 2 built the loader. It still runs because you run it. A pipeline that depends on you remembering
+to type a command is stale by the weekend and silently broken the first time you take a day off. This
+module makes the pipeline run by itself, on a schedule, with retries when a step flakes, and an alert
+when something it cannot fix goes wrong.</p>
+<p>You author and debug the graph; you do not operate the cluster. That is the AI engineer’s half of
+orchestration: the DAG that moves your data, its dependencies, its retry policy, and its alerts are
+yours, while the workers that execute it are the platform’s. The lessons teach the Airflow DAG model
+because that is the vocabulary every data team and every interview uses; the artifact runs Prefect,
+which executes the same DAG offline so you can build and test it without standing up a server.</p>
+<h2 id="what-this-module-covers-2"><a class="header" href="#what-this-module-covers-2">What This Module Covers</a></h2>
+<p><strong>The DAG: Tasks and Dependencies</strong> models the pipeline as a directed acyclic graph: tasks with
+dependencies the scheduler runs in order, each task’s output feeding the next. The order stops being a
+thing you remember and becomes a contract the scheduler enforces.</p>
+<p><strong>Retries and Idempotency</strong> makes the run resilient. A task that fails on a transient blip retries with
+a backoff instead of paging a human; and because Module 2’s load is an idempotent merge, retrying the
+ingest is safe. The two ideas are a pair: a retry is only safe when the task can be re-run.</p>
+<p><strong>Scheduling and Backfill</strong> turns the cadence into configuration. The flow takes a run date, so the same
+code runs tonight on a cron schedule or backfills last week’s missed days, and the merge keeps the
+backfill idempotent.</p>
+<p><strong>Alerting on Breach</strong> wires Module 2’s freshness gate as the final task. A stale corpus raises, the run
+fails, and an on-failure hook fires the alert. This is where the SLO you defined stops being a number in
+a table and becomes a signal someone acts on.</p>
+<h2 id="who-this-is-for-3"><a class="header" href="#who-this-is-for-3">Who This Is For</a></h2>
+<p>You finished Module 2: you have a loader that ingests, transforms, and checks freshness. Now you make it
+a system that runs on its own and surfaces its own failures. You write the DAG and own its policy; you
+do not run the orchestration platform.</p>
+<h2 id="the-artifact-2"><a class="header" href="#the-artifact-2">The Artifact</a></h2>
+<p>You build <code>module3-orchestration/</code>, a Prefect flow that reuses the Module 2 loader and freshness check as
+tasks: extract, ingest, transform, and a freshness gate, with retries, a documented nightly schedule, a
+backfill loop, and an on-failure alert hook. It runs offline with no server. Module 4 adds the streaming
+and change-data-capture sources that cannot wait for the nightly run.</p>
+<h2 id="prerequisites-2"><a class="header" href="#prerequisites-2">Prerequisites</a></h2>
+<ul>
+<li>Module 2 complete (the <code>module2-ingestion/</code> loader and freshness check)</li>
+<li>Python 3.11+ and <code>prefect</code> (one pip install); the flow runs offline with an ephemeral local server</li>
+<li>Comfort with functions, decorators, and the Module 2 ingest contract</li>
+</ul>
+<h2 id="time-estimate-2"><a class="header" href="#time-estimate-2">Time Estimate</a></h2>
+<p>Each lesson runs 70 to 100 minutes including its exercise. The first Prefect run takes a minute to spin
+up its local server; after that the loop is fast.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-dag-tasks-and-dependencies"><a class="header" href="#the-dag-tasks-and-dependencies">The DAG: Tasks and Dependencies</a></h1>
+<p>A pipeline you run by hand is not a system; it is a checklist you hope no one skips. You <code>python extract.py</code>, then <code>python ingest.py</code>, then <code>python transform.py</code>, in that order, because you know the order. The scheduler does not know the order unless you tell it, and you tell it with a graph.</p>
+<p>That graph is the DAG: a directed acyclic graph of tasks, where an arrow from A to B means “B cannot start until A finishes.” The scheduler reads the graph, not the calendar. It runs each task the moment its upstream completes, in parallel where possible, and refuses to start a task whose dependency failed.</p>
+<h2 id="what-makes-a-graph-a-dag"><a class="header" href="#what-makes-a-graph-a-dag">What Makes a Graph a DAG</a></h2>
+<p>Three properties, all load-bearing. Directed: every dependency has a direction; extract feeds ingest, not the other way around. Acyclic: no cycle exists, so the scheduler can always find a task with no unsatisfied upstream, start there, and work forward. A cycle means no such starting point exists, and the pipeline deadlocks before it runs. Graph: multiple tasks, multiple edges, a topology the scheduler can traverse.</p>
+<p>The “acyclic” constraint is the one engineers violate. A retry loop that re-enqueues a task, a feed-forward that depends on a task downstream of it: both introduce cycles the scheduler will catch at validation time, not at midnight when you expect the load to be done.</p>
+<h2 id="a-task-is-a-unit-of-work"><a class="header" href="#a-task-is-a-unit-of-work">A Task Is a Unit of Work</a></h2>
+<p>In Prefect, you mark a function as a task with <code>@task</code>. The decorator tells the runtime to treat the call as a node in the graph, track its state, and make its return value available to downstream tasks.</p>
+<pre><code class="language-python">from prefect import flow, task, get_run_logger
+
+@task(name="ingest")
+def ingest(csv_path: str, db_path: str) -&gt; dict:
+    """Run the M2 idempotent MERGE (bronze -&gt; silver -&gt; gold). Returns the load summary."""
+    summary = run_ingest(csv_path=csv_path, db_path=db_path)
+    return summary
+</code></pre>
+<p>The return value is the contract. The task does one thing and returns evidence it did it: a path, a summary dict, a status flag. The next task receives that evidence as its input; that handoff is the dependency edge.</p>
+<h2 id="the-flow-wires-tasks-into-a-dag"><a class="header" href="#the-flow-wires-tasks-into-a-dag">The Flow Wires Tasks into a DAG</a></h2>
+<p>A flow is the graph container. When you call one task and pass its return into another, you declare an edge. Prefect sees that <code>ingest</code> receives <code>csv_path</code> from <code>extract</code>, so <code>ingest</code> depends on <code>extract</code>. No separate dependency declaration: the data flow is the graph.</p>
+<pre><code class="language-python">@flow(name="corpus-pipeline")
+def pipeline_flow(run_date, corpus_csv, db_path):
+    csv_path         = extract(run_date=run_date, corpus_csv=corpus_csv)
+    ingest_summary   = ingest(csv_path=csv_path, db_path=db_path)        # depends on extract
+    transform_status = transform(ingest_summary=ingest_summary, db_path=db_path)  # depends on ingest
+    freshness_results = freshness_gate(db_path=db_path)                  # depends on transform
+    return {"ingest_summary": ingest_summary, "freshness_results": freshness_results}
+</code></pre>
+<p>Read it as a graph: <code>extract -&gt; ingest -&gt; transform -&gt; freshness_gate</code>. Each arrow is a result passed as an argument. If <code>ingest</code> raises, Prefect marks it failed, skips <code>transform</code> and <code>freshness_gate</code>, and surfaces the failure at the flow level. Nothing downstream runs on a broken upstream.</p>
+<h2 id="the-airflow-vocabulary-and-why-it-matches"><a class="header" href="#the-airflow-vocabulary-and-why-it-matches">The Airflow Vocabulary (and Why It Matches)</a></h2>
+<p>Airflow is the industry-standard orchestrator. Azure Data Factory offers managed Apache Airflow jobs in Microsoft Fabric. [MS-Learn Apache Airflow jobs in Fabric: https://learn.microsoft.com/fabric/data-factory/apache-airflow-jobs-concepts] In Airflow, you declare tasks as operators and set dependencies explicitly with <code>&gt;&gt;</code>:</p>
+<pre><code class="language-python">extract_task &gt;&gt; ingest_task &gt;&gt; transform_task &gt;&gt; freshness_task
+</code></pre>
+<p>Prefect expresses the same edge by passing one task’s return into the next call. The graph is identical; the syntax differs. If you move this pipeline from an offline Prefect runner to a Fabric Airflow cluster, the four tasks stay the same and the dependency topology stays the same. What changes is the declaration style, not the contract. [DAG concept: https://learn.microsoft.com/azure/aks/airflow-overview]</p>
+<p>The important fact: the scheduler does not care how you declared the edge. It cares that the edge exists and is acyclic. Once it reads the graph, it runs tasks in topological order: no task starts before its upstream reports success.</p>
+<h2 id="core-concepts-8"><a class="header" href="#core-concepts-8">Core Concepts</a></h2>
+<ul>
+<li>A DAG encodes a pipeline as tasks with typed dependencies; the scheduler runs tasks in topological order, and nothing starts until its upstream succeeds.</li>
+<li>A task’s return value is the dependency edge: passing it into the next task call is how you declare that the second task depends on the first.</li>
+<li>“Acyclic” is the enforced constraint: any cycle means no topological order exists, and the scheduler rejects the graph before the first run.</li>
+<li>Airflow’s <code>task_a &gt;&gt; task_b</code> and Prefect’s result-passing express the same edge; the graph topology and the scheduler contract are identical.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module3/the-dag-tasks-and-dependencies/">
+<p><strong>Build It in Claude Code</strong>: Seed <code>module3-orchestration/</code> and write <code>pipeline_flow.py</code>, a Prefect flow that declares four <code>@task</code> functions (extract, ingest, transform, freshness_gate) and wires them into a <code>@flow</code> by passing each task’s return value as the next task’s input argument; the ingest task calls the M2 <code>run_ingest</code> loader from <code>module2-ingestion/ingest.py</code>. Run the flow offline with <code>python pipeline_flow.py</code> and prove the tasks execute in topological order (extract before ingest, ingest before transform, transform before freshness_gate) by asserting against the returned ingest summary.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="retries-and-idempotency"><a class="header" href="#retries-and-idempotency">Retries and Idempotency</a></h1>
+<p>A flaky network blip fails one task and you do not want a human paged for a glitch that fixes itself
+on the second try. Retries handle it. But a retry that re-runs a bad task can corrupt your data just
+as surely as the original failure. The retry is only as safe as the task it re-runs.</p>
+<h2 id="why-retries-exist"><a class="header" href="#why-retries-exist">Why Retries Exist</a></h2>
+<p>An orchestrator treats each task as a unit of work with a pass/fail result. When a task fails, the
+default behavior is to fail the entire flow. That is correct for logic errors. It is wrong for
+transient ones: a brief SQLite lock, a momentary network timeout, a file system hiccup that clears in
+under a second. These are not bugs in your code; they are noise in the environment, and failing a full
+run on them wastes the work already done.</p>
+<p>Both Airflow and Prefect give you a task-level retry knob. In Airflow, the parameters are <code>retries</code>
+(the count of additional attempts) and <code>retry_delay</code> (how long to wait between them; set
+<code>retry_exponential_backoff=True</code> to widen the gap each attempt). In Prefect, the equivalents are
+<code>retries=</code> and <code>retry_delay_seconds=</code>. Same idea, same shape: re-attempt the failing task before
+failing the run. The flow’s other tasks are unaffected while the retry is in flight.</p>
+<p>The DAG from the prior lesson wires <code>extract</code> and <code>ingest</code> in sequence. Those are the two I/O tasks,
+and I/O tasks are where transient failures live. The artifact sets retries on both:</p>
+<pre><code class="language-python">@task(name="extract", retries=2, retry_delay_seconds=0.1)
+def extract(run_date, corpus_csv):
+    """retries=2 -&gt; two more attempts on a transient failure before the task (and the flow) fails."""
+    if not os.path.isfile(corpus_csv):
+        raise FileNotFoundError(f"[extract] CSV not found: {corpus_csv}")
+    return corpus_csv
+
+@task(name="ingest", retries=2, retry_delay_seconds=0.1)
+def ingest(csv_path, db_path):
+    """retries=2 guards against transient SQLite lock contention. The MERGE underneath is idempotent."""
+    return run_ingest(csv_path=csv_path, db_path=db_path)
+</code></pre>
+<p><code>retries=2</code> means the task gets two additional attempts after the first failure, for three total tries
+before the flow gives up. <code>retry_delay_seconds=0.1</code> is a short wait: in a test environment, a 0.1-second
+pause is enough to clear the contention; in production you would set it higher.</p>
+<h2 id="the-safety-condition"><a class="header" href="#the-safety-condition">The Safety Condition</a></h2>
+<p>Here is what the retry mechanism does not guarantee: that re-running the task is safe.</p>
+<p>Consider a task that appends rows. The first attempt inserts 120 rows, then dies on the commit. The
+orchestrator retries. The second attempt inserts 120 rows again, this time successfully. You now have
+240 rows. The retry made the failure worse.</p>
+<p>This is the classic partial-success problem, and retries expose it. A task is only safe to retry if
+re-running it after a partial success produces the same result as a clean first run. That property
+has a name: <strong>idempotency</strong>.</p>
+<p>A non-idempotent task (append rows, increment a counter, send an email) can corrupt state on retry.
+An idempotent task (check-then-insert on a unique key, an upsert, a content-addressed write) cannot.</p>
+<h2 id="why-the-ingest-task-is-safe"><a class="header" href="#why-the-ingest-task-is-safe">Why the Ingest Task Is Safe</a></h2>
+<p>The <code>ingest</code> task calls <code>run_ingest</code>, which calls the <code>merge_gold</code> function you built in M2. That MERGE
+is keyed on <code>(doc_id, content_hash)</code>: if the row already exists, the merge skips it. If the <code>ingest</code>
+task completes its first attempt up to the SQLite commit and then the commit itself fails, the retry
+runs the full merge again. The rows that made it in are skipped; the row that did not is inserted.
+The result is identical to a clean first run.</p>
+<p>Run the same ingest twice on an unchanged corpus and <code>merge_gold</code> returns <code>0</code> the second time. That
+return value is the idempotency proof. A retried ingest cannot double-load because the contract
+forbids it: same <code>(doc_id, content_hash)</code> pair, same skip path, every time.</p>
+<p>The pairing is tight: <code>retries=2</code> on the <code>ingest</code> task is only valid because <code>merge_gold</code> underneath
+it is idempotent. Remove idempotency and the retry parameter becomes a liability.</p>
+<h2 id="what-this-means-at-scale"><a class="header" href="#what-this-means-at-scale">What This Means at Scale</a></h2>
+<p>A production corpus pipeline runs nightly. Over a year, a transient SQLite lock happens. Without
+retries, a human wakes up to a failed run, investigates, finds nothing wrong, and re-runs manually.
+With retries plus an idempotent load, the pipeline heals itself in under a second and the on-call
+engineer never sees it.</p>
+<p>The same rule applies to the <code>extract</code> task. If the corpus CSV is momentarily unavailable because a
+writer holds a lock, <code>retries=2</code> gives the pipeline three chances to read it before failing. The
+extract task only reads and returns the path; reading is inherently idempotent.</p>
+<p>Retries are a cheap configuration. Idempotency is design work. You pay for idempotency once, in M2,
+and it makes every retry downstream free of risk.</p>
+<h2 id="core-concepts-9"><a class="header" href="#core-concepts-9">Core Concepts</a></h2>
+<ul>
+<li>Both Airflow (<code>retries</code>, <code>retry_delay</code>) and Prefect (<code>retries=</code>, <code>retry_delay_seconds=</code>) retry a
+failing task a fixed number of times before failing the flow; the parameter names differ, the semantics
+are the same.</li>
+<li>A retry is only safe if the task is idempotent: re-running it after a partial success must produce
+the same result as a clean first run.</li>
+<li>A non-idempotent task (append, increment, send) retried after a partial success corrupts state; the
+retry mechanism itself becomes the hazard.</li>
+<li>The <code>ingest</code> task carries <code>retries=2</code> because <code>merge_gold</code> beneath it is keyed on <code>(doc_id, content_hash)</code>: the same pair always skips, so a retried ingest inserts zero duplicate rows.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module3/retries-and-idempotency/">
+<p><strong>Build It in Claude Code</strong>: Extend <code>module3-orchestration/</code> by adding <code>retries=2, retry_delay_seconds=0.1</code> to the <code>extract</code> and <code>ingest</code> task decorators, then write a pytest test that monkeypatches <code>run_ingest</code> to raise on the first call and succeed on the second, asserts the flow still completes, and asserts the task was attempted exactly twice; add a second assertion that re-running the ingest on an unchanged corpus returns zero new <code>source_document</code> versions, proving the underlying MERGE makes the retry safe.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="scheduling-and-backfill"><a class="header" href="#scheduling-and-backfill">Scheduling and Backfill</a></h1>
+<p>The pipeline that only runs when you remember to run it will be stale by the weekend. A schedule makes the cadence the system’s job, and backfill is how you recover the days it missed.</p>
+<p>You have a flow that extracts, ingests, transforms, and gates freshness. Right now you run it with <code>python pipeline_flow.py</code>. That works once. A nightly corpus load that depends on a human deciding to open a terminal is not a nightly load; it is a hope. A schedule eliminates the decision.</p>
+<h2 id="the-date-parameter-is-the-key"><a class="header" href="#the-date-parameter-is-the-key">The Date Parameter Is the Key</a></h2>
+<p>The flow accepts a <code>run_date</code>. When you call it without one, it defaults to today:</p>
+<pre><code class="language-python">@flow(name="corpus-pipeline", on_failure=[on_flow_failure])
+def pipeline_flow(run_date=None, corpus_csv=None, db_path=None, freshness_now_ts=None):
+    if run_date is None:
+        run_date = datetime.utcnow().strftime("%Y-%m-%d")
+    ...
+</code></pre>
+<p>That default is what the nightly run uses. The explicit argument is what the backfill uses. Same flow, same tasks, same dependency graph: only <code>run_date</code> changes. This is the design choice that makes scheduling trivial and backfill free.</p>
+<h2 id="the-schedule-is-configuration"><a class="header" href="#the-schedule-is-configuration">The Schedule Is Configuration</a></h2>
+<p>A nightly run at 02:00 UTC is a cron expression:</p>
+<pre><code>0 2 * * *
+</code></pre>
+<p><code>0 2 * * *</code> means: minute zero, hour two, any day, any month, any weekday. In Prefect, you attach this to a deployment, not to the flow function:</p>
+<pre><code class="language-python"># Schedule: nightly at 02:00 UTC. To activate in a Prefect deployment:
+#   from prefect.schedules import CronSchedule
+#   @flow(..., schedules=[CronSchedule(cron="0 2 * * *")])
+# The artifact is tested by calling pipeline_flow() directly; no server is required.
+</code></pre>
+<p>The comment documents the production shape without requiring a live Prefect server to test the logic. The flow is the unit of work; the deployment is what binds it to the clock. You can build, test, and prove correctness entirely by calling <code>pipeline_flow()</code> directly.</p>
+<p>In Airflow, the equivalent is the <code>schedule</code> parameter on a DAG (the current name; older Airflow used <code>schedule_interval</code>, which is now deprecated):</p>
+<pre><code class="language-python">with DAG("corpus-pipeline", schedule="0 2 * * *", catchup=True) as dag:
+    ...
+</code></pre>
+<p><code>schedule="0 2 * * *"</code> is the same cron, the same nightly cadence. The parameter name is different; the intent is identical. [Airflow DAG scheduling and catchup: https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/dag-run.html]</p>
+<h2 id="backfill-is-a-loop"><a class="header" href="#backfill-is-a-loop">Backfill Is a Loop</a></h2>
+<p>If the pipeline missed three nights, you run it three times, once per date:</p>
+<pre><code class="language-python">for run_date in ["2026-01-13", "2026-01-14", "2026-01-15"]:
+    pipeline_flow(run_date=run_date, corpus_csv=csv, db_path=db)
+# Because the M2 MERGE is idempotent, re-running a date that already loaded is safe.
+</code></pre>
+<p>No new code. No special backfill mode. The same <code>pipeline_flow</code> function, called in a loop over the date range you missed. Each invocation is independent, and the results are identical whether the loop ran once or twice: the M2 MERGE compares incoming rows against what already exists and skips rows that are already loaded. Re-running 2026-01-13 after it already ran produces no new <code>source_document</code> versions; the MERGE finds nothing new to insert.</p>
+<p>In Airflow, the same recovery uses <code>catchup=True</code> on the DAG definition combined with a backfill command. When <code>catchup=True</code>, Airflow creates a DAG run for each missed schedule interval automatically on startup. The manual path is <code>airflow dags backfill --start-date 2026-01-13 --end-date 2026-01-15 corpus-pipeline</code>. The semantics match: run the DAG once per date in the range. [Airflow backfill: https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/dag-run.html]</p>
+<h2 id="idempotency-is-the-contract-that-makes-this-safe"><a class="header" href="#idempotency-is-the-contract-that-makes-this-safe">Idempotency Is the Contract That Makes This Safe</a></h2>
+<p>Backfill is only safe because the underlying operation is idempotent. The M2 MERGE is not <code>INSERT</code>; it is <code>INSERT OR IGNORE</code> combined with a version comparison. Running it a second time for the same date finds the same rows already in the table and inserts nothing. The <code>source_documents</code> version count stays flat.</p>
+<p>Without that contract, backfill is dangerous: every re-run adds duplicate rows, the version history lies, and the freshness check sees counts that do not reflect reality. The MERGE design in M2 was not just about incrementalism; it was about making the pipeline safe to run more than once, which is exactly what scheduling and backfill require.</p>
+<h2 id="core-concepts-10"><a class="header" href="#core-concepts-10">Core Concepts</a></h2>
+<ul>
+<li>The <code>run_date</code> parameter is what separates a scheduled nightly run from a backfill: the same flow runs tonight or last Tuesday; only the argument changes.</li>
+<li>A cron schedule (<code>0 2 * * *</code>) is configuration attached to a deployment, not to the flow function; the flow itself is testable offline with no server.</li>
+<li>Airflow’s <code>schedule</code> parameter (current; <code>schedule_interval</code> is deprecated) and Prefect’s <code>CronSchedule</code> express the same nightly cadence; <code>catchup=True</code> plus the backfill command recover missed intervals.</li>
+<li>Backfill is safe only because the M2 MERGE is idempotent: re-running a date that already loaded adds zero new versions, so the loop can run twice with identical results.</li>
+</ul>
+<p>The cadence is now the system’s responsibility, and the system’s memory goes back as far as you tell it. That is a different class of reliability than remembering to open a terminal.</p>
+<div class="claude-handoff" data-exercise="exercises/module3/scheduling-and-backfill/">
+<p><strong>Build It in Claude Code</strong>: In <code>module3-orchestration/</code>, confirm <code>pipeline_flow</code> accepts a <code>run_date</code> argument (defaulting to today when omitted); add a documented <code>CronSchedule(cron="0 2 * * *")</code> comment block showing how to attach the nightly schedule in a Prefect deployment; write a backfill loop that calls <code>pipeline_flow</code> across three consecutive dates; then write a test that runs the same three-date backfill twice and asserts the second run adds zero new <code>source_document</code> versions to the database, proving the MERGE idempotency holds across repeated loads.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="alerting-on-breach"><a class="header" href="#alerting-on-breach">Alerting on Breach</a></h1>
+<p>A pipeline that fails quietly is worse than one that fails loudly. When a source goes stale and the run ends with a zero exit and no noise, the problem hides until a user notices. The orchestrator’s job is to make a breach impossible to ignore.</p>
+<p>You close the module here by wiring M2’s freshness check as the final task in the DAG, so a stale corpus fails the run, and a failure hook fires the alert before anything downstream continues.</p>
+<h2 id="why-the-gate-lives-last"><a class="header" href="#why-the-gate-lives-last">Why the Gate Lives Last</a></h2>
+<p>The DAG runs in order: <code>extract -&gt; ingest -&gt; transform -&gt; freshness_gate</code>. Placing the gate at the end is deliberate. You want the data to land first; then you want the system to verify the contract was met. A gate that runs before the load is checking the previous run’s data. A gate at the end checks this run’s data.</p>
+<p>When <code>freshness_gate</code> raises, Prefect marks the flow as <code>Failed</code>. Nothing downstream runs. The state machine does the work you would otherwise do by hand: scan the log, find the failure, escalate.</p>
+<h2 id="the-gate-task"><a class="header" href="#the-gate-task">The Gate Task</a></h2>
+<p>The gate reuses <code>check_freshness</code> from <code>freshness_check.py</code>, the function M2 built. It does not rewrite the logic; it calls it, reads the result, and raises when anything is stale.</p>
+<pre><code class="language-python">@task(name="freshness_gate", retries=0)
+def freshness_gate(db_path, now_ts=None):
+    """Raises -&gt; Prefect Failed state -&gt; on_failure hook fires, if ANY source is stale."""
+    results = check_freshness(db_path=db_path, now_ts=now_ts)   # the M2 check, reused
+    stale = [r for r in results if r["is_stale"]]
+    if stale:
+        raise RuntimeError(f"[freshness_gate] STALE sources detected: {[r['source_id'] for r in stale]}.")
+    return results
+</code></pre>
+<p><code>retries=0</code> is intentional. A retry cannot fix a stale source; only a fresh ingest can. Retrying here would waste time and mask the breach. The gate’s only job is to detect and surface.</p>
+<h2 id="the-on-failure-hook"><a class="header" href="#the-on-failure-hook">The On-Failure Hook</a></h2>
+<p>Prefect’s <code>@flow</code> decorator accepts an <code>on_failure</code> list: callables that run when the flow reaches a <code>Failed</code> state. You wire the alert there.</p>
+<pre><code class="language-python">ALERTS: list[dict] = []
+
+def on_flow_failure(flow, flow_run, state):
+    """Prefect on_failure hook (flow, flow_run, state): record an alert when the run fails."""
+    ALERTS.append({"flow": flow.name, "run": flow_run.name, "state": state.name})
+    print(f"[ALERT HOOK] flow '{flow.name}' run '{flow_run.name}' failed: {state.name}", file=sys.stderr)
+
+@flow(name="corpus-pipeline", on_failure=[on_flow_failure])
+def pipeline_flow(...):
+    ...
+    freshness_results = freshness_gate(db_path=db_path)   # the gate as the final DAG task
+    ...
+</code></pre>
+<p><code>ALERTS</code> is a module-level list, which makes it inspectable in tests: after a run, check that it is non-empty and contains the expected flow name. The <code>print</code> to <code>stderr</code> is the local stand-in for a real notification channel. In production, the same hook calls an external service.</p>
+<h2 id="the-production-equivalent"><a class="header" href="#the-production-equivalent">The Production Equivalent</a></h2>
+<p>In Microsoft Fabric Data Factory, you wire failure notifications via pipeline failure alerts and the Data Activator integration; a failure can trigger an Outlook or Teams activity that reaches whoever is on call. [MS-Learn pipeline alerts: https://learn.microsoft.com/fabric/data-factory/create-alerts-for-pipeline-runs] Airflow uses an <code>on_failure_callback</code> on the DAG or the operator, with the same contract: the callback fires on failure, you route to your notification channel inside it.</p>
+<p>The hook here is the local, offline stand-in for those production channels. It does not ship a page or a Teams message; that is the wiring you add when you move the pipeline to a cluster. What it does ship is the pattern: the orchestrator, not a human, is responsible for routing a breach to the channel that gets it fixed.</p>
+<h2 id="core-concepts-11"><a class="header" href="#core-concepts-11">Core Concepts</a></h2>
+<ul>
+<li>The freshness gate runs last in the DAG, after the load completes, so it measures this run’s data and fails the run on the same contract M2 defined.</li>
+<li>A gate task with <code>retries=0</code> is correct: a retry cannot fix a stale source, and retrying hides the breach instead of surfacing it.</li>
+<li>Prefect’s <code>on_failure</code> hook fires when the flow enters the <code>Failed</code> state; Airflow’s <code>on_failure_callback</code> and Fabric Data Activator cover the same role in production.</li>
+<li><code>ALERTS</code> is a module-level list that makes failure assertions deterministic in tests: a breach must produce a non-empty list with the flow name, not just a printed message.</li>
+</ul>
+<p>The on-call engineer who reads a <code>[ALERT HOOK]</code> line at 2 a.m. already knows the source, the run, and the state; the breach is named before they open a dashboard. That is what the gate is for.</p>
+<p>Module 4 adds streaming and change-data-capture for the sources that cannot wait for the nightly run.</p>
+<div class="claude-handoff" data-exercise="exercises/module3/alerting-on-breach/">
+<p><strong>Build It in Claude Code</strong>: Make <code>freshness_gate</code> the final task in <code>pipeline_flow.py</code>, calling M2’s <code>check_freshness</code> and raising a <code>RuntimeError</code> naming the stale source IDs when any source is stale; add the module-level <code>ALERTS</code> list and <code>on_flow_failure</code> hook wired via <code>@flow(on_failure=[on_flow_failure])</code>; then finalize <code>smoke.py</code> to assert that a fresh corpus run completes clean with <code>ALERTS</code> empty, and that injecting a future <code>now_ts</code> (making at least one source stale) fails the run and leaves <code>ALERTS</code> non-empty.</p>
 </div>
 
 

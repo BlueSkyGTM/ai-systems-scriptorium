@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>CTEs and the Diagnostic Chain - Data Currents — SQL and the Data Platform for AI Systems</title>
+        <title>The DAG: Tasks and Dependencies - Data Currents — SQL and the Data Platform for AI Systems</title>
 
 
         <!-- Custom HTML head -->
@@ -177,135 +177,49 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="ctes-and-the-diagnostic-chain"><a class="header" href="#ctes-and-the-diagnostic-chain">CTEs and the Diagnostic Chain</a></h1>
-<p>The freshness alert fires at 2 a.m. You know the breach happened; you need to know when the last
-successful corpus load ran and how wide the gap is. That question has three steps: find the last good
-load per source, compute the current age, compare it to the SLO, and return only the breached sources.
-You can write those steps as a pyramid of nested subqueries, or you can name each step and read them
-top to bottom. The second form is the one you can actually debug at 2 a.m.</p>
-<p>A common table expression (CTE) names an intermediate result at the top of a query so you can
-reference it below like a table. You build the diagnostic chain once, and the shape is obvious to
-anyone who reads it six months later, including you.</p>
-<h2 id="two-new-tables"><a class="header" href="#two-new-tables">Two New Tables</a></h2>
-<p>This lesson extends <code>module1-sql/</code> with two tables your ingestion pipeline owns.</p>
-<pre><code class="language-sql">CREATE TABLE corpus_loads (
-    id        INTEGER PRIMARY KEY,
-    source_id TEXT NOT NULL,
-    status    TEXT NOT NULL,   -- 'success' | 'failure'
-    loaded_at TIMESTAMP NOT NULL
-);
-CREATE TABLE freshness_slos (
-    source_id     TEXT PRIMARY KEY,
-    max_age_hours INTEGER NOT NULL
-);
+                        <h1 id="the-dag-tasks-and-dependencies"><a class="header" href="#the-dag-tasks-and-dependencies">The DAG: Tasks and Dependencies</a></h1>
+<p>A pipeline you run by hand is not a system; it is a checklist you hope no one skips. You <code>python extract.py</code>, then <code>python ingest.py</code>, then <code>python transform.py</code>, in that order, because you know the order. The scheduler does not know the order unless you tell it, and you tell it with a graph.</p>
+<p>That graph is the DAG: a directed acyclic graph of tasks, where an arrow from A to B means “B cannot start until A finishes.” The scheduler reads the graph, not the calendar. It runs each task the moment its upstream completes, in parallel where possible, and refuses to start a task whose dependency failed.</p>
+<h2 id="what-makes-a-graph-a-dag"><a class="header" href="#what-makes-a-graph-a-dag">What Makes a Graph a DAG</a></h2>
+<p>Three properties, all load-bearing. Directed: every dependency has a direction; extract feeds ingest, not the other way around. Acyclic: no cycle exists, so the scheduler can always find a task with no unsatisfied upstream, start there, and work forward. A cycle means no such starting point exists, and the pipeline deadlocks before it runs. Graph: multiple tasks, multiple edges, a topology the scheduler can traverse.</p>
+<p>The “acyclic” constraint is the one engineers violate. A retry loop that re-enqueues a task, a feed-forward that depends on a task downstream of it: both introduce cycles the scheduler will catch at validation time, not at midnight when you expect the load to be done.</p>
+<h2 id="a-task-is-a-unit-of-work"><a class="header" href="#a-task-is-a-unit-of-work">A Task Is a Unit of Work</a></h2>
+<p>In Prefect, you mark a function as a task with <code>@task</code>. The decorator tells the runtime to treat the call as a node in the graph, track its state, and make its return value available to downstream tasks.</p>
+<pre><code class="language-python">from prefect import flow, task, get_run_logger
+
+@task(name="ingest")
+def ingest(csv_path: str, db_path: str) -&gt; dict:
+    """Run the M2 idempotent MERGE (bronze -&gt; silver -&gt; gold). Returns the load summary."""
+    summary = run_ingest(csv_path=csv_path, db_path=db_path)
+    return summary
 </code></pre>
-<p><code>corpus_loads</code> records every load attempt: one row per run, with the source, the outcome, and the
-timestamp. <code>freshness_slos</code> records your team’s tolerance per source: how many hours old is too old.
-These two tables are the inputs to the freshness breach diagnosis.</p>
-<h2 id="the-cte-syntax"><a class="header" href="#the-cte-syntax">The CTE Syntax</a></h2>
-<p>Before looking at the full query, see the skeleton.</p>
-<pre><code class="language-sql">WITH cte_name AS (
-    SELECT ...
-),
-second_cte AS (
-    SELECT ... FROM cte_name ...
-)
-SELECT ... FROM second_cte ...;
+<p>The return value is the contract. The task does one thing and returns evidence it did it: a path, a summary dict, a status flag. The next task receives that evidence as its input; that handoff is the dependency edge.</p>
+<h2 id="the-flow-wires-tasks-into-a-dag"><a class="header" href="#the-flow-wires-tasks-into-a-dag">The Flow Wires Tasks into a DAG</a></h2>
+<p>A flow is the graph container. When you call one task and pass its return into another, you declare an edge. Prefect sees that <code>ingest</code> receives <code>csv_path</code> from <code>extract</code>, so <code>ingest</code> depends on <code>extract</code>. No separate dependency declaration: the data flow is the graph.</p>
+<pre><code class="language-python">@flow(name="corpus-pipeline")
+def pipeline_flow(run_date, corpus_csv, db_path):
+    csv_path         = extract(run_date=run_date, corpus_csv=corpus_csv)
+    ingest_summary   = ingest(csv_path=csv_path, db_path=db_path)        # depends on extract
+    transform_status = transform(ingest_summary=ingest_summary, db_path=db_path)  # depends on ingest
+    freshness_results = freshness_gate(db_path=db_path)                  # depends on transform
+    return {"ingest_summary": ingest_summary, "freshness_results": freshness_results}
 </code></pre>
-<p>Each CTE is a named block inside the <code>WITH</code> clause, separated by commas. A CTE can reference any CTE
-defined above it in the same <code>WITH</code> block. The final <code>SELECT</code> sees all of them as if they were tables.
-[Common table expressions in T-SQL: https://learn.microsoft.com/sql/t-sql/queries/with-common-table-expression-transact-sql]</p>
-<p>One thing CTEs do not do: change how the query runs. The planner decides whether to materialize a CTE
-or inline it. What CTEs guarantee is that the human reading the query can understand it. Clarity is
-the feature.</p>
-<h2 id="the-freshness-breach-diagnosis"><a class="header" href="#the-freshness-breach-diagnosis">The Freshness Breach Diagnosis</a></h2>
-<p>Q7 is the query you run after the alert fires.</p>
-<pre><code class="language-sql">WITH last_successful_load AS (
-    SELECT source_id, MAX(loaded_at) AS last_load_ts
-    FROM corpus_loads
-    WHERE status = 'success'
-    GROUP BY source_id
-),
-freshness_status AS (
-    SELECT
-        s.source_id, s.last_load_ts,
-        NOW() - s.last_load_ts AS index_age,
-        f.max_age_hours,
-        (NOW() - s.last_load_ts) &gt; (f.max_age_hours * INTERVAL '1 hour') AS is_stale
-    FROM last_successful_load s
-    JOIN freshness_slos f ON s.source_id = f.source_id
-)
-SELECT source_id, last_load_ts, index_age, max_age_hours, is_stale
-FROM freshness_status
-WHERE is_stale
-ORDER BY index_age DESC;
+<p>Read it as a graph: <code>extract -&gt; ingest -&gt; transform -&gt; freshness_gate</code>. Each arrow is a result passed as an argument. If <code>ingest</code> raises, Prefect marks it failed, skips <code>transform</code> and <code>freshness_gate</code>, and surfaces the failure at the flow level. Nothing downstream runs on a broken upstream.</p>
+<h2 id="the-airflow-vocabulary-and-why-it-matches"><a class="header" href="#the-airflow-vocabulary-and-why-it-matches">The Airflow Vocabulary (and Why It Matches)</a></h2>
+<p>Airflow is the industry-standard orchestrator. Azure Data Factory offers managed Apache Airflow jobs in Microsoft Fabric. [MS-Learn Apache Airflow jobs in Fabric: https://learn.microsoft.com/fabric/data-factory/apache-airflow-jobs-concepts] In Airflow, you declare tasks as operators and set dependencies explicitly with <code>&gt;&gt;</code>:</p>
+<pre><code class="language-python">extract_task &gt;&gt; ingest_task &gt;&gt; transform_task &gt;&gt; freshness_task
 </code></pre>
-<p>Read the chain step by step. <code>last_successful_load</code> filters to successful rows only and takes the most
-recent one per source. <code>freshness_status</code> joins that result against <code>freshness_slos</code> to compute the
-current age and evaluate the boolean breach flag. The final <code>SELECT</code> filters to the breached sources
-and sorts by age, putting the most overdue source first.</p>
-<p>If you wrote this as nested subqueries, the breach comparison would be buried three levels deep. Named
-as CTEs, each step is legible on its own. That is the diagnostic chain: a series of named steps that
-build on each other, reading top to bottom.</p>
-<p>Note that only successful loads count. A source whose most recent load failed is still judged by its
-last <em>successful</em> load, not by the failure timestamp. That is the semantically correct behavior: a
-failed reload did not refresh the index.</p>
-<h2 id="the-deploy-delta-pattern"><a class="header" href="#the-deploy-delta-pattern">The Deploy-Delta Pattern</a></h2>
-<p>Q6 uses the same two-CTE structure, this time to isolate before and after windows around a deploy
-timestamp.</p>
-<pre><code class="language-sql">WITH before_deploy AS (
-    SELECT route, QUANTILE_CONT(latency_ms, 0.95) AS p95_ms
-    FROM spans
-    WHERE ts BETWEEN $deploy_ts::TIMESTAMP - INTERVAL '2 hours' AND $deploy_ts::TIMESTAMP
-    GROUP BY route
-),
-after_deploy AS (
-    SELECT route, QUANTILE_CONT(latency_ms, 0.95) AS p95_ms
-    FROM spans
-    WHERE ts BETWEEN $deploy_ts::TIMESTAMP AND $deploy_ts::TIMESTAMP + INTERVAL '2 hours'
-    GROUP BY route
-)
-SELECT
-    b.route, b.p95_ms AS p95_before, a.p95_ms AS p95_after,
-    a.p95_ms - b.p95_ms AS delta_ms,
-    ROUND(100.0 * (a.p95_ms - b.p95_ms) / b.p95_ms, 1) AS delta_pct
-FROM before_deploy b
-JOIN after_deploy a ON b.route = a.route
-ORDER BY delta_ms DESC;
-</code></pre>
-<p><code>before_deploy</code> computes the p95 for each route in the two hours leading up to the deploy.
-<code>after_deploy</code> computes the same for the two hours following it. The final <code>SELECT</code> joins on route and
-computes the delta in absolute milliseconds and percentage. The route at the top of the result is the
-one that regressed the most.</p>
-<p>The <code>$deploy_ts</code> is a bound parameter you supply at runtime with the exact deploy timestamp. The
-syntax is DuckDB’s form; a warehouse using T-SQL uses <code>@deploy_ts</code>, and Python’s standard library
-<code>sqlite3</code> module uses <code>?</code>. The pattern is the same across dialects.</p>
-<p>The <code>QUANTILE_CONT</code> call is the same function the prior lesson taught for p95 latency. You are not
-learning a new function here; you are seeing how CTEs let you compose a function you already know into
-a before/after comparison without repeating the window logic or nesting it inside itself.</p>
+<p>Prefect expresses the same edge by passing one task’s return into the next call. The graph is identical; the syntax differs. If you move this pipeline from an offline Prefect runner to a Fabric Airflow cluster, the four tasks stay the same and the dependency topology stays the same. What changes is the declaration style, not the contract. [DAG concept: https://learn.microsoft.com/azure/aks/airflow-overview]</p>
+<p>The important fact: the scheduler does not care how you declared the edge. It cares that the edge exists and is acyclic. Once it reads the graph, it runs tasks in topological order: no task starts before its upstream reports success.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>A CTE names an intermediate result at the top of a query; later CTEs and the final <code>SELECT</code> see it
-as a table. A chain of named CTEs makes a multi-step diagnosis readable top to bottom rather than
-inside out.</li>
-<li>CTEs are a clarity feature, not a performance feature. The query planner decides whether to
-materialize them; what they guarantee is that the query is legible.</li>
-<li>The freshness breach chain (<code>last_successful_load</code> then <code>freshness_status</code>) isolates only successful
-loads before computing the age, so a source with a recent failure is still judged by its last good
-load.</li>
-<li>The deploy-delta pattern (<code>before_deploy</code> / <code>after_deploy</code>) uses two CTEs to isolate two time
-windows and join them on route; <code>delta_ms</code> and <code>delta_pct</code> show exactly which routes regressed and
-by how much.</li>
+<li>A DAG encodes a pipeline as tasks with typed dependencies; the scheduler runs tasks in topological order, and nothing starts until its upstream succeeds.</li>
+<li>A task’s return value is the dependency edge: passing it into the next task call is how you declare that the second task depends on the first.</li>
+<li>“Acyclic” is the enforced constraint: any cycle means no topological order exists, and the scheduler rejects the graph before the first run.</li>
+<li>Airflow’s <code>task_a &gt;&gt; task_b</code> and Prefect’s result-passing express the same edge; the graph topology and the scheduler contract are identical.</li>
 </ul>
-<p>The breach fires, you run the chain, you see the gap. Every minute you spend on nested subquery
-archaeology is a minute the index is serving stale results to your retrieval system.</p>
-<div class="claude-handoff" data-exercise="exercises/module1/ctes-and-the-diagnostic-chain/">
-<p><strong>Build It in Claude Code</strong>: Add <code>corpus_loads</code> and <code>freshness_slos</code> to <code>db/schema.sql</code>; extend
-<code>db/seed.py</code> to insert one source whose last successful load exceeds its SLO (stale) and one whose
-last successful load is recent (fresh); write <code>queries/07_freshness_breach.sql</code> and
-<code>queries/06_latency_delta_around_deploy.sql</code> using the verbatim CTE forms from the lesson; and extend
-<code>smoke.py</code> to assert that the freshness breach query returns exactly the stale source and that the
-deploy-delta query returns rows for every route present on both sides of the seeded deploy timestamp.</p>
+<div class="claude-handoff" data-exercise="exercises/module3/the-dag-tasks-and-dependencies/">
+<p><strong>Build It in Claude Code</strong>: Seed <code>module3-orchestration/</code> and write <code>pipeline_flow.py</code>, a Prefect flow that declares four <code>@task</code> functions (extract, ingest, transform, freshness_gate) and wires them into a <code>@flow</code> by passing each task’s return value as the next task’s input argument; the ingest task calls the M2 <code>run_ingest</code> loader from <code>module2-ingestion/ingest.py</code>. Run the flow offline with <code>python pipeline_flow.py</code> and prove the tasks execute in topological order (extract before ingest, ingest before transform, transform before freshness_gate) by asserting against the returned ingest summary.</p>
 </div>
 
 
@@ -313,11 +227,11 @@ deploy-delta query returns rows for every route present on both sides of the see
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module1/window-functions.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module3/00-overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module1/the-lineage-walk.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module3/retries-and-idempotency.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -327,11 +241,11 @@ deploy-delta query returns rows for every route present on both sides of the see
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module1/window-functions.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module3/00-overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module1/the-lineage-walk.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module3/retries-and-idempotency.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

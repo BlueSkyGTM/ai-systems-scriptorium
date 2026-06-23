@@ -21,3 +21,13 @@
 - [The Medallion Pattern](module2/the-medallion-pattern.md)
 - [dbt as the Transform Layer](module2/dbt-as-the-transform-layer.md)
 - [The Batch Freshness SLO](module2/the-batch-freshness-slo.md)
+
+---
+
+# Module 3: Orchestration
+
+- [Overview](module3/00-overview.md)
+- [The DAG: Tasks and Dependencies](module3/the-dag-tasks-and-dependencies.md)
+- [Retries and Idempotency](module3/retries-and-idempotency.md)
+- [Scheduling and Backfill](module3/scheduling-and-backfill.md)
+- [Alerting on Breach](module3/alerting-on-breach.md)

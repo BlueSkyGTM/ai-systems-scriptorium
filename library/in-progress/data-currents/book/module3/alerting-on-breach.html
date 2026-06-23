@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>CTEs and the Diagnostic Chain - Data Currents — SQL and the Data Platform for AI Systems</title>
+        <title>Alerting on Breach - Data Currents — SQL and the Data Platform for AI Systems</title>
 
 
         <!-- Custom HTML head -->
@@ -177,135 +177,54 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="ctes-and-the-diagnostic-chain"><a class="header" href="#ctes-and-the-diagnostic-chain">CTEs and the Diagnostic Chain</a></h1>
-<p>The freshness alert fires at 2 a.m. You know the breach happened; you need to know when the last
-successful corpus load ran and how wide the gap is. That question has three steps: find the last good
-load per source, compute the current age, compare it to the SLO, and return only the breached sources.
-You can write those steps as a pyramid of nested subqueries, or you can name each step and read them
-top to bottom. The second form is the one you can actually debug at 2 a.m.</p>
-<p>A common table expression (CTE) names an intermediate result at the top of a query so you can
-reference it below like a table. You build the diagnostic chain once, and the shape is obvious to
-anyone who reads it six months later, including you.</p>
-<h2 id="two-new-tables"><a class="header" href="#two-new-tables">Two New Tables</a></h2>
-<p>This lesson extends <code>module1-sql/</code> with two tables your ingestion pipeline owns.</p>
-<pre><code class="language-sql">CREATE TABLE corpus_loads (
-    id        INTEGER PRIMARY KEY,
-    source_id TEXT NOT NULL,
-    status    TEXT NOT NULL,   -- 'success' | 'failure'
-    loaded_at TIMESTAMP NOT NULL
-);
-CREATE TABLE freshness_slos (
-    source_id     TEXT PRIMARY KEY,
-    max_age_hours INTEGER NOT NULL
-);
+                        <h1 id="alerting-on-breach"><a class="header" href="#alerting-on-breach">Alerting on Breach</a></h1>
+<p>A pipeline that fails quietly is worse than one that fails loudly. When a source goes stale and the run ends with a zero exit and no noise, the problem hides until a user notices. The orchestrator’s job is to make a breach impossible to ignore.</p>
+<p>You close the module here by wiring M2’s freshness check as the final task in the DAG, so a stale corpus fails the run, and a failure hook fires the alert before anything downstream continues.</p>
+<h2 id="why-the-gate-lives-last"><a class="header" href="#why-the-gate-lives-last">Why the Gate Lives Last</a></h2>
+<p>The DAG runs in order: <code>extract -&gt; ingest -&gt; transform -&gt; freshness_gate</code>. Placing the gate at the end is deliberate. You want the data to land first; then you want the system to verify the contract was met. A gate that runs before the load is checking the previous run’s data. A gate at the end checks this run’s data.</p>
+<p>When <code>freshness_gate</code> raises, Prefect marks the flow as <code>Failed</code>. Nothing downstream runs. The state machine does the work you would otherwise do by hand: scan the log, find the failure, escalate.</p>
+<h2 id="the-gate-task"><a class="header" href="#the-gate-task">The Gate Task</a></h2>
+<p>The gate reuses <code>check_freshness</code> from <code>freshness_check.py</code>, the function M2 built. It does not rewrite the logic; it calls it, reads the result, and raises when anything is stale.</p>
+<pre><code class="language-python">@task(name="freshness_gate", retries=0)
+def freshness_gate(db_path, now_ts=None):
+    """Raises -&gt; Prefect Failed state -&gt; on_failure hook fires, if ANY source is stale."""
+    results = check_freshness(db_path=db_path, now_ts=now_ts)   # the M2 check, reused
+    stale = [r for r in results if r["is_stale"]]
+    if stale:
+        raise RuntimeError(f"[freshness_gate] STALE sources detected: {[r['source_id'] for r in stale]}.")
+    return results
 </code></pre>
-<p><code>corpus_loads</code> records every load attempt: one row per run, with the source, the outcome, and the
-timestamp. <code>freshness_slos</code> records your team’s tolerance per source: how many hours old is too old.
-These two tables are the inputs to the freshness breach diagnosis.</p>
-<h2 id="the-cte-syntax"><a class="header" href="#the-cte-syntax">The CTE Syntax</a></h2>
-<p>Before looking at the full query, see the skeleton.</p>
-<pre><code class="language-sql">WITH cte_name AS (
-    SELECT ...
-),
-second_cte AS (
-    SELECT ... FROM cte_name ...
-)
-SELECT ... FROM second_cte ...;
+<p><code>retries=0</code> is intentional. A retry cannot fix a stale source; only a fresh ingest can. Retrying here would waste time and mask the breach. The gate’s only job is to detect and surface.</p>
+<h2 id="the-on-failure-hook"><a class="header" href="#the-on-failure-hook">The On-Failure Hook</a></h2>
+<p>Prefect’s <code>@flow</code> decorator accepts an <code>on_failure</code> list: callables that run when the flow reaches a <code>Failed</code> state. You wire the alert there.</p>
+<pre><code class="language-python">ALERTS: list[dict] = []
+
+def on_flow_failure(flow, flow_run, state):
+    """Prefect on_failure hook (flow, flow_run, state): record an alert when the run fails."""
+    ALERTS.append({"flow": flow.name, "run": flow_run.name, "state": state.name})
+    print(f"[ALERT HOOK] flow '{flow.name}' run '{flow_run.name}' failed: {state.name}", file=sys.stderr)
+
+@flow(name="corpus-pipeline", on_failure=[on_flow_failure])
+def pipeline_flow(...):
+    ...
+    freshness_results = freshness_gate(db_path=db_path)   # the gate as the final DAG task
+    ...
 </code></pre>
-<p>Each CTE is a named block inside the <code>WITH</code> clause, separated by commas. A CTE can reference any CTE
-defined above it in the same <code>WITH</code> block. The final <code>SELECT</code> sees all of them as if they were tables.
-[Common table expressions in T-SQL: https://learn.microsoft.com/sql/t-sql/queries/with-common-table-expression-transact-sql]</p>
-<p>One thing CTEs do not do: change how the query runs. The planner decides whether to materialize a CTE
-or inline it. What CTEs guarantee is that the human reading the query can understand it. Clarity is
-the feature.</p>
-<h2 id="the-freshness-breach-diagnosis"><a class="header" href="#the-freshness-breach-diagnosis">The Freshness Breach Diagnosis</a></h2>
-<p>Q7 is the query you run after the alert fires.</p>
-<pre><code class="language-sql">WITH last_successful_load AS (
-    SELECT source_id, MAX(loaded_at) AS last_load_ts
-    FROM corpus_loads
-    WHERE status = 'success'
-    GROUP BY source_id
-),
-freshness_status AS (
-    SELECT
-        s.source_id, s.last_load_ts,
-        NOW() - s.last_load_ts AS index_age,
-        f.max_age_hours,
-        (NOW() - s.last_load_ts) &gt; (f.max_age_hours * INTERVAL '1 hour') AS is_stale
-    FROM last_successful_load s
-    JOIN freshness_slos f ON s.source_id = f.source_id
-)
-SELECT source_id, last_load_ts, index_age, max_age_hours, is_stale
-FROM freshness_status
-WHERE is_stale
-ORDER BY index_age DESC;
-</code></pre>
-<p>Read the chain step by step. <code>last_successful_load</code> filters to successful rows only and takes the most
-recent one per source. <code>freshness_status</code> joins that result against <code>freshness_slos</code> to compute the
-current age and evaluate the boolean breach flag. The final <code>SELECT</code> filters to the breached sources
-and sorts by age, putting the most overdue source first.</p>
-<p>If you wrote this as nested subqueries, the breach comparison would be buried three levels deep. Named
-as CTEs, each step is legible on its own. That is the diagnostic chain: a series of named steps that
-build on each other, reading top to bottom.</p>
-<p>Note that only successful loads count. A source whose most recent load failed is still judged by its
-last <em>successful</em> load, not by the failure timestamp. That is the semantically correct behavior: a
-failed reload did not refresh the index.</p>
-<h2 id="the-deploy-delta-pattern"><a class="header" href="#the-deploy-delta-pattern">The Deploy-Delta Pattern</a></h2>
-<p>Q6 uses the same two-CTE structure, this time to isolate before and after windows around a deploy
-timestamp.</p>
-<pre><code class="language-sql">WITH before_deploy AS (
-    SELECT route, QUANTILE_CONT(latency_ms, 0.95) AS p95_ms
-    FROM spans
-    WHERE ts BETWEEN $deploy_ts::TIMESTAMP - INTERVAL '2 hours' AND $deploy_ts::TIMESTAMP
-    GROUP BY route
-),
-after_deploy AS (
-    SELECT route, QUANTILE_CONT(latency_ms, 0.95) AS p95_ms
-    FROM spans
-    WHERE ts BETWEEN $deploy_ts::TIMESTAMP AND $deploy_ts::TIMESTAMP + INTERVAL '2 hours'
-    GROUP BY route
-)
-SELECT
-    b.route, b.p95_ms AS p95_before, a.p95_ms AS p95_after,
-    a.p95_ms - b.p95_ms AS delta_ms,
-    ROUND(100.0 * (a.p95_ms - b.p95_ms) / b.p95_ms, 1) AS delta_pct
-FROM before_deploy b
-JOIN after_deploy a ON b.route = a.route
-ORDER BY delta_ms DESC;
-</code></pre>
-<p><code>before_deploy</code> computes the p95 for each route in the two hours leading up to the deploy.
-<code>after_deploy</code> computes the same for the two hours following it. The final <code>SELECT</code> joins on route and
-computes the delta in absolute milliseconds and percentage. The route at the top of the result is the
-one that regressed the most.</p>
-<p>The <code>$deploy_ts</code> is a bound parameter you supply at runtime with the exact deploy timestamp. The
-syntax is DuckDB’s form; a warehouse using T-SQL uses <code>@deploy_ts</code>, and Python’s standard library
-<code>sqlite3</code> module uses <code>?</code>. The pattern is the same across dialects.</p>
-<p>The <code>QUANTILE_CONT</code> call is the same function the prior lesson taught for p95 latency. You are not
-learning a new function here; you are seeing how CTEs let you compose a function you already know into
-a before/after comparison without repeating the window logic or nesting it inside itself.</p>
+<p><code>ALERTS</code> is a module-level list, which makes it inspectable in tests: after a run, check that it is non-empty and contains the expected flow name. The <code>print</code> to <code>stderr</code> is the local stand-in for a real notification channel. In production, the same hook calls an external service.</p>
+<h2 id="the-production-equivalent"><a class="header" href="#the-production-equivalent">The Production Equivalent</a></h2>
+<p>In Microsoft Fabric Data Factory, you wire failure notifications via pipeline failure alerts and the Data Activator integration; a failure can trigger an Outlook or Teams activity that reaches whoever is on call. [MS-Learn pipeline alerts: https://learn.microsoft.com/fabric/data-factory/create-alerts-for-pipeline-runs] Airflow uses an <code>on_failure_callback</code> on the DAG or the operator, with the same contract: the callback fires on failure, you route to your notification channel inside it.</p>
+<p>The hook here is the local, offline stand-in for those production channels. It does not ship a page or a Teams message; that is the wiring you add when you move the pipeline to a cluster. What it does ship is the pattern: the orchestrator, not a human, is responsible for routing a breach to the channel that gets it fixed.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>A CTE names an intermediate result at the top of a query; later CTEs and the final <code>SELECT</code> see it
-as a table. A chain of named CTEs makes a multi-step diagnosis readable top to bottom rather than
-inside out.</li>
-<li>CTEs are a clarity feature, not a performance feature. The query planner decides whether to
-materialize them; what they guarantee is that the query is legible.</li>
-<li>The freshness breach chain (<code>last_successful_load</code> then <code>freshness_status</code>) isolates only successful
-loads before computing the age, so a source with a recent failure is still judged by its last good
-load.</li>
-<li>The deploy-delta pattern (<code>before_deploy</code> / <code>after_deploy</code>) uses two CTEs to isolate two time
-windows and join them on route; <code>delta_ms</code> and <code>delta_pct</code> show exactly which routes regressed and
-by how much.</li>
+<li>The freshness gate runs last in the DAG, after the load completes, so it measures this run’s data and fails the run on the same contract M2 defined.</li>
+<li>A gate task with <code>retries=0</code> is correct: a retry cannot fix a stale source, and retrying hides the breach instead of surfacing it.</li>
+<li>Prefect’s <code>on_failure</code> hook fires when the flow enters the <code>Failed</code> state; Airflow’s <code>on_failure_callback</code> and Fabric Data Activator cover the same role in production.</li>
+<li><code>ALERTS</code> is a module-level list that makes failure assertions deterministic in tests: a breach must produce a non-empty list with the flow name, not just a printed message.</li>
 </ul>
-<p>The breach fires, you run the chain, you see the gap. Every minute you spend on nested subquery
-archaeology is a minute the index is serving stale results to your retrieval system.</p>
-<div class="claude-handoff" data-exercise="exercises/module1/ctes-and-the-diagnostic-chain/">
-<p><strong>Build It in Claude Code</strong>: Add <code>corpus_loads</code> and <code>freshness_slos</code> to <code>db/schema.sql</code>; extend
-<code>db/seed.py</code> to insert one source whose last successful load exceeds its SLO (stale) and one whose
-last successful load is recent (fresh); write <code>queries/07_freshness_breach.sql</code> and
-<code>queries/06_latency_delta_around_deploy.sql</code> using the verbatim CTE forms from the lesson; and extend
-<code>smoke.py</code> to assert that the freshness breach query returns exactly the stale source and that the
-deploy-delta query returns rows for every route present on both sides of the seeded deploy timestamp.</p>
+<p>The on-call engineer who reads a <code>[ALERT HOOK]</code> line at 2 a.m. already knows the source, the run, and the state; the breach is named before they open a dashboard. That is what the gate is for.</p>
+<p>Module 4 adds streaming and change-data-capture for the sources that cannot wait for the nightly run.</p>
+<div class="claude-handoff" data-exercise="exercises/module3/alerting-on-breach/">
+<p><strong>Build It in Claude Code</strong>: Make <code>freshness_gate</code> the final task in <code>pipeline_flow.py</code>, calling M2’s <code>check_freshness</code> and raising a <code>RuntimeError</code> naming the stale source IDs when any source is stale; add the module-level <code>ALERTS</code> list and <code>on_flow_failure</code> hook wired via <code>@flow(on_failure=[on_flow_failure])</code>; then finalize <code>smoke.py</code> to assert that a fresh corpus run completes clean with <code>ALERTS</code> empty, and that injecting a future <code>now_ts</code> (making at least one source stale) fails the run and leaves <code>ALERTS</code> non-empty.</p>
 </div>
 
 
@@ -313,13 +232,10 @@ deploy-delta query returns rows for every route present on both sides of the see
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module1/window-functions.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module3/scheduling-and-backfill.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module1/the-lineage-walk.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -327,13 +243,10 @@ deploy-delta query returns rows for every route present on both sides of the see
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module1/window-functions.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module3/scheduling-and-backfill.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module1/the-lineage-walk.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                    </a>
             </nav>
 
         </div>
