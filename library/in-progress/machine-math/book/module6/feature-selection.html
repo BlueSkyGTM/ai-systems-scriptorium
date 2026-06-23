@@ -1,0 +1,448 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Feature Selection - Machine Math — Classic ML and the Math It Requires</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/copy-to-claude-45921320.css">
+        <link rel="stylesheet" href="../theme/syntax-polish-53c427bd.css">
+        <link rel="stylesheet" href="../theme/readability-9f9ae6ec.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "rust";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "../searchindex-07cdb30b.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-24986b20.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Machine Math — Classic ML and the Math It Requires</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="feature-selection"><a class="header" href="#feature-selection">Feature Selection</a></h1>
+<p>Adding more features does not make a model smarter; it makes the feature space larger and
+the data sparser. M1 named this the curse of dimensionality. Here you learn to fight it.</p>
+<h2 id="why-more-features-can-hurt"><a class="header" href="#why-more-features-can-hurt">Why More Features Can Hurt</a></h2>
+<p>When you add a feature column, every sample gains one more coordinate. The volume of the
+space grows exponentially with dimension. Real data does not. Points spread thin, distances
+between neighbors converge, and the patterns you are trying to find get harder to see.</p>
+<p>Noise features compound the problem. A column with no relationship to the target still
+occupies a dimension the model must search. The model can find spurious correlations in
+training data that do not hold on new data. Overfitting becomes the default outcome.</p>
+<p>The goal is not to feed the model all available information. It is to feed the model the
+right information.</p>
+<h2 id="measured-what-selection-changes"><a class="header" href="#measured-what-selection-changes">Measured: What Selection Changes</a></h2>
+<p>On a binary classification dataset with 8 features, where column 0 carries the signal and
+columns 1 through 7 are pure noise, the measured accuracy difference is small but
+directional.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Features Used</th><th>Accuracy</th></tr>
+</thead>
+<tbody>
+<tr><td>All 8 (signal + 7 noise)</td><td>0.975</td></tr>
+<tr><td>Top-1 by <code>select_by_importance</code> (col 0)</td><td>0.983</td></tr>
+</tbody>
+</table>
+</div>
+<p>The noise columns did not help the decision tree; they hurt it slightly. Selecting the
+signal column before training removes the search space the model would waste on noise.</p>
+<p>For a simpler case: injecting a constant column (variance zero) into a 5-column dataset
+and running <code>select_by_variance</code> at threshold 0.0 keeps indices [0, 1, 3, 4] and drops
+index 2. A column that never varies tells the model nothing.</p>
+<h2 id="two-selection-functions"><a class="header" href="#two-selection-functions">Two Selection Functions</a></h2>
+<h3 id="filter-by-variance"><a class="header" href="#filter-by-variance">Filter by Variance</a></h3>
+<p>A near-constant column carries almost no information. Drop every column whose variance
+falls at or below a threshold before the model ever sees the data.</p>
+<pre><code class="language-python">def select_by_variance(
+    X: np.ndarray,
+    threshold: float,
+) -&gt; Tuple[np.ndarray, np.ndarray]:
+    """Drop columns whose variance is &lt;= threshold.
+
+    A column with zero (or near-zero) variance carries no information;
+    dropping it reduces noise for distance- and coefficient-based learners.
+
+    Parameters
+    ----------
+    X : np.ndarray, shape (n, p)
+    threshold : float
+        Columns with var &lt;= threshold are removed.
+
+    Returns
+    -------
+    X_selected : np.ndarray, shape (n, k)  where k &lt;= p
+    kept_indices : np.ndarray of int, shape (k,)
+    """
+    X = np.asarray(X, dtype=float)
+    variances = X.var(axis=0)
+    kept = np.where(variances &gt; threshold)[0]
+    return X[:, kept], kept
+</code></pre>
+<p>This is a filter method: it looks at the feature itself, not at the target. Azure Machine
+Learning’s Filter Based Feature Selection component formalizes the same idea, describing
+filter-based selection as using “statistical tests to inputs” to “filter out redundant
+columns” before building a model. See
+<a href="https://learn.microsoft.com/en-us/azure/machine-learning/component-reference/filter-based-feature-selection?view=azureml-api-2">Filter Based Feature Selection component reference</a>.</p>
+<p>Variance filtering is fast and cheap, but a column can have high variance and still be
+pure noise. It is a preprocessing step, not a complete strategy.</p>
+<h3 id="filter-by-importance"><a class="header" href="#filter-by-importance">Filter by Importance</a></h3>
+<p>Variance tells you nothing about how a feature relates to the target. Permutation
+importance does. Fit a random forest on an 80% split, then, for each feature, shuffle
+its values on the held-out 20% and measure the drop in accuracy. A large drop means the
+model relied on that feature. A drop near zero means the feature is noise.</p>
+<pre><code class="language-python">def select_by_importance(
+    X: np.ndarray,
+    y: np.ndarray,
+    k: int,
+    random_state: Optional[int] = None,
+) -&gt; Tuple[np.ndarray, np.ndarray]:
+    """Keep the top-k features by permutation importance.
+
+    Importance proxy: permutation importance
+    ----------------------------------------
+    A random forest is fit on an 80% training split. Each feature's importance
+    is measured as the accuracy drop on the held-out 20% when that feature's
+    values are randomly shuffled. Shuffling breaks the association between that
+    feature and the label; a large accuracy drop means the model relied on that
+    feature heavily. Features with near-zero (or negative) drop are noise.
+
+    This proxy is straightforward and signal-based: noise features that happen
+    to appear in many trees (due to random subsampling) don't get inflated
+    counts -- they simply don't hurt accuracy when shuffled.
+
+    The RandomForestClassifier from ml.ensemble is used.
+
+    Parameters
+    ----------
+    X : np.ndarray, shape (n, p)
+    y : np.ndarray, shape (n,)
+    k : int
+        Number of features to keep.
+    random_state : int or None
+
+    Returns
+    -------
+    X_selected : np.ndarray, shape (n, k)
+    kept_indices : np.ndarray of int, shape (k,)
+        Original column indices, sorted ascending.
+    """
+    from ml.ensemble import RandomForestClassifier
+
+    X = np.asarray(X, dtype=float)
+    y = np.asarray(y)
+    n_samples, n_features = X.shape
+
+    # Split 80/20 to get an honest evaluation set for permutation
+    rng = np.random.default_rng(random_state)
+    idx = rng.permutation(n_samples)
+    n_train = int(n_samples * 0.8)
+    train_idx, test_idx = idx[:n_train], idx[n_train:]
+
+    forest = RandomForestClassifier(
+        n_estimators=50,
+        max_depth=None,
+        max_features="sqrt",
+        random_state=random_state,
+    )
+    forest.fit(X[train_idx], y[train_idx])
+
+    X_test = X[test_idx]
+    y_test = y[test_idx]
+    baseline = float(np.mean(forest.predict(X_test) == y_test))
+
+    # Permutation importance: accuracy drop when feature f is shuffled
+    rng_perm = np.random.default_rng((random_state or 0) + 1)
+    importance = np.zeros(n_features, dtype=float)
+    for f in range(n_features):
+        X_perm = X_test.copy()
+        X_perm[:, f] = rng_perm.permutation(X_test[:, f])
+        perm_acc = float(np.mean(forest.predict(X_perm) == y_test))
+        importance[f] = baseline - perm_acc  # positive = feature mattered
+
+    # Rank descending by importance; keep top-k
+    ranked = np.argsort(importance)[::-1]
+    kept = np.sort(ranked[:k])
+    return X[:, kept], kept
+</code></pre>
+<p>This function uses the <code>RandomForestClassifier</code> from <code>ml.ensemble</code>, the M4 artifact. The
+random forest fits, then each feature is shuffled in isolation on the test set. The
+accuracy drop is the importance score.</p>
+<p>The MS Learn Permutation Feature Importance component works exactly this way: “feature
+values are randomly shuffled, one column at a time. The performance of the model is
+measured before and after.” It adds that “important features are usually more sensitive to
+the shuffling process, so they’ll result in higher importance scores.” See
+<a href="https://learn.microsoft.com/en-us/azure/machine-learning/component-reference/permutation-feature-importance?view=azureml-api-2">Permutation Feature Importance component reference</a>.</p>
+<p>The key distinction from filter methods: permutation importance measures how much a
+feature influences a trained model’s predictions, not just how it correlates with the
+target. A filter like Pearson correlation calculates scores before a model exists.</p>
+<h2 id="the-method-landscape"><a class="header" href="#the-method-landscape">The Method Landscape</a></h2>
+<p>Three families of selection methods cover most real problems.</p>
+<p><strong>Filter methods</strong> score each feature independently of the model. Variance threshold and
+correlation filters are the cheapest options: they look only at the feature itself or its
+relationship to the target, without training. Fast but blind to feature interactions.</p>
+<p><strong>Embedded methods</strong> fold selection into the training process. Tree importance (the
+split-frequency score produced naturally by the M4 random forest) ranks features based on
+how much impurity they reduce across all trees. L1 regularization drives linear model
+weights exactly to zero, effectively removing features during training. These methods
+capture some interaction effects but are tied to a specific model family.</p>
+<p><strong>Wrapper methods</strong> like Recursive Feature Elimination (RFE) retrain the model many times,
+removing the least important feature at each round. More thorough, proportionally slower.
+Permutation importance is a model-agnostic variant: it perturbs one feature at a time on
+a trained model, which is cheaper than full retraining but still considers the model’s
+actual behavior.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Method</th><th>Type</th><th>Nonlinear</th><th>Feature Interactions</th></tr>
+</thead>
+<tbody>
+<tr><td>Variance threshold</td><td>Filter</td><td>No</td><td>No</td></tr>
+<tr><td>Correlation</td><td>Filter</td><td>No</td><td>No</td></tr>
+<tr><td>L1 / Lasso</td><td>Embedded</td><td>No</td><td>No</td></tr>
+<tr><td>Tree importance</td><td>Embedded</td><td>Yes</td><td>Yes</td></tr>
+<tr><td>Permutation importance</td><td>Model-agnostic</td><td>Yes</td><td>Partial</td></tr>
+<tr><td>RFE</td><td>Wrapper</td><td>Depends on model</td><td>Yes</td></tr>
+</tbody>
+</table>
+</div>
+<p>Choose filter methods as a first pass to cut obvious noise. Use embedded or permutation
+methods to rank the survivors. The M1 curse of dimensionality tells you why this matters:
+every column you keep is a dimension the model must search.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>The curse of dimensionality (M1) means that adding features grows the search space
+exponentially; noise features crowd out signal and push models toward overfitting.</li>
+<li><code>select_by_variance</code> removes near-constant columns before the model trains; a column
+with variance at or below the threshold carries no useful information.</li>
+<li><code>select_by_importance</code> fits the M4 random forest, then shuffles each feature in
+isolation on a held-out set; the accuracy drop is the importance score, and the top-k
+features are returned.</li>
+<li>Permutation importance measures a feature’s influence on a trained model’s predictions;
+filter methods like variance threshold score features before any model exists.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module6/feature-selection/">
+<p><strong>Build It in Claude Code</strong>: Read <code>exercises/CLAUDE.md</code> first, then read the current
+state of <code>exercises/ml/features.py</code> to see what is already there. Your task is to add
+<code>select_by_variance</code> and <code>select_by_importance</code> to <code>exercises/ml/features.py</code> exactly as
+shown above. Note that <code>select_by_importance</code> imports <code>ml.ensemble.RandomForestClassifier</code>
+(the M4 throughline artifact): read <code>exercises/ml/ensemble.py</code> to confirm the class
+exists and its <code>fit</code> and <code>predict</code> signatures before writing anything. Then place the
+locked acceptance gate verbatim at
+<code>exercises/module6/feature-selection/test_selection.py</code> (the full test file is in the
+exercise README). Done when
+<code>python -m pytest exercises/module6/feature-selection</code> is green.</p>
+</div>
+
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../module6/imbalanced-data.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../module6/imbalanced-data.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/copy-to-claude-04012d3b.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

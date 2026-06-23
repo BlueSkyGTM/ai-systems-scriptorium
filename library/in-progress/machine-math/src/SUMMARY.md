@@ -36,3 +36,11 @@
 - [The Confusion Matrix and Thresholds](module5/confusion-matrix-and-thresholds.md)
 - [AUC-ROC: The Math of Ranking](module5/auc-roc-the-math-of-ranking.md)
 - [Regression Error and Slicing](module5/regression-error-and-slicing.md)
+
+## Module 6: Feature Reality
+
+- [Overview](module6/00-overview.md)
+- [Scaling and Encoding](module6/scaling-and-encoding.md)
+- [Naive Bayes](module6/naive-bayes.md)
+- [Imbalanced Data](module6/imbalanced-data.md)
+- [Feature Selection](module6/feature-selection.md)

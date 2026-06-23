@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-04fd65de.js";
+            window.path_to_searchindex_js = "searchindex-07cdb30b.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-e8a576fa.js"></script>
+        <script src="toc-24986b20.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -2712,7 +2712,7 @@ def roc_curve(y_true, y_score):
     n_pos = int(np.sum(y_true == 1))
     n_neg = int(np.sum(y_true == 0))
 
-    # Sort all samples by score descending (ties broken arbitrarily — they
+    # Sort all samples by score descending (ties broken arbitrarily; they
     # will be grouped together below).
     desc_idx = np.argsort(y_score)[::-1]
     sorted_scores = y_score[desc_idx]
@@ -3030,6 +3030,755 @@ above. Do not copy any function that already exists. Then place the locked accep
 verbatim at <code>exercises/module5/regression-error-and-slicing/test_regression_and_slicing.py</code>
 (the full test file is in the exercise README). Done when
 <code>python -m pytest exercises/module5/regression-error-and-slicing</code> is green.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-6-feature-reality"><a class="header" href="#module-6-feature-reality">Module 6: Feature Reality</a></h1>
+<p>Every module so far assumed clean numeric features. You had arrays of floats, distances worked, gradients flowed, splits made sense. Real data does not arrive that way. A column arrives as a string: “red,” “blue,” “med,” “high.” Another arrives with values in the hundreds of thousands next to values near zero. The math you built in Modules 1 through 5 breaks the moment you feed it raw columns without preparing them first. Module 6 is the preparation work.</p>
+<h2 id="the-problem-with-raw-data"><a class="header" href="#the-problem-with-raw-data">The Problem With Raw Data</a></h2>
+<p>A KNN classifier from Module 1 measures Euclidean distance. If one feature is “annual income” (range: 20,000 to 200,000) and another is “years of experience” (range: 0 to 40), income dominates every distance calculation. Experience effectively disappears. The model has not learned anything useful about experience; it has learned to measure income with a little noise.</p>
+<p>Categorical columns are worse. A decision tree from Module 3 can handle a column that reads 0, 1, or 2. It cannot handle a column that reads “downtown,” “rural,” or “suburbs.” Models read numbers. Encoding turns categories into numbers; scaling puts those numbers on a common footing.</p>
+<h2 id="four-lessons"><a class="header" href="#four-lessons">Four Lessons</a></h2>
+<p><strong>Scaling and Encoding</strong> addresses the core problem: models read numbers, so you must turn raw categories into numbers and put all numeric columns on a common scale. One-hot encoding handles nominal categories (color, neighborhood, country) where no ordering exists. Ordinal encoding handles ordered categories (small/medium/large, low/med/high) where the rank matters. Scaling (z-score, min-max) was built in Module 1 and is reused directly here. The lesson shows both encoding functions from <code>ml/features.py</code> and explains which model families need scaling and which do not.</p>
+<p><strong>Naive Bayes</strong> introduces the first classifier that lives or dies on feature quality. It multiplies per-feature likelihoods under a strong independence assumption: each feature is treated as if it were completely unrelated to every other. That assumption is always wrong and often useful. The lesson derives the log-posterior prediction, fits a Gaussian per-class per-feature distribution, and shows why correlated or uninformative features hurt naive Bayes more than they hurt any tree-based model.</p>
+<p><strong>Imbalanced Data</strong> returns to the accuracy-lies problem from Module 5 and attacks it at the data level. Class weighting, random oversampling, and SMOTE each address the root cause differently. The lesson shows what each strategy does to the training distribution and when each one is appropriate.</p>
+<p><strong>Feature Selection</strong> closes the module with the question Module 1 named but did not answer: when does more information hurt? The curse of dimensionality means that adding irrelevant features degrades distance-based and coefficient-based models. Variance thresholding, mutual information, and permutation importance each filter the feature set for different reasons. The lesson shows <code>select_by_variance</code> and <code>select_by_importance</code> from <code>ml/features.py</code> and measures the accuracy difference between all features and selected features.</p>
+<h2 id="the-shared-artifact-1"><a class="header" href="#the-shared-artifact-1">The Shared Artifact</a></h2>
+<p>All four lessons extend a single file: <code>exercises/ml/features.py</code>. This is the feature-engineering library. It starts with <code>one_hot_encode</code> and <code>ordinal_encode</code> in lesson one, gains <code>random_oversample</code>, <code>random_undersample</code>, and <code>class_weights</code> in lesson three, and closes with <code>select_by_variance</code> and <code>select_by_importance</code> in lesson four. The Module 7 capstone imports <code>ml.features</code> directly alongside <code>ml.metrics</code> and <code>ml.naive_bayes</code>; what you build here goes straight into the final exam.</p>
+<p>Scaling lives in <code>ml.distances</code> (built in Module 1). Nothing in this module reimplements it.</p>
+<h2 id="what-is-deliberately-out-of-scope-5"><a class="header" href="#what-is-deliberately-out-of-scope-5">What Is Deliberately Out of Scope</a></h2>
+<p>Deep-learning embeddings (Word2Vec, GloVe, BERT) are a different class of encoding; they require neural architecture and belong to a later book. The AutoML featurization pipeline in Azure Machine Learning automates many of the steps in this module, but understanding what it does and why requires building them yourself first.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="scaling-and-encoding"><a class="header" href="#scaling-and-encoding">Scaling and Encoding</a></h1>
+<p>A model is a function that maps numbers to numbers. Every model in this book takes a numeric array as input. Your raw data has a column labeled “neighborhood” with values like “downtown” and “suburbs,” and a column labeled “income” with values like 85,000. Neither is ready. Encoding turns the category column into numbers. Scaling puts the income column on the same footing as every other numeric column. Do both before the model sees the data.</p>
+<h2 id="why-models-cannot-read-raw-categories"><a class="header" href="#why-models-cannot-read-raw-categories">Why Models Cannot Read Raw Categories</a></h2>
+<p>The KNN classifier you built in Module 1 computes Euclidean distance. Distance requires subtraction. You cannot subtract “downtown” from “suburbs.” The distance-based models, the gradient-based models, and the linear models all make the same demand: give me numbers. Categories must be encoded before training, and the encoding must match the structure of the category.</p>
+<p>Two cases exist. Either the categories have no inherent order (nominal), or they do (ordinal). The right encoding depends on which case you have.</p>
+<h2 id="one-hot-encoding-for-nominal-categories"><a class="header" href="#one-hot-encoding-for-nominal-categories">One-Hot Encoding for Nominal Categories</a></h2>
+<p>Color is nominal. There is no ranking between red, blue, and green. One-hot encoding creates one binary column per category. Exactly one column is 1 for each row; all others are 0.</p>
+<p>The locked <code>one_hot_encode</code> function in <code>ml/features.py</code> implements this:</p>
+<pre><code class="language-python">def one_hot_encode(
+    col: np.ndarray,
+) -&gt; Tuple[np.ndarray, list]:
+    """One-hot encode a 1-D categorical column.
+
+    Each unique category gets its own binary column. Category order is
+    sorted-unique (lexicographic for strings, numeric for numbers), so the
+    mapping is deterministic regardless of data order.
+
+    Parameters
+    ----------
+    col : array-like, shape (n,)
+        Raw categorical values (strings or integers).
+
+    Returns
+    -------
+    encoded : np.ndarray, shape (n, n_categories)
+        Binary matrix; encoded[i, j] == 1 iff col[i] == categories[j].
+    categories : list
+        The sorted unique categories, one per column of encoded.
+    """
+    col = np.asarray(col)
+    categories = sorted(set(col.tolist()))   # stable sorted order
+    n = len(col)
+    k = len(categories)
+    cat_to_idx = {c: i for i, c in enumerate(categories)}
+    encoded = np.zeros((n, k), dtype=int)
+    for i, val in enumerate(col):
+        encoded[i, cat_to_idx[val]] = 1
+    return encoded, categories
+</code></pre>
+<p>The categories are sorted, so the mapping is deterministic regardless of the order rows appear in the data. Azure Machine Learning AutoML applies the same approach automatically: its featurization pipeline uses one-hot encoding for low-cardinality categorical features and a hashing variant for high-cardinality ones, as documented in the <a href="https://learn.microsoft.com/azure/machine-learning/how-to-configure-auto-features?view=azureml-api-1#automatic-featurization">Data featurization in AutoML reference</a>.</p>
+<p><strong>Measured:</strong> <code>one_hot_encode(['red', 'blue', 'green', 'blue', 'red', 'green', 'red'])</code> produces shape <code>(7, 3)</code> with categories <code>['blue', 'green', 'red']</code>. The row for ‘red’ is <code>[0, 0, 1]</code>. The row for ‘blue’ is <code>[1, 0, 0]</code>.</p>
+<p><strong>The dummy-variable note:</strong> n categories produce n columns that are linearly dependent (each row sums to 1). Linear models and regularized models sometimes benefit from dropping one column as a baseline to avoid multicollinearity. Decision trees do not care; the split logic is not affected by linear dependence between features.</p>
+<h2 id="ordinal-encoding-for-ordered-categories"><a class="header" href="#ordinal-encoding-for-ordered-categories">Ordinal Encoding for Ordered Categories</a></h2>
+<p>Size ratings like “low,” “med,” “high” have a real ordering. One-hot encoding throws that away. Ordinal encoding preserves it by mapping each category to an integer that respects the rank.</p>
+<p>The locked <code>ordinal_encode</code> function in <code>ml/features.py</code>:</p>
+<pre><code class="language-python">def ordinal_encode(
+    col: np.ndarray,
+    order: Optional[list] = None,
+) -&gt; Tuple[np.ndarray, list]:
+    """Encode an ordinal categorical column as integer codes.
+
+    Parameters
+    ----------
+    col : array-like, shape (n,)
+        Raw categorical values.
+    order : list or None
+        Explicit ordered category list, e.g. ["low", "med", "high"].
+        If None, uses sorted-unique order (ties go to lexicographic rank).
+
+    Returns
+    -------
+    codes : np.ndarray, shape (n,), dtype int
+        Integer codes aligned with order_used.
+    order_used : list
+        The category ordering that was applied.
+    """
+    col = np.asarray(col)
+    if order is None:
+        order_used = sorted(set(col.tolist()))
+    else:
+        order_used = list(order)
+    cat_to_code = {c: i for i, c in enumerate(order_used)}
+    codes = np.array([cat_to_code[v] for v in col], dtype=int)
+    return codes, order_used
+</code></pre>
+<p><strong>Measured:</strong> <code>ordinal_encode(['high', 'low', 'med', 'low', 'high'], order=['low', 'med', 'high'])</code> gives <code>[2, 0, 1, 0, 2]</code>. “low” maps to 0, “med” to 1, “high” to 2, preserving the ordering you specified.</p>
+<p>Use ordinal encoding only when the order is genuine and understood. Assigning integers to nominal categories with ordinal encoding introduces false ordering: if you encode red=0, blue=1, green=2, a linear model learns that green is twice as far from red as blue is. That relationship does not exist.</p>
+<h2 id="scaling-putting-columns-on-the-same-range"><a class="header" href="#scaling-putting-columns-on-the-same-range">Scaling: Putting Columns on the Same Range</a></h2>
+<p>Encoding solves the category problem. Scaling solves the magnitude problem. A feature with values from 0 to 100,000 will dominate any distance calculation against a feature with values from 0 to 1. The model does not know that 100,000 and 1 describe equally important quantities in different units. It just sees a number one hundred thousand times larger.</p>
+<p>Two scalers were built in Module 1 and live in <code>ml.distances</code>. They are re-exported from <code>ml.features</code> so callers can import from either location:</p>
+<pre><code class="language-python">from ml.distances import zscore, minmax_scale  # re-export so callers can import from here too
+</code></pre>
+<p>Z-score standardization (subtract mean, divide by standard deviation) produces a column with mean 0 and standard deviation 1. Min-max scaling maps every value to the interval [0, 1]. The Azure Machine Learning Normalize Data component applies both as named options in its designer: Zscore and MinMax, with the same formulas as your <code>ml.distances</code> implementation. See the <a href="https://learn.microsoft.com/azure/machine-learning/component-reference/normalize-data?view=azureml-api-2">Normalize Data component reference</a> for the exact formulas in their visual pipeline.</p>
+<p><strong>Which models need scaling:</strong> distance-based models (KNN from Module 1) and gradient-based models (gradient descent from Module 2, logistic regression) are sensitive to feature scale. A feature with large magnitude will dominate distance or gradient updates. Tree-based models (Module 3 decision trees, Module 4 ensembles) are not sensitive to scale; they split on individual feature values and are invariant to monotone transformations of any single feature. Naive Bayes (this module) estimates per-feature distributions independently and does not require scaling.</p>
+<h2 id="core-concepts-15"><a class="header" href="#core-concepts-15">Core Concepts</a></h2>
+<ul>
+<li>Models read numbers; encoding turns raw categories into numeric columns before training.</li>
+<li>One-hot encoding suits nominal categories with no ordering: each category becomes its own binary column, and one column is 1 per row.</li>
+<li>Ordinal encoding suits ordered categories: an explicit rank order maps each category to an integer that preserves the ordering.</li>
+<li>Distance-based and gradient-based models require scaling to prevent high-magnitude features from dominating; tree-based models do not.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module6/scaling-and-encoding/">
+<p><strong>Build It in Claude Code</strong>: Read the current state of <code>exercises/ml/</code> before touching anything. Earlier modules placed <code>distances.py</code>, <code>knn.py</code>, <code>tree.py</code>, and <code>ensemble.py</code> in that package. You are creating <code>exercises/ml/features.py</code> and adding <code>one_hot_encode</code> and <code>ordinal_encode</code> to it. Import <code>zscore</code> and <code>minmax_scale</code> from <code>ml.distances</code> at the top of the file (do not reimplement them). Add the two functions exactly as shown in the lesson. Then verify with the locked acceptance gate at <code>exercises/module6/scaling-and-encoding/test_encoding.py</code>. Done when <code>python -m pytest exercises/module6/scaling-and-encoding</code> is green.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="naive-bayes"><a class="header" href="#naive-bayes">Naive Bayes</a></h1>
+<p>Before a model predicts a class, it has to decide which class is most plausible given the evidence. Bayes’ theorem says exactly how to do that. Naive Bayes makes one bold simplification to keep the calculation tractable, gets the probabilities badly wrong, and still classifies correctly most of the time. Understanding where it breaks exposes something true about every model in this book.</p>
+<h2 id="bayes-for-classification"><a class="header" href="#bayes-for-classification">Bayes for Classification</a></h2>
+<p>The question is: given a feature vector, what is the probability of each class? Bayes’ theorem answers it:</p>
+<pre><code>P(class | features) proportional to P(features | class) * P(class)
+</code></pre>
+<p>The left side is the posterior: what you want to know. The right side is the prior (how common is this class in training data?) multiplied by the likelihood (how probable are these feature values among training examples of this class?). The denominator, P(features), is constant across all classes, so you can drop it for ranking. The class with the highest product wins.</p>
+<p>This works in principle. The problem is the likelihood term. Computing <code>P(features | class)</code> exactly requires modeling the joint distribution over all features for each class: with 50 features, that is a distribution over 50 dimensions per class. You do not have nearly enough training data to estimate it reliably.</p>
+<h2 id="the-naive-assumption"><a class="header" href="#the-naive-assumption">The Naive Assumption</a></h2>
+<p>Naive Bayes escapes the dimensionality problem with one assumption: all features are conditionally independent given the class.</p>
+<pre><code>P(f1, f2, ..., fn | class) = P(f1 | class) * P(f2 | class) * ... * P(fn | class)
+</code></pre>
+<p>Instead of one intractable joint distribution, you estimate n simple per-feature distributions. For Gaussian Naive Bayes, each distribution is just a mean and variance: two numbers per feature per class.</p>
+<p>The assumption is wrong in almost every real dataset. In the Iris dataset, sepal length and petal length are correlated. “Machine” and “learning” are not independent words in an AI corpus. But the assumption is useful for three reasons. Classification needs ranking, not calibrated probabilities: if the posterior for “spam” is 0.99 when the true probability is 0.7, the ranking is still correct. Second, the strong prior prevents overfitting on small datasets. Third, when two correlated features double-count the same evidence, they do it for the correct class too, so the ranking often survives the systematic error.</p>
+<h2 id="the-gaussian-variant"><a class="header" href="#the-gaussian-variant">The Gaussian Variant</a></h2>
+<p>For continuous features, each per-class per-feature distribution is a Gaussian. The fit is simple: compute the sample mean and variance for each feature within each class. The locked <code>GaussianNB</code> in <code>ml/naive_bayes.py</code>:</p>
+<pre><code class="language-python">"""ml/naive_bayes.py -- Gaussian Naive Bayes classifier, from scratch in NumPy.
+
+One idea: if you assume features are independent given the class (the "naive"
+assumption), the joint likelihood factorizes into a product of per-feature
+likelihoods. Model each feature as Gaussian: estimate a per-class mean and
+variance from training data, then at inference multiply the Gaussian densities
+(in log space to avoid underflow) and pick the class with the highest
+log-posterior = log-prior + sum of log-likelihoods.
+
+No sklearn inside the algorithm. Pure NumPy.
+"""
+from __future__ import annotations
+
+from typing import Optional
+
+import numpy as np
+
+
+class GaussianNB:
+    """Gaussian Naive Bayes classifier.
+
+    Stores per-class class priors, feature means, and feature variances at
+    fit time. Prediction applies the log-sum-exp trick for numerically stable
+    posterior normalization.
+
+    Parameters
+    ----------
+    var_smoothing : float
+        Tiny variance floor added to every per-class per-feature variance to
+        prevent division-by-zero when a feature is (nearly) constant within a
+        class. Default 1e-9 (matches sklearn's default).
+    """
+
+    def __init__(self, var_smoothing: float = 1e-9):
+        self.var_smoothing = var_smoothing
+        # Fitted attributes
+        self.classes_: Optional[np.ndarray] = None
+        self.log_priors_: Optional[np.ndarray] = None   # shape (n_classes,)
+        self.means_: Optional[np.ndarray] = None        # shape (n_classes, n_features)
+        self.vars_: Optional[np.ndarray] = None         # shape (n_classes, n_features)
+
+    # ------------------------------------------------------------------
+    # fit
+    # ------------------------------------------------------------------
+
+    def fit(self, X: np.ndarray, y: np.ndarray) -&gt; "GaussianNB":
+        """Estimate priors, per-class per-feature means and variances.
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+        y : array-like, shape (n_samples,) -- integer class labels
+
+        Returns
+        -------
+        self
+        """
+        X = np.asarray(X, dtype=float)
+        y = np.asarray(y)
+        n_samples, n_features = X.shape
+
+        self.classes_ = np.unique(y)
+        n_classes = len(self.classes_)
+
+        self.means_ = np.zeros((n_classes, n_features))
+        self.vars_ = np.zeros((n_classes, n_features))
+        self.log_priors_ = np.zeros(n_classes)
+
+        for i, cls in enumerate(self.classes_):
+            X_cls = X[y == cls]
+            self.log_priors_[i] = np.log(len(X_cls) / n_samples)
+            self.means_[i] = X_cls.mean(axis=0)
+            # ddof=0: MLE variance (matches sklearn GaussianNB)
+            raw_var = X_cls.var(axis=0)
+            # Variance floor: add smoothing * max_variance_across_all_features
+            # (mirrors sklearn's epsilon = var_smoothing * max(var over all data))
+            self.vars_[i] = raw_var + self.var_smoothing
+
+        return self
+
+    # ------------------------------------------------------------------
+    # predict_proba
+    # ------------------------------------------------------------------
+
+    def predict_proba(self, X: np.ndarray) -&gt; np.ndarray:
+        """Return normalized class posterior probabilities.
+
+        Uses log-sum-exp for numerical stability: compute log-unnormalized
+        posteriors, subtract the row max, exponentiate, then normalize.
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+
+        Returns
+        -------
+        proba : np.ndarray, shape (n_samples, n_classes)
+            Each row sums to 1.
+        """
+        log_posts = self._log_posteriors(X)
+        # log-sum-exp normalization per sample
+        row_max = log_posts.max(axis=1, keepdims=True)
+        shifted = log_posts - row_max
+        exp_shifted = np.exp(shifted)
+        proba = exp_shifted / exp_shifted.sum(axis=1, keepdims=True)
+        return proba
+
+    # ------------------------------------------------------------------
+    # predict
+    # ------------------------------------------------------------------
+
+    def predict(self, X: np.ndarray) -&gt; np.ndarray:
+        """Return the class with the highest log-posterior for each sample.
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+
+        Returns
+        -------
+        y_pred : np.ndarray, shape (n_samples,)
+        """
+        log_posts = self._log_posteriors(X)
+        best_class_idx = np.argmax(log_posts, axis=1)
+        return self.classes_[best_class_idx]
+
+    # ------------------------------------------------------------------
+    # internal
+    # ------------------------------------------------------------------
+
+    def _log_posteriors(self, X: np.ndarray) -&gt; np.ndarray:
+        """Compute log-unnormalized posteriors for all classes and samples.
+
+        log P(class | x) proportional to
+            log P(class) + sum_j log N(x_j; mu_j, sigma_j^2)
+
+        Gaussian log-likelihood:
+            -0.5 * log(2*pi*sigma^2) - 0.5 * (x - mu)^2 / sigma^2
+
+        Returns shape (n_samples, n_classes).
+        """
+        X = np.asarray(X, dtype=float)
+        n_samples = X.shape[0]
+        n_classes = len(self.classes_)
+        log_posts = np.zeros((n_samples, n_classes))
+
+        for i in range(n_classes):
+            mu = self.means_[i]          # shape (n_features,)
+            var = self.vars_[i]          # shape (n_features,)
+            # Gaussian log-likelihood per sample, summed across features
+            log_likelihood = (
+                -0.5 * np.sum(np.log(2.0 * np.pi * var))
+                - 0.5 * np.sum((X - mu) ** 2 / var, axis=1)
+            )
+            log_posts[:, i] = self.log_priors_[i] + log_likelihood
+
+        return log_posts
+</code></pre>
+<h2 id="the-log-posterior-prediction"><a class="header" href="#the-log-posterior-prediction">The Log-Posterior Prediction</a></h2>
+<p>A naive reading of Bayes multiplies probabilities: prior times likelihood times likelihood times… With many features, those products underflow to zero before you can compare them. The fix is log space. The log of a product is a sum of logs:</p>
+<pre><code>log P(class | x) = log P(class) + sum_j log P(x_j | class)
+</code></pre>
+<p>For Gaussian features, each log-likelihood term is:</p>
+<pre><code>-0.5 * log(2 * pi * variance) - 0.5 * (x - mean)^2 / variance
+</code></pre>
+<p>Sum these across all features, add the log-prior, and take the argmax. No multiplication of small numbers; no underflow.</p>
+<p>The <code>_log_posteriors</code> method computes exactly this. The <code>var_smoothing</code> floor (1e-9) prevents division by zero when a feature is constant within a class. The <code>predict_proba</code> method applies the log-sum-exp trick to normalize across classes without exponentiation overflow.</p>
+<h2 id="measured-iris-benchmark"><a class="header" href="#measured-iris-benchmark">Measured: Iris Benchmark</a></h2>
+<p><code>GaussianNB</code> on the Iris dataset, stratified 80/20 split, <code>random_state=0</code>, scores <strong>0.9667</strong> on the 30-sample test set. This matches scikit-learn’s <code>GaussianNB</code> exactly on all 30 test labels (label agreement 1.0). The variance is that low because Iris features are nearly Gaussian within each class and the classes separate well: exactly the regime where the naive assumption costs almost nothing.</p>
+<p>The cost of the assumption shows up when features are correlated and the model is expected to produce well-calibrated probabilities, not just correct rankings. Iris is an easy benchmark. Text classification with hundreds of correlated n-gram features is the hard regime, and naive Bayes survives it anyway because the ranking property holds even when the probability estimates are far off.</p>
+<h2 id="why-feature-quality-matters-most-here"><a class="header" href="#why-feature-quality-matters-most-here">Why Feature Quality Matters Most Here</a></h2>
+<p>Naive Bayes is the model most exposed to bad features in this book. A decision tree can ignore an uninformative feature; the split on that feature just does not appear in the best tree. Gradient boosting can average over weak features across many trees. Naive Bayes cannot ignore anything: every feature contributes its per-class Gaussian estimate to the log-posterior sum. A constant feature (zero variance after smoothing) contributes noise. A feature measured on a wildly different scale contributes a log-likelihood term that dwarfs the others, effectively muting the rest. Bad features hurt naive Bayes directly, which makes it the right model to study alongside an encoding and scaling lesson.</p>
+<h2 id="core-concepts-16"><a class="header" href="#core-concepts-16">Core Concepts</a></h2>
+<ul>
+<li>Naive Bayes computes the posterior as the product of the prior and per-feature likelihoods; the denominator (evidence) is constant across classes and drops from the ranking.</li>
+<li>The naive conditional-independence assumption is always wrong and often useful: the model gets the probability magnitudes wrong but ranks classes correctly often enough to be practical.</li>
+<li>Gaussian Naive Bayes fits a mean and variance per class per feature; at inference, it sums log-likelihoods across features to avoid underflow from multiplying many small probabilities.</li>
+<li>Naive Bayes is the model most exposed to bad features: every feature contributes directly to the log-posterior sum, so uninformative or correlated features hurt rankings in ways tree-based models can dodge.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module6/naive-bayes/">
+<p><strong>Build It in Claude Code</strong>: Read the current state of <code>exercises/ml/</code> before touching anything. You are creating <code>exercises/ml/naive_bayes.py</code> and adding the <code>GaussianNB</code> class to it. Implement the class exactly as shown in the lesson: <code>fit</code>, <code>predict_proba</code>, <code>predict</code>, and <code>_log_posteriors</code>. Then verify with the locked acceptance gate at <code>exercises/module6/naive-bayes/test_naive_bayes.py</code>. Done when <code>python -m pytest exercises/module6/naive-bayes</code> is green.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="imbalanced-data"><a class="header" href="#imbalanced-data">Imbalanced Data</a></h1>
+<p>A model that scores 0.95 accuracy on a fraud-detection dataset may catch zero fraudulent
+transactions. This is not a bug in the training code; it is accuracy lying to you.</p>
+<h2 id="the-accuracy-trap"><a class="header" href="#the-accuracy-trap">The Accuracy Trap</a></h2>
+<p>When a dataset splits 95% majority and 5% minority, a model can achieve 95% accuracy by
+predicting “majority” on every single sample. The minority class is invisible to the
+loss function. The model learned the one move that minimizes its training signal: ignore
+the rare class entirely.</p>
+<p>This is the same trap M5 introduced with the confusion matrix. Recall measures what the
+accuracy trap hides: of every sample that actually belongs to the minority class, how
+many did the model find?</p>
+<pre><code>recall = TP / (TP + FN)
+</code></pre>
+<p>On a 95/5 dataset, a model that predicts all-majority gets recall 0.0. Accuracy: 0.95.
+Those two numbers describe the same model.</p>
+<h2 id="measured-what-imbalance-does"><a class="header" href="#measured-what-imbalance-does">Measured: What Imbalance Does</a></h2>
+<p>On a binary dataset of 1,000 samples with 95% majority and 5% minority (overlapping
+distributions, mean separation 0.5), logistic regression trained on the raw data
+converges to all-majority predictions. The training split holds 761 majority samples
+and 39 minority samples.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Training Data</th><th>Minority Recall</th></tr>
+</thead>
+<tbody>
+<tr><td>Raw (761 maj / 39 min)</td><td>0.0</td></tr>
+<tr><td>After <code>random_oversample</code> (761 / 761)</td><td>0.4545</td></tr>
+</tbody>
+</table>
+</div>
+<p>The model trained on raw data achieves roughly 0.95 accuracy and 0.0 minority recall.
+After oversampling balances the training classes, minority recall rises to 0.4545. The
+decision boundary now has a reason to move.</p>
+<h2 id="three-tools-for-the-training-signal"><a class="header" href="#three-tools-for-the-training-signal">Three Tools for the Training Signal</a></h2>
+<h3 id="oversampling"><a class="header" href="#oversampling">Oversampling</a></h3>
+<p>Duplicate minority-class rows at random until every class has the same count as the
+majority.</p>
+<pre><code class="language-python">def random_oversample(
+    X: np.ndarray,
+    y: np.ndarray,
+    random_state: Optional[int] = None,
+) -&gt; Tuple[np.ndarray, np.ndarray]:
+    """Duplicate minority-class rows (with replacement) until classes are balanced.
+
+    All majority-class samples are kept. The minority class is upsampled
+    (bootstrap draw) to match the majority count. If more than two classes
+    are present, every class below the maximum count is oversampled to the
+    maximum count.
+
+    Parameters
+    ----------
+    X : np.ndarray, shape (n, p)
+    y : np.ndarray, shape (n,)
+    random_state : int or None
+
+    Returns
+    -------
+    X_res, y_res : balanced arrays (order: original rows first, then synthetic)
+    """
+    X = np.asarray(X, dtype=float)
+    y = np.asarray(y)
+    rng = np.random.default_rng(random_state)
+
+    classes, counts = np.unique(y, return_counts=True)
+    max_count = int(counts.max())
+
+    X_parts = [X]
+    y_parts = [y]
+
+    for cls, cnt in zip(classes, counts):
+        deficit = max_count - cnt
+        if deficit &gt; 0:
+            idx = np.where(y == cls)[0]
+            extra = rng.choice(idx, size=deficit, replace=True)
+            X_parts.append(X[extra])
+            y_parts.append(y[extra])
+
+    return np.vstack(X_parts), np.concatenate(y_parts)
+</code></pre>
+<p>The cost is exact duplicates. The model sees the same minority samples many times, which
+can cause overfitting on those specific rows. It also inflates the training set and slows
+each epoch.</p>
+<h3 id="undersampling"><a class="header" href="#undersampling">Undersampling</a></h3>
+<p>Drop majority-class rows at random until every class is as small as the minority.</p>
+<pre><code class="language-python">def random_undersample(
+    X: np.ndarray,
+    y: np.ndarray,
+    random_state: Optional[int] = None,
+) -&gt; Tuple[np.ndarray, np.ndarray]:
+    """Drop majority-class rows until all classes have the minority count.
+
+    Parameters
+    ----------
+    X : np.ndarray, shape (n, p)
+    y : np.ndarray, shape (n,)
+    random_state : int or None
+
+    Returns
+    -------
+    X_res, y_res : balanced arrays (row order not guaranteed)
+    """
+    X = np.asarray(X, dtype=float)
+    y = np.asarray(y)
+    rng = np.random.default_rng(random_state)
+
+    classes, counts = np.unique(y, return_counts=True)
+    min_count = int(counts.min())
+
+    keep_idx = []
+    for cls in classes:
+        idx = np.where(y == cls)[0]
+        chosen = rng.choice(idx, size=min_count, replace=False)
+        keep_idx.append(chosen)
+
+    keep = np.concatenate(keep_idx)
+    keep.sort()          # consistent ordering
+    return X[keep], y[keep]
+</code></pre>
+<p>Undersampling is fast and avoids duplicates. The cost is discarded majority data. On a
+95/5 split with 1,000 samples, you train on 78 samples total (39 per class). Information
+loss is real and can raise variance.</p>
+<h3 id="class-weights"><a class="header" href="#class-weights">Class Weights</a></h3>
+<p>Instead of resampling the data, change how much each error costs. Assign a higher weight
+to misclassifying a minority sample.</p>
+<pre><code class="language-python">def class_weights(y: np.ndarray) -&gt; dict:
+    """Compute inverse-frequency class weights, normalized so they sum to n_classes.
+
+    Weight for class c:
+        w_c = n_samples / (n_classes * count_c)
+
+    This matches sklearn's "balanced" mode and ensures the weighted loss treats
+    each class equally regardless of sample count.
+
+    Parameters
+    ----------
+    y : array-like, shape (n,)
+
+    Returns
+    -------
+    dict mapping each unique class label to its weight (float).
+    """
+    y = np.asarray(y)
+    classes, counts = np.unique(y, return_counts=True)
+    n_samples = len(y)
+    n_classes = len(classes)
+    weights = {}
+    for cls, cnt in zip(classes, counts):
+        weights[cls] = float(n_samples / (n_classes * cnt))
+    return weights
+</code></pre>
+<p>On a 95/5 dataset of 1,000 samples, <code>class_weights</code> returns approximately 0.526 for the
+majority and 10.0 for the minority. One wrong prediction on the minority class costs as
+much in the loss as nineteen wrong predictions on the majority. The data does not change;
+the gradient does.</p>
+<p>Class weights are mathematically equivalent to oversampling in expectation but without
+creating duplicate rows. This makes them faster and avoids the overfitting risk of exact
+copies.</p>
+<h2 id="smote-synthesize-dont-copy"><a class="header" href="#smote-synthesize-dont-copy">SMOTE: Synthesize, Don’t Copy</a></h2>
+<p>SMOTE (Synthetic Minority Oversampling Technique) addresses the overfitting risk of
+random oversampling by generating synthetic minority samples rather than duplicating
+real ones.</p>
+<p>For each minority sample, SMOTE finds its k nearest minority neighbors. It picks one at
+random and creates a new sample at a random point on the line segment between them:</p>
+<pre><code>new_sample = x + random(0, 1) * (neighbor - x)
+</code></pre>
+<p>The new point sits in the same feature region as real minority samples without being
+identical to any of them. Azure Machine Learning’s SMOTE component implements this
+directly, stating that “the algorithm takes samples of the feature space for each target
+class and its nearest neighbors” and “generates new examples that combine features of the
+target case with features of its neighbors.” See
+<a href="https://learn.microsoft.com/en-us/azure/machine-learning/component-reference/smote?view=azureml-api-2">SMOTE component reference</a>.</p>
+<p>The synthetic points can be noisy near the decision boundary, where minority and majority
+samples overlap. SMOTE also does not shift the majority distribution, so a severe imbalance
+still requires a large percentage multiplier. Treat SMOTE as conceptually superior to
+random oversampling, but verify on your data: the MS Learn documentation notes that
+“increasing the number of cases by using SMOTE doesn’t guarantee more accurate models.”</p>
+<h2 id="which-strategy-to-use"><a class="header" href="#which-strategy-to-use">Which Strategy to Use</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Strategy</th><th>Data Changed</th><th>Risk</th><th>When to Reach For It</th></tr>
+</thead>
+<tbody>
+<tr><td>Oversample</td><td>Minority duplicated</td><td>Overfitting on copies</td><td>Small datasets, moderate imbalance</td></tr>
+<tr><td>Undersample</td><td>Majority removed</td><td>Information loss</td><td>Large datasets, fast training needed</td></tr>
+<tr><td>SMOTE</td><td>Synthetic minority added</td><td>Boundary noise</td><td>Enough minority samples for k-NN search</td></tr>
+<tr><td>Class weights</td><td>Nothing</td><td>Slower convergence</td><td>Any size; preferred default to try first</td></tr>
+</tbody>
+</table>
+</div>
+<p>All four attack the same root cause: the loss function sees too few minority examples to
+produce a useful gradient. Pick the strategy that fits your data size and your tolerance
+for duplicates versus information loss.</p>
+<h2 id="core-concepts-17"><a class="header" href="#core-concepts-17">Core Concepts</a></h2>
+<ul>
+<li>On a 95/5 imbalanced dataset, a model can reach 0.95 accuracy by predicting the
+majority class on every sample, yielding minority recall of 0.0; the M5 confusion
+matrix is the tool that surfaces this.</li>
+<li>Random oversampling duplicates minority rows until classes are balanced, lifting
+minority recall at the cost of exact-copy overfitting risk.</li>
+<li>Random undersampling drops majority rows to the minority count, which is fast but
+discards real data.</li>
+<li>Class weights assign inverse-frequency costs to each class, making one minority
+misclassification as expensive as many majority ones, without changing the training set.</li>
+<li>SMOTE synthesizes new minority samples by interpolating between real minority neighbors
+rather than copying them, reducing the overfitting risk of random oversampling.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module6/imbalanced-data/">
+<p><strong>Build It in Claude Code</strong>: Read <code>exercises/CLAUDE.md</code> first, then read the current
+state of <code>exercises/ml/features.py</code> to see what is already there from earlier modules.
+Your task is to add <code>random_oversample</code>, <code>random_undersample</code>, and <code>class_weights</code> to
+<code>exercises/ml/features.py</code> exactly as shown above. Do not copy any function that already
+exists. Then place the locked acceptance gate verbatim at
+<code>exercises/module6/imbalanced-data/test_imbalance.py</code> (the full test file is in the
+exercise README). Done when
+<code>python -m pytest exercises/module6/imbalanced-data</code> is green.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="feature-selection"><a class="header" href="#feature-selection">Feature Selection</a></h1>
+<p>Adding more features does not make a model smarter; it makes the feature space larger and
+the data sparser. M1 named this the curse of dimensionality. Here you learn to fight it.</p>
+<h2 id="why-more-features-can-hurt"><a class="header" href="#why-more-features-can-hurt">Why More Features Can Hurt</a></h2>
+<p>When you add a feature column, every sample gains one more coordinate. The volume of the
+space grows exponentially with dimension. Real data does not. Points spread thin, distances
+between neighbors converge, and the patterns you are trying to find get harder to see.</p>
+<p>Noise features compound the problem. A column with no relationship to the target still
+occupies a dimension the model must search. The model can find spurious correlations in
+training data that do not hold on new data. Overfitting becomes the default outcome.</p>
+<p>The goal is not to feed the model all available information. It is to feed the model the
+right information.</p>
+<h2 id="measured-what-selection-changes"><a class="header" href="#measured-what-selection-changes">Measured: What Selection Changes</a></h2>
+<p>On a binary classification dataset with 8 features, where column 0 carries the signal and
+columns 1 through 7 are pure noise, the measured accuracy difference is small but
+directional.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Features Used</th><th>Accuracy</th></tr>
+</thead>
+<tbody>
+<tr><td>All 8 (signal + 7 noise)</td><td>0.975</td></tr>
+<tr><td>Top-1 by <code>select_by_importance</code> (col 0)</td><td>0.983</td></tr>
+</tbody>
+</table>
+</div>
+<p>The noise columns did not help the decision tree; they hurt it slightly. Selecting the
+signal column before training removes the search space the model would waste on noise.</p>
+<p>For a simpler case: injecting a constant column (variance zero) into a 5-column dataset
+and running <code>select_by_variance</code> at threshold 0.0 keeps indices [0, 1, 3, 4] and drops
+index 2. A column that never varies tells the model nothing.</p>
+<h2 id="two-selection-functions"><a class="header" href="#two-selection-functions">Two Selection Functions</a></h2>
+<h3 id="filter-by-variance"><a class="header" href="#filter-by-variance">Filter by Variance</a></h3>
+<p>A near-constant column carries almost no information. Drop every column whose variance
+falls at or below a threshold before the model ever sees the data.</p>
+<pre><code class="language-python">def select_by_variance(
+    X: np.ndarray,
+    threshold: float,
+) -&gt; Tuple[np.ndarray, np.ndarray]:
+    """Drop columns whose variance is &lt;= threshold.
+
+    A column with zero (or near-zero) variance carries no information;
+    dropping it reduces noise for distance- and coefficient-based learners.
+
+    Parameters
+    ----------
+    X : np.ndarray, shape (n, p)
+    threshold : float
+        Columns with var &lt;= threshold are removed.
+
+    Returns
+    -------
+    X_selected : np.ndarray, shape (n, k)  where k &lt;= p
+    kept_indices : np.ndarray of int, shape (k,)
+    """
+    X = np.asarray(X, dtype=float)
+    variances = X.var(axis=0)
+    kept = np.where(variances &gt; threshold)[0]
+    return X[:, kept], kept
+</code></pre>
+<p>This is a filter method: it looks at the feature itself, not at the target. Azure Machine
+Learning’s Filter Based Feature Selection component formalizes the same idea, describing
+filter-based selection as using “statistical tests to inputs” to “filter out redundant
+columns” before building a model. See
+<a href="https://learn.microsoft.com/en-us/azure/machine-learning/component-reference/filter-based-feature-selection?view=azureml-api-2">Filter Based Feature Selection component reference</a>.</p>
+<p>Variance filtering is fast and cheap, but a column can have high variance and still be
+pure noise. It is a preprocessing step, not a complete strategy.</p>
+<h3 id="filter-by-importance"><a class="header" href="#filter-by-importance">Filter by Importance</a></h3>
+<p>Variance tells you nothing about how a feature relates to the target. Permutation
+importance does. Fit a random forest on an 80% split, then, for each feature, shuffle
+its values on the held-out 20% and measure the drop in accuracy. A large drop means the
+model relied on that feature. A drop near zero means the feature is noise.</p>
+<pre><code class="language-python">def select_by_importance(
+    X: np.ndarray,
+    y: np.ndarray,
+    k: int,
+    random_state: Optional[int] = None,
+) -&gt; Tuple[np.ndarray, np.ndarray]:
+    """Keep the top-k features by permutation importance.
+
+    Importance proxy: permutation importance
+    ----------------------------------------
+    A random forest is fit on an 80% training split. Each feature's importance
+    is measured as the accuracy drop on the held-out 20% when that feature's
+    values are randomly shuffled. Shuffling breaks the association between that
+    feature and the label; a large accuracy drop means the model relied on that
+    feature heavily. Features with near-zero (or negative) drop are noise.
+
+    This proxy is straightforward and signal-based: noise features that happen
+    to appear in many trees (due to random subsampling) don't get inflated
+    counts -- they simply don't hurt accuracy when shuffled.
+
+    The RandomForestClassifier from ml.ensemble is used.
+
+    Parameters
+    ----------
+    X : np.ndarray, shape (n, p)
+    y : np.ndarray, shape (n,)
+    k : int
+        Number of features to keep.
+    random_state : int or None
+
+    Returns
+    -------
+    X_selected : np.ndarray, shape (n, k)
+    kept_indices : np.ndarray of int, shape (k,)
+        Original column indices, sorted ascending.
+    """
+    from ml.ensemble import RandomForestClassifier
+
+    X = np.asarray(X, dtype=float)
+    y = np.asarray(y)
+    n_samples, n_features = X.shape
+
+    # Split 80/20 to get an honest evaluation set for permutation
+    rng = np.random.default_rng(random_state)
+    idx = rng.permutation(n_samples)
+    n_train = int(n_samples * 0.8)
+    train_idx, test_idx = idx[:n_train], idx[n_train:]
+
+    forest = RandomForestClassifier(
+        n_estimators=50,
+        max_depth=None,
+        max_features="sqrt",
+        random_state=random_state,
+    )
+    forest.fit(X[train_idx], y[train_idx])
+
+    X_test = X[test_idx]
+    y_test = y[test_idx]
+    baseline = float(np.mean(forest.predict(X_test) == y_test))
+
+    # Permutation importance: accuracy drop when feature f is shuffled
+    rng_perm = np.random.default_rng((random_state or 0) + 1)
+    importance = np.zeros(n_features, dtype=float)
+    for f in range(n_features):
+        X_perm = X_test.copy()
+        X_perm[:, f] = rng_perm.permutation(X_test[:, f])
+        perm_acc = float(np.mean(forest.predict(X_perm) == y_test))
+        importance[f] = baseline - perm_acc  # positive = feature mattered
+
+    # Rank descending by importance; keep top-k
+    ranked = np.argsort(importance)[::-1]
+    kept = np.sort(ranked[:k])
+    return X[:, kept], kept
+</code></pre>
+<p>This function uses the <code>RandomForestClassifier</code> from <code>ml.ensemble</code>, the M4 artifact. The
+random forest fits, then each feature is shuffled in isolation on the test set. The
+accuracy drop is the importance score.</p>
+<p>The MS Learn Permutation Feature Importance component works exactly this way: “feature
+values are randomly shuffled, one column at a time. The performance of the model is
+measured before and after.” It adds that “important features are usually more sensitive to
+the shuffling process, so they’ll result in higher importance scores.” See
+<a href="https://learn.microsoft.com/en-us/azure/machine-learning/component-reference/permutation-feature-importance?view=azureml-api-2">Permutation Feature Importance component reference</a>.</p>
+<p>The key distinction from filter methods: permutation importance measures how much a
+feature influences a trained model’s predictions, not just how it correlates with the
+target. A filter like Pearson correlation calculates scores before a model exists.</p>
+<h2 id="the-method-landscape"><a class="header" href="#the-method-landscape">The Method Landscape</a></h2>
+<p>Three families of selection methods cover most real problems.</p>
+<p><strong>Filter methods</strong> score each feature independently of the model. Variance threshold and
+correlation filters are the cheapest options: they look only at the feature itself or its
+relationship to the target, without training. Fast but blind to feature interactions.</p>
+<p><strong>Embedded methods</strong> fold selection into the training process. Tree importance (the
+split-frequency score produced naturally by the M4 random forest) ranks features based on
+how much impurity they reduce across all trees. L1 regularization drives linear model
+weights exactly to zero, effectively removing features during training. These methods
+capture some interaction effects but are tied to a specific model family.</p>
+<p><strong>Wrapper methods</strong> like Recursive Feature Elimination (RFE) retrain the model many times,
+removing the least important feature at each round. More thorough, proportionally slower.
+Permutation importance is a model-agnostic variant: it perturbs one feature at a time on
+a trained model, which is cheaper than full retraining but still considers the model’s
+actual behavior.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Method</th><th>Type</th><th>Nonlinear</th><th>Feature Interactions</th></tr>
+</thead>
+<tbody>
+<tr><td>Variance threshold</td><td>Filter</td><td>No</td><td>No</td></tr>
+<tr><td>Correlation</td><td>Filter</td><td>No</td><td>No</td></tr>
+<tr><td>L1 / Lasso</td><td>Embedded</td><td>No</td><td>No</td></tr>
+<tr><td>Tree importance</td><td>Embedded</td><td>Yes</td><td>Yes</td></tr>
+<tr><td>Permutation importance</td><td>Model-agnostic</td><td>Yes</td><td>Partial</td></tr>
+<tr><td>RFE</td><td>Wrapper</td><td>Depends on model</td><td>Yes</td></tr>
+</tbody>
+</table>
+</div>
+<p>Choose filter methods as a first pass to cut obvious noise. Use embedded or permutation
+methods to rank the survivors. The M1 curse of dimensionality tells you why this matters:
+every column you keep is a dimension the model must search.</p>
+<h2 id="core-concepts-18"><a class="header" href="#core-concepts-18">Core Concepts</a></h2>
+<ul>
+<li>The curse of dimensionality (M1) means that adding features grows the search space
+exponentially; noise features crowd out signal and push models toward overfitting.</li>
+<li><code>select_by_variance</code> removes near-constant columns before the model trains; a column
+with variance at or below the threshold carries no useful information.</li>
+<li><code>select_by_importance</code> fits the M4 random forest, then shuffles each feature in
+isolation on a held-out set; the accuracy drop is the importance score, and the top-k
+features are returned.</li>
+<li>Permutation importance measures a feature’s influence on a trained model’s predictions;
+filter methods like variance threshold score features before any model exists.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module6/feature-selection/">
+<p><strong>Build It in Claude Code</strong>: Read <code>exercises/CLAUDE.md</code> first, then read the current
+state of <code>exercises/ml/features.py</code> to see what is already there. Your task is to add
+<code>select_by_variance</code> and <code>select_by_importance</code> to <code>exercises/ml/features.py</code> exactly as
+shown above. Note that <code>select_by_importance</code> imports <code>ml.ensemble.RandomForestClassifier</code>
+(the M4 throughline artifact): read <code>exercises/ml/ensemble.py</code> to confirm the class
+exists and its <code>fit</code> and <code>predict</code> signatures before writing anything. Then place the
+locked acceptance gate verbatim at
+<code>exercises/module6/feature-selection/test_selection.py</code> (the full test file is in the
+exercise README). Done when
+<code>python -m pytest exercises/module6/feature-selection</code> is green.</p>
 </div>
 
 

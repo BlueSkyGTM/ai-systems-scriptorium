@@ -38,10 +38,10 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-04fd65de.js";
+            window.path_to_searchindex_js = "../searchindex-07cdb30b.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e8a576fa.js"></script>
+        <script src="../toc-24986b20.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -233,7 +233,7 @@ def roc_curve(y_true, y_score):
     n_pos = int(np.sum(y_true == 1))
     n_neg = int(np.sum(y_true == 0))
 
-    # Sort all samples by score descending (ties broken arbitrarily — they
+    # Sort all samples by score descending (ties broken arbitrarily; they
     # will be grouped together below).
     desc_idx = np.argsort(y_score)[::-1]
     sorted_scores = y_score[desc_idx]
