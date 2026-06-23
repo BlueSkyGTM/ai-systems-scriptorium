@@ -300,6 +300,119 @@ def fit(
 
 
 # ---------------------------------------------------------------------------
+# M4: LoRALinear — frozen base + low-rank A/B adapter
+# ---------------------------------------------------------------------------
+
+class LoRALinear(nn.Module):
+    """Wraps a frozen nn.Linear with a trainable low-rank adapter (LoRA).
+
+    The forward computes:
+        base(x) + scaling * lora_B(lora_A(x))
+
+    where base.weight and base.bias are frozen (requires_grad=False), and
+    lora_A (in -> r) and lora_B (r -> out) are the trainable low-rank matrices.
+    lora_B is initialized to ZERO so the adapter's initial delta is 0 — the
+    wrapped model begins identical to the base at step 0.
+
+    Args:
+        base:        a frozen nn.Linear (this class freezes it on construction)
+        r:           rank of the low-rank decomposition
+        alpha:       scaling hyperparameter; effective scale = alpha / r
+    """
+
+    def __init__(self, base: nn.Linear, r: int = 8, alpha: float = 16.0) -> None:
+        super().__init__()
+        self.base = base
+        # Freeze the base linear — its weights do not receive gradients
+        self.base.weight.requires_grad_(False)
+        if self.base.bias is not None:
+            self.base.bias.requires_grad_(False)
+
+        in_features = base.in_features
+        out_features = base.out_features
+        self.r = r
+        self.scaling = alpha / r
+
+        # Low-rank matrices: A projects down to rank r, B projects back up
+        self.lora_A = nn.Linear(in_features, r, bias=False)
+        self.lora_B = nn.Linear(r, out_features, bias=False)
+
+        # lora_B initialized to ZERO: delta starts at 0, model == base at step 0
+        nn.init.zeros_(self.lora_B.weight)
+        # lora_A uses default Kaiming init (already done by nn.Linear)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.base(x) + self.scaling * self.lora_B(self.lora_A(x))
+
+    def merge(self) -> nn.Linear:
+        """Return a plain nn.Linear whose weight = base.weight + scaling * (B @ A).
+
+        The merged linear's forward is numerically equivalent to this LoRALinear's
+        forward (within floating-point tolerance). Use for inference — no adapter
+        overhead at serve time.
+        """
+        merged = nn.Linear(
+            self.base.in_features, self.base.out_features,
+            bias=self.base.bias is not None,
+        )
+        with torch.no_grad():
+            delta = self.scaling * (self.lora_B.weight @ self.lora_A.weight)
+            merged.weight.copy_(self.base.weight + delta)
+            if self.base.bias is not None:
+                merged.bias.copy_(self.base.bias)
+        return merged
+
+
+# ---------------------------------------------------------------------------
+# M4: wrap_with_lora — replace nn.Linear submodules with LoRALinear
+# ---------------------------------------------------------------------------
+
+def wrap_with_lora(model: nn.Module, r: int = 8, alpha: float = 16.0) -> nn.Module:
+    """Replace every nn.Linear in model with a LoRALinear (frozen base + adapter).
+
+    Works by iterating named_modules to find nn.Linear layers, then using
+    setattr on the parent module to swap them in-place. Returns the model
+    (mutated in place) for chaining.
+
+    For TinyClassifier the only linear is .linear; for deeper models every
+    nn.Linear encountered (that is not itself already a LoRALinear) is wrapped.
+    """
+    # Build (parent, attr_name, child) triples for all nn.Linear leaves
+    to_replace: list[tuple[nn.Module, str, nn.Linear]] = []
+    for name, module in model.named_modules():
+        # Locate the direct parent by walking the name path
+        parts = name.split(".")
+        if len(parts) == 0:
+            continue
+        parent = model
+        for part in parts[:-1]:
+            parent = getattr(parent, part)
+        attr = parts[-1]
+        if isinstance(module, nn.Linear) and not isinstance(module, LoRALinear):
+            to_replace.append((parent, attr, module))
+
+    for parent, attr, linear in to_replace:
+        setattr(parent, attr, LoRALinear(linear, r=r, alpha=alpha))
+
+    return model
+
+
+# ---------------------------------------------------------------------------
+# M4: count_params — (trainable, total) parameter counts
+# ---------------------------------------------------------------------------
+
+def count_params(model: nn.Module) -> tuple[int, int]:
+    """Return (trainable, total) parameter counts for model.
+
+    trainable: parameters with requires_grad=True (the adapter weights)
+    total:     all parameters including frozen base weights
+    """
+    total = sum(p.numel() for p in model.parameters())
+    trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    return trainable, total
+
+
+# ---------------------------------------------------------------------------
 # Self-demo (run as a script): pure torch, CPU, synthetic data, < 30 s
 # ---------------------------------------------------------------------------
 
@@ -443,3 +556,100 @@ if __name__ == "__main__":
     )
     print("[PASS] best epoch is before final epoch; divergence confirmed.")
     print("\ntrainer.py M2 overfit demo complete.")
+
+    # -----------------------------------------------------------------------
+    # M4: LoRA DEMO: wrap TinyClassifier, show freeze ratio, fit, merge-check
+    # -----------------------------------------------------------------------
+    print("\n" + "=" * 60)
+    print("M4 LoRA DEMO: wrap TinyClassifier with LoRALinear")
+    print("=" * 60)
+
+    torch.manual_seed(42)
+
+    # Build base model
+    lora_model = TinyClassifier(IN_DIM, N_CLASSES).to(device)
+
+    # Count base params before wrapping
+    base_total = sum(p.numel() for p in lora_model.parameters())
+
+    # Wrap with LoRA (r=8, alpha=16 as the canonical demo values).
+    # Note: on a tiny 128->4 model the adapter (lora_A=128*8 + lora_B=8*4 = 1056)
+    # happens to exceed the base (516) in raw count — this is expected for a toy model.
+    # What MATTERS is that the base 516 are FROZEN and only the 1056 adapter weights train.
+    # On a real model (7B params, r=8) the adapter is < 0.1% of total.
+    lora_model = wrap_with_lora(lora_model, r=8, alpha=16)
+
+    trainable_count, total_count = count_params(lora_model)
+    frozen_count = total_count - trainable_count
+    print(f"params: total={total_count}, trainable={trainable_count}, frozen={frozen_count}")
+    print(f"  (base had {base_total} params, now all frozen; LoRA adds {trainable_count} trainable)")
+    # Verify the base is fully frozen (frozen_count == base_total)
+    assert frozen_count == base_total, (
+        f"LoRA freeze failed: frozen params ({frozen_count}) must equal original base ({base_total})"
+    )
+    # Verify only adapter weights are trainable (trainable < total)
+    assert trainable_count < total_count, "LoRA freeze failed: trainable must be < total"
+    print(f"  freeze confirmed: {frozen_count} base params frozen, {trainable_count} adapter params trainable  [PASS]")
+
+    # Build a small synthetic dataset for LoRA fit demo (same structure as above)
+    N_LORA = 128
+    chunks_lora = []
+    for cls in range(N_CLASSES):
+        centre = torch.zeros(IN_DIM)
+        centre[cls] = 5.0
+        chunks_lora.append(torch.randn(N_LORA // N_CLASSES, IN_DIM) + centre)
+    X_lora = torch.cat(chunks_lora, dim=0)
+    y_lora = torch.repeat_interleave(torch.arange(N_CLASSES), N_LORA // N_CLASSES)
+
+    # 80/20 train/val split
+    n_lora_train = int(0.8 * N_LORA)
+    lora_train_ds = TensorDataset(X_lora[:n_lora_train], y_lora[:n_lora_train])
+    lora_val_ds = TensorDataset(X_lora[n_lora_train:], y_lora[n_lora_train:])
+    lora_train_loader = DataLoader(lora_train_ds, batch_size=16, shuffle=True)
+    lora_val_loader = DataLoader(lora_val_ds, batch_size=16, shuffle=False)
+
+    # Optimizer only touches trainable params (lora_A and lora_B weights)
+    lora_optimizer = torch.optim.Adam(
+        filter(lambda p: p.requires_grad, lora_model.parameters()), lr=1e-2
+    )
+
+    lora_result = fit(
+        lora_model,
+        lora_train_loader,
+        lora_val_loader,
+        lora_optimizer,
+        loss_fn,
+        device,
+        max_epochs=10,
+        patience=5,
+    )
+
+    print(f"\n{'epoch':>5}  {'train_loss':>10}  {'valid_loss':>10}")
+    print(f"{'-----':>5}  {'----------':>10}  {'----------':>10}")
+    for rec in lora_result.history:
+        marker = "  <-- BEST" if rec.epoch == lora_result.best_epoch else ""
+        print(f"  {rec.epoch:3d}   {rec.train_loss:10.4f}   {rec.valid_loss:10.4f}{marker}")
+
+    # Assert descending: first valid_loss > last valid_loss
+    first_vl = lora_result.history[0].valid_loss
+    last_vl = lora_result.history[-1].valid_loss
+    assert last_vl < first_vl, (
+        f"LoRA fit did not improve: first valid_loss={first_vl:.4f}, last={last_vl:.4f}"
+    )
+    print(f"\nLoRA valid_loss descended: {first_vl:.4f} -> {last_vl:.4f}  [PASS]")
+
+    # --- merge-equivalence check ---
+    # Get LoRALinear module, call merge(), compare forward outputs
+    lora_linear: LoRALinear = lora_model.linear  # type: ignore[assignment]
+    merged_linear = lora_linear.merge()
+
+    test_x = torch.randn(8, IN_DIM)
+    with torch.no_grad():
+        out_lora = lora_linear(test_x)
+        out_merged = merged_linear(test_x)
+
+    max_diff = (out_lora - out_merged).abs().max().item()
+    assert max_diff < 1e-5, f"merge() mismatch: max diff = {max_diff:.2e}"
+    print(f"merge() equivalence: max diff = {max_diff:.2e} < 1e-5  [PASS]")
+
+    print("\ntrainer.py M4 LoRA demo complete.")

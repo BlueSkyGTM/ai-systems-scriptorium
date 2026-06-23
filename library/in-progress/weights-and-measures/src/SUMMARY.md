@@ -31,3 +31,13 @@
 - [The JSONL Contract](module3/the-jsonl-contract.md)
 - [Deduplication and Leakage](module3/deduplication-and-leakage.md)
 - [Building the Curation Gate](module3/building-the-curation-gate.md)
+
+---
+
+# Module 4: Adapters and the Fine-Tune Build
+
+- [Overview](module4/00-overview.md)
+- [Why Adapters](module4/why-adapters.md)
+- [LoRA from the Inside](module4/lora-from-the-inside.md)
+- [Quantization and Mixed Precision](module4/quantization-and-mixed-precision.md)
+- [The Fine-Tune Build](module4/the-fine-tune-build.md)
