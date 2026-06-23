@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-37d6c75b.js";
+            window.path_to_searchindex_js = "searchindex-fc5510bc.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-19174fd1.js"></script>
+        <script src="toc-fb86ada5.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -1684,6 +1684,279 @@ the mechanism at-least-once delivery rests on.</li>
 <p>Module 5 is where the batch and streaming legs land together, the warehouse and the lakehouse, and what it means to query across both.</p>
 <div class="claude-handoff" data-exercise="exercises/module4/the-streaming-freshness-monitor/">
 <p><strong>Build It in Claude Code</strong>: Build a <code>LagMonitor</code> in <code>module4-streaming/</code> that records per-source event-to-applied lag against a configurable seconds-scale SLO; implement <code>record</code>, <code>current_lag</code>, <code>is_breached</code>, <code>status</code>, and <code>report</code> with <code>applied_time</code> as an injectable parameter so tests never touch the wall clock; finalize <code>smoke.py</code> to assert that a consumer applying events close to their event time is <code>ok</code>, and that a consumer whose <code>applied_time</code> is far past <code>event_time</code> is <code>breached</code>, both deterministically with injected timestamps and no real sleeps.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-5-warehouses-and-lakehouses"><a class="header" href="#module-5-warehouses-and-lakehouses">Module 5: Warehouses and Lakehouses</a></h1>
+<p>Modules 1 through 4 produced the corpus and moved it: queried, ingested in batch, orchestrated,
+streamed. This module is about where it lands and how you read it. The data team gives you two kinds of
+place to put it. A warehouse owns its format for fast, governed, structured SQL. A lakehouse keeps the
+data in an open format over object storage, readable by any engine without a license. The choice is not
+ideology; it is a match between the workload and the surface.</p>
+<p>You learn the production tiers (Snowflake, BigQuery, Microsoft Fabric Warehouse on the structured side;
+Delta Lake and Apache Iceberg over OneLake on the open side) and you build the part that runs offline:
+a real Delta table with versioning and time-travel, and a DuckDB query surface standing in for the
+warehouse. The time-travel is the piece that matters most downstream; it is what lets Module 6 resolve
+any answer back to the exact corpus version it cited.</p>
+<h2 id="what-this-module-covers-4"><a class="header" href="#what-this-module-covers-4">What This Module Covers</a></h2>
+<p><strong>Warehouse vs Lakehouse</strong> is the choice. A warehouse gives you full T-SQL, DML, and governed
+dashboards; a lakehouse keeps the corpus in open Delta or Parquet that any engine reads, with a
+read-only SQL endpoint. You pick by who needs to read the data and how.</p>
+<p><strong>Open Table Formats: Delta and Iceberg</strong> adds ACID, schema, and time-travel to plain Parquet through a
+transaction log. You write a new version, and the old one stays readable. Time-travel is the load-bearing
+capability: you can read the table as it existed at version zero.</p>
+<p><strong>The Medallion in OneLake</strong> is the storage organization. OneLake is one logical lake for the whole
+tenant; the medallion organizes it into bronze, silver, and gold; and shortcuts reference data in
+another location without copying it, which is how you avoid the stale-duplicate sprawl that rots a data
+platform.</p>
+<p><strong>The AI Engineer’s Access Pattern</strong> closes the module. You read against tiers you do not own:
+read-only, and tier-chosen by the workload. It is the same stance as Module 1’s telemetry queries, now
+at the warehouse and lakehouse tier.</p>
+<h2 id="who-this-is-for-5"><a class="header" href="#who-this-is-for-5">Who This Is For</a></h2>
+<p>You finished Module 4: you can produce the corpus by batch and by stream. Now you decide where it lands
+and how your AI system reads it. You choose the tier and write the queries; you do not own the schema or
+run the platform.</p>
+<h2 id="the-artifact-4"><a class="header" href="#the-artifact-4">The Artifact</a></h2>
+<p>You build <code>module5-warehouse/</code>: the gold corpus written to a real Delta table with versioning and
+time-travel, a DuckDB warehouse-query surface over the same data, and a tier-decision helper that routes
+a workload to the warehouse or the lakehouse. The Delta version history is the exact mechanism Module 6’s
+lineage store uses to answer “what did this answer cite last week.”</p>
+<h2 id="prerequisites-4"><a class="header" href="#prerequisites-4">Prerequisites</a></h2>
+<ul>
+<li>Module 2 complete (the gold corpus this module lands)</li>
+<li>Python 3.11+ with <code>deltalake</code>, <code>pandas</code>, <code>pyarrow</code>, and <code>duckdb</code> (all pip, all offline)</li>
+<li>Comfort with the medallion idea from Module 2 and the content-hash versioning</li>
+</ul>
+<h2 id="time-estimate-4"><a class="header" href="#time-estimate-4">Time Estimate</a></h2>
+<p>Each lesson runs 60 to 100 minutes including its exercise. The open-table-format lesson is the one to
+linger on; time-travel is the concept the rest of the book leans on.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="warehouse-vs-lakehouse-one-store-cannot-serve-both-masters"><a class="header" href="#warehouse-vs-lakehouse-one-store-cannot-serve-both-masters">Warehouse vs Lakehouse: One Store Cannot Serve Both Masters</a></h1>
+<p>The BI team wants governed T-SQL, fast dashboard queries, and the right to run <code>UPDATE</code> statements when a category label changes. The ML team wants the corpus in an open format that Spark, a local DuckDB session, and a vector pipeline can all read without a proprietary driver. You cannot make one store optimal for both, so you choose per workload.</p>
+<p>That choice is the whole module.</p>
+<h2 id="two-surfaces-one-store"><a class="header" href="#two-surfaces-one-store">Two Surfaces, One Store</a></h2>
+<p>Microsoft Fabric keeps everything in Delta format on OneLake. That part is not a choice: both a Fabric Warehouse and a Fabric Lakehouse store data in the same open Delta files on the same underlying object storage. The difference is the SQL surface sitting on top.</p>
+<p>A <strong>Fabric Warehouse</strong> gives you a full T-SQL endpoint: <code>SELECT</code>, <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>, multi-table ACID transactions, cross-database joins, the works. It is the surface a BI analyst or a Power BI report targets. The format is governed, the schema is enforced, and the DML runs. [<a href="https://learn.microsoft.com/fabric/fundamentals/decision-guide-lakehouse-warehouse">MS-Learn decision guide: warehouse vs lakehouse</a>]</p>
+<p>A <strong>Fabric Lakehouse</strong> gives you data in open Delta/Parquet over OneLake and a SQL analytics endpoint for structured queries. That endpoint is read-only: DQL only, no <code>INSERT</code>, no <code>UPDATE</code>, no <code>DELETE</code>. Its strength is openness: the same Delta table a Spark job wrote is the table your embedding pipeline reads, with no copy and no conversion. [<a href="https://learn.microsoft.com/fabric/data-engineering/lakehouse-overview">MS-Learn lakehouse overview</a>]</p>
+<p>The split is not warehouse-OR-lakehouse. It is warehouse-for-BI, lakehouse-for-ML, both over Delta on OneLake.</p>
+<h2 id="the-managed-alternatives"><a class="header" href="#the-managed-alternatives">The Managed Alternatives</a></h2>
+<p>Outside Fabric the same split plays out at the managed layer. Snowflake and BigQuery are the structured warehouse tier: proprietary storage, full SQL, governed schema, built for analysts and dashboards. Delta Lake and Apache Iceberg are the open lakehouse formats: Parquet files with a transaction log, readable by any engine that understands the spec.</p>
+<p>The tradeoff is identical. The managed warehouse is faster to operate, harder to escape. The open format is portable, readable by every tool in the stack, and requires you to manage your own engine.</p>
+<h2 id="encoding-the-decision"><a class="header" href="#encoding-the-decision">Encoding the Decision</a></h2>
+<p>The choice encodes cleanly as keyword routing. A workload that mentions BI, dashboards, T-SQL, reporting, or DML belongs in the warehouse. A workload that mentions ML, RAG, embeddings, open format, Delta, Spark, or corpus belongs in the lakehouse.</p>
+<pre><code class="language-python">def choose_tier(access_pattern: str) -&gt; str:
+    """Return "warehouse" or "lakehouse" for the given access pattern; raise on unknown."""
+    normalised = access_pattern.lower()
+    for kw in _WAREHOUSE_KEYWORDS:   # bi, dashboard, t-sql, reporting, dml, power-bi, ...
+        if kw in normalised:
+            return "warehouse"
+    for kw in _LAKEHOUSE_KEYWORDS:   # ml, rag, embedding, open-format, delta, spark, corpus, ...
+        if kw in normalised:
+            return "lakehouse"
+    raise ValueError(f"Unknown access pattern: {access_pattern!r}.")
+</code></pre>
+<p>Unknown patterns raise rather than guess. A system that silently defaults the wrong tier ships data to the wrong surface; one that raises forces the engineer to name the workload explicitly.</p>
+<h2 id="the-two-queries"><a class="header" href="#the-two-queries">The Two Queries</a></h2>
+<p>The module artifact seeds a small gold corpus and runs both surfaces against it. The warehouse query is a structured aggregate over a DuckDB relation (the local stand-in for T-SQL):</p>
+<pre><code class="language-python">def doc_count_by_category(df):
+    return duckdb.query("SELECT category, COUNT(*) AS doc_count FROM df GROUP BY category ORDER BY doc_count DESC").df()
+</code></pre>
+<p>The lakehouse write is an open-format Delta write that any downstream engine can read without a conversion step:</p>
+<pre><code class="language-python">write_deltalake(delta_path, df, mode="overwrite")   # open Delta/Parquet, any engine can read it
+</code></pre>
+<p>Same gold corpus. Two surfaces. The query answers a BI question with governed SQL; the Delta write puts the corpus in an open format a vector pipeline can reach. Neither surface replaces the other.</p>
+<h2 id="core-concepts-16"><a class="header" href="#core-concepts-16">Core Concepts</a></h2>
+<ul>
+<li>A Fabric Warehouse and a Fabric Lakehouse both store data in Delta on OneLake; the difference is the SQL surface: the warehouse gives full T-SQL with DML, the lakehouse SQL endpoint is read-only (DQL only).</li>
+<li>Choose the warehouse when the consumer needs governed SQL and write-back (BI, dashboards, reporting); choose the lakehouse when the consumer needs open-format access (ML, RAG, embedding pipelines, Spark).</li>
+<li>Snowflake and BigQuery are the managed warehouse tier; Delta Lake and Apache Iceberg are the open lakehouse formats. The tradeoff is the same: governance and speed vs portability and openness.</li>
+<li>The routing decision is per workload, not per system: the same gold corpus can feed a warehouse surface for BI and a Delta table for ML from the same underlying storage.</li>
+</ul>
+<p>When the corpus lands in two places, pick the tier before you write: the wrong surface means a read-only endpoint for the analyst or a proprietary format the embedding pipeline cannot open.</p>
+<div class="claude-handoff" data-exercise="exercises/module5/warehouse-vs-lakehouse/">
+<p><strong>Build It in Claude Code</strong>: Write the gold corpus (doc_id, title, text, content_hash, category) as a Delta table using <code>write_deltalake</code> (the open lakehouse format), query it with DuckDB’s <code>doc_count_by_category</code> to get per-category counts (the warehouse stand-in), then write <code>choose_tier(access_pattern)</code> with the <code>_WAREHOUSE_KEYWORDS</code> and <code>_LAKEHOUSE_KEYWORDS</code> sets so it returns <code>"warehouse"</code> for structured BI workloads and <code>"lakehouse"</code> for open-format ML and RAG workloads, and raises on anything unknown.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="open-table-formats-delta-and-iceberg"><a class="header" href="#open-table-formats-delta-and-iceberg">Open Table Formats: Delta and Iceberg</a></h1>
+<p>A plain folder of Parquet files cannot tell you what it looked like yesterday, and two writers
+arriving at the same second can corrupt it. An open table format fixes both problems by placing a
+transaction log in front of the files: every write is a log entry, every read consults the log, and
+every earlier snapshot is still there.</p>
+<p>That last property is the one that matters for a RAG corpus. It is called time-travel, and it is
+what makes M6’s lineage store possible.</p>
+<h2 id="the-transaction-log"><a class="header" href="#the-transaction-log">The Transaction Log</a></h2>
+<p>Delta Lake stores each write as a JSON commit entry inside <code>_delta_log/</code>. Iceberg does the same
+with its own manifest tree. The Parquet data files on disk are immutable; the log decides which
+files are “current.” When you overwrite a table, the old data files stay on disk and the log gains
+a new entry pointing at the replacement files.</p>
+<p>Writing two corpus versions is two log entries:</p>
+<pre><code class="language-python">from deltalake import DeltaTable, write_deltalake
+
+def write_corpus_v0(df, delta_path):
+    write_deltalake(delta_path, df, mode="overwrite")   # creates Delta version 0
+    return DeltaTable(delta_path).version()
+
+def write_corpus_v1(df, delta_path):
+    write_deltalake(delta_path, df, mode="overwrite")   # version 1; v0 still in the log
+    return DeltaTable(delta_path).version()
+</code></pre>
+<p><code>version()</code> returns <code>0</code> after the first write and <code>1</code> after the second. The log already holds both.</p>
+<h2 id="reading-any-version"><a class="header" href="#reading-any-version">Reading Any Version</a></h2>
+<p>Because the log is append-only, you can reconstruct the table at any prior commit by replaying only
+the entries up to that point. The <code>DeltaTable</code> constructor accepts a <code>version</code> argument:</p>
+<pre><code class="language-python">def read_version(version, delta_path):
+    """Return the Delta snapshot at *version* (0 = initial, 1 = first update, ...)."""
+    return DeltaTable(delta_path, version=version).to_pandas()
+
+def get_history(delta_path):
+    return DeltaTable(delta_path).history()   # list of version metadata
+</code></pre>
+<p>Call <code>read_version(0, path)</code> after two writes and you get the original corpus, not the current one.
+Call <code>read_version(1, path)</code> and you get the update. The underlying Parquet files for both still
+exist on disk; the log is the map.</p>
+<p>The equivalent in SQL is <code>VERSION AS OF 0</code> or <code>TIMESTAMP AS OF '2024-01-01'</code>. The semantics are
+identical: the log reconstructs the requested snapshot without touching the live table.</p>
+<h2 id="what-acid-buys-you"><a class="header" href="#what-acid-buys-you">What ACID Buys You</a></h2>
+<p>Without the transaction log, two concurrent writers on a Parquet folder will corrupt each other’s
+metadata. Delta’s log commits are atomic: a write either lands as a complete entry or it does not.
+Schema changes are validated against the existing metadata before the commit is accepted, so a write
+that would break readers is rejected at the log level, not discovered by the next query.</p>
+<p>Iceberg offers the same guarantees with a different log structure. In Microsoft Fabric, Delta and
+Iceberg tables in OneLake interoperate through metadata virtualization: a Delta table is readable as
+an Iceberg table and vice versa, without copying data.
+[OneLake Iceberg: https://learn.microsoft.com/fabric/onelake/onelake-iceberg-tables]</p>
+<h2 id="the-caveat-retention-is-bounded"><a class="header" href="#the-caveat-retention-is-bounded">The Caveat: Retention Is Bounded</a></h2>
+<p>Time-travel is not infinite. Delta’s <code>VACUUM</code> command removes data files older than a configurable
+retention threshold (default: seven days). Once the files are vacuumed, the log entries that
+reference them remain, but the data behind those entries is gone. Time-travel to a version whose
+files have been vacuumed raises an error. Plan your retention window against the lineage window your
+pipeline needs.
+[MS-Learn Delta time travel: https://learn.microsoft.com/fabric/data-engineering/delta-lake-time-travel]</p>
+<h2 id="time-travel-as-the-lineage-primitive"><a class="header" href="#time-travel-as-the-lineage-primitive">Time-Travel as the Lineage Primitive</a></h2>
+<p>The content-hash MERGE from M2 records what a document looked like when it changed. The Delta log
+records what the whole table looked like at every write. Together they answer a lineage question that
+neither can answer alone: “What did this specific document’s content look like at version N?”</p>
+<pre><code class="language-python">def get_content_hash_at_version(doc_id, version, delta_path):
+    """What did this document's content look like at an earlier version?
+       The Delta log preserves every snapshot, so we answer exactly."""
+    df = read_version(version, delta_path)
+    row = df[df["doc_id"] == doc_id]
+    return None if row.empty else row.iloc[0]["content_hash"]
+</code></pre>
+<p>M6 calls this function. The warehouse you are building now is the store it reads.</p>
+<h2 id="core-concepts-17"><a class="header" href="#core-concepts-17">Core Concepts</a></h2>
+<ul>
+<li>An open table format (Delta, Iceberg) adds a transaction log in front of immutable Parquet files;
+every write is a log entry, not a file overwrite.</li>
+<li>Time-travel reads the table as it existed at any prior version by replaying log entries up to that
+point; <code>DeltaTable(path, version=n)</code> is the offline equivalent of <code>VERSION AS OF n</code>.</li>
+<li>ACID guarantees come from the log: a write is atomic, schema changes are validated before commit,
+and two concurrent writers cannot silently corrupt the table.</li>
+<li>Delta time-travel is bounded by <code>VACUUM</code> retention; once old data files are removed, those log
+entries become unreadable, so lineage windows must fit inside the retention window.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module5/open-table-formats-delta-and-iceberg/">
+<p><strong>Build It in Claude Code</strong>: Write the gold corpus DataFrame to a Delta table using <code>write_corpus_v0</code> (version 0), change one document’s text and write again using <code>write_corpus_v1</code> (version 1), then call <code>read_version(0, path)</code> to confirm it returns the original content while <code>read_version(1, path)</code> returns the updated content; assert that the changed document’s <code>content_hash</code> differs between the two snapshots using <code>get_content_hash_at_version</code>; and print the full version history with <code>get_history</code>.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-medallion-in-onelake"><a class="header" href="#the-medallion-in-onelake">The Medallion in OneLake</a></h1>
+<p>Every team copies the corpus into its own store, and within a year the data platform is a dozen
+stale duplicates with no clear source of truth. OneLake and shortcuts are the answer: one logical
+lake for the whole tenant, one copy of the data, zero sprawl.</p>
+<h2 id="what-onelake-actually-is"><a class="header" href="#what-onelake-actually-is">What OneLake Actually Is</a></h2>
+<p>OneLake is Microsoft Fabric’s single, unified, logical data lake for an entire tenant. Every
+workspace in the tenant shares it; there are no per-team buckets to provision and no separate
+storage accounts to wire together. Data lands once, in open Delta format, and every consumer in
+the tenant reads the same copy. [MS-Learn OneLake overview:
+https://learn.microsoft.com/fabric/onelake/onelake-overview]</p>
+<p>The word “logical” matters. OneLake looks like a file system, but the namespace spans lakehouses,
+warehouses, and workspaces without physical duplication. The AI team, the analytics team, and the
+ML team all see the same paths; they are not copying files between buckets to share data.</p>
+<h2 id="the-medallion-as-storage-organization"><a class="header" href="#the-medallion-as-storage-organization">The Medallion as Storage Organization</a></h2>
+<p>The medallion you built in Module 2 was a transform pattern: bronze holds raw ingestion, silver
+cleans it, gold shapes it for serving. In OneLake, that same bronze/silver/gold split becomes the
+recommended way to organize a lakehouse’s storage. Each layer maps to a folder; the gold folder is
+what downstream consumers read. [MS-Learn medallion architecture:
+https://learn.microsoft.com/fabric/onelake/onelake-medallion-lakehouse-architecture]</p>
+<p>The organizational choice matters at scale. When you have one OneLake and one medallion structure,
+a consumer looking for the curated corpus has one obvious place to look: the gold layer of the
+lakehouse the data team owns. There is no question of which team’s copy is fresher, because there
+is only one copy.</p>
+<h2 id="shortcuts-zero-copy-references"><a class="header" href="#shortcuts-zero-copy-references">Shortcuts: Zero-Copy References</a></h2>
+<p>The mechanism that prevents duplication across workspaces is the shortcut. A OneLake shortcut is
+a reference, not a copy: it points to data in another lakehouse, ADLS, or S3 and makes it appear
+in your workspace’s namespace without moving or duplicating the underlying bytes. The data stays at
+the source; reads go through the OneLake namespace. [MS-Learn shortcuts:
+https://learn.microsoft.com/fabric/onelake/onelake-shortcuts]</p>
+<p>This is the production answer to the “every team copies the corpus” failure mode. The ML team
+creates a shortcut in their workspace that targets the gold layer the data team owns. They read
+the same Delta table, the same version, with no ETL, no sync job, and no risk of drift. When the
+data team updates gold, the ML team’s shortcut reflects it immediately.</p>
+<h2 id="the-gold-corpus-as-the-gold-layer"><a class="header" href="#the-gold-corpus-as-the-gold-layer">The Gold Corpus as the Gold Layer</a></h2>
+<p>The Delta corpus table you wrote in the lesson-2 artifact is a gold-layer table by the OneLake
+definition: it holds cleaned, curated, retrieval-ready documents, and it is the layer consumers
+query.</p>
+<pre><code class="language-python"># The gold corpus Delta table (from lesson 2) is the "gold layer" in OneLake terms:
+write_deltalake(gold_path, gold_df, mode="overwrite")   # gold layer, open Delta format
+# A OneLake SHORTCUT would point another workspace at gold_path with zero copy.
+</code></pre>
+<p>In a production Fabric deployment, <code>gold_path</code> is a folder inside the data team’s lakehouse gold
+layer. Another team creates a shortcut to that path, and their queries hit the same Delta table
+with no copy and no pipeline to maintain.</p>
+<h2 id="core-concepts-18"><a class="header" href="#core-concepts-18">Core Concepts</a></h2>
+<ul>
+<li>OneLake is one logical data lake per Fabric tenant: data lands once in open Delta format, and
+every workspace in the tenant reads the same copy with no per-team buckets.</li>
+<li>The medallion (bronze/silver/gold) is the recommended way to organize a OneLake lakehouse; the
+gold layer is the single folder downstream consumers read.</li>
+<li>A shortcut references data in another lakehouse, ADLS, or S3 without copying it; reads go
+through the OneLake namespace while the bytes stay at the source.</li>
+<li>The gold corpus Delta table from lesson 2 is exactly a gold-layer Delta table; a shortcut
+replaces the copy that would otherwise propagate stale data to every downstream team.</li>
+</ul>
+<p>The cost of duplicate data is not storage; it is the moment an incident fires and no one can say
+which copy was the one the model was actually reading.</p>
+<div class="claude-handoff" data-exercise="exercises/module5/the-medallion-in-onelake/">
+<p><strong>Build It in Claude Code</strong>: Organize the corpus store as a single lake directory with bronze, silver, and gold subpaths; write the gold corpus as the gold-layer Delta table consumers read; then write a short <code>LAKE_LAYOUT.md</code> (or docstring) that names each layer’s role and identifies one concrete location where a OneLake shortcut would replace a copy.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-ai-engineers-access-pattern"><a class="header" href="#the-ai-engineers-access-pattern">The AI Engineer’s Access Pattern</a></h1>
+<p>You do not own the warehouse. You do not run the lakehouse. And you still have to answer for the data your AI system reads: which version, which surface, which tier. That is the position, and the skill is reading correctly from a system you did not build.</p>
+<h2 id="read-only-by-contract"><a class="header" href="#read-only-by-contract">Read-Only by Contract</a></h2>
+<p>The Fabric Lakehouse SQL analytics endpoint is read-only. It serves DQL: <code>SELECT</code>, <code>WITH</code>, <code>GROUP BY</code>. No <code>INSERT</code>, no <code>UPDATE</code>, no <code>DELETE</code>. Writes go through the Delta table directly; the SQL endpoint exposes the result for querying. [MS-Learn lakehouse overview: https://learn.microsoft.com/fabric/data-engineering/lakehouse-overview]</p>
+<p>The Fabric Warehouse is different: it gives you full T-SQL DML. But the AI engineer’s use of both surfaces is the same posture: read-only. You are not the schema owner. You are not the platform team. Your job is to query a surface the data team built and answer a question about AI system behavior. [MS-Learn decision guide: https://learn.microsoft.com/fabric/fundamentals/decision-guide-lakehouse-warehouse]</p>
+<p>This is the same stance from Module 1, two tiers up. In M1 you queried a telemetry schema your production system emitted; you did not own the schema, you read it. Here the schema is a gold corpus on a warehouse or lakehouse surface. Same contract, different tier.</p>
+<h2 id="tier-chosen-by-workload"><a class="header" href="#tier-chosen-by-workload">Tier-Chosen by Workload</a></h2>
+<p>The read is not just read-only; it is tier-chosen. You pick the surface based on what the downstream job needs, not what is convenient.</p>
+<p>Structured BI goes to the warehouse. An AI engineer building a compliance dashboard queries the warehouse surface, where governed SQL runs aggregates that a Power BI report or a stakeholder query can consume without format negotiation.</p>
+<pre><code class="language-python"># warehouse.py — the warehouse is READ-ONLY in this module; writes go through the Delta table.
+def doc_count_by_category(df):
+    return duckdb.query("SELECT category, COUNT(*) AS doc_count FROM df GROUP BY category ORDER BY doc_count DESC").df()
+</code></pre>
+<p>Open-format ML and RAG go to the lakehouse. An embedding pipeline, a feature-store extraction, or a retrieval corpus reads the same gold corpus from Delta, because Spark, a local DuckDB session, and a vector pipeline can all open that format without a proprietary driver or a format conversion.</p>
+<p>The router makes this explicit:</p>
+<pre><code class="language-python">choose_tier("bi dashboard for compliance reporting")   # -&gt; "warehouse"
+choose_tier("rag corpus embeddings for retrieval")      # -&gt; "lakehouse"
+choose_tier("feature-store extraction for model training")  # -&gt; "lakehouse"
+</code></pre>
+<p><code>choose_tier</code> raises on an unknown pattern rather than guessing. A silent default ships data to the wrong surface; raising forces the engineer to name the workload before the read starts.</p>
+<h2 id="what-the-contract-covers"><a class="header" href="#what-the-contract-covers">What the Contract Covers</a></h2>
+<p>The data team owns the schema, runs the platform, and sets the write path. Your contract with them is narrow and explicit: you read the surface they expose, you do not mutate it, and you pick the tier before the query runs.</p>
+<p>That narrowness is not a limitation. It is what lets you reason about freshness, lineage, and correctness without owning the pipeline. When something goes wrong, “I read the warehouse surface at this version with this query” is a statement you can verify. “I wrote to the Gold layer to fix the data” is not your call.</p>
+<p>The read-only access pattern is the seam. Keep it.</p>
+<h2 id="core-concepts-19"><a class="header" href="#core-concepts-19">Core Concepts</a></h2>
+<ul>
+<li>The Fabric Lakehouse SQL analytics endpoint is read-only (DQL only); writes go through the Delta table, so the AI engineer’s access on that surface is read-only by design, not by discipline.</li>
+<li>The Fabric Warehouse supports full T-SQL DML, but the AI engineer treats both surfaces as read-only: you query the schema the data team owns, you do not mutate it.</li>
+<li>Tier selection is per workload, made before the query runs: structured BI to the warehouse (governed SQL, dashboard-ready aggregates), open-format ML and RAG to the lakehouse (any-engine Delta reads, no format conversion).</li>
+<li><code>choose_tier</code> raises on an unknown pattern rather than defaulting; a silent wrong-tier choice ships data to the wrong surface and is harder to audit than an explicit error.</li>
+</ul>
+<p>The access contract you hold here, read a versioned corpus you did not write, on a surface someone else built, is the same contract that lets Module 6 trace any AI system answer back to the exact corpus version it cited.</p>
+<div class="claude-handoff" data-exercise="exercises/module5/the-ai-engineers-access-pattern/">
+<p><strong>Build It in Claude Code</strong>: Write a read-only access helper (<code>doc_count_by_category</code>) that queries the gold corpus through the warehouse surface without mutating it, and a tier router (<code>choose_tier</code>) that, given a workload description, returns <code>"warehouse"</code> for BI workloads and <code>"lakehouse"</code> for ML and RAG workloads; prove the read does not change the Delta table’s version (assert the version before and after the query is identical), and prove the router picks <code>"warehouse"</code> for compliance reporting and <code>"lakehouse"</code> for RAG corpus and feature-store workloads.</p>
 </div>
 
 

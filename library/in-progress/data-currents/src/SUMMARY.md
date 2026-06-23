@@ -41,3 +41,13 @@
 - [Change-Data-Capture](module4/change-data-capture.md)
 - [Kafka: Topics and Consumer Groups](module4/kafka-topics-and-consumer-groups.md)
 - [The Streaming Freshness Monitor](module4/the-streaming-freshness-monitor.md)
+
+---
+
+# Module 5: Warehouses and Lakehouses
+
+- [Overview](module5/00-overview.md)
+- [Warehouse vs Lakehouse](module5/warehouse-vs-lakehouse.md)
+- [Open Table Formats: Delta and Iceberg](module5/open-table-formats-delta-and-iceberg.md)
+- [The Medallion in OneLake](module5/the-medallion-in-onelake.md)
+- [The AI Engineer's Access Pattern](module5/the-ai-engineers-access-pattern.md)
