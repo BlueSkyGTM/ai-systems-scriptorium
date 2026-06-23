@@ -1,4 +1,4 @@
-# CONTEXT — Machine Math (IN PROGRESS)
+# CONTEXT — Machine Math (COMPLETED)
 
 Classic ML fundamentals (regression, trees, boosting, AUC-ROC, feature engineering) paired with the
 math each one requires (linear algebra / calculus / probability / information theory), at applied

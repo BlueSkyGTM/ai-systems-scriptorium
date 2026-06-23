@@ -21,7 +21,7 @@ routed_boundaries:
   book_just_python: library/completed/just-python
   book_local_metal: library/completed/local-metal
   book_answer_engineering: library/completed/answer-engineering
-  in_progress_machine_math: library/in-progress/machine-math
+  book_machine_math: library/completed/machine-math
   in_progress_data_currents: library/in-progress/data-currents
   in_progress_weights_and_measures: library/in-progress/weights-and-measures
   platform: platform

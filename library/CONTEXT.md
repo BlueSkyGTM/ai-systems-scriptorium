@@ -6,8 +6,8 @@ self-contained (`src/` + `exercises/` + `theme/` + `book.toml`) so a single one 
 ## Buckets
 
 - `library/completed/` — shipped books. Currently: `sans-python`, `just-python`, `local-metal`,
-  `answer-engineering`.
-- `library/in-progress/` — actively authoring. Currently: `machine-math`, `data-currents`,
+  `answer-engineering`, `machine-math`.
+- `library/in-progress/` — actively authoring. Currently: `data-currents`,
   `weights-and-measures`.
 - `library/planned/` — dossier/ore identified, not started. Currently: none (all started).
 
