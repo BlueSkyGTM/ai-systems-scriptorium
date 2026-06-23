@@ -41,3 +41,13 @@
 - [LoRA from the Inside](module4/lora-from-the-inside.md)
 - [Quantization and Mixed Precision](module4/quantization-and-mixed-precision.md)
 - [The Fine-Tune Build](module4/the-fine-tune-build.md)
+
+---
+
+# Module 5: The Eval Pipeline
+
+- [Overview](module5/00-overview.md)
+- [Loss Is Not Enough](module5/loss-is-not-enough.md)
+- [Task Metrics](module5/task-metrics.md)
+- [LLM-as-Judge](module5/llm-as-judge.md)
+- [Building the Eval Gate](module5/building-the-eval-gate.md)
