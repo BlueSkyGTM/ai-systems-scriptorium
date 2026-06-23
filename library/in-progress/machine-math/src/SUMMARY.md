@@ -44,3 +44,11 @@
 - [Naive Bayes](module6/naive-bayes.md)
 - [Imbalanced Data](module6/imbalanced-data.md)
 - [Feature Selection](module6/feature-selection.md)
+
+## Module 7: The Portfolio Artifact
+
+- [Overview](module7/00-overview.md)
+- [The Dataset and the Feature Pipeline](module7/the-dataset-and-the-feature-pipeline.md)
+- [Training the Model](module7/training-the-model.md)
+- [Honest Evaluation and Slicing](module7/honest-evaluation-and-slicing.md)
+- [The Model Card and the Rubric](module7/the-model-card-and-the-rubric.md)

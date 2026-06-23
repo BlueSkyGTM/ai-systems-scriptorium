@@ -5,14 +5,21 @@ math each one requires (linear algebra / calculus / probability / information th
 depth. The thesis: math arrives bolted to the fundamental that needs it. Neither half is taught alone.
 Fills antilibrary gap rows 3 + 6 from `build-log/sans-python/antilibrary-gap-report.md`.
 
-**Graduated to in-progress 2026-06-21; Module 1 shipped.** `GATE-NAME-BOOK` cleared (title **Machine
-Math**, slug `machine-math`; lead candidate from the blueprint, the two-word house-style pairing of
-"machine" and "math"). **M1 "The Shape of Data"** (overview + 2 lessons + 2 exercises) installs the
-row-is-a-point reframing and seeds the from-scratch `exercises/ml/` package throughline (`distances.py`
-+ `knn.py`, each `pytest`-gated; negative case tested). Authored under the Haiku-fetch / Sonnet-author /
-Opus-conduct division of labor; `mdbook build` clean, reference harness 10/10, zero em-dashes, 7
-Microsoft Learn citations verified live. See `build-log/machine-math/build-progress.md` for per-module
-status and `README.md` for the full seven-module blueprint.
+**Graduated 2026-06-21; CONTENT-COMPLETE (7/7 modules shipped same day).** `GATE-NAME-BOOK` cleared
+(title **Machine Math**, slug `machine-math`). All seven modules shipped: M1 The Shape of Data (k-NN +
+distance), M2 Fitting a Line (gradient descent + linear/logistic regression + bias-variance), M3
+Splitting and Branching (information theory + decision trees + cross-validation), M4 Ensembles and the
+Gradient (bagging/random forests + gradient boosting), M5 What "Good" Means (the from-scratch evaluation
+library), M6 Feature Reality (encoding/naive Bayes/imbalance/selection), M7 The Portfolio Artifact (the
+capstone). The book builds one **from-scratch `exercises/ml/` package** across M1-M6 (distances, knn,
+gradient_descent, linreg, logreg, tree, ensemble, metrics, features, naive_bayes), and the M7 capstone
+`pipeline.py` + `rubric.py` **composes `ml.features` + `ml.metrics` off disk** to build, evaluate, and
+grade a real model with a model card. 23 lessons + 7 overviews + 23 exercises, every code artifact
+`pytest`-gated with a negative case, every external claim grounded in a live Microsoft Learn citation,
+`mdbook build` clean, zero em-dashes book-wide. Authored under the Haiku-fetch / Sonnet-build+author /
+Opus-conduct+gate division of labor. See `build-log/machine-math/build-progress.md` for per-module
+detail. Next: a public copy is the separate `GATE-PUBLISH`; relocation to `library/completed/` is the
+cataloguing move once confirmed.
 
 **Scope boundary (recorded):** PyTorch, deep-model training, fine-tuning, and neural-network math are
 OUT of scope. They are split into a separate planned book ("Weights and Measures"). This book ends
@@ -46,9 +53,9 @@ math and the relevant fundamental in the same sentence, because the book stores 
 
 ## Handoff & gates
 
-`GATE-NAME-BOOK` cleared; M1 shipped (`GATE-LOCK-PLAN` + `GATE-APPROVE-SHIP` cleared 2026-06-21). Ray
-approved self-clearing `GATE-APPROVE-SHIP` for M2–M7 to run the book straight through. For the next
-module: distill its `aefs` ore slice into `ingredients/source/machine-math/`, draft its
-`build-log/machine-math/m<n>/PLAN.md`, lock it, then the Haiku-fetch / Sonnet-author fleet runs it via
-`platform/pipeline/CONTEXT.md` (AUTHOR → VERIFY → BUILD/TEST) with Opus conducting and gating; commit
-and push each module as it lands. See `platform/HUMAN-GATES.md` and `build-log/machine-math/build-progress.md`.
+`GATE-NAME-BOOK` cleared; **all 7 modules shipped** (`GATE-LOCK-PLAN` + `GATE-APPROVE-SHIP` cleared per
+module 2026-06-21; Ray approved self-clearing `GATE-APPROVE-SHIP` for M2-M7 to run the book straight
+through). The book is content-complete. Remaining gates: **`GATE-PUBLISH`** for a public copy (private-first
+is the default), and the cataloguing move to `library/completed/machine-math` once Ray confirms (a
+git-tracked relocation + route-manifest/router/CATALOG update + `route-lint` green, as Just Python and
+Local Metal did). See `platform/HUMAN-GATES.md` and `build-log/machine-math/build-progress.md`.

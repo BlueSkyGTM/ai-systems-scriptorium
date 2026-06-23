@@ -1,0 +1,580 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>The Model Card and the Rubric - Machine Math — Classic ML and the Math It Requires</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/copy-to-claude-45921320.css">
+        <link rel="stylesheet" href="../theme/syntax-polish-53c427bd.css">
+        <link rel="stylesheet" href="../theme/readability-9f9ae6ec.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "rust";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "../searchindex-0d76eb49.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-37884162.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Machine Math — Classic ML and the Math It Requires</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="the-model-card-and-the-rubric"><a class="header" href="#the-model-card-and-the-rubric">The Model Card and the Rubric</a></h1>
+<p>A model card is the contract between the person who built a model and the person who
+deploys it. A rubric is the machine that reads that contract and says pass or fail. This
+lesson builds both, and makes them agree.</p>
+<h2 id="why-a-model-card"><a class="header" href="#why-a-model-card">Why a Model Card</a></h2>
+<p>Publishing a model without a card is handing someone a black box with a performance number
+on the label. The card opens the box: it names the data, the features, the algorithm, the
+hyperparameters, and the metrics, including the slice metrics that the aggregate hides. It
+also names the limitations, which is the part most ML reports skip.</p>
+<p>Azure Machine Learning’s Responsible AI scorecard formalizes this idea at production scale:
+a PDF report that “empowers machine learning professionals to easily generate and share
+their data and model health records” with both technical and nontechnical stakeholders. The
+scorecard surfaces model performance, worst-performing cohorts, and feature importance in a
+sharable format designed for audit reviews. See
+<a href="https://learn.microsoft.com/azure/machine-learning/how-to-responsible-ai-scorecard?view=azureml-api-2">Use Responsible AI Scorecard in Azure Machine Learning</a>
+for the full component description. The <code>MODEL_CARD.md</code> you generate in this capstone is
+the from-scratch equivalent: a markdown document whose sections map to the scorecard’s
+segments.</p>
+<h2 id="the-real-generated-card"><a class="header" href="#the-real-generated-card">The Real Generated Card</a></h2>
+<p>Running <code>pipeline.py</code> on the 1,000-row seeded dataset produces <code>MODEL_CARD.md</code> in the same
+directory as <code>data.csv</code>. Here are its sections verbatim:</p>
+<p><strong>Dataset section:</strong></p>
+<pre><code class="language-markdown">## Dataset
+
+- **Path**: data.csv
+- **Rows**: 1,000
+- **Provenance**: seeded synthetic benchmark designed to exercise the full methodology.
+  Generated by `generate_data.py` with `numpy.random.default_rng(seed=42)`; byte-reproducible.
+- **Task**: binary classification (churn prediction).
+- **Class balance**: roughly 30% positive (churned=1).
+</code></pre>
+<p><strong>Features section:</strong></p>
+<pre><code class="language-markdown">## Features
+
+**Numeric columns** (z-score scaled): `tenure_months`, `monthly_charge`, `num_products`
+Applied: each numeric column is z-score normalized (mean 0, std 1).
+
+**Categorical columns** (one-hot encoded): `plan_type`
+Applied: `plan_type` and `region` one-hot encoded into binary indicator columns.
+
+**Subgroup column** (for slicing): `region` -- values: north, south, east, west.
+
+All feature engineering uses `ml.features` from the from-scratch package:
+- `ml.features.zscore` for numeric scaling
+- `ml.features.one_hot_encode` for categorical encoding
+</code></pre>
+<p><strong>Model + Hyperparameters section:</strong></p>
+<pre><code class="language-markdown">## Model + Hyperparameters
+
+| Parameter | Value |
+|-----------|-------|
+| Algorithm | `sklearn.ensemble.GradientBoostingClassifier` |
+| n_estimators | 200 |
+| max_depth | 4 |
+| learning_rate | 0.05 |
+| subsample | 0.8 |
+| random_state | 42 |
+
+Train/test split: 80/20, stratified on `churned`, `random_state=42`.
+</code></pre>
+<p><strong>Overall Metrics section:</strong></p>
+<pre><code class="language-markdown">## Overall Metrics
+
+Evaluated on the held-out 20% test set using `ml.metrics` from-scratch implementations.
+
+| Metric | Value |
+|--------|-------|
+| AUC (ROC) | 0.8865 |
+| F1 | 0.7455 |
+| Precision | 0.8367 |
+| Recall | 0.6721 |
+</code></pre>
+<p><strong>Slice Table section:</strong></p>
+<pre><code class="language-markdown">## Slice Table
+
+Per-subgroup recall (via `ml.metrics.slice_metric` over `region`):
+
+| Subgroup | Recall |
+|----------|--------|
+| east | 0.6000 |
+| north | 0.6667 |
+| south | 0.8125 |
+| west | 0.6000 |
+
+**Worst subgroup**: `east` (recall = 0.6000).
+</code></pre>
+<p><strong>Limitations section:</strong></p>
+<pre><code class="language-markdown">## Limitations
+
+1. **Synthetic data**: the signal is deterministic and clean; real churn data has more noise,
+   missing values, and temporal drift. AUC on real data would likely be lower.
+2. **Subgroup gaps**: recall varies across regions (see slice table); the model should be
+   monitored and possibly calibrated for the worst-performing subgroup in production.
+3. **No temporal validation**: the split is random, not time-based; a model deployed to predict
+   future churn should be evaluated on future holdout data.
+4. **Feature coverage**: `num_products` and `plan_type` encode product stickiness; other
+   signals common in production (contract type, support tickets, usage frequency) are absent.
+5. **Threshold choice**: the default 0.5 threshold is used for F1/precision/recall; an
+   optimal threshold tuned on a validation set would change these numbers.
+</code></pre>
+<p>Every number in the card traces directly to a function in <code>ml.metrics</code>. AUC comes from
+<code>ml_metrics.roc_auc(y_test, y_proba)</code>. The slice table comes from
+<code>ml_metrics.slice_metric(y_test, y_pred, region_test, ml_metrics.recall)</code>. The card does
+not derive any number independently of the pipeline. That traceability is the point.</p>
+<h2 id="the-rubric-in-code"><a class="header" href="#the-rubric-in-code">The Rubric in Code</a></h2>
+<p><code>rubric.py</code> grades a <code>PipelineResult</code> against six criteria. The criteria are the single
+source of truth: the code and the prose table below are one rubric in two forms. Here is
+<code>rubric.py</code> verbatim:</p>
+<pre><code class="language-python">"""rubric.py -- M7 capstone: 6-criterion code grader.
+
+The code IS the lesson prose table.
+
+Criteria
+--------
+R1  RUNS            -- predictions exist (non-empty array)
+R2  FEATURES-ENGINEERED -- categorical columns were encoded + numerics scaled
+R3  EVALUATED       -- auc/f1/precision/recall present and clear metric floors
+R4  SLICED          -- slices dict non-empty, worst subgroup identified
+R5  COMPOSED        -- ml.features and ml.metrics are from the ml/ package on disk
+R6  MODEL-CARD      -- MODEL_CARD.md exists with all required section headers
+
+Usage
+-----
+    python rubric.py            # grades the default pipeline run
+    import rubric; rubric.grade(result)
+"""
+from __future__ import annotations
+
+import os
+import sys
+import re
+
+# ---------------------------------------------------------------------------
+# Path setup
+# ---------------------------------------------------------------------------
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_REF = os.path.dirname(_HERE)
+for _p in [_REF, _HERE]:
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+# ---------------------------------------------------------------------------
+# Criteria registry (id, human-readable description)
+# ---------------------------------------------------------------------------
+
+CRITERIA = (
+    ("R1", "RUNS: predictions array is non-empty"),
+    ("R2", "FEATURES-ENGINEERED: categoricals one-hot encoded, numerics z-score scaled"),
+    ("R3", "EVALUATED: AUC &gt;= 0.75 and F1 &gt;= 0.50 and precision/recall both present"),
+    ("R4", "SLICED: per-subgroup metrics computed, worst subgroup identified"),
+    ("R5", "COMPOSED: ml.features and ml.metrics imported from ml/ package on disk"),
+    ("R6", "MODEL-CARD: MODEL_CARD.md exists with required section headers"),
+)
+
+# Floors for R3
+_AUC_FLOOR = 0.75
+_F1_FLOOR = 0.50
+
+# Required section headers in the model card (checked as substrings)
+_REQUIRED_HEADERS = [
+    "## Dataset",
+    "## Features",
+    "## Model",
+    "## Overall Metrics",
+    "## Slice Table",
+    "## Limitations",
+]
+
+
+# ---------------------------------------------------------------------------
+# Grading logic
+# ---------------------------------------------------------------------------
+
+def grade(result) -&gt; dict[str, bool]:
+    """Grade a PipelineResult against the six criteria."""
+    scores = {}
+
+    # R1 -- RUNS
+    try:
+        preds = result.predictions
+        scores["R1"] = preds is not None and len(preds) &gt; 0
+    except Exception:
+        scores["R1"] = False
+
+    # R2 -- FEATURES-ENGINEERED
+    try:
+        scores["R2"] = bool(result._encoding_done) and bool(result._scaling_done)
+    except Exception:
+        scores["R2"] = False
+
+    # R3 -- EVALUATED
+    try:
+        m = result.metrics
+        auc_ok = isinstance(m.get("auc"), (int, float)) and m["auc"] &gt;= _AUC_FLOOR
+        f1_ok = isinstance(m.get("f1"), (int, float)) and m["f1"] &gt;= _F1_FLOOR
+        prec_ok = "precision" in m and isinstance(m["precision"], (int, float))
+        rec_ok = "recall" in m and isinstance(m["recall"], (int, float))
+        scores["R3"] = auc_ok and f1_ok and prec_ok and rec_ok
+    except Exception:
+        scores["R3"] = False
+
+    # R4 -- SLICED
+    try:
+        slices_ok = isinstance(result.slices, dict) and len(result.slices) &gt; 0
+        worst_ok = isinstance(result.worst_subgroup, str) and result.worst_subgroup != ""
+        scores["R4"] = slices_ok and worst_ok
+    except Exception:
+        scores["R4"] = False
+
+    # R5 -- COMPOSED (ml.features and ml.metrics imported from ml/ package on disk)
+    try:
+        modules_listed = (
+            "ml.features" in result.composed_modules
+            and "ml.metrics" in result.composed_modules
+        )
+        import importlib
+        feat_mod = sys.modules.get("ml.features")
+        metr_mod = sys.modules.get("ml.metrics")
+        feat_on_disk = (
+            feat_mod is not None
+            and hasattr(feat_mod, "__file__")
+            and feat_mod.__file__ is not None
+            and os.path.basename(feat_mod.__file__) == "features.py"
+            and "ml" in feat_mod.__file__
+        )
+        metr_on_disk = (
+            metr_mod is not None
+            and hasattr(metr_mod, "__file__")
+            and metr_mod.__file__ is not None
+            and os.path.basename(metr_mod.__file__) == "metrics.py"
+            and "ml" in metr_mod.__file__
+        )
+        scores["R5"] = modules_listed and feat_on_disk and metr_on_disk
+    except Exception:
+        scores["R5"] = False
+
+    # R6 -- MODEL-CARD
+    try:
+        card_path = result.model_card_path
+        card_exists = os.path.isfile(card_path)
+        if card_exists:
+            with open(card_path, "r", encoding="utf-8") as fh:
+                content = fh.read()
+            headers_ok = all(h in content for h in _REQUIRED_HEADERS)
+        else:
+            headers_ok = False
+        scores["R6"] = card_exists and headers_ok
+    except Exception:
+        scores["R6"] = False
+
+    return scores
+
+
+# ---------------------------------------------------------------------------
+# Scorecard printer / CLI entry point
+# ---------------------------------------------------------------------------
+
+def main(result=None) -&gt; int:
+    """Print scorecard and return 0 iff all six criteria pass."""
+    if result is None:
+        import pipeline as _pipeline
+        data_path = os.path.join(os.path.dirname(__file__), "data.csv")
+        result = _pipeline.run(data_path)
+
+    scores = grade(result)
+
+    print("\n===  M7 CAPSTONE RUBRIC  ===")
+    print(f"{'ID':&lt;4}  {'PASS/FAIL':&lt;10}  Description")
+    print("-" * 72)
+    all_pass = True
+    for cid, desc in CRITERIA:
+        passed = scores.get(cid, False)
+        status = "PASS" if passed else "FAIL"
+        print(f"{cid:&lt;4}  {status:&lt;10}  {desc}")
+        if not passed:
+            all_pass = False
+
+    n_pass = sum(scores.values())
+    n_total = len(CRITERIA)
+    print("-" * 72)
+    print(f"Score: {n_pass}/{n_total}")
+    print("Result: ALL PASS" if all_pass else "Result: INCOMPLETE -- see FAILed criteria above")
+    print()
+
+    return 0 if all_pass else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+</code></pre>
+<h2 id="the-six-criteria-in-two-forms"><a class="header" href="#the-six-criteria-in-two-forms">The Six Criteria in Two Forms</a></h2>
+<p>The <code>CRITERIA</code> tuple and this prose table are one rubric. Their IDs, short labels, and
+pass conditions must match exactly. If you change one, change the other.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>ID</th><th>Short Label</th><th>Passes When</th></tr>
+</thead>
+<tbody>
+<tr><td>R1</td><td>RUNS</td><td><code>result.predictions</code> is a non-empty array; the pipeline ran end to end</td></tr>
+<tr><td>R2</td><td>FEATURES-ENGINEERED</td><td><code>result._encoding_done</code> and <code>result._scaling_done</code> are both <code>True</code>; categoricals were one-hot encoded and numerics z-score scaled</td></tr>
+<tr><td>R3</td><td>EVALUATED</td><td><code>result.metrics["auc"] &gt;= 0.75</code> and <code>result.metrics["f1"] &gt;= 0.50</code>; precision and recall are present as floats</td></tr>
+<tr><td>R4</td><td>SLICED</td><td><code>result.slices</code> is a non-empty dict and <code>result.worst_subgroup</code> is a non-empty string</td></tr>
+<tr><td>R5</td><td>COMPOSED</td><td><code>"ml.features"</code> and <code>"ml.metrics"</code> appear in <code>result.composed_modules</code>; both modules are loaded from <code>.py</code> files on disk inside the <code>ml/</code> package</td></tr>
+<tr><td>R6</td><td>MODEL-CARD</td><td><code>result.model_card_path</code> points to a file on disk that contains all six required headers: <code>## Dataset</code>, <code>## Features</code>, <code>## Model</code>, <code>## Overall Metrics</code>, <code>## Slice Table</code>, <code>## Limitations</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>The good run grades 6/6. The three deficient modes each fail exactly one criterion:</p>
+<ul>
+<li><code>no_encoding</code>: skips one-hot encoding and z-score scaling. R2 fails; R1, R3, R4, R5, R6
+pass.</li>
+<li><code>no_slicing</code>: skips <code>slice_metric</code>. R4 fails; R1, R2, R3, R5, R6 pass.</li>
+<li><code>stub_card</code>: writes a card with no section headers. R6 fails; R1, R2, R3, R4, R5 pass.</li>
+</ul>
+<p><code>rubric.main()</code> returns 0 on a good run and a nonzero exit code whenever any criterion
+fails. The acceptance gate in <code>test_rubric.py</code> verifies all three deficient modes and
+confirms that each fails exactly the criterion it offends and no others. That specificity is
+what makes a rubric a gate rather than a rubber stamp.</p>
+<h2 id="what-this-means-for-the-portfolio"><a class="header" href="#what-this-means-for-the-portfolio">What This Means for the Portfolio</a></h2>
+<p>The model card is the artifact a hiring manager reads. The rubric is the machine that
+certifies it. Together they prove that every number on the card was computed with code you
+wrote, that the code composed your from-scratch math library, and that a broken run fails
+the gate it deserves to fail. The reader now holds a graded, GitHub-postable ML system
+whose every number traces back to the math.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>A model card maps each reported metric to the function that computed it; every number
+must be traceable to code, not inferred or hand-tuned.</li>
+<li>The <code>CRITERIA</code> tuple in <code>rubric.py</code> and the prose table in this lesson are one rubric in
+two forms; they must agree word-for-word on IDs and pass conditions, because the code
+runs and the prose describes.</li>
+<li><code>rubric.main()</code> returns a nonzero exit code whenever any criterion fails; a deficient run
+that passes is not a gate, it is a rubber stamp.</li>
+<li>Each deficient mode (<code>no_encoding</code>, <code>no_slicing</code>, <code>stub_card</code>) fails exactly one
+criterion and no others, proving the rubric is criterion-specific rather than all-or-nothing.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module7/the-model-card-and-the-rubric/">
+<p><strong>Build It in Claude Code:</strong> Read <code>exercises/CLAUDE.md</code> first, then the current state of
+<code>exercises/module7/pipeline.py</code> (prior modules added load, features, train, eval, and
+slice). Your tasks: (1) add the model-card writer to <code>pipeline.py</code> (step 7: the
+<code>_write_model_card</code> call and <code>_CARD_TEMPLATE</code>), and (2) build
+<code>exercises/module7/rubric.py</code> with the <code>CRITERIA</code> tuple and <code>grade(result)</code> exactly as
+shown above. The prose table and the <code>CRITERIA</code> tuple are one rubric; they must match.
+Gate: <code>python -m pytest exercises/module7/the-model-card-and-the-rubric</code> must be green.
+The good run grades 6/6; each deficient run fails exactly the criterion it offends.</p>
+</div>
+
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../module7/honest-evaluation-and-slicing.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../module7/honest-evaluation-and-slicing.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/copy-to-claude-04012d3b.js"></script>
+
+
+
+    </div>
+    </body>
+</html>
