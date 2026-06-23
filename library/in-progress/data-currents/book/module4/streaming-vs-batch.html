@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Retries and Idempotency - Data Currents — SQL and the Data Platform for AI Systems</title>
+        <title>Streaming vs Batch - Data Currents — SQL and the Data Platform for AI Systems</title>
 
 
         <!-- Custom HTML head -->
@@ -177,82 +177,39 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="retries-and-idempotency"><a class="header" href="#retries-and-idempotency">Retries and Idempotency</a></h1>
-<p>A flaky network blip fails one task and you do not want a human paged for a glitch that fixes itself
-on the second try. Retries handle it. But a retry that re-runs a bad task can corrupt your data just
-as surely as the original failure. The retry is only as safe as the task it re-runs.</p>
-<h2 id="why-retries-exist"><a class="header" href="#why-retries-exist">Why Retries Exist</a></h2>
-<p>An orchestrator treats each task as a unit of work with a pass/fail result. When a task fails, the
-default behavior is to fail the entire flow. That is correct for logic errors. It is wrong for
-transient ones: a brief SQLite lock, a momentary network timeout, a file system hiccup that clears in
-under a second. These are not bugs in your code; they are noise in the environment, and failing a full
-run on them wastes the work already done.</p>
-<p>Both Airflow and Prefect give you a task-level retry knob. In Airflow, the parameters are <code>retries</code>
-(the count of additional attempts) and <code>retry_delay</code> (how long to wait between them; set
-<code>retry_exponential_backoff=True</code> to widen the gap each attempt). In Prefect, the equivalents are
-<code>retries=</code> and <code>retry_delay_seconds=</code>. Same idea, same shape: re-attempt the failing task before
-failing the run. The flow’s other tasks are unaffected while the retry is in flight.</p>
-<p>The DAG from the prior lesson wires <code>extract</code> and <code>ingest</code> in sequence. Those are the two I/O tasks,
-and I/O tasks are where transient failures live. The artifact sets retries on both:</p>
-<pre><code class="language-python">@task(name="extract", retries=2, retry_delay_seconds=0.1)
-def extract(run_date, corpus_csv):
-    """retries=2 -&gt; two more attempts on a transient failure before the task (and the flow) fails."""
-    if not os.path.isfile(corpus_csv):
-        raise FileNotFoundError(f"[extract] CSV not found: {corpus_csv}")
-    return corpus_csv
+                        <h1 id="streaming-vs-batch-the-freshness-slo-decides"><a class="header" href="#streaming-vs-batch-the-freshness-slo-decides">Streaming vs Batch: The Freshness SLO Decides</a></h1>
+<p>The nightly pipeline is fine until a compliance edit lands at 9 a.m. and your index serves the old paragraph until 2 a.m. tomorrow. Some sources cannot wait, and once you understand that, the decision is not “streaming or batch” for the whole system: it is “streaming or batch” per source, driven by a single number.</p>
+<p>That number is the freshness SLO.</p>
+<h2 id="what-the-slo-exposes"><a class="header" href="#what-the-slo-exposes">What the SLO Exposes</a></h2>
+<p>You already have one: <code>freshness_slos</code> seeds <code>corpus_raw</code> at 25 hours. That target tells the system the source is allowed to be almost a day old before anything fires. Nightly loads satisfy it easily. Now consider a live compliance feed where an edit must appear in the index within five seconds of being written. A 25-hour SLO is irrelevant; a 5-second one is not. The SLO does not describe what the system can do; it describes what the source requires. Change the requirement, and you change the pipeline.</p>
+<p>The two SLOs side by side make this concrete:</p>
+<pre><code class="language-python"># batch leg (M2/M3): freshness SLO measured in HOURS
+batch_slo_hours = 25            # nightly reload; stale after ~a day
 
-@task(name="ingest", retries=2, retry_delay_seconds=0.1)
-def ingest(csv_path, db_path):
-    """retries=2 guards against transient SQLite lock contention. The MERGE underneath is idempotent."""
-    return run_ingest(csv_path=csv_path, db_path=db_path)
+# streaming leg (M4): freshness SLO measured in SECONDS
+streaming_slo_seconds = 5       # a change must be in the index within 5s
 </code></pre>
-<p><code>retries=2</code> means the task gets two additional attempts after the first failure, for three total tries
-before the flow gives up. <code>retry_delay_seconds=0.1</code> is a short wait: in a test environment, a 0.1-second
-pause is enough to clear the contention; in production you would set it higher.</p>
-<h2 id="the-safety-condition"><a class="header" href="#the-safety-condition">The Safety Condition</a></h2>
-<p>Here is what the retry mechanism does not guarantee: that re-running the task is safe.</p>
-<p>Consider a task that appends rows. The first attempt inserts 120 rows, then dies on the commit. The
-orchestrator retries. The second attempt inserts 120 rows again, this time successfully. You now have
-240 rows. The retry made the failure worse.</p>
-<p>This is the classic partial-success problem, and retries expose it. A task is only safe to retry if
-re-running it after a partial success produces the same result as a clean first run. That property
-has a name: <strong>idempotency</strong>.</p>
-<p>A non-idempotent task (append rows, increment a counter, send an email) can corrupt state on retry.
-An idempotent task (check-then-insert on a unique key, an upsert, a content-addressed write) cannot.</p>
-<h2 id="why-the-ingest-task-is-safe"><a class="header" href="#why-the-ingest-task-is-safe">Why the Ingest Task Is Safe</a></h2>
-<p>The <code>ingest</code> task calls <code>run_ingest</code>, which calls the <code>merge_gold</code> function you built in M2. That MERGE
-is keyed on <code>(doc_id, content_hash)</code>: if the row already exists, the merge skips it. If the <code>ingest</code>
-task completes its first attempt up to the SQLite commit and then the commit itself fails, the retry
-runs the full merge again. The rows that made it in are skipped; the row that did not is inserted.
-The result is identical to a clean first run.</p>
-<p>Run the same ingest twice on an unchanged corpus and <code>merge_gold</code> returns <code>0</code> the second time. That
-return value is the idempotency proof. A retried ingest cannot double-load because the contract
-forbids it: same <code>(doc_id, content_hash)</code> pair, same skip path, every time.</p>
-<p>The pairing is tight: <code>retries=2</code> on the <code>ingest</code> task is only valid because <code>merge_gold</code> underneath
-it is idempotent. Remove idempotency and the retry parameter becomes a liability.</p>
-<h2 id="what-this-means-at-scale"><a class="header" href="#what-this-means-at-scale">What This Means at Scale</a></h2>
-<p>A production corpus pipeline runs nightly. Over a year, a transient SQLite lock happens. Without
-retries, a human wakes up to a failed run, investigates, finds nothing wrong, and re-runs manually.
-With retries plus an idempotent load, the pipeline heals itself in under a second and the on-call
-engineer never sees it.</p>
-<p>The same rule applies to the <code>extract</code> task. If the corpus CSV is momentarily unavailable because a
-writer holds a lock, <code>retries=2</code> gives the pipeline three chances to read it before failing. The
-extract task only reads and returns the path; reading is inherently idempotent.</p>
-<p>Retries are a cheap configuration. Idempotency is design work. You pay for idempotency once, in M2,
-and it makes every retry downstream free of risk.</p>
+<p>Same corpus, two legs, two SLOs. The batch leg is a nightly job that the M3 orchestrator fires and monitors. The streaming leg is a continuously running consumer that applies each change as it arrives. You choose the leg by reading the SLO, not by picking a technology.</p>
+<h2 id="the-cost-is-real"><a class="header" href="#the-cost-is-real">The Cost Is Real</a></h2>
+<p>Streaming satisfies a seconds-scale SLO; it does not do it for free. A nightly job wakes up, runs, and sleeps. A streaming consumer runs continuously, holding a connection, processing every event, and writing to the index in near-real time. On Microsoft Fabric, that means an Eventstream resource stays live around the clock: it captures events from the source, routes them to a Lakehouse or Eventhouse, and your consumer reads from that stream. [MS-Learn Eventstream overview: https://learn.microsoft.com/fabric/real-time-intelligence/event-streams/overview]</p>
+<p>The batch pipeline costs compute for the duration of the load. The streaming pipeline costs compute for the life of the source. Whether that trade is worth it depends entirely on the SLO. A reference corpus that changes once a month does not need a live consumer; a compliance feed that changes hourly and must be current in five seconds cannot live without one.</p>
+<p>Mixing both in one system is normal. Most real data platforms batch the stable sources and stream the fast-moving ones. The routing decision is made per source at SLO definition time, not once at architecture review.</p>
+<h2 id="deciding-per-source"><a class="header" href="#deciding-per-source">Deciding Per Source</a></h2>
+<p>Three questions settle it:</p>
+<p><strong>What is the required freshness?</strong> If the answer is hours, the batch leg is already built (M2/M3). If the answer is seconds or low minutes, streaming is the only path.</p>
+<p><strong>How often does the source change?</strong> A slowly-changing reference corpus churns a batch leg efficiently; an event-dense feed would cost far more to reload nightly than to stream incrementally.</p>
+<p><strong>What is the cost of being stale?</strong> A retriever serving an outdated compliance paragraph is a liability. A retriever serving a corpus that is 18 hours old instead of 22 is probably fine. Name the cost before you name the architecture.</p>
+<p>These three questions together produce a defensible routing decision. The routing decision is an engineering judgment call about latency versus cost; there is no product feature that makes it for you.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>Both Airflow (<code>retries</code>, <code>retry_delay</code>) and Prefect (<code>retries=</code>, <code>retry_delay_seconds=</code>) retry a
-failing task a fixed number of times before failing the flow; the parameter names differ, the semantics
-are the same.</li>
-<li>A retry is only safe if the task is idempotent: re-running it after a partial success must produce
-the same result as a clean first run.</li>
-<li>A non-idempotent task (append, increment, send) retried after a partial success corrupts state; the
-retry mechanism itself becomes the hazard.</li>
-<li>The <code>ingest</code> task carries <code>retries=2</code> because <code>merge_gold</code> beneath it is keyed on <code>(doc_id, content_hash)</code>: the same pair always skips, so a retried ingest inserts zero duplicate rows.</li>
+<li>The freshness SLO is the decision variable: a source with a seconds-scale SLO streams; a source with an hours-scale SLO batches. The architecture follows the requirement.</li>
+<li>The routing decision is per source, not per system: a stable reference corpus and a live compliance feed can coexist in one platform on different legs.</li>
+<li>Streaming satisfies low-latency SLOs at the cost of a continuously running consumer; batch satisfies high-latency SLOs at the cost of a scheduled job. Neither is free; the SLO determines which cost is worth paying.</li>
+<li>Microsoft Fabric Eventstream is the no-code service that captures and routes real-time event streams to a Lakehouse or Eventhouse; it is the streaming counterpart to the batch Data Factory pipeline built in M2/M3.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module3/retries-and-idempotency/">
-<p><strong>Build It in Claude Code</strong>: Extend <code>module3-orchestration/</code> by adding <code>retries=2, retry_delay_seconds=0.1</code> to the <code>extract</code> and <code>ingest</code> task decorators, then write a pytest test that monkeypatches <code>run_ingest</code> to raise on the first call and succeed on the second, asserts the flow still completes, and asserts the task was attempted exactly twice; add a second assertion that re-running the ingest on an unchanged corpus returns zero new <code>source_document</code> versions, proving the underlying MERGE makes the retry safe.</p>
+<p>The SLO you write today is the number that determines whether a compliance edit lands in five seconds or 17 hours. Write it first; build the pipeline second.</p>
+<div class="claude-handoff" data-exercise="exercises/module4/streaming-vs-batch/">
+<p><strong>Build It in Claude Code</strong>: Write a <code>decide_mode(required_freshness_seconds)</code> function that returns <code>"stream"</code> when the SLO is seconds-scale (60 seconds or under) and <code>"batch"</code> otherwise; classify a handful of example sources (a nightly reference corpus, a live compliance feed, a price-update feed, a monthly audit log); add a <code>pytest</code> test that asserts each classification is correct. This decision helper frames the streaming pipeline you build across the rest of the module: every source that routes to <code>"stream"</code> is a candidate for the Eventstream leg.</p>
 </div>
 
 
@@ -260,11 +217,11 @@ retry mechanism itself becomes the hazard.</li>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module3/the-dag-tasks-and-dependencies.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module4/00-overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module3/scheduling-and-backfill.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module4/change-data-capture.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -274,11 +231,11 @@ retry mechanism itself becomes the hazard.</li>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module3/the-dag-tasks-and-dependencies.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module4/00-overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module3/scheduling-and-backfill.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module4/change-data-capture.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

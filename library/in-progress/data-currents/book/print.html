@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-0f2066e1.js";
+            window.path_to_searchindex_js = "searchindex-37d6c75b.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-7f00e70d.js"></script>
+        <script src="toc-19174fd1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -1400,6 +1400,290 @@ def pipeline_flow(...):
 <p>Module 4 adds streaming and change-data-capture for the sources that cannot wait for the nightly run.</p>
 <div class="claude-handoff" data-exercise="exercises/module3/alerting-on-breach/">
 <p><strong>Build It in Claude Code</strong>: Make <code>freshness_gate</code> the final task in <code>pipeline_flow.py</code>, calling M2’s <code>check_freshness</code> and raising a <code>RuntimeError</code> naming the stale source IDs when any source is stale; add the module-level <code>ALERTS</code> list and <code>on_flow_failure</code> hook wired via <code>@flow(on_failure=[on_flow_failure])</code>; then finalize <code>smoke.py</code> to assert that a fresh corpus run completes clean with <code>ALERTS</code> empty, and that injecting a future <code>now_ts</code> (making at least one source stale) fails the run and leaves <code>ALERTS</code> non-empty.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-4-streaming-and-change-data-capture"><a class="header" href="#module-4-streaming-and-change-data-capture">Module 4: Streaming and Change-Data-Capture</a></h1>
+<p>The nightly pipeline from Modules 2 and 3 is fine until a source cannot wait for the night. A
+compliance edit lands at 9 a.m.; a price changes; a user updates a document the model is about to cite.
+A batch that reloads at 2 a.m. serves the old answer for seventeen hours. This module builds the leg
+that handles those sources: change-data-capture turning row-level changes into a stream, the Kafka
+substrate that carries it, and a freshness monitor that measures lag in seconds instead of hours.</p>
+<p>You do not stand up a Kafka cluster here. You learn the streaming model the way it actually works, and
+you build a faithful in-process simulation of it so the whole pipeline runs offline and tested. The
+vocabulary is real: topics, partitions, offsets, consumer groups, at-least-once delivery. The
+correctness is real too: every streamed change applies through the same content-hash merge from Module
+2, so a streamed update and a batch update land identically, only faster.</p>
+<h2 id="what-this-module-covers-3"><a class="header" href="#what-this-module-covers-3">What This Module Covers</a></h2>
+<p><strong>Streaming vs Batch</strong> is the decision, and the freshness SLO is the decision variable. A source that
+must be in the index in seconds streams; a source that can wait hours batches. You choose per source,
+not per system, and you write the SLO down before you build anything.</p>
+<p><strong>Change-Data-Capture</strong> is the bridge from a database to a stream. CDC turns a table’s inserts, updates,
+and deletes into change events the consumer applies with the same merge as the batch load. The streamed
+change is correct because it reuses the batch’s correctness; it is just faster.</p>
+<p><strong>Kafka: Topics and Consumer Groups</strong> is the substrate that carries the events. A topic is a durable,
+partitioned append log; an offset marks each record’s position; a consumer group divides the partitions
+so each is read by one consumer, and uncommitted offsets give at-least-once delivery, which is why
+idempotency matters.</p>
+<p><strong>The Streaming Freshness Monitor</strong> closes the module. Streaming freshness is a continuous
+event-to-applied lag measured per source, breaching at seconds scale. It is the same staleness question
+Module 2 asked of the batch leg, measured three orders of magnitude tighter and all the time.</p>
+<h2 id="who-this-is-for-4"><a class="header" href="#who-this-is-for-4">Who This Is For</a></h2>
+<p>You finished Module 3: you have a batch pipeline that runs itself and alerts on breach. Now you add the
+real-time leg for the sources that cannot wait. You model and consume the stream; you do not operate the
+broker.</p>
+<h2 id="the-artifact-3"><a class="header" href="#the-artifact-3">The Artifact</a></h2>
+<p>You build <code>module4-streaming/</code>, an offline, standard-library simulation of a Kafka streaming pipeline: a
+partitioned topic with offsets, a consumer group with at-least-once delivery, a CDC source emitting
+change events, a consumer that applies each event through the Module 2 merge, and a lag monitor. It
+extends the same corpus store, so a streamed change is just a faster path to the tables Module 1 queries.
+Module 5 is where the batch and streaming legs land: the warehouse and the lakehouse.</p>
+<h2 id="prerequisites-3"><a class="header" href="#prerequisites-3">Prerequisites</a></h2>
+<ul>
+<li>Modules 2 and 3 complete (the merge and the orchestrated pipeline)</li>
+<li>Python 3.11+; the streaming simulation is standard library only, fully offline</li>
+<li>Comfort with the Module 2 content-hash merge and the freshness SLO idea</li>
+</ul>
+<h2 id="time-estimate-3"><a class="header" href="#time-estimate-3">Time Estimate</a></h2>
+<p>Each lesson runs 70 to 100 minutes including its exercise. The Kafka simulation lesson is the densest;
+the vocabulary rewards going slowly once.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="streaming-vs-batch-the-freshness-slo-decides"><a class="header" href="#streaming-vs-batch-the-freshness-slo-decides">Streaming vs Batch: The Freshness SLO Decides</a></h1>
+<p>The nightly pipeline is fine until a compliance edit lands at 9 a.m. and your index serves the old paragraph until 2 a.m. tomorrow. Some sources cannot wait, and once you understand that, the decision is not “streaming or batch” for the whole system: it is “streaming or batch” per source, driven by a single number.</p>
+<p>That number is the freshness SLO.</p>
+<h2 id="what-the-slo-exposes"><a class="header" href="#what-the-slo-exposes">What the SLO Exposes</a></h2>
+<p>You already have one: <code>freshness_slos</code> seeds <code>corpus_raw</code> at 25 hours. That target tells the system the source is allowed to be almost a day old before anything fires. Nightly loads satisfy it easily. Now consider a live compliance feed where an edit must appear in the index within five seconds of being written. A 25-hour SLO is irrelevant; a 5-second one is not. The SLO does not describe what the system can do; it describes what the source requires. Change the requirement, and you change the pipeline.</p>
+<p>The two SLOs side by side make this concrete:</p>
+<pre><code class="language-python"># batch leg (M2/M3): freshness SLO measured in HOURS
+batch_slo_hours = 25            # nightly reload; stale after ~a day
+
+# streaming leg (M4): freshness SLO measured in SECONDS
+streaming_slo_seconds = 5       # a change must be in the index within 5s
+</code></pre>
+<p>Same corpus, two legs, two SLOs. The batch leg is a nightly job that the M3 orchestrator fires and monitors. The streaming leg is a continuously running consumer that applies each change as it arrives. You choose the leg by reading the SLO, not by picking a technology.</p>
+<h2 id="the-cost-is-real"><a class="header" href="#the-cost-is-real">The Cost Is Real</a></h2>
+<p>Streaming satisfies a seconds-scale SLO; it does not do it for free. A nightly job wakes up, runs, and sleeps. A streaming consumer runs continuously, holding a connection, processing every event, and writing to the index in near-real time. On Microsoft Fabric, that means an Eventstream resource stays live around the clock: it captures events from the source, routes them to a Lakehouse or Eventhouse, and your consumer reads from that stream. [MS-Learn Eventstream overview: https://learn.microsoft.com/fabric/real-time-intelligence/event-streams/overview]</p>
+<p>The batch pipeline costs compute for the duration of the load. The streaming pipeline costs compute for the life of the source. Whether that trade is worth it depends entirely on the SLO. A reference corpus that changes once a month does not need a live consumer; a compliance feed that changes hourly and must be current in five seconds cannot live without one.</p>
+<p>Mixing both in one system is normal. Most real data platforms batch the stable sources and stream the fast-moving ones. The routing decision is made per source at SLO definition time, not once at architecture review.</p>
+<h2 id="deciding-per-source"><a class="header" href="#deciding-per-source">Deciding Per Source</a></h2>
+<p>Three questions settle it:</p>
+<p><strong>What is the required freshness?</strong> If the answer is hours, the batch leg is already built (M2/M3). If the answer is seconds or low minutes, streaming is the only path.</p>
+<p><strong>How often does the source change?</strong> A slowly-changing reference corpus churns a batch leg efficiently; an event-dense feed would cost far more to reload nightly than to stream incrementally.</p>
+<p><strong>What is the cost of being stale?</strong> A retriever serving an outdated compliance paragraph is a liability. A retriever serving a corpus that is 18 hours old instead of 22 is probably fine. Name the cost before you name the architecture.</p>
+<p>These three questions together produce a defensible routing decision. The routing decision is an engineering judgment call about latency versus cost; there is no product feature that makes it for you.</p>
+<h2 id="core-concepts-12"><a class="header" href="#core-concepts-12">Core Concepts</a></h2>
+<ul>
+<li>The freshness SLO is the decision variable: a source with a seconds-scale SLO streams; a source with an hours-scale SLO batches. The architecture follows the requirement.</li>
+<li>The routing decision is per source, not per system: a stable reference corpus and a live compliance feed can coexist in one platform on different legs.</li>
+<li>Streaming satisfies low-latency SLOs at the cost of a continuously running consumer; batch satisfies high-latency SLOs at the cost of a scheduled job. Neither is free; the SLO determines which cost is worth paying.</li>
+<li>Microsoft Fabric Eventstream is the no-code service that captures and routes real-time event streams to a Lakehouse or Eventhouse; it is the streaming counterpart to the batch Data Factory pipeline built in M2/M3.</li>
+</ul>
+<p>The SLO you write today is the number that determines whether a compliance edit lands in five seconds or 17 hours. Write it first; build the pipeline second.</p>
+<div class="claude-handoff" data-exercise="exercises/module4/streaming-vs-batch/">
+<p><strong>Build It in Claude Code</strong>: Write a <code>decide_mode(required_freshness_seconds)</code> function that returns <code>"stream"</code> when the SLO is seconds-scale (60 seconds or under) and <code>"batch"</code> otherwise; classify a handful of example sources (a nightly reference corpus, a live compliance feed, a price-update feed, a monthly audit log); add a <code>pytest</code> test that asserts each classification is correct. This decision helper frames the streaming pipeline you build across the rest of the module: every source that routes to <code>"stream"</code> is a candidate for the Eventstream leg.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="change-data-capture"><a class="header" href="#change-data-capture">Change Data Capture</a></h1>
+<p>A nightly batch reload re-reads the entire table to find what changed. CDC just tells you, as it happens, exactly which rows changed and how.</p>
+<p>The difference is not just speed. A batch job wakes up, reads 500,000 rows, hashes each one, and discards 499,987 because nothing moved. CDC emits an event the moment the database writes a row: one insert, one update, or one delete, delivered as a structured record to whoever is listening. The work scales with the change rate, not the table size.</p>
+<h2 id="how-cdc-works"><a class="header" href="#how-cdc-works">How CDC Works</a></h2>
+<p>A CDC system hooks into the database’s write-ahead log or change tracking mechanism. Every committed insert, update, or delete produces a change event and puts it on a stream. A consumer reads the stream and applies each event to a downstream store.</p>
+<p>The event carries a fixed schema:</p>
+<pre><code class="language-python"># A CDC event represents one row-level change:
+# {
+#   "op":        "insert" | "update" | "delete",
+#   "doc_id":    str,          # required for all ops
+#   "title":     str,          # required for insert/update
+#   "body":      str,          # required for insert/update
+#   "event_time": float,       # Unix timestamp the change occurred
+# }
+</code></pre>
+<p>Three operation types cover every mutation a relational table can produce. <code>insert</code> and <code>update</code> carry the full new row; <code>delete</code> carries only the key, because the row is gone.</p>
+<p>Microsoft Fabric Eventstream provides CDC source connectors for Azure SQL DB and PostgreSQL that take an initial snapshot of the table, then stream every subsequent row-level change as events in this format. In the open-source world, Debezium over Kafka Connect does the same: snapshot once, stream forward. The consumer’s job is identical in both cases. [MS-Learn Eventstream (CDC sources): https://learn.microsoft.com/fabric/real-time-intelligence/event-streams/overview]</p>
+<h2 id="validation-at-the-boundary"><a class="header" href="#validation-at-the-boundary">Validation at the Boundary</a></h2>
+<p>Bad events corrupt the store, and corruption compounds. You reject a malformed event before it enters the pipeline, not after.</p>
+<pre><code class="language-python">def validate_event(event: dict) -&gt; None:
+    if "doc_id" not in event or not event.get("doc_id"):
+        raise ValidationError(f"Event missing required field 'doc_id': {event!r}")
+    op = event.get("op")
+    if op not in ("insert", "update", "delete"):
+        raise ValidationError(f"Invalid op '{op}'; must be insert | update | delete")
+    if op in ("insert", "update"):
+        for field_name in ("title", "body"):
+            if field_name not in event:
+                raise ValidationError(f"Event op='{op}' missing required field '{field_name}'")
+</code></pre>
+<p><code>validate_event</code> raises on the first violation it finds. The consumer calls it before any write, so a malformed event never reaches the database. A missing <code>doc_id</code> is caught at the boundary; a delete event without <code>title</code> or <code>body</code> passes because a delete legitimately omits the row’s content.</p>
+<h2 id="applying-the-event-with-the-m2-merge"><a class="header" href="#applying-the-event-with-the-m2-merge">Applying the Event With the M2 MERGE</a></h2>
+<p>The consumer applies one event at a time:</p>
+<pre><code class="language-python">def apply_event(event, db_path, corpus_version=None, now_ts=None, conn=None) -&gt; dict:
+    validate_event(event)
+    op, doc_id = event["op"], event["doc_id"]
+    ...
+    if op in ("insert", "update"):
+        text = clean_text(event["title"], event["body"])
+        version_id, is_new = merge_one_document(conn, doc_id, text, corpus_version, now_ts)  # the M2 MERGE, per event
+        return {"doc_id": doc_id, "op": op, "version_id": version_id, "is_new": is_new, "skipped": not is_new}
+    else:  # delete
+        changed = soft_delete_document(conn, doc_id, now_ts)
+        return {"doc_id": doc_id, "op": op, "version_id": None, "is_new": False, "skipped": not changed}
+</code></pre>
+<p><code>merge_one_document</code> is <code>merge_gold</code> from M2, applied to a single document. The logic is unchanged: hash the text, check <code>(doc_id, content_hash)</code>, insert a new version only if the content moved. An insert event on a document that already exists in the store with identical text produces no new version, because the hash matches. The correctness guarantee you established in M2 holds per event, not just per batch.</p>
+<p>The delete path calls <code>soft_delete_document</code>: it marks the row as deleted rather than removing it, so the version history is intact. A delete event followed by an insert event on the same <code>doc_id</code> produces a new version rather than resurrecting the old one.</p>
+<h2 id="idempotency-carries-over"><a class="header" href="#idempotency-carries-over">Idempotency Carries Over</a></h2>
+<p>The M2 MERGE is idempotent on <code>(doc_id, content_hash)</code>. <code>apply_event</code> inherits that property. Apply the same insert event twice; the second call finds the <code>(doc_id, content_hash)</code> pair already in <code>source_documents</code> and returns <code>skipped: True</code>. No duplicate version, no error.</p>
+<p>This matters because streams deliver at-least-once. An event may arrive more than once: a consumer restart, a network hiccup during acknowledgment, a redelivery after a timeout. Without idempotency, a redelivered insert doubles the version count. With it, the second delivery is a quiet no-op. The M2 MERGE was designed for a batch that might re-run; here it silently absorbs stream redelivery.</p>
+<h2 id="core-concepts-13"><a class="header" href="#core-concepts-13">Core Concepts</a></h2>
+<ul>
+<li>CDC captures every insert, update, and delete from a source database as a structured event and streams it to a consumer; the consumer’s work scales with the change rate, not the table size.</li>
+<li>A CDC event carries an <code>op</code> field (<code>insert</code>, <code>update</code>, or <code>delete</code>) and a <code>doc_id</code>; insert and update also carry the full new row; validation at the boundary rejects malformed events before they reach the store.</li>
+<li><code>apply_event</code> applies one CDC event using the same content-hash MERGE as the batch load: the correctness guarantee is identical; only the latency differs.</li>
+<li>Because the M2 MERGE is idempotent on <code>(doc_id, content_hash)</code>, applying the same event twice is a no-op; the at-least-once delivery guarantee of a stream is absorbed without duplicating versions.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module4/change-data-capture/">
+<p><strong>Build It in Claude Code</strong>: Extend <code>module4-streaming/</code> by defining the CDC event schema (op/doc_id/title/body/event_time), a <code>validate_event</code> guard that raises <code>ValidationError</code> on a missing doc_id, an unknown op, or a missing title/body on insert/update, and an <code>apply_event</code> function that validates the event then applies insert/update via <code>merge_one_document</code> (the M2 content-hash MERGE, one document at a time) and delete via <code>soft_delete_document</code>; prove that applying an insert event creates a new <code>source_documents</code> version, that applying the same event a second time creates zero new versions, and that a malformed event raises <code>ValidationError</code> without touching the store.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="kafka-topics-and-consumer-groups"><a class="header" href="#kafka-topics-and-consumer-groups">Kafka Topics and Consumer Groups</a></h1>
+<p>CDC events don’t vanish the moment they leave the source database. They need somewhere durable and
+ordered to wait while one or more consumers read them at their own pace. That somewhere is a topic,
+and the mechanism that lets you scale reading is a consumer group.</p>
+<h2 id="a-topic-is-an-append-log-not-a-queue"><a class="header" href="#a-topic-is-an-append-log-not-a-queue">A Topic Is an Append Log, Not a Queue</a></h2>
+<p>A queue delivers each message once and discards it. A topic keeps every record. A producer appends
+to the end; a consumer reads from any offset it chooses. Nothing is removed when a consumer reads.</p>
+<p>A topic is also partitioned. The producer hashes each record’s key to pick a partition:</p>
+<pre><code class="language-python">class Topic:
+    def __init__(self, name, num_partitions=4):
+        self._partitions = [[] for _ in range(num_partitions)]
+
+    def _partition_for_key(self, key):
+        digest = int(hashlib.md5(key.encode("utf-8")).hexdigest(), 16)
+        return digest % self.num_partitions          # same key -&gt; same partition -&gt; per-key order
+
+    def append(self, value, key):
+        part = self._partition_for_key(key)
+        offset = len(self._partitions[part])          # monotonic, per-partition
+        self._partitions[part].append(Record(key, value, part, offset))
+        return part, offset
+
+    def read_from(self, partition, from_offset):
+        return self._partitions[partition][from_offset:]
+</code></pre>
+<p>Two things follow from this design. First, the same key always lands on the same partition, so
+records for the same key arrive in the order they were written. Second, each record’s offset is
+monotonic within its partition: it is the position in that partition’s list, and it never resets.
+Ordering is guaranteed per partition, not across the whole topic.
+[Apache Kafka intro: https://kafka.apache.org/intro]</p>
+<h2 id="a-consumer-group-divides-the-partitions"><a class="header" href="#a-consumer-group-divides-the-partitions">A Consumer Group Divides the Partitions</a></h2>
+<p>One consumer reading all partitions is a ceiling. To scale throughput, you add consumers to a
+group. Kafka assigns each partition to exactly one consumer in the group, so no two consumers
+race over the same records:</p>
+<pre><code class="language-python">class ConsumerGroup:
+    def assignment(self, consumer_id):
+        return [p for p in range(self.topic.num_partitions) if p % self.num_consumers == consumer_id]
+</code></pre>
+<p>With four partitions and two consumers: consumer 0 gets partitions 0 and 2, consumer 1 gets 1 and 3.
+Every partition is covered; no partition is doubled. Adding a fifth consumer beyond the partition
+count gains nothing, because there is no unclaimed partition left to assign.
+[Kafka primer (topics/partitions/offsets, consumer groups): https://docs.confluent.io/platform/current/ksqldb/concepts/apache-kafka-primer.html]</p>
+<h2 id="poll-and-commit-give-you-at-least-once-delivery"><a class="header" href="#poll-and-commit-give-you-at-least-once-delivery">Poll and Commit Give You At-Least-Once Delivery</a></h2>
+<p>A consumer does not advance its position by reading. It polls from its last committed offset, then
+commits explicitly when it is done processing:</p>
+<pre><code class="language-python">    def poll(self, consumer_id):
+        # read undelivered records from committed offset onward; does NOT advance the offset
+        records = []
+        for part in self.assignment(consumer_id):
+            records.extend(self.topic.read_from(part, self._committed[part]))
+        return records
+
+    def commit(self, consumer_id):
+        for part in self.assignment(consumer_id):
+            self._committed[part] = self.topic.end_offset(part)   # mark processed
+
+    def seek(self, partition, offset):
+        self._committed[partition] = offset                       # roll back -&gt; replay (at-least-once)
+</code></pre>
+<p>If the consumer crashes between <code>poll</code> and <code>commit</code>, the offset stays where it was. The next poll
+returns the same records. That is at-least-once delivery: a record is redelivered until the consumer
+commits past it. <code>seek</code> makes this explicit: roll back to an earlier offset and those records replay.
+Your consumer must be idempotent, because it will see them again.
+[at-least-once / exactly-once: https://www.confluent.io/blog/exactly-once-semantics-are-possible-heres-how-apache-kafka-does-it/]</p>
+<h2 id="the-simulation-is-faithful-not-real"><a class="header" href="#the-simulation-is-faithful-not-real">The Simulation Is Faithful, Not Real</a></h2>
+<p>The <code>Topic</code> and <code>ConsumerGroup</code> classes above run in-process with no broker, no network, and no
+serialization. They model the contracts: key-hashed partitioning, monotonic offsets, partition
+exclusivity, and uncommitted-offset replay. Microsoft Fabric Eventstream can source from Apache Kafka
+(preview) and route to a Lakehouse or Eventhouse, so the vocabulary you build here maps directly to a
+production path. The simulation lets you test that vocabulary offline, before any cloud resource exists.</p>
+<h2 id="core-concepts-14"><a class="header" href="#core-concepts-14">Core Concepts</a></h2>
+<ul>
+<li>A topic is a partitioned, append-only log: records are never deleted on read, each record has a
+monotonic offset within its partition, and the same key always routes to the same partition.</li>
+<li>A consumer group assigns each partition to exactly one consumer, so adding consumers scales
+throughput up to the partition count, with no duplicate reads.</li>
+<li>Poll does not advance the offset; commit does. A crash between the two replays the records on the
+next poll, giving at-least-once delivery.</li>
+<li><code>seek</code> lets you roll back a committed offset to any earlier position, forcing a replay; this is
+the mechanism at-least-once delivery rests on.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module4/kafka-topics-and-consumer-groups/">
+<p><strong>Build It in Claude Code</strong>: Build <code>kafka_sim.py</code> inside <code>module4-streaming/</code> with the <code>Topic</code> class (key-hashed partition routing, monotonic offsets, <code>append</code> and <code>read_from</code>), a <code>Producer</code>, and a <code>ConsumerGroup</code> (round-robin <code>assignment</code>, <code>poll</code> from the committed offset without advancing it, <code>commit</code> to mark processed, <code>seek</code> to roll back). Produce CDC events keyed by <code>doc_id</code>, then consume them across a two-consumer group; assert that every event for the same <code>doc_id</code> lands on the same partition, that every partition is assigned to exactly one consumer, that a normal poll-commit cycle delivers all events exactly once, and that a <code>seek</code> to an earlier offset replays those records (proving at-least-once delivery). Run offline pytest to verify all four assertions.</p>
+</div>
+
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-streaming-freshness-monitor"><a class="header" href="#the-streaming-freshness-monitor">The Streaming Freshness Monitor</a></h1>
+<p>A batch freshness check that runs once a night is useless for a stream that must be current within seconds. You cannot poll your way to real-time; you measure lag continuously, per event, per source.</p>
+<p>That is the shift this lesson makes. M2 measured freshness as the age of a nightly load, in hours. Here you measure it as the gap between when an event was written and when it landed in the index, in seconds. Same question, different clock, different cadence.</p>
+<h2 id="what-lag-means-in-a-stream"><a class="header" href="#what-lag-means-in-a-stream">What Lag Means in a Stream</a></h2>
+<p>Every event carries an <code>event_time</code>: the moment the source system produced it. The consumer applies it to the index at <code>applied_time</code>. The lag is that gap:</p>
+<pre><code>lag = applied_time - event_time
+</code></pre>
+<p>When the consumer keeps pace, <code>applied_time</code> is close to the current wall clock and the gap is small. When the consumer falls behind, events queue up in the topic and the gap grows. Your SLO is a ceiling on that gap, measured in seconds, per source.</p>
+<p>This is not a new idea. The unit changes. M2 asked whether a source’s last successful load was more than 25 hours old. This asks whether a source’s last applied event is more than 5 seconds behind. The breach condition is the same shape; the time scale is three orders of magnitude tighter.</p>
+<h2 id="the-lagmonitor"><a class="header" href="#the-lagmonitor">The LagMonitor</a></h2>
+<p>The monitor records lag per source and answers two questions: what is the current lag for this source, and has it breached the SLO?</p>
+<pre><code class="language-python">class LagMonitor:
+    def __init__(self, slo_seconds: float = 5.0):
+        self.slo_seconds = slo_seconds
+        self._samples: dict[str, list[float]] = {}
+
+    def record(self, source_id, event_time, applied_time=None) -&gt; float:
+        if applied_time is None:
+            applied_time = time.time()
+        lag = applied_time - event_time           # how far behind the index is
+        self._samples.setdefault(source_id, []).append(lag)
+        return lag
+
+    def is_breached(self, source_id) -&gt; bool:
+        lag = self.current_lag(source_id)
+        return lag is not None and lag &gt; self.slo_seconds
+
+    def status(self, source_id) -&gt; str:
+        lag = self.current_lag(source_id)
+        if lag is None:
+            return "no_data"
+        return "breached" if lag &gt; self.slo_seconds else "ok"
+</code></pre>
+<p><code>applied_time</code> defaults to <code>time.time()</code> so production code calls <code>record(source_id, event_time)</code> and the wall clock fills in. For tests, you inject a fixed timestamp and the result is deterministic. No sleeps, no flakiness.</p>
+<p><code>current_lag</code> reads the most recent sample for a source. The list of samples lets you compute derived metrics later (peak lag, average over a window) without re-querying. The monitor accumulates; you decide what to do with the history.</p>
+<h2 id="why-injectable-clocks-matter"><a class="header" href="#why-injectable-clocks-matter">Why Injectable Clocks Matter</a></h2>
+<p>The batch freshness check in M2 also took an injectable <code>now_ts</code>. The pattern is the same: a real clock makes a test non-deterministic; an injected timestamp makes it a pure function. You pass <code>event_time=1000.0, applied_time=1003.0</code> and the lag is exactly 3.0 seconds. Pass <code>applied_time=1010.0</code> and the lag is 10.0 seconds, which breaches a 5-second SLO. The test does not depend on how fast the machine runs.</p>
+<p>This is not a testing convenience. It is the contract between the monitor and the systems that call it: the caller controls the time, the monitor computes the lag. In production, the caller passes the wall clock. In a load test, the caller compresses time to replay a day of events in seconds.</p>
+<h2 id="the-production-setting"><a class="header" href="#the-production-setting">The Production Setting</a></h2>
+<p>Microsoft Fabric Real-Time Intelligence stores streaming events in an Eventhouse, a KQL database built for high-frequency append workloads. [MS-Learn Real-Time Intelligence / Eventhouse: https://learn.microsoft.com/fabric/real-time-intelligence/eventhouse] In that environment you query lag with KQL: compute <code>ingestion_time() - event_time</code> per row, aggregate by source, alert when the result exceeds your threshold. There is no built-in freshness SLA enforcement in Fabric Real-Time Intelligence; you build the lag check on top of the query layer, the same way M2 built <code>freshness_check.py</code> on top of the audit log.</p>
+<p>The <code>LagMonitor</code> here is the local stand-in for that production monitoring. When a source breaches its SLO, <code>is_breached</code> returns <code>True</code>; that result feeds the same alerting M3 wired, the <code>on_failure</code> hook that fires the notification before anything downstream continues.</p>
+<h2 id="core-concepts-15"><a class="header" href="#core-concepts-15">Core Concepts</a></h2>
+<ul>
+<li>Streaming freshness is event-to-applied lag measured in seconds, continuously, per source; the batch equivalent (last-load age in hours, checked nightly) is too slow for a stream.</li>
+<li><code>lag = applied_time - event_time</code> is the single number that answers “how far behind is this source?”; a per-source SLO is the ceiling on that number.</li>
+<li>An injectable <code>applied_time</code> makes the lag computation a pure function: tests inject timestamps and assert exact lag values without sleeps or wall-clock dependence.</li>
+<li>A breach from <code>is_breached</code> or <code>status</code> routes to the same alerting channel M3 wired; the monitor detects, the orchestrator acts.</li>
+</ul>
+<p>The streaming leg that cannot wait for a nightly run now has the check that matches its cadence. Seconds-scale lag, measured continuously, surfaced the moment it breaches. That is the seam closing.</p>
+<p>Module 5 is where the batch and streaming legs land together, the warehouse and the lakehouse, and what it means to query across both.</p>
+<div class="claude-handoff" data-exercise="exercises/module4/the-streaming-freshness-monitor/">
+<p><strong>Build It in Claude Code</strong>: Build a <code>LagMonitor</code> in <code>module4-streaming/</code> that records per-source event-to-applied lag against a configurable seconds-scale SLO; implement <code>record</code>, <code>current_lag</code>, <code>is_breached</code>, <code>status</code>, and <code>report</code> with <code>applied_time</code> as an injectable parameter so tests never touch the wall clock; finalize <code>smoke.py</code> to assert that a consumer applying events close to their event time is <code>ok</code>, and that a consumer whose <code>applied_time</code> is far past <code>event_time</code> is <code>breached</code>, both deterministically with injected timestamps and no real sleeps.</p>
 </div>
 
 

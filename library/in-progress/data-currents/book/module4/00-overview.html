@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Retries and Idempotency - Data Currents — SQL and the Data Platform for AI Systems</title>
+        <title>Overview - Data Currents — SQL and the Data Platform for AI Systems</title>
 
 
         <!-- Custom HTML head -->
@@ -177,94 +177,60 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="retries-and-idempotency"><a class="header" href="#retries-and-idempotency">Retries and Idempotency</a></h1>
-<p>A flaky network blip fails one task and you do not want a human paged for a glitch that fixes itself
-on the second try. Retries handle it. But a retry that re-runs a bad task can corrupt your data just
-as surely as the original failure. The retry is only as safe as the task it re-runs.</p>
-<h2 id="why-retries-exist"><a class="header" href="#why-retries-exist">Why Retries Exist</a></h2>
-<p>An orchestrator treats each task as a unit of work with a pass/fail result. When a task fails, the
-default behavior is to fail the entire flow. That is correct for logic errors. It is wrong for
-transient ones: a brief SQLite lock, a momentary network timeout, a file system hiccup that clears in
-under a second. These are not bugs in your code; they are noise in the environment, and failing a full
-run on them wastes the work already done.</p>
-<p>Both Airflow and Prefect give you a task-level retry knob. In Airflow, the parameters are <code>retries</code>
-(the count of additional attempts) and <code>retry_delay</code> (how long to wait between them; set
-<code>retry_exponential_backoff=True</code> to widen the gap each attempt). In Prefect, the equivalents are
-<code>retries=</code> and <code>retry_delay_seconds=</code>. Same idea, same shape: re-attempt the failing task before
-failing the run. The flow’s other tasks are unaffected while the retry is in flight.</p>
-<p>The DAG from the prior lesson wires <code>extract</code> and <code>ingest</code> in sequence. Those are the two I/O tasks,
-and I/O tasks are where transient failures live. The artifact sets retries on both:</p>
-<pre><code class="language-python">@task(name="extract", retries=2, retry_delay_seconds=0.1)
-def extract(run_date, corpus_csv):
-    """retries=2 -&gt; two more attempts on a transient failure before the task (and the flow) fails."""
-    if not os.path.isfile(corpus_csv):
-        raise FileNotFoundError(f"[extract] CSV not found: {corpus_csv}")
-    return corpus_csv
-
-@task(name="ingest", retries=2, retry_delay_seconds=0.1)
-def ingest(csv_path, db_path):
-    """retries=2 guards against transient SQLite lock contention. The MERGE underneath is idempotent."""
-    return run_ingest(csv_path=csv_path, db_path=db_path)
-</code></pre>
-<p><code>retries=2</code> means the task gets two additional attempts after the first failure, for three total tries
-before the flow gives up. <code>retry_delay_seconds=0.1</code> is a short wait: in a test environment, a 0.1-second
-pause is enough to clear the contention; in production you would set it higher.</p>
-<h2 id="the-safety-condition"><a class="header" href="#the-safety-condition">The Safety Condition</a></h2>
-<p>Here is what the retry mechanism does not guarantee: that re-running the task is safe.</p>
-<p>Consider a task that appends rows. The first attempt inserts 120 rows, then dies on the commit. The
-orchestrator retries. The second attempt inserts 120 rows again, this time successfully. You now have
-240 rows. The retry made the failure worse.</p>
-<p>This is the classic partial-success problem, and retries expose it. A task is only safe to retry if
-re-running it after a partial success produces the same result as a clean first run. That property
-has a name: <strong>idempotency</strong>.</p>
-<p>A non-idempotent task (append rows, increment a counter, send an email) can corrupt state on retry.
-An idempotent task (check-then-insert on a unique key, an upsert, a content-addressed write) cannot.</p>
-<h2 id="why-the-ingest-task-is-safe"><a class="header" href="#why-the-ingest-task-is-safe">Why the Ingest Task Is Safe</a></h2>
-<p>The <code>ingest</code> task calls <code>run_ingest</code>, which calls the <code>merge_gold</code> function you built in M2. That MERGE
-is keyed on <code>(doc_id, content_hash)</code>: if the row already exists, the merge skips it. If the <code>ingest</code>
-task completes its first attempt up to the SQLite commit and then the commit itself fails, the retry
-runs the full merge again. The rows that made it in are skipped; the row that did not is inserted.
-The result is identical to a clean first run.</p>
-<p>Run the same ingest twice on an unchanged corpus and <code>merge_gold</code> returns <code>0</code> the second time. That
-return value is the idempotency proof. A retried ingest cannot double-load because the contract
-forbids it: same <code>(doc_id, content_hash)</code> pair, same skip path, every time.</p>
-<p>The pairing is tight: <code>retries=2</code> on the <code>ingest</code> task is only valid because <code>merge_gold</code> underneath
-it is idempotent. Remove idempotency and the retry parameter becomes a liability.</p>
-<h2 id="what-this-means-at-scale"><a class="header" href="#what-this-means-at-scale">What This Means at Scale</a></h2>
-<p>A production corpus pipeline runs nightly. Over a year, a transient SQLite lock happens. Without
-retries, a human wakes up to a failed run, investigates, finds nothing wrong, and re-runs manually.
-With retries plus an idempotent load, the pipeline heals itself in under a second and the on-call
-engineer never sees it.</p>
-<p>The same rule applies to the <code>extract</code> task. If the corpus CSV is momentarily unavailable because a
-writer holds a lock, <code>retries=2</code> gives the pipeline three chances to read it before failing. The
-extract task only reads and returns the path; reading is inherently idempotent.</p>
-<p>Retries are a cheap configuration. Idempotency is design work. You pay for idempotency once, in M2,
-and it makes every retry downstream free of risk.</p>
-<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+                        <h1 id="module-4-streaming-and-change-data-capture"><a class="header" href="#module-4-streaming-and-change-data-capture">Module 4: Streaming and Change-Data-Capture</a></h1>
+<p>The nightly pipeline from Modules 2 and 3 is fine until a source cannot wait for the night. A
+compliance edit lands at 9 a.m.; a price changes; a user updates a document the model is about to cite.
+A batch that reloads at 2 a.m. serves the old answer for seventeen hours. This module builds the leg
+that handles those sources: change-data-capture turning row-level changes into a stream, the Kafka
+substrate that carries it, and a freshness monitor that measures lag in seconds instead of hours.</p>
+<p>You do not stand up a Kafka cluster here. You learn the streaming model the way it actually works, and
+you build a faithful in-process simulation of it so the whole pipeline runs offline and tested. The
+vocabulary is real: topics, partitions, offsets, consumer groups, at-least-once delivery. The
+correctness is real too: every streamed change applies through the same content-hash merge from Module
+2, so a streamed update and a batch update land identically, only faster.</p>
+<h2 id="what-this-module-covers"><a class="header" href="#what-this-module-covers">What This Module Covers</a></h2>
+<p><strong>Streaming vs Batch</strong> is the decision, and the freshness SLO is the decision variable. A source that
+must be in the index in seconds streams; a source that can wait hours batches. You choose per source,
+not per system, and you write the SLO down before you build anything.</p>
+<p><strong>Change-Data-Capture</strong> is the bridge from a database to a stream. CDC turns a table’s inserts, updates,
+and deletes into change events the consumer applies with the same merge as the batch load. The streamed
+change is correct because it reuses the batch’s correctness; it is just faster.</p>
+<p><strong>Kafka: Topics and Consumer Groups</strong> is the substrate that carries the events. A topic is a durable,
+partitioned append log; an offset marks each record’s position; a consumer group divides the partitions
+so each is read by one consumer, and uncommitted offsets give at-least-once delivery, which is why
+idempotency matters.</p>
+<p><strong>The Streaming Freshness Monitor</strong> closes the module. Streaming freshness is a continuous
+event-to-applied lag measured per source, breaching at seconds scale. It is the same staleness question
+Module 2 asked of the batch leg, measured three orders of magnitude tighter and all the time.</p>
+<h2 id="who-this-is-for"><a class="header" href="#who-this-is-for">Who This Is For</a></h2>
+<p>You finished Module 3: you have a batch pipeline that runs itself and alerts on breach. Now you add the
+real-time leg for the sources that cannot wait. You model and consume the stream; you do not operate the
+broker.</p>
+<h2 id="the-artifact"><a class="header" href="#the-artifact">The Artifact</a></h2>
+<p>You build <code>module4-streaming/</code>, an offline, standard-library simulation of a Kafka streaming pipeline: a
+partitioned topic with offsets, a consumer group with at-least-once delivery, a CDC source emitting
+change events, a consumer that applies each event through the Module 2 merge, and a lag monitor. It
+extends the same corpus store, so a streamed change is just a faster path to the tables Module 1 queries.
+Module 5 is where the batch and streaming legs land: the warehouse and the lakehouse.</p>
+<h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
 <ul>
-<li>Both Airflow (<code>retries</code>, <code>retry_delay</code>) and Prefect (<code>retries=</code>, <code>retry_delay_seconds=</code>) retry a
-failing task a fixed number of times before failing the flow; the parameter names differ, the semantics
-are the same.</li>
-<li>A retry is only safe if the task is idempotent: re-running it after a partial success must produce
-the same result as a clean first run.</li>
-<li>A non-idempotent task (append, increment, send) retried after a partial success corrupts state; the
-retry mechanism itself becomes the hazard.</li>
-<li>The <code>ingest</code> task carries <code>retries=2</code> because <code>merge_gold</code> beneath it is keyed on <code>(doc_id, content_hash)</code>: the same pair always skips, so a retried ingest inserts zero duplicate rows.</li>
+<li>Modules 2 and 3 complete (the merge and the orchestrated pipeline)</li>
+<li>Python 3.11+; the streaming simulation is standard library only, fully offline</li>
+<li>Comfort with the Module 2 content-hash merge and the freshness SLO idea</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module3/retries-and-idempotency/">
-<p><strong>Build It in Claude Code</strong>: Extend <code>module3-orchestration/</code> by adding <code>retries=2, retry_delay_seconds=0.1</code> to the <code>extract</code> and <code>ingest</code> task decorators, then write a pytest test that monkeypatches <code>run_ingest</code> to raise on the first call and succeed on the second, asserts the flow still completes, and asserts the task was attempted exactly twice; add a second assertion that re-running the ingest on an unchanged corpus returns zero new <code>source_document</code> versions, proving the underlying MERGE makes the retry safe.</p>
-</div>
-
+<h2 id="time-estimate"><a class="header" href="#time-estimate">Time Estimate</a></h2>
+<p>Each lesson runs 70 to 100 minutes including its exercise. The Kafka simulation lesson is the densest;
+the vocabulary rewards going slowly once.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module3/the-dag-tasks-and-dependencies.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module3/alerting-on-breach.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module3/scheduling-and-backfill.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module4/streaming-vs-batch.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -274,11 +240,11 @@ retry mechanism itself becomes the hazard.</li>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module3/the-dag-tasks-and-dependencies.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module3/alerting-on-breach.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module3/scheduling-and-backfill.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module4/streaming-vs-batch.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

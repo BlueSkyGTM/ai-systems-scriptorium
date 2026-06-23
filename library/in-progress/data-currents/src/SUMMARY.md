@@ -31,3 +31,13 @@
 - [Retries and Idempotency](module3/retries-and-idempotency.md)
 - [Scheduling and Backfill](module3/scheduling-and-backfill.md)
 - [Alerting on Breach](module3/alerting-on-breach.md)
+
+---
+
+# Module 4: Streaming and Change-Data-Capture
+
+- [Overview](module4/00-overview.md)
+- [Streaming vs Batch](module4/streaming-vs-batch.md)
+- [Change-Data-Capture](module4/change-data-capture.md)
+- [Kafka: Topics and Consumer Groups](module4/kafka-topics-and-consumer-groups.md)
+- [The Streaming Freshness Monitor](module4/the-streaming-freshness-monitor.md)

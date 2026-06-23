@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Retries and Idempotency - Data Currents — SQL and the Data Platform for AI Systems</title>
+        <title>Change-Data-Capture - Data Currents — SQL and the Data Platform for AI Systems</title>
 
 
         <!-- Custom HTML head -->
@@ -177,82 +177,65 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="retries-and-idempotency"><a class="header" href="#retries-and-idempotency">Retries and Idempotency</a></h1>
-<p>A flaky network blip fails one task and you do not want a human paged for a glitch that fixes itself
-on the second try. Retries handle it. But a retry that re-runs a bad task can corrupt your data just
-as surely as the original failure. The retry is only as safe as the task it re-runs.</p>
-<h2 id="why-retries-exist"><a class="header" href="#why-retries-exist">Why Retries Exist</a></h2>
-<p>An orchestrator treats each task as a unit of work with a pass/fail result. When a task fails, the
-default behavior is to fail the entire flow. That is correct for logic errors. It is wrong for
-transient ones: a brief SQLite lock, a momentary network timeout, a file system hiccup that clears in
-under a second. These are not bugs in your code; they are noise in the environment, and failing a full
-run on them wastes the work already done.</p>
-<p>Both Airflow and Prefect give you a task-level retry knob. In Airflow, the parameters are <code>retries</code>
-(the count of additional attempts) and <code>retry_delay</code> (how long to wait between them; set
-<code>retry_exponential_backoff=True</code> to widen the gap each attempt). In Prefect, the equivalents are
-<code>retries=</code> and <code>retry_delay_seconds=</code>. Same idea, same shape: re-attempt the failing task before
-failing the run. The flow’s other tasks are unaffected while the retry is in flight.</p>
-<p>The DAG from the prior lesson wires <code>extract</code> and <code>ingest</code> in sequence. Those are the two I/O tasks,
-and I/O tasks are where transient failures live. The artifact sets retries on both:</p>
-<pre><code class="language-python">@task(name="extract", retries=2, retry_delay_seconds=0.1)
-def extract(run_date, corpus_csv):
-    """retries=2 -&gt; two more attempts on a transient failure before the task (and the flow) fails."""
-    if not os.path.isfile(corpus_csv):
-        raise FileNotFoundError(f"[extract] CSV not found: {corpus_csv}")
-    return corpus_csv
-
-@task(name="ingest", retries=2, retry_delay_seconds=0.1)
-def ingest(csv_path, db_path):
-    """retries=2 guards against transient SQLite lock contention. The MERGE underneath is idempotent."""
-    return run_ingest(csv_path=csv_path, db_path=db_path)
+                        <h1 id="change-data-capture"><a class="header" href="#change-data-capture">Change Data Capture</a></h1>
+<p>A nightly batch reload re-reads the entire table to find what changed. CDC just tells you, as it happens, exactly which rows changed and how.</p>
+<p>The difference is not just speed. A batch job wakes up, reads 500,000 rows, hashes each one, and discards 499,987 because nothing moved. CDC emits an event the moment the database writes a row: one insert, one update, or one delete, delivered as a structured record to whoever is listening. The work scales with the change rate, not the table size.</p>
+<h2 id="how-cdc-works"><a class="header" href="#how-cdc-works">How CDC Works</a></h2>
+<p>A CDC system hooks into the database’s write-ahead log or change tracking mechanism. Every committed insert, update, or delete produces a change event and puts it on a stream. A consumer reads the stream and applies each event to a downstream store.</p>
+<p>The event carries a fixed schema:</p>
+<pre><code class="language-python"># A CDC event represents one row-level change:
+# {
+#   "op":        "insert" | "update" | "delete",
+#   "doc_id":    str,          # required for all ops
+#   "title":     str,          # required for insert/update
+#   "body":      str,          # required for insert/update
+#   "event_time": float,       # Unix timestamp the change occurred
+# }
 </code></pre>
-<p><code>retries=2</code> means the task gets two additional attempts after the first failure, for three total tries
-before the flow gives up. <code>retry_delay_seconds=0.1</code> is a short wait: in a test environment, a 0.1-second
-pause is enough to clear the contention; in production you would set it higher.</p>
-<h2 id="the-safety-condition"><a class="header" href="#the-safety-condition">The Safety Condition</a></h2>
-<p>Here is what the retry mechanism does not guarantee: that re-running the task is safe.</p>
-<p>Consider a task that appends rows. The first attempt inserts 120 rows, then dies on the commit. The
-orchestrator retries. The second attempt inserts 120 rows again, this time successfully. You now have
-240 rows. The retry made the failure worse.</p>
-<p>This is the classic partial-success problem, and retries expose it. A task is only safe to retry if
-re-running it after a partial success produces the same result as a clean first run. That property
-has a name: <strong>idempotency</strong>.</p>
-<p>A non-idempotent task (append rows, increment a counter, send an email) can corrupt state on retry.
-An idempotent task (check-then-insert on a unique key, an upsert, a content-addressed write) cannot.</p>
-<h2 id="why-the-ingest-task-is-safe"><a class="header" href="#why-the-ingest-task-is-safe">Why the Ingest Task Is Safe</a></h2>
-<p>The <code>ingest</code> task calls <code>run_ingest</code>, which calls the <code>merge_gold</code> function you built in M2. That MERGE
-is keyed on <code>(doc_id, content_hash)</code>: if the row already exists, the merge skips it. If the <code>ingest</code>
-task completes its first attempt up to the SQLite commit and then the commit itself fails, the retry
-runs the full merge again. The rows that made it in are skipped; the row that did not is inserted.
-The result is identical to a clean first run.</p>
-<p>Run the same ingest twice on an unchanged corpus and <code>merge_gold</code> returns <code>0</code> the second time. That
-return value is the idempotency proof. A retried ingest cannot double-load because the contract
-forbids it: same <code>(doc_id, content_hash)</code> pair, same skip path, every time.</p>
-<p>The pairing is tight: <code>retries=2</code> on the <code>ingest</code> task is only valid because <code>merge_gold</code> underneath
-it is idempotent. Remove idempotency and the retry parameter becomes a liability.</p>
-<h2 id="what-this-means-at-scale"><a class="header" href="#what-this-means-at-scale">What This Means at Scale</a></h2>
-<p>A production corpus pipeline runs nightly. Over a year, a transient SQLite lock happens. Without
-retries, a human wakes up to a failed run, investigates, finds nothing wrong, and re-runs manually.
-With retries plus an idempotent load, the pipeline heals itself in under a second and the on-call
-engineer never sees it.</p>
-<p>The same rule applies to the <code>extract</code> task. If the corpus CSV is momentarily unavailable because a
-writer holds a lock, <code>retries=2</code> gives the pipeline three chances to read it before failing. The
-extract task only reads and returns the path; reading is inherently idempotent.</p>
-<p>Retries are a cheap configuration. Idempotency is design work. You pay for idempotency once, in M2,
-and it makes every retry downstream free of risk.</p>
+<p>Three operation types cover every mutation a relational table can produce. <code>insert</code> and <code>update</code> carry the full new row; <code>delete</code> carries only the key, because the row is gone.</p>
+<p>Microsoft Fabric Eventstream provides CDC source connectors for Azure SQL DB and PostgreSQL that take an initial snapshot of the table, then stream every subsequent row-level change as events in this format. In the open-source world, Debezium over Kafka Connect does the same: snapshot once, stream forward. The consumer’s job is identical in both cases. [MS-Learn Eventstream (CDC sources): https://learn.microsoft.com/fabric/real-time-intelligence/event-streams/overview]</p>
+<h2 id="validation-at-the-boundary"><a class="header" href="#validation-at-the-boundary">Validation at the Boundary</a></h2>
+<p>Bad events corrupt the store, and corruption compounds. You reject a malformed event before it enters the pipeline, not after.</p>
+<pre><code class="language-python">def validate_event(event: dict) -&gt; None:
+    if "doc_id" not in event or not event.get("doc_id"):
+        raise ValidationError(f"Event missing required field 'doc_id': {event!r}")
+    op = event.get("op")
+    if op not in ("insert", "update", "delete"):
+        raise ValidationError(f"Invalid op '{op}'; must be insert | update | delete")
+    if op in ("insert", "update"):
+        for field_name in ("title", "body"):
+            if field_name not in event:
+                raise ValidationError(f"Event op='{op}' missing required field '{field_name}'")
+</code></pre>
+<p><code>validate_event</code> raises on the first violation it finds. The consumer calls it before any write, so a malformed event never reaches the database. A missing <code>doc_id</code> is caught at the boundary; a delete event without <code>title</code> or <code>body</code> passes because a delete legitimately omits the row’s content.</p>
+<h2 id="applying-the-event-with-the-m2-merge"><a class="header" href="#applying-the-event-with-the-m2-merge">Applying the Event With the M2 MERGE</a></h2>
+<p>The consumer applies one event at a time:</p>
+<pre><code class="language-python">def apply_event(event, db_path, corpus_version=None, now_ts=None, conn=None) -&gt; dict:
+    validate_event(event)
+    op, doc_id = event["op"], event["doc_id"]
+    ...
+    if op in ("insert", "update"):
+        text = clean_text(event["title"], event["body"])
+        version_id, is_new = merge_one_document(conn, doc_id, text, corpus_version, now_ts)  # the M2 MERGE, per event
+        return {"doc_id": doc_id, "op": op, "version_id": version_id, "is_new": is_new, "skipped": not is_new}
+    else:  # delete
+        changed = soft_delete_document(conn, doc_id, now_ts)
+        return {"doc_id": doc_id, "op": op, "version_id": None, "is_new": False, "skipped": not changed}
+</code></pre>
+<p><code>merge_one_document</code> is <code>merge_gold</code> from M2, applied to a single document. The logic is unchanged: hash the text, check <code>(doc_id, content_hash)</code>, insert a new version only if the content moved. An insert event on a document that already exists in the store with identical text produces no new version, because the hash matches. The correctness guarantee you established in M2 holds per event, not just per batch.</p>
+<p>The delete path calls <code>soft_delete_document</code>: it marks the row as deleted rather than removing it, so the version history is intact. A delete event followed by an insert event on the same <code>doc_id</code> produces a new version rather than resurrecting the old one.</p>
+<h2 id="idempotency-carries-over"><a class="header" href="#idempotency-carries-over">Idempotency Carries Over</a></h2>
+<p>The M2 MERGE is idempotent on <code>(doc_id, content_hash)</code>. <code>apply_event</code> inherits that property. Apply the same insert event twice; the second call finds the <code>(doc_id, content_hash)</code> pair already in <code>source_documents</code> and returns <code>skipped: True</code>. No duplicate version, no error.</p>
+<p>This matters because streams deliver at-least-once. An event may arrive more than once: a consumer restart, a network hiccup during acknowledgment, a redelivery after a timeout. Without idempotency, a redelivered insert doubles the version count. With it, the second delivery is a quiet no-op. The M2 MERGE was designed for a batch that might re-run; here it silently absorbs stream redelivery.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>Both Airflow (<code>retries</code>, <code>retry_delay</code>) and Prefect (<code>retries=</code>, <code>retry_delay_seconds=</code>) retry a
-failing task a fixed number of times before failing the flow; the parameter names differ, the semantics
-are the same.</li>
-<li>A retry is only safe if the task is idempotent: re-running it after a partial success must produce
-the same result as a clean first run.</li>
-<li>A non-idempotent task (append, increment, send) retried after a partial success corrupts state; the
-retry mechanism itself becomes the hazard.</li>
-<li>The <code>ingest</code> task carries <code>retries=2</code> because <code>merge_gold</code> beneath it is keyed on <code>(doc_id, content_hash)</code>: the same pair always skips, so a retried ingest inserts zero duplicate rows.</li>
+<li>CDC captures every insert, update, and delete from a source database as a structured event and streams it to a consumer; the consumer’s work scales with the change rate, not the table size.</li>
+<li>A CDC event carries an <code>op</code> field (<code>insert</code>, <code>update</code>, or <code>delete</code>) and a <code>doc_id</code>; insert and update also carry the full new row; validation at the boundary rejects malformed events before they reach the store.</li>
+<li><code>apply_event</code> applies one CDC event using the same content-hash MERGE as the batch load: the correctness guarantee is identical; only the latency differs.</li>
+<li>Because the M2 MERGE is idempotent on <code>(doc_id, content_hash)</code>, applying the same event twice is a no-op; the at-least-once delivery guarantee of a stream is absorbed without duplicating versions.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module3/retries-and-idempotency/">
-<p><strong>Build It in Claude Code</strong>: Extend <code>module3-orchestration/</code> by adding <code>retries=2, retry_delay_seconds=0.1</code> to the <code>extract</code> and <code>ingest</code> task decorators, then write a pytest test that monkeypatches <code>run_ingest</code> to raise on the first call and succeed on the second, asserts the flow still completes, and asserts the task was attempted exactly twice; add a second assertion that re-running the ingest on an unchanged corpus returns zero new <code>source_document</code> versions, proving the underlying MERGE makes the retry safe.</p>
+<div class="claude-handoff" data-exercise="exercises/module4/change-data-capture/">
+<p><strong>Build It in Claude Code</strong>: Extend <code>module4-streaming/</code> by defining the CDC event schema (op/doc_id/title/body/event_time), a <code>validate_event</code> guard that raises <code>ValidationError</code> on a missing doc_id, an unknown op, or a missing title/body on insert/update, and an <code>apply_event</code> function that validates the event then applies insert/update via <code>merge_one_document</code> (the M2 content-hash MERGE, one document at a time) and delete via <code>soft_delete_document</code>; prove that applying an insert event creates a new <code>source_documents</code> version, that applying the same event a second time creates zero new versions, and that a malformed event raises <code>ValidationError</code> without touching the store.</p>
 </div>
 
 
@@ -260,11 +243,11 @@ retry mechanism itself becomes the hazard.</li>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module3/the-dag-tasks-and-dependencies.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module4/streaming-vs-batch.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module3/scheduling-and-backfill.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../module4/kafka-topics-and-consumer-groups.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -274,11 +257,11 @@ retry mechanism itself becomes the hazard.</li>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module3/the-dag-tasks-and-dependencies.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module4/streaming-vs-batch.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module3/scheduling-and-backfill.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../module4/kafka-topics-and-consumer-groups.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

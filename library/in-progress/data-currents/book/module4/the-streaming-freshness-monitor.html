@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Retries and Idempotency - Data Currents — SQL and the Data Platform for AI Systems</title>
+        <title>The Streaming Freshness Monitor - Data Currents — SQL and the Data Platform for AI Systems</title>
 
 
         <!-- Custom HTML head -->
@@ -177,82 +177,58 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="retries-and-idempotency"><a class="header" href="#retries-and-idempotency">Retries and Idempotency</a></h1>
-<p>A flaky network blip fails one task and you do not want a human paged for a glitch that fixes itself
-on the second try. Retries handle it. But a retry that re-runs a bad task can corrupt your data just
-as surely as the original failure. The retry is only as safe as the task it re-runs.</p>
-<h2 id="why-retries-exist"><a class="header" href="#why-retries-exist">Why Retries Exist</a></h2>
-<p>An orchestrator treats each task as a unit of work with a pass/fail result. When a task fails, the
-default behavior is to fail the entire flow. That is correct for logic errors. It is wrong for
-transient ones: a brief SQLite lock, a momentary network timeout, a file system hiccup that clears in
-under a second. These are not bugs in your code; they are noise in the environment, and failing a full
-run on them wastes the work already done.</p>
-<p>Both Airflow and Prefect give you a task-level retry knob. In Airflow, the parameters are <code>retries</code>
-(the count of additional attempts) and <code>retry_delay</code> (how long to wait between them; set
-<code>retry_exponential_backoff=True</code> to widen the gap each attempt). In Prefect, the equivalents are
-<code>retries=</code> and <code>retry_delay_seconds=</code>. Same idea, same shape: re-attempt the failing task before
-failing the run. The flow’s other tasks are unaffected while the retry is in flight.</p>
-<p>The DAG from the prior lesson wires <code>extract</code> and <code>ingest</code> in sequence. Those are the two I/O tasks,
-and I/O tasks are where transient failures live. The artifact sets retries on both:</p>
-<pre><code class="language-python">@task(name="extract", retries=2, retry_delay_seconds=0.1)
-def extract(run_date, corpus_csv):
-    """retries=2 -&gt; two more attempts on a transient failure before the task (and the flow) fails."""
-    if not os.path.isfile(corpus_csv):
-        raise FileNotFoundError(f"[extract] CSV not found: {corpus_csv}")
-    return corpus_csv
-
-@task(name="ingest", retries=2, retry_delay_seconds=0.1)
-def ingest(csv_path, db_path):
-    """retries=2 guards against transient SQLite lock contention. The MERGE underneath is idempotent."""
-    return run_ingest(csv_path=csv_path, db_path=db_path)
+                        <h1 id="the-streaming-freshness-monitor"><a class="header" href="#the-streaming-freshness-monitor">The Streaming Freshness Monitor</a></h1>
+<p>A batch freshness check that runs once a night is useless for a stream that must be current within seconds. You cannot poll your way to real-time; you measure lag continuously, per event, per source.</p>
+<p>That is the shift this lesson makes. M2 measured freshness as the age of a nightly load, in hours. Here you measure it as the gap between when an event was written and when it landed in the index, in seconds. Same question, different clock, different cadence.</p>
+<h2 id="what-lag-means-in-a-stream"><a class="header" href="#what-lag-means-in-a-stream">What Lag Means in a Stream</a></h2>
+<p>Every event carries an <code>event_time</code>: the moment the source system produced it. The consumer applies it to the index at <code>applied_time</code>. The lag is that gap:</p>
+<pre><code>lag = applied_time - event_time
 </code></pre>
-<p><code>retries=2</code> means the task gets two additional attempts after the first failure, for three total tries
-before the flow gives up. <code>retry_delay_seconds=0.1</code> is a short wait: in a test environment, a 0.1-second
-pause is enough to clear the contention; in production you would set it higher.</p>
-<h2 id="the-safety-condition"><a class="header" href="#the-safety-condition">The Safety Condition</a></h2>
-<p>Here is what the retry mechanism does not guarantee: that re-running the task is safe.</p>
-<p>Consider a task that appends rows. The first attempt inserts 120 rows, then dies on the commit. The
-orchestrator retries. The second attempt inserts 120 rows again, this time successfully. You now have
-240 rows. The retry made the failure worse.</p>
-<p>This is the classic partial-success problem, and retries expose it. A task is only safe to retry if
-re-running it after a partial success produces the same result as a clean first run. That property
-has a name: <strong>idempotency</strong>.</p>
-<p>A non-idempotent task (append rows, increment a counter, send an email) can corrupt state on retry.
-An idempotent task (check-then-insert on a unique key, an upsert, a content-addressed write) cannot.</p>
-<h2 id="why-the-ingest-task-is-safe"><a class="header" href="#why-the-ingest-task-is-safe">Why the Ingest Task Is Safe</a></h2>
-<p>The <code>ingest</code> task calls <code>run_ingest</code>, which calls the <code>merge_gold</code> function you built in M2. That MERGE
-is keyed on <code>(doc_id, content_hash)</code>: if the row already exists, the merge skips it. If the <code>ingest</code>
-task completes its first attempt up to the SQLite commit and then the commit itself fails, the retry
-runs the full merge again. The rows that made it in are skipped; the row that did not is inserted.
-The result is identical to a clean first run.</p>
-<p>Run the same ingest twice on an unchanged corpus and <code>merge_gold</code> returns <code>0</code> the second time. That
-return value is the idempotency proof. A retried ingest cannot double-load because the contract
-forbids it: same <code>(doc_id, content_hash)</code> pair, same skip path, every time.</p>
-<p>The pairing is tight: <code>retries=2</code> on the <code>ingest</code> task is only valid because <code>merge_gold</code> underneath
-it is idempotent. Remove idempotency and the retry parameter becomes a liability.</p>
-<h2 id="what-this-means-at-scale"><a class="header" href="#what-this-means-at-scale">What This Means at Scale</a></h2>
-<p>A production corpus pipeline runs nightly. Over a year, a transient SQLite lock happens. Without
-retries, a human wakes up to a failed run, investigates, finds nothing wrong, and re-runs manually.
-With retries plus an idempotent load, the pipeline heals itself in under a second and the on-call
-engineer never sees it.</p>
-<p>The same rule applies to the <code>extract</code> task. If the corpus CSV is momentarily unavailable because a
-writer holds a lock, <code>retries=2</code> gives the pipeline three chances to read it before failing. The
-extract task only reads and returns the path; reading is inherently idempotent.</p>
-<p>Retries are a cheap configuration. Idempotency is design work. You pay for idempotency once, in M2,
-and it makes every retry downstream free of risk.</p>
+<p>When the consumer keeps pace, <code>applied_time</code> is close to the current wall clock and the gap is small. When the consumer falls behind, events queue up in the topic and the gap grows. Your SLO is a ceiling on that gap, measured in seconds, per source.</p>
+<p>This is not a new idea. The unit changes. M2 asked whether a source’s last successful load was more than 25 hours old. This asks whether a source’s last applied event is more than 5 seconds behind. The breach condition is the same shape; the time scale is three orders of magnitude tighter.</p>
+<h2 id="the-lagmonitor"><a class="header" href="#the-lagmonitor">The LagMonitor</a></h2>
+<p>The monitor records lag per source and answers two questions: what is the current lag for this source, and has it breached the SLO?</p>
+<pre><code class="language-python">class LagMonitor:
+    def __init__(self, slo_seconds: float = 5.0):
+        self.slo_seconds = slo_seconds
+        self._samples: dict[str, list[float]] = {}
+
+    def record(self, source_id, event_time, applied_time=None) -&gt; float:
+        if applied_time is None:
+            applied_time = time.time()
+        lag = applied_time - event_time           # how far behind the index is
+        self._samples.setdefault(source_id, []).append(lag)
+        return lag
+
+    def is_breached(self, source_id) -&gt; bool:
+        lag = self.current_lag(source_id)
+        return lag is not None and lag &gt; self.slo_seconds
+
+    def status(self, source_id) -&gt; str:
+        lag = self.current_lag(source_id)
+        if lag is None:
+            return "no_data"
+        return "breached" if lag &gt; self.slo_seconds else "ok"
+</code></pre>
+<p><code>applied_time</code> defaults to <code>time.time()</code> so production code calls <code>record(source_id, event_time)</code> and the wall clock fills in. For tests, you inject a fixed timestamp and the result is deterministic. No sleeps, no flakiness.</p>
+<p><code>current_lag</code> reads the most recent sample for a source. The list of samples lets you compute derived metrics later (peak lag, average over a window) without re-querying. The monitor accumulates; you decide what to do with the history.</p>
+<h2 id="why-injectable-clocks-matter"><a class="header" href="#why-injectable-clocks-matter">Why Injectable Clocks Matter</a></h2>
+<p>The batch freshness check in M2 also took an injectable <code>now_ts</code>. The pattern is the same: a real clock makes a test non-deterministic; an injected timestamp makes it a pure function. You pass <code>event_time=1000.0, applied_time=1003.0</code> and the lag is exactly 3.0 seconds. Pass <code>applied_time=1010.0</code> and the lag is 10.0 seconds, which breaches a 5-second SLO. The test does not depend on how fast the machine runs.</p>
+<p>This is not a testing convenience. It is the contract between the monitor and the systems that call it: the caller controls the time, the monitor computes the lag. In production, the caller passes the wall clock. In a load test, the caller compresses time to replay a day of events in seconds.</p>
+<h2 id="the-production-setting"><a class="header" href="#the-production-setting">The Production Setting</a></h2>
+<p>Microsoft Fabric Real-Time Intelligence stores streaming events in an Eventhouse, a KQL database built for high-frequency append workloads. [MS-Learn Real-Time Intelligence / Eventhouse: https://learn.microsoft.com/fabric/real-time-intelligence/eventhouse] In that environment you query lag with KQL: compute <code>ingestion_time() - event_time</code> per row, aggregate by source, alert when the result exceeds your threshold. There is no built-in freshness SLA enforcement in Fabric Real-Time Intelligence; you build the lag check on top of the query layer, the same way M2 built <code>freshness_check.py</code> on top of the audit log.</p>
+<p>The <code>LagMonitor</code> here is the local stand-in for that production monitoring. When a source breaches its SLO, <code>is_breached</code> returns <code>True</code>; that result feeds the same alerting M3 wired, the <code>on_failure</code> hook that fires the notification before anything downstream continues.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
-<li>Both Airflow (<code>retries</code>, <code>retry_delay</code>) and Prefect (<code>retries=</code>, <code>retry_delay_seconds=</code>) retry a
-failing task a fixed number of times before failing the flow; the parameter names differ, the semantics
-are the same.</li>
-<li>A retry is only safe if the task is idempotent: re-running it after a partial success must produce
-the same result as a clean first run.</li>
-<li>A non-idempotent task (append, increment, send) retried after a partial success corrupts state; the
-retry mechanism itself becomes the hazard.</li>
-<li>The <code>ingest</code> task carries <code>retries=2</code> because <code>merge_gold</code> beneath it is keyed on <code>(doc_id, content_hash)</code>: the same pair always skips, so a retried ingest inserts zero duplicate rows.</li>
+<li>Streaming freshness is event-to-applied lag measured in seconds, continuously, per source; the batch equivalent (last-load age in hours, checked nightly) is too slow for a stream.</li>
+<li><code>lag = applied_time - event_time</code> is the single number that answers “how far behind is this source?”; a per-source SLO is the ceiling on that number.</li>
+<li>An injectable <code>applied_time</code> makes the lag computation a pure function: tests inject timestamps and assert exact lag values without sleeps or wall-clock dependence.</li>
+<li>A breach from <code>is_breached</code> or <code>status</code> routes to the same alerting channel M3 wired; the monitor detects, the orchestrator acts.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module3/retries-and-idempotency/">
-<p><strong>Build It in Claude Code</strong>: Extend <code>module3-orchestration/</code> by adding <code>retries=2, retry_delay_seconds=0.1</code> to the <code>extract</code> and <code>ingest</code> task decorators, then write a pytest test that monkeypatches <code>run_ingest</code> to raise on the first call and succeed on the second, asserts the flow still completes, and asserts the task was attempted exactly twice; add a second assertion that re-running the ingest on an unchanged corpus returns zero new <code>source_document</code> versions, proving the underlying MERGE makes the retry safe.</p>
+<p>The streaming leg that cannot wait for a nightly run now has the check that matches its cadence. Seconds-scale lag, measured continuously, surfaced the moment it breaches. That is the seam closing.</p>
+<p>Module 5 is where the batch and streaming legs land together, the warehouse and the lakehouse, and what it means to query across both.</p>
+<div class="claude-handoff" data-exercise="exercises/module4/the-streaming-freshness-monitor/">
+<p><strong>Build It in Claude Code</strong>: Build a <code>LagMonitor</code> in <code>module4-streaming/</code> that records per-source event-to-applied lag against a configurable seconds-scale SLO; implement <code>record</code>, <code>current_lag</code>, <code>is_breached</code>, <code>status</code>, and <code>report</code> with <code>applied_time</code> as an injectable parameter so tests never touch the wall clock; finalize <code>smoke.py</code> to assert that a consumer applying events close to their event time is <code>ok</code>, and that a consumer whose <code>applied_time</code> is far past <code>event_time</code> is <code>breached</code>, both deterministically with injected timestamps and no real sleeps.</p>
 </div>
 
 
@@ -260,13 +236,10 @@ retry mechanism itself becomes the hazard.</li>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../module3/the-dag-tasks-and-dependencies.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../module4/kafka-topics-and-consumer-groups.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../module3/scheduling-and-backfill.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -274,13 +247,10 @@ retry mechanism itself becomes the hazard.</li>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../module3/the-dag-tasks-and-dependencies.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../module4/kafka-topics-and-consumer-groups.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../module3/scheduling-and-backfill.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                    </a>
             </nav>
 
         </div>
