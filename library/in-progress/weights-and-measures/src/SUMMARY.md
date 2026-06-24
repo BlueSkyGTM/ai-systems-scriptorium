@@ -51,3 +51,34 @@
 - [Task Metrics](module5/task-metrics.md)
 - [LLM-as-Judge](module5/llm-as-judge.md)
 - [Building the Eval Gate](module5/building-the-eval-gate.md)
+
+---
+
+# Module 6: Artifact: Tuned Classifier with Eval Gate
+
+- [Module 6 Overview](module6/00-overview.md)
+- [The Classifier Artifact](module6/the-classifier-artifact.md)
+- [Training the Classifier](module6/training-the-classifier.md)
+- [The Eval Gate](module6/the-eval-gate.md)
+- [Smoke and Portfolio](module6/smoke-and-portfolio.md)
+
+---
+
+# Module 7: Artifact: Instruction-Tuned LLM with Behavioral Regression Suite
+
+- [Module 7 Overview](module7/00-overview.md)
+- [The Instruct Artifact](module7/the-instruct-artifact.md)
+- [LoRA Fine-Tuning](module7/lora-fine-tuning.md)
+- [The Regression Suite](module7/the-regression-suite.md)
+- [Smoke and Portfolio](module7/smoke-and-portfolio.md)
+
+---
+
+# Module 8: Artifact: The Full Fine-Tune Pipeline
+
+- [Module 8 Overview](module8/00-overview.md)
+- [The Pipeline Artifact](module8/the-pipeline-artifact.md)
+- [The Conductor](module8/the-conductor.md)
+- [The Rubric](module8/the-rubric.md)
+- [Smoke and Portfolio](module8/smoke-and-portfolio.md)
+

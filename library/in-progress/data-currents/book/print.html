@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-c4cf9639.js";
+            window.path_to_searchindex_js = "searchindex-b9a3fdf7.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-54810559.js"></script>
+        <script src="toc-481f3bf2.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -2269,6 +2269,737 @@ incident fires and no one has to ask which version the model read.</p>
 <p><strong>Build It in Claude Code</strong>: Write a <code>governance_report(conn, doc_id, version_id)</code> function in <code>module6-lineage/</code> that calls <code>impact_of_version</code> to return the set of answers affected by the given source version and calls <code>find_lineage_gaps</code> to return any incomplete chains across all answers in the store; finalize <code>smoke.py</code> and tests to assert that the report names at least one affected answer when a known version is queried and that it flags a gap when an answer is missing its verdict; then write a <code>PURVIEW.md</code> note (grounded only in the MS-Learn URLs provided in the lesson) that maps <code>impact_of_version</code> to Purview impact analysis, <code>content_hash</code> column tracking to Purview column-level lineage, and the full local store to Purview Unified Catalog as a custom lineage source, and states plainly that RAG-step lineage (query through retrieval through generation through eval verdict) is not a built-in Purview feature.</p>
 </div>
 
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="module-7-the-pipeline-artifact"><a class="header" href="#module-7-the-pipeline-artifact">Module 7: The Pipeline Artifact</a></h1>
+<p>The retrieval system needs both batch and stream fresh, every answer traceable. This module proves the five prior modules compose into one run.</p>
+<p>Production AI systems fail when you rebuild working components. This capstone satisfies the Part 3 contract: portfolio artifacts must reuse prior work off disk, not restate it. You wire the batch ingestion from <a href="#the-incremental-merge">M2</a>, the streaming engine from <a href="#change-data-capture">M4</a>, the lakehouse formats from <a href="#open-table-formats-delta-and-iceberg">M5</a>, and the lineage capture from <a href="#capturing-lineage-automatically">M6</a>.</p>
+<pre><code class="language-python"># Vendored M2 — batch ingest + freshness
+from lib.m2_ingest import (
+    run_ingest,
+    bootstrap_db as m2_bootstrap_db,
+)
+from lib.m2_freshness_check import check_freshness
+
+# Vendored M4 — streaming / CDC
+from lib.m4_kafka_sim import Topic, ConsumerGroup
+from lib.m4_cdc_pipeline import cdc_source, apply_event, LagMonitor
+
+# Vendored M5 — Delta lakehouse
+import pandas as pd
+from lib.m5_lakehouse import write_corpus_v0, write_corpus_v1, read_version, get_version_num
+
+# Vendored M6 — lineage
+from lib.m6_schema import init_schema
+from lib.m6_lineage import LineageCapture, trace_answer_to_sources, impact_of_version
+</code></pre>
+<h2 id="what-this-module-covers-6"><a class="header" href="#what-this-module-covers-6">What This Module Covers</a></h2>
+<p>The Architecture establishes the Prefect flow structure mapping dependencies between batch and stream paths.</p>
+<p>Wiring the Legs connects the SQLite batch target and the Kafka-simulated stream into a unified Delta Lake.</p>
+<p>The Freshness Lineage Proof executes the 28-assertion smoke oracle validating SLO thresholds and source-to-verdict traces.</p>
+<p>The Orchestrated Run triggers the complete pipeline locally and verifies artifact generation.</p>
+<h2 id="the-diagram"><a class="header" href="#the-diagram">The Diagram</a></h2>
+<pre><code class="language-text">batch_ingest   -&gt; stream_apply -&gt; land_lakehouse
+                               -&gt; capture_lineage
+all of the above               -&gt; freshness_gate
+</code></pre>
+<h2 id="the-artifact-6"><a class="header" href="#the-artifact-6">The Artifact</a></h2>
+<p>You build <code>module7-pipeline/</code>. This directory contains a Prefect flow composing five vendored modules, a 28-assertion smoke oracle, and a dual freshness gate. Reuse is real here. You import modules, never restate them.</p>
+<h2 id="who-this-is-for-7"><a class="header" href="#who-this-is-for-7">Who This Is For</a></h2>
+<p>You finished M2 through M6. Now you compose them.</p>
+<h2 id="prerequisites-6"><a class="header" href="#prerequisites-6">Prerequisites</a></h2>
+<ul>
+<li>Module 1 through Module 6</li>
+<li>Python 3.11+</li>
+<li>Prefect 3.x</li>
+<li>deltalake</li>
+<li>pandas</li>
+</ul>
+<h2 id="time-estimate-6"><a class="header" href="#time-estimate-6">Time Estimate</a></h2>
+<p>Plan 60 to 90 minutes per lesson, including the exercise.</p>
+<h2 id="core-concepts-24"><a class="header" href="#core-concepts-24">Core Concepts</a></h2>
+<p>The capstone pipeline orchestrates five existing modules by importing them off disk.
+The dependency DAG routes batch and stream outputs through a unified lakehouse landing step.
+A dual freshness gate blocks the pipeline if batch or streaming SLOs fail.</p>
+<p>For a Production AI Engineer, composing existing artifacts into a single orchestrator defines the boundary between a notebook experiment and a production system.</p>
+<div class="claude-handoff" data-exercise="exercises/module7/00-overview/">
+**Inspect It in Claude Code** · Exercise · exercises/module7/00-overview/
+</div>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-architecture"><a class="header" href="#the-architecture">The Architecture</a></h1>
+<p>Batch is comprehensive but stale by morning. CDC is fast but thin; neither alone is sufficient.</p>
+<h2 id="the-dependency-dag"><a class="header" href="#the-dependency-dag">The Dependency DAG</a></h2>
+<p>You compose batch and stream into a single execution graph. The batch leg runs first. The stream leg applies CDC events on top of the batch output. The flow then splits to write the Delta lakehouse and capture lineage. Both feed into a terminal freshness gate.</p>
+<p>To maintain strict dependencies without creating artificial data blockers, you pass a parameter purely for Prefect’s dependency graph. The <code>stream_results</code> parameter records the execution edge without imposing a strict data payload requirement.</p>
+<pre><code class="language-python">    The stream_results parameter is accepted (but not read) so Prefect
+    records the dependency edge stream_apply -&gt; land_lakehouse.
+</code></pre>
+<pre><code class="language-python">    # ---- DAG ----------------------------------------------------------------
+    # Leg 1: batch
+    ingest_summary  = batch_ingest(csv_path=csv_path, db_path=db_path)
+
+    # Leg 2: streaming (depends on batch so the corpus store is ready)
+    stream_summary  = stream_apply(
+        db_path=db_path,
+        events=cdc_events,
+        lag_monitor=lag_monitor,
+        apply_time=stream_apply_time,
+        corpus_version=stream_corpus_version,
+        now_ts=stream_now_ts,
+    )
+
+    # Leg 3: lakehouse (depends on stream for post-stream snapshot)
+    lakehouse_summary = land_lakehouse(
+        db_path=db_path,
+        delta_path=delta_path,
+        stream_results=stream_summary,
+    )
+
+    # Leg 4: lineage (depends on stream so all version rows exist)
+    lineage_summary = capture_lineage(
+        db_path=db_path,
+        lineage_db_path=lineage_db_path,
+        delta_path=delta_path,
+        stream_results=stream_summary,
+    )
+
+    # Leg 5: freshness gate (terminal; checks both legs)
+    freshness_summary = freshness_gate(
+        db_path=db_path,
+        lag_monitor=lag_monitor,
+        batch_now_ts=batch_now_ts,
+    )
+    # ---- End DAG ------------------------------------------------------------
+</code></pre>
+<h2 id="the-dual-freshness-gate"><a class="header" href="#the-dual-freshness-gate">The Dual Freshness Gate</a></h2>
+<p>You cannot trust downstream indexes if inputs violate their SLOs. The batch leg operates on an hours SLO (see <a href="#the-batch-freshness-slo">M2 Freshness SLO</a>). The stream leg operates on a seconds SLO (see <a href="#the-streaming-freshness-monitor">M4 Streaming Monitor</a>). The <code>freshness_gate</code> task evaluates both. If either leg breaches its threshold, the task raises a <code>RuntimeError</code> and halts the flow.</p>
+<pre><code class="language-python">@task(name="freshness_gate", retries=0)
+def freshness_gate(
+    db_path: str,
+    lag_monitor: LagMonitor,
+    *,
+    batch_now_ts: str | None = None,
+    stream_source_id: str = STREAM_SOURCE_ID,
+) -&gt; dict:
+    logger = get_run_logger()
+    failures: list[str] = []
+
+    # --- Batch leg ---
+    batch_results = check_freshness(db_path=db_path, now_ts=batch_now_ts)
+    stale_sources = [r for r in batch_results if r["is_stale"]]
+    if stale_sources:
+        ids = [r["source_id"] for r in stale_sources]
+        msg = f"Batch freshness BREACH: stale sources {ids}"
+        logger.error(f"[freshness_gate] {msg}")
+        failures.append(msg)
+    else:
+        logger.info("[freshness_gate] batch leg: PASS")
+
+    # --- Stream leg ---
+    stream_breached = lag_monitor.is_breached(stream_source_id)
+    if stream_breached:
+        lag = lag_monitor.current_lag(stream_source_id)
+        slo = lag_monitor.slo_seconds
+        msg = f"Stream lag BREACH: lag={lag:.2f}s &gt; SLO={slo}s for '{stream_source_id}'"
+        logger.error(f"[freshness_gate] {msg}")
+        failures.append(msg)
+    else:
+        logger.info("[freshness_gate] stream leg: PASS")
+
+    if failures:
+        raise RuntimeError(
+            "[freshness_gate] GATE FAILED — " + "; ".join(failures)
+        )
+
+    return {
+        "batch_results":    batch_results,
+        "stream_lag_ok":    not stream_breached,
+        "stream_source_id": stream_source_id,
+    }
+</code></pre>
+<h2 id="the-alert-hook"><a class="header" href="#the-alert-hook">The Alert Hook</a></h2>
+<p>Raising a <code>RuntimeError</code> transitions the flow to a <code>Failed</code> state. You attach an <code>on_failure</code> hook to the flow decorator to catch this state and broadcast the failure (see <a href="#alerting-on-breach">M3 Alerting on Breach</a>).</p>
+<pre><code class="language-python">@flow(
+    name="multi-source-corpus-pipeline",
+    description=(
+        "M7 capstone: multi-source pipeline feeding an AI retrieval system. "
+        "Composes M2 batch ingest, M4 CDC streaming, M5 Delta lakehouse, "
+        "M6 lineage capture, and a dual freshness gate (hours SLO + seconds SLO). "
+        "Schedule: nightly at 02:00 UTC (cron='0 2 * * *')."
+    ),
+    on_failure=[on_flow_failure],
+)
+</code></pre>
+<pre><code class="language-python">def on_flow_failure(flow, flow_run, state):
+    """
+    Prefect on_failure hook: fires when the flow enters a Failed state.
+    Records the alert in ALERTS and prints to stderr.
+    """
+    message = (
+        f"ALERT: flow '{flow.name}' run '{getattr(flow_run, 'name', '?')}' failed "
+        f"at {datetime.utcnow().isoformat()} — state={state.name}"
+    )
+    ALERTS.append({
+        "flow":     flow.name,
+        "run":      getattr(flow_run, "name", "?"),
+        "state":    state.name,
+        "fired_at": datetime.utcnow().isoformat(),
+        "message":  message,
+    })
+    print(f"[ALERT HOOK] {message}", file=sys.stderr)
+</code></pre>
+<h2 id="core-concepts-25"><a class="header" href="#core-concepts-25">Core Concepts</a></h2>
+<ul>
+<li>The <code>stream_results</code> parameter establishes a Prefect execution edge without passing actual data.</li>
+<li>The terminal <code>freshness_gate</code> enforces an hours SLO for batch and a seconds SLO for streaming.</li>
+<li>Raising a <code>RuntimeError</code> in a terminal task transitions the flow to a <code>Failed</code> state and triggers the alert hook.</li>
+</ul>
+<p>A healthy stream cannot mask a stalled batch, meaning your production models will hallucinate on outdated context without a dual gate.</p>
+<div class="claude-handoff" data-exercise="exercises/module7/the-architecture/">
+**Inspect It in Claude Code** · Exercise · exercises/module7/the-architecture/
+</div>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="wiring-the-legs"><a class="header" href="#wiring-the-legs">Wiring the Legs</a></h1>
+<p>Composition fails if each module dictates its own write path. It works here because batch and stream share one contract.</p>
+<h2 id="one-merge-two-legs"><a class="header" href="#one-merge-two-legs">One MERGE, Two Legs</a></h2>
+<p>The batch ingestion and the streaming pipeline both rely on the same upsert logic. This logic lives inside <code>merge_one_document</code>. The function computes the text hash, checks for an existing row, and decides whether to skip or insert a new version.</p>
+<pre><code class="language-python">def merge_one_document(conn: sqlite3.Connection, doc_id: str, text: str,
+                        corpus_version: str, now_ts: str) -&gt; tuple[str, bool]:
+    """
+    Idempotent MERGE of one document (insert/update op).
+
+    Keyed on (doc_id, content_hash):
+      - Same hash already exists -&gt; skip, return (version_id, False).
+      - New hash -&gt; insert new version, return (version_id, True).
+
+    Also clears is_deleted flag on any existing row for this doc_id
+    (an 'update' after a prior 'delete' resurrects the document).
+
+    Returns: (version_id, is_new_version).
+    """
+    c_hash = content_hash(text)
+
+    existing = conn.execute(
+        "SELECT version_id FROM source_documents "
+        "WHERE doc_id = ? AND content_hash = ?",
+        (doc_id, c_hash),
+    ).fetchone()
+
+    if existing:
+        version_id = existing[0]
+        # Clear deleted flag if it was previously soft-deleted
+        conn.execute(
+            "UPDATE source_documents SET is_deleted = 0 "
+            "WHERE doc_id = ? AND content_hash = ?",
+            (doc_id, c_hash),
+        )
+        is_new = False
+    else:
+        version_id = _next_version_id(conn, doc_id)
+        conn.execute(
+            "INSERT INTO source_documents "
+            "(doc_id, version_id, last_modified_at, content_hash, is_deleted) "
+            "VALUES (?, ?, ?, ?, 0)",
+            (doc_id, version_id, now_ts, c_hash),
+        )
+        is_new = True
+
+    # Chunks: deterministic chunk_ids make this idempotent (INSERT OR REPLACE)
+    for chunk_id, chunk_text_val in chunk_text(doc_id, text):
+        conn.execute(
+            "INSERT OR REPLACE INTO chunks "
+            "(chunk_id, source_doc_id, source_doc_version, corpus_version, text) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (chunk_id, doc_id, version_id, corpus_version, chunk_text_val),
+        )
+
+    return version_id, is_new
+</code></pre>
+<p>Batch ingestion uses this function during the <a href="#the-incremental-merge">incremental merge</a>. The streaming pipeline routes <a href="#change-data-capture">change data capture</a> events through the exact same code.</p>
+<h2 id="the-idempotency-contract"><a class="header" href="#the-idempotency-contract">The Idempotency Contract</a></h2>
+<p>The stream must handle retries without corrupting the corpus. The idempotency contract guarantees that replaying an event produces no duplicates.</p>
+<pre><code class="language-python">"""
+Idempotency contract (inherited from M2 merge_gold):
+  - insert/update: keyed on (doc_id, content_hash); replaying the same
+    event cannot create a duplicate source_documents version.
+  - delete: soft-delete is idempotent; re-applying to an already-deleted
+    doc is a no-op.
+"""
+</code></pre>
+<p>This resilience is essential for handling <a href="#retries-and-idempotency">retries and idempotency</a> safely across distributed systems.</p>
+<h2 id="thin-adapters-bridge-schemas"><a class="header" href="#thin-adapters-bridge-schemas">Thin Adapters Bridge Schemas</a></h2>
+<p>Vendored modules have different expectations. The pipeline uses adapter functions to translate data structures without modifying the original modules.</p>
+<p>The corpus store collapses the document title and body into a single text field at the silver stage. The Delta writer expects a title column. The <code>_corpus_to_dataframe</code> adapter handles this mismatch by injecting an empty string.</p>
+<pre><code class="language-python">def _corpus_to_dataframe(db_path: str) -&gt; pd.DataFrame:
+    """
+    Adapter: read the gold source_documents table from SQLite (M2/M4 output)
+    and return a DataFrame shaped for M5's Delta write.
+
+    Adds a synthetic 'title' column (derived from doc_id) since the M2
+    corpus store collapses title+body into 'text' at the silver stage.
+    """
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute(
+        """
+        SELECT doc_id, version_id, content_hash, last_modified_at,
+               '' AS title
+        FROM source_documents
+        WHERE is_deleted = 0
+        ORDER BY doc_id, version_id
+        """
+    ).fetchall()
+    conn.close()
+    if not rows:
+        return pd.DataFrame(columns=["doc_id", "version_id", "content_hash",
+                                     "last_modified_at", "title"])
+    return pd.DataFrame([dict(r) for r in rows])
+</code></pre>
+<h2 id="delta-as-the-shared-output"><a class="header" href="#delta-as-the-shared-output">Delta as the Shared Output</a></h2>
+<p>The <code>land_lakehouse</code> task writes v0 as the batch baseline by filtering for <code>version_id == 'v1'</code>. It then writes v1 to capture the post-stream state. This output format relies on <a href="#open-table-formats-delta-and-iceberg">open table formats Delta and Iceberg</a> to expose versioned data.</p>
+<h2 id="why-no-edits-were-needed"><a class="header" href="#why-no-edits-were-needed">Why No Edits Were Needed</a></h2>
+<p>The shared hash contract and the thin adapters make composition painless. Vendored modules import clean because you route their outputs through unified interfaces rather than hacking their internals.</p>
+<h2 id="core-concepts-26"><a class="header" href="#core-concepts-26">Core Concepts</a></h2>
+<ol>
+<li>The pipeline prevents duplicate documents by keying merges on a tuple of doc_id and content_hash.</li>
+<li>Thin adapter functions resolve schema mismatches between vendored modules without altering source code.</li>
+<li>A shared idempotency contract allows the system to safely replay events without duplicating state.</li>
+</ol>
+<p>The edits you didn’t make are the proof the contract held.</p>
+<div class="claude-handoff" data-exercise="exercises/module7/wiring-the-legs/">
+**Inspect It in Claude Code** · Exercise · exercises/module7/wiring-the-legs/
+</div>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-freshness-lineage-proof"><a class="header" href="#the-freshness-lineage-proof">The Freshness-Lineage Proof</a></h1>
+<p>A pipeline that runs is not enough; it must refuse a stale corpus and trace every answer to a content hash.</p>
+<h2 id="the-gate-fires-on-a-stale-source"><a class="header" href="#the-gate-fires-on-a-stale-source">The Gate Fires on a Stale Source</a></h2>
+<p>You inject a current timestamp 30 hours past the ingest time. This action pushes the data beyond the 25-hour SLO defined in the <a href="#the-batch-freshness-slo">batch freshness SLO</a>. The freshness gate raises an exception. The pipeline halts immediately. The system catches the exception and triggers the alert hook configured for <a href="#alerting-on-breach">alerting on breach</a>.</p>
+<p>The <code>_run_negative</code> function in <code>smoke.py</code> executes this exact failure path.</p>
+<pre><code class="language-python">def _run_negative(tmp: str) -&gt; None:
+    """
+    7. Negative / deficient run:
+       Inject a 'now' timestamp that is 30 hours after the last batch load
+       (past the 25-hour corpus_raw SLO) and verify the gate fails + alert fires.
+    """
+    from pipeline_flow import run_pipeline, ALERTS, clear_alerts
+
+    csv_path        = os.path.join(tmp, "corpus_raw.csv")
+    db_path         = os.path.join(tmp, "corpus.db")
+    lineage_db_path = os.path.join(tmp, "lineage.db")
+    delta_path      = os.path.join(tmp, "corpus_delta")
+
+    write_csv(csv_path, BATCH_DOCS)
+
+    base_time = 1_750_000_000.0
+    # Inject a 'now' 30 hours after ingest -&gt; age_hours=30 &gt; SLO=25 -&gt; STALE
+    batch_now_ts_stale = "2026-06-16 18:00:00"
+
+    clear_alerts()
+    gate_failed = False
+    try:
+        run_pipeline(
+            csv_path=csv_path,
+            db_path=db_path,
+            lineage_db_path=lineage_db_path,
+            delta_path=delta_path,
+            cdc_events=[
+                {
+                    "op":         "update",
+                    "doc_id":     "doc_alpha",
+                    "title":      "Vector Databases Explained (v2)",
+                    "body":       "Updated body text for the negative run.",
+                    "event_time": base_time,
+                }
+            ],
+            stream_slo_seconds=5.0,
+            stream_apply_time=base_time,
+            batch_now_ts=batch_now_ts_stale,
+        )
+    except Exception:
+        gate_failed = True
+
+    print("\n--- 7. Negative run ---")
+    check("7a. Stale batch source FAILS the freshness gate",
+          gate_failed,
+          "Expected RuntimeError from freshness_gate on stale corpus_raw")
+
+    check("7b. on_failure alert hook fired",
+          len(ALERTS) &gt;= 1,
+          f"ALERTS: {ALERTS}")
+</code></pre>
+<h2 id="tracing-an-answer-to-its-sources"><a class="header" href="#tracing-an-answer-to-its-sources">Tracing an Answer to Its Sources</a></h2>
+<p>Freshness guarantees valid data at ingest. Lineage guarantees verifiable data at query time. Walk the graph backward from a generated answer. Unpack the answer to its source documents, chunks, exact content hashes, and final evaluation verdicts. This replaces the manual CTE walks from <a href="#querying-the-lineage-store">querying the lineage store</a> and relies on the structure of the <a href="#the-lineage-graph">lineage graph</a>.</p>
+<p>The <code>trace_answer_to_sources</code> function in <code>lib/m6_lineage.py</code> performs this backward lookup.</p>
+<pre><code class="language-python">def trace_answer_to_sources(
+    conn: sqlite3.Connection,
+    answer_id: str,
+) -&gt; list[dict[str, Any]]:
+    """
+    BACKWARD lineage walk (M1's 08_lineage_walk.sql, automated and extended).
+
+    For a given answer_id, follows:
+        answers -&gt; retrievals -&gt; chunks -&gt; source_documents -&gt; (content_hash)
+    and joins in the eval_verdicts so the caller sees the full terminal state.
+
+    Returns a list of dicts, one per (chunk, source_doc_version, verdict) row.
+    Returns [] for unknown answer_id.
+
+    This replaces M1's manual WITH-CTE walk: the lineage store guarantees
+    every join resolves (capture-by-construction), so no NULL-checking needed.
+    """
+    cur = conn.execute(
+        """
+        SELECT
+            a.answer_id,
+            a.query,
+            a.answer_text,
+            r.chunk_id,
+            r.rank,
+            r.score           AS retrieval_score,
+            c.source_doc_id,
+            c.source_doc_version,
+            sd.content_hash,
+            ev.criterion,
+            ev.verdict,
+            ev.score          AS verdict_score
+        FROM answers a
+        JOIN retrievals r     ON r.answer_id  = a.answer_id
+        JOIN chunks c         ON c.chunk_id   = r.chunk_id
+        JOIN source_documents sd
+                              ON sd.doc_id    = c.source_doc_id
+                             AND sd.version_id= c.source_doc_version
+        LEFT JOIN eval_verdicts ev ON ev.answer_id = a.answer_id
+        WHERE a.answer_id = ?
+        ORDER BY r.rank, ev.criterion
+        """,
+        (answer_id,),
+    )
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, row)) for row in cur.fetchall()]
+</code></pre>
+<h2 id="impact-analysis-which-answers-break"><a class="header" href="#impact-analysis-which-answers-break">Impact Analysis: Which Answers Break?</a></h2>
+<p>Lineage also works forward. A Change Data Capture event updates <code>doc_alpha</code> to version 2. The existing answers built on version 1 become stale. Reverse the query to find them. Ask the system which answers cited <code>doc_alpha</code> version 1. The store returns the exact affected records. You can now invalidate or regenerate them automatically. This capability stems from <a href="#capturing-lineage-automatically">capturing lineage automatically</a>.</p>
+<p>The <code>impact_of_version</code> function in <code>lib/m6_lineage.py</code> executes this forward impact analysis.</p>
+<pre><code class="language-python">def impact_of_version(
+    conn: sqlite3.Connection,
+    doc_id: str,
+    version_id: str,
+) -&gt; list[dict[str, Any]]:
+    """
+    FORWARD impact analysis.
+
+    Given a source-doc version, return every answer that cited a chunk from it.
+    Use case: "If I update doc-1 v1, which answers are affected?"
+
+    Returns a list of dicts with answer_id, query, answer_text, chunk_id.
+    Returns [] if no answers cited any chunk from this version.
+    """
+    cur = conn.execute(
+        """
+        SELECT DISTINCT
+            a.answer_id,
+            a.query,
+            a.answer_text,
+            c.chunk_id
+        FROM source_documents sd
+        JOIN chunks c         ON c.source_doc_id      = sd.doc_id
+                             AND c.source_doc_version  = sd.version_id
+        JOIN retrievals r     ON r.chunk_id            = c.chunk_id
+        JOIN answers a        ON a.answer_id           = r.answer_id
+        WHERE sd.doc_id = ? AND sd.version_id = ?
+        ORDER BY a.answer_id
+        """,
+        (doc_id, version_id),
+    )
+    cols = [d[0] for d in cur.description]
+    return [dict(zip(cols, row)) for row in cur.fetchall()]
+</code></pre>
+<h2 id="core-concepts-27"><a class="header" href="#core-concepts-27">Core Concepts</a></h2>
+<p>A stale batch source fails the pipeline by raising an exception and firing an alert hook.
+Backward lineage walks from an answer to its exact source documents, chunks, and content hashes.
+Forward impact analysis uses lineage to identify existing answers degraded by a source document update.</p>
+<p>“Why did the model say that?” is now a query.</p>
+<div class="claude-handoff" data-exercise="exercises/module7/the-freshness-lineage-proof/">
+**Inspect It in Claude Code** · Exercise · exercises/module7/the-freshness-lineage-proof/
+</div>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-orchestrated-run"><a class="header" href="#the-orchestrated-run">The Orchestrated Run</a></h1>
+<p>Composition is a claim until something runs it on a schedule and proves it.</p>
+<h2 id="what-each-task-does"><a class="header" href="#what-each-task-does">What Each Task Does</a></h2>
+<p>Orchestration turns five functions into one scheduled, retryable, verifiable run. You define the retry policy per task to match the failure domain.</p>
+<pre><code class="language-python">@task(name="batch_ingest", retries=2)
+@task(name="stream_apply", retries=2)
+@task(name="land_lakehouse", retries=1, retry_delay_seconds=0.1)
+@task(name="capture_lineage", retries=1, retry_delay_seconds=0.1)
+@task(name="freshness_gate", retries=0)
+</code></pre>
+<p>You apply higher retry counts to network-bound I/O tasks like batch ingest and streaming. You give the freshness gate zero retries because a stale corpus is not a transient glitch. A stale corpus means your data is old, and retrying a failed gate adds delay without fixing the underlying staleness. When the gate fails, the run fails immediately. Review the mechanics of DAGs in <a href="#the-dag-tasks-and-dependencies">M3 DAG Tasks and Dependencies</a> and retry semantics in <a href="#retries-and-idempotency">M3 Retries and Idempotency</a>.</p>
+<h2 id="what-the-smoke-test-proves"><a class="header" href="#what-the-smoke-test-proves">What the Smoke Test Proves</a></h2>
+<p>The smoke oracle is what makes “it works” a machine fact. You run seven assertion groups against a fresh temp directory: batch leg, streaming leg, lakehouse time-travel, lineage trace, freshness pass, impact analysis, and negative run.</p>
+<p>The exact assertion count is 22. A deficient run MUST fail the gate. You verify each condition using the <code>check()</code> helper.</p>
+<pre><code class="language-python">def check(label: str, condition: bool, detail: str = "") -&gt; bool:
+    status = "PASS" if condition else "FAIL"
+    marker = "  " if condition else "!"
+    msg = f"[{status}] {marker}{label}"
+    if detail:
+        msg += f"\n        {detail}"
+    print(msg)
+    RESULTS.append((label, condition, detail))
+    return condition
+</code></pre>
+<p>The oracle calculates the final exit status using a summary block.</p>
+<pre><code class="language-python">total   = len(RESULTS)
+passed  = sum(1 for _, ok_, _ in RESULTS if ok_)
+failed  = total - passed
+print(f"Results: {passed}/{total} passed, {failed} failed")
+</code></pre>
+<h2 id="how-to-run-it"><a class="header" href="#how-to-run-it">How to Run It</a></h2>
+<p>You execute the pipeline, run the oracle, and trigger the formal CI test suite.</p>
+<pre><code class="language-bash">python pipeline_flow.py
+python smoke.py
+python -m pytest tests/ -v
+</code></pre>
+<h2 id="running-in-deployment"><a class="header" href="#running-in-deployment">Running in Deployment</a></h2>
+<p>You deploy the pipeline using a nightly cron schedule.</p>
+<pre><code class="language-python">cron='0 2 * * *'
+</code></pre>
+<p>This schedule runs the flow at 02:00 UTC every day. Review deployment patterns in <a href="#scheduling-and-backfill">M3 Scheduling and Backfill</a>.</p>
+<h2 id="success-metrics"><a class="header" href="#success-metrics">Success Metrics</a></h2>
+<p>Your pipeline meets the production bar when specific conditions hold. Smoke exits 0, all 22 assertions pass, and the negative run fails the gate and fires the alert.</p>
+<h2 id="core-concepts-28"><a class="header" href="#core-concepts-28">Core Concepts</a></h2>
+<ul>
+<li>Orchestration binds independent data flows into a single scheduled, retryable run.</li>
+<li>Freshness gates use zero retries because stale data indicates systemic failure, not a transient error.</li>
+<li>The smoke oracle provides machine-verified proof of pipeline integrity across 22 assertions.</li>
+<li>A deficient run must fail the gate, fire the alert hook, and abort the process.</li>
+</ul>
+<p>The run you cannot prove is a run you cannot ship.</p>
+<div class="claude-handoff" data-exercise="exercises/module7/the-orchestrated-run/">
+**Inspect It in Claude Code** · Exercise · exercises/module7/the-orchestrated-run/
+</div>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-diagnostic-exam"><a class="header" href="#the-diagnostic-exam">The Diagnostic Exam</a></h1>
+<p>You have built a pipeline that runs; now prove you can fix one that does not.</p>
+<p>Modules 1 through 7 taught you to build. Module 8 hands you a broken version of the <a href="module8/module7/the-orchestrated-run.html">M7 multi-source corpus pipeline</a> and demands a diagnosis, a fix, and a passing grade.</p>
+<p>Three defects sit inside <code>broken_pipeline.py</code>. The unit tests are green. The reviewers approved the diff. The system is wrong. You find every defect using only the artifacts the pipeline produces, repair them, and clear the rubric.</p>
+<h2 id="the-exam-setup"><a class="header" href="#the-exam-setup">The Exam Setup</a></h2>
+<p>The scenario: a stale-retrieval incident at 03:14 on a Tuesday. A junior analyst flagged it last night. One stale answer reached a regulator. Legal is aware. You have until standup.</p>
+<p>You receive <code>broken_pipeline.py</code>, read-only, and a directory. You do not receive a list of defects. You receive symptoms.</p>
+<p>The artifact set lives in <code>module8-exam/</code>:</p>
+<ul>
+<li><code>broken_pipeline.py</code>: the corrupted M7 pipeline. Three deliberate defects. Do not edit.</li>
+<li><code>diagnose.py</code>: you write this. Six diagnostic queries against the SQLite lineage and corpus databases.</li>
+<li><code>fix.py</code>: you write this. The corrected pipeline that clears all six rubric criteria.</li>
+<li><code>rubric.py</code>: the grader. Six criteria, one point each. Static inspection, dynamic execution, direct database checks.</li>
+</ul>
+<p>From <code>rubric.py</code>:</p>
+<pre><code>Exit codes:
+  0  PASS  (all 6 criteria satisfied)
+  1  FAIL  (one or more criteria failed; stderr lists which)
+</code></pre>
+<h2 id="the-diagnostic-queries"><a class="header" href="#the-diagnostic-queries">The Diagnostic Queries</a></h2>
+<p>You prove the breakage from the data the system emitted, then confirm it in code. No source-diving first.</p>
+<p><code>diagnose.py</code> exposes at least six <code>find_*</code> functions. Each returns a non-None finding when run against the broken artifacts, and <code>None</code> against the fixed artifacts. Six queries, three defects, two angles each.</p>
+<h2 id="the-fix"><a class="header" href="#the-fix">The Fix</a></h2>
+<p>You produce <code>fix.py</code>: the full corrected pipeline, not a patch. Restore the real batch timestamp. Complete the lineage chain. Fail loud at the freshness gate.</p>
+<p>The rubric runs your fix from scratch in a tempdir, checks the output databases, and inspects your code statically. Every defect must disappear.</p>
+<h2 id="the-graded-result"><a class="header" href="#the-graded-result">The Graded Result</a></h2>
+<p><code>rubric.py</code> exits 1 on <code>broken_pipeline.py</code> and 0 on a correct <code>fix.py</code>. No partial credit.</p>
+<p><code>smoke.py</code> orchestrates the full cycle: run the broken pipeline, confirm the rubric fails, run your fix, confirm the rubric passes. The negative case is itself part of the suite. It exits 0 or it does not.</p>
+<p>When the pager fires at 03:14, no one hands you a diff; you get a database full of clues and a deadline.</p>
+<h2 id="core-concepts-29"><a class="header" href="#core-concepts-29">Core Concepts</a></h2>
+<ul>
+<li>The exam provides a broken pipeline with three injected defects and grades you on diagnosis and repair.</li>
+<li>You write <code>diagnose.py</code> (six SQL-based <code>find_*</code> functions) and <code>fix.py</code> (the corrected pipeline); <code>rubric.py</code> grades both.</li>
+<li>The rubric exits 0 on a correct fix and 1 on the broken pipeline, with no partial credit.</li>
+<li><code>smoke.py</code> asserts both cases: the broken pipeline fails, the fixed pipeline passes, and the whole suite exits 0.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module8/00-overview/">
+**Build It in Claude Code** · Exercise · exercises/module8/00-overview/
+</div>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-exam-setup-1"><a class="header" href="#the-exam-setup-1">The Exam Setup</a></h1>
+<p>Retrieval quality dropped overnight. Three defects sit inside the pipeline you built in Module 7, and you have until standup.</p>
+<h2 id="the-incident"><a class="header" href="#the-incident">The Incident</a></h2>
+<p>It is 03:14 on a Tuesday morning. The on-call pager is yours.</p>
+<p>A junior analyst filed a ticket at 22:47 last night: the retrieval system that powers the internal compliance Q&amp;A tool has been returning stale answers for the past two batches.</p>
+<p>One of those answers was shown to a regulator yesterday afternoon. Legal is aware. You have until standup.</p>
+<p>The system is the multi-source corpus pipeline you built in Module 7 (<code>pipeline_flow.py</code>). Someone modified it. The diff was merged with three reviewers, all of whom approved it because the unit tests went green.</p>
+<p>The unit tests were wrong.</p>
+<h2 id="three-defects-one-diff"><a class="header" href="#three-defects-one-diff">Three Defects, One Diff</a></h2>
+<p>Three lines changed in <code>broken_pipeline.py</code>. Each degrades the pipeline silently:</p>
+<ol>
+<li><code>batch_now_ts</code> hardcoded to <code>"2099-01-01"</code>: batch freshness breach always fires.</li>
+<li>`capture</li>
+</ol>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-diagnostic-queries-1"><a class="header" href="#the-diagnostic-queries-1">The Diagnostic Queries</a></h1>
+<p>Each defect leaves a SQL-queryable trace. Finding it is the diagnostic skill every prior module pointed toward.</p>
+<h2 id="the-three-defects-read-as-symptoms"><a class="header" href="#the-three-defects-read-as-symptoms">The Three Defects, Read As Symptoms</a></h2>
+<p>The broken pipeline ships three faults, and you are never told their names. You get symptoms: stale answers, a lineage chain that stops short, a gate that should scream but stays quiet. Six queries turn those symptoms into findings. The grader holds them to a fixed bar, verbatim from the reference suite:</p>
+<pre><code>* diagnose.py exposes &gt;= 6 find_* functions, each returning a non-None
+    finding when run against the *broken* artifacts, and None against the
+    *fixed* artifacts.
+</code></pre>
+<p>Each <code>find_*</code> function reads one table, asks one question, returns one finding or <code>None</code>. None of them read source code. They read the artifacts the code produced.</p>
+<h2 id="defect-one-the-future-dated-batch"><a class="header" href="#defect-one-the-future-dated-batch">Defect One: The Future-Dated Batch</a></h2>
+<p>The pipeline hardcodes <code>batch_now_ts</code> to a date in 2099. Every freshness check measures against that anchor and reports nothing real. Two queries catch it.</p>
+<h3 id="query-one-read-the-batch-timestamp"><a class="header" href="#query-one-read-the-batch-timestamp">Query One: Read The Batch Timestamp</a></h3>
+<p>You select the <code>batch_now_ts</code> value from the corpus store. A finding looks like a timestamp decades ahead of the wall clock. Why it traces to a defect: no real batch runs in 2099. The value is a literal, not a call to <code>datetime.now()</code>. This is the failure Module 2 warned you about when it defined the freshness SLO. A gate measured against the wrong “now” measures nothing.</p>
+<h3 id="query-two-read-the-freshness-breach-count"><a class="header" href="#query-two-read-the-freshness-breach-count">Query Two: Read The Freshness Breach Count</a></h3>
+<p>You count rows in the freshness verdict table where the verdict is a breach. A finding looks like a count frozen at zero, or pinned at full, regardless of how stale the source actually is. Why it traces to a defect: a breach count that never moves means the comparison anchor is fixed. The hardcoded timestamp locks the verdict in place.</p>
+<h2 id="defect-two-the-missing-verdict-edge"><a class="header" href="#defect-two-the-missing-verdict-edge">Defect Two: The Missing Verdict Edge</a></h2>
+<p><code>capture_lineage</code> skips <code>record_verdict</code>, so the lineage chain renders incomplete. Two queries catch it.</p>
+<h3 id="query-three-walk-the-lineage-chain"><a class="header" href="#query-three-walk-the-lineage-chain">Query Three: Walk The Lineage Chain</a></h3>
+<p>This is the Module 1 lineage walk, now used as a diagnostic. You start at a derived document and follow edges back to source. A finding looks like a chain that terminates at the derivation step and never reaches a verdict node. Why it traces to a defect: a complete chain must include the verdict that admitted the document. A chain with no verdict edge cannot explain why the document passed the gate.</p>
+<h3 id="query-four-count-edge-types"><a class="header" href="#query-four-count-edge-types">Query Four: Count Edge Types</a></h3>
+<p>You group edges by kind in the Module 6 lineage store and tally. A finding looks like a <code>record_verdict</code> count of zero. Why it traces to a defect: if no verdict edge exists, the function that writes it never ran. The zero is the proof.</p>
+<h2 id="defect-three-the-quiet-gate"><a class="header" href="#defect-three-the-quiet-gate">Defect Three: The Quiet Gate</a></h2>
+<p><code>freshness_gate</code> ships with <code>retries=2</code> instead of <code>retries=0</code>, so it swallows failures and retries instead of halting. Two queries catch it.</p>
+<h3 id="query-five-read-the-retry-configuration"><a class="header" href="#query-five-read-the-retry-configuration">Query Five: Read The Retry Configuration</a></h3>
+<p>You read the <code>retries</code> field for the freshness gate from its metadata or configuration table. A finding looks like a value greater than zero. Why it traces to a defect: a freshness gate is a hard stop. Module 2 set retries to zero so a breach halts the batch. A nonzero retry count converts a hard stop into a soft warning.</p>
+<h3 id="query-six-read-the-gate-execution-log"><a class="header" href="#query-six-read-the-gate-execution-log">Query Six: Read The Gate Execution Log</a></h3>
+<p>You scan the gate execution table for retry rows after a breach. A finding looks like retry attempts that should not exist. Why it traces to a defect: if the gate retried, it ran more than once on the same batch. A gate that retries on a freshness breach is a gate that tolerates staleness.</p>
+<h2 id="what-the-six-queries-share"><a class="header" href="#what-the-six-queries-share">What The Six Queries Share</a></h2>
+<p>Every query follows the same shape: pick one table, ask one question, return one finding or nothing. The grader applies its six criteria, and the contract is plain, verbatim from its own header:</p>
+<pre><code>Six criteria, each worth one point.
+</code></pre>
+<p>The pipeline lied in its unit tests. The artifacts do not lie. The queries read the artifacts.</p>
+<h2 id="core-concepts-30"><a class="header" href="#core-concepts-30">Core Concepts</a></h2>
+<ol>
+<li>A defect leaves its trace in the data it produces, not in the code that produced it.</li>
+<li>A freshness gate measured against a hardcoded timestamp reports nothing useful about real staleness.</li>
+<li>A lineage chain missing its verdict edge cannot explain why a document was admitted.</li>
+<li>A gate configured to retry converts a hard failure into a soft warning the batch survives.</li>
+</ol>
+<div class="claude-handoff" data-exercise="exercises/module8/the-diagnostic-queries/">
+**Build It in Claude Code** · Exercise · exercises/module8/the-diagnostic-queries/
+</div>
+
+<p>The Production AI Engineer who trusts artifacts over code finds the bug before the regulator does.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-fix-1"><a class="header" href="#the-fix-1">The Fix</a></h1>
+<h2 id="a-fix-restores-the-contract"><a class="header" href="#a-fix-restores-the-contract">A Fix Restores The Contract</a></h2>
+<p>Every defect breaks a contract the pipeline owes its consumers. A patch makes the symptom disappear. A fix restores the promise.</p>
+<p>The broken pipeline from Module 7 (<code>pipeline_flow.py</code>) has three defects. Each one violates a specific guarantee. Your <code>fix.py</code> must restore all three. The rubric checks for contract restoration, not test passage.</p>
+<h2 id="three-broken-contracts"><a class="header" href="#three-broken-contracts">Three Broken Contracts</a></h2>
+<h3 id="the-freshness-contract"><a class="header" href="#the-freshness-contract">The Freshness Contract</a></h3>
+<p>The pipeline guarantees data is current as of the batch timestamp. The broken pipeline hardcodes <code>batch_now_ts</code> to <code>"2099-01-01"</code>. Nothing can be stale relative to the year 2099. Every freshness check passes. The contract is dead: the timestamp no longer reflects when the data was processed.</p>
+<p>The fix replaces the hardcoded value with the actual processing timestamp. The freshness gate measures real staleness against real time. This matches M7’s <code>pipeline_flow.py</code>, which reads the timestamp from the environment at batch start.</p>
+<h3 id="the-lineage-contract"><a class="header" href="#the-lineage-contract">The Lineage Contract</a></h3>
+<p>The pipeline guarantees every derived document traces back to its source through an unbroken chain. The broken pipeline’s <code>capture_lineage</code> skips <code>record_verdict</code>, the edge that connects a quality verdict to the document it evaluates. The audit trail has a gap. A consumer asking what verdict was reached on a given document hits a dead end.</p>
+<p>The fix restores <code>record_verdict</code> in the lineage capture. The chain is complete again, matching M7’s implementation.</p>
+<h3 id="the-fail-loud-contract"><a class="header" href="#the-fail-loud-contract">The Fail-Loud Contract</a></h3>
+<p>The freshness gate exists to halt the pipeline on stale data. The broken pipeline sets <code>retries=2</code> on the gate. The gate retries twice before failing, masking persistent breaches behind transient retry windows. The contract says stop on breach. Retries add a grace period nobody authorized.</p>
+<p>The fix sets <code>retries=0</code>. The gate fails on first contact with stale data.</p>
+<h2 id="why-the-unit-tests-lied"><a class="header" href="#why-the-unit-tests-lied">Why The Unit Tests Lied</a></h2>
+<p>The unit tests passed because they tested implementation details, not contracts. A test that checks whether <code>batch_now_ts</code> exists passes on <code>"2099-01-01"</code>. A test that checks whether <code>capture_lineage</code> runs passes even when it skips <code>record_verdict</code>. Tests validate behavior. They do not validate intent.</p>
+<p>The rubric validates intent. Six criteria, each worth one point:</p>
+<pre><code class="language-python">"""
+rubric.py
+The Module 8 grader. Six criteria, each worth one point.
+"""
+</code></pre>
+<p>It runs <code>fix.py</code> in a fresh tempdir, executes the pipeline, and inspects the resulting lineage and corpus DBs. It also runs your <code>diagnose.py</code> queries against the output. If any diagnostic query returns a non-None finding, the rubric fails.</p>
+<h2 id="your-fix-against-the-original"><a class="header" href="#your-fix-against-the-original">Your Fix Against The Original</a></h2>
+<p>Your <code>fix.py</code> is not a new pipeline. It is M7’s <code>pipeline_flow.py</code> with three contracts restored. Every other line should match the M7 reference.</p>
+<p>Three changes, three contracts:</p>
+<ol>
+<li><code>batch_now_ts</code> reads the real timestamp from the processing environment.</li>
+<li><code>capture_lineage</code> includes <code>record_verdict</code> edges.</li>
+<li><code>freshness_gate</code> runs with <code>retries=0</code>.</li>
+</ol>
+<p>If you find yourself rewriting pipeline logic, you are patching. Go back to the diff.</p>
+<p>The negative case proves the rubric has teeth. The test suite pins both outcomes:</p>
+<pre><code class="language-python"># From tests/test_exam.py
+BROKEN_PIPELINE = EXAM_DIR / "broken_pipeline.py"
+FIX = EXAM_DIR / "fix.py"
+RUBRIC = EXAM_DIR / "rubric.py"
+SMOKE = EXAM_DIR / "smoke.py"
+</code></pre>
+<p>Run the rubric against the broken pipeline:</p>
+<pre><code class="language-bash">python rubric.py --fix ./broken_pipeline.py
+</code></pre>
+<p>It exits <code>1</code>. The broken pipeline fails because it breaks contracts, regardless of what unit tests report.</p>
+<p>Run the rubric against your fix:</p>
+<pre><code class="language-bash">python rubric.py
+</code></pre>
+<p>It exits <code>0</code> when <code>fix.py</code> restores all three contracts.</p>
+<h2 id="core-concepts-31"><a class="header" href="#core-concepts-31">Core Concepts</a></h2>
+<ol>
+<li>A fix restores a broken contract. A patch silences the alarm without repairing the system.</li>
+<li>A hardcoded <code>batch_now_ts</code> breaks the freshness contract by creating a fake reference point that makes real staleness invisible.</li>
+<li>A skipped <code>record_verdict</code> edge breaks the lineage contract by leaving a gap in the provenance chain that consumers cannot traverse.</li>
+<li>A retry-configured freshness gate breaks the fail-loud contract by masking persistent breaches behind transient retry windows.</li>
+</ol>
+<div class="claude-handoff" data-exercise="exercises/module8/the-fix/">
+**Build It in Claude Code** · Exercise · exercises/module8/the-fix/
+</div>
+
+<p>Your reputation in production is built on the contracts you restore at 3 AM, not the tests you green at standup.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-graded-result-1"><a class="header" href="#the-graded-result-1">The Graded Result</a></h1>
+<p>The rubric is the final examiner. Its exit code is the verdict.</p>
+<h2 id="the-grader-refuses-to-lie"><a class="header" href="#the-grader-refuses-to-lie">The Grader Refuses to Lie</a></h2>
+<p>The grader inspects your work across six criteria. Each criterion is worth one point. There are no partial credits and no style points. The exit code tells the truth: zero means pass, one means fail.</p>
+<pre><code class="language-python">"""
+rubric.py
+The Module 8 grader. Six criteria, each worth one point.
+
+The grader works by:
+  1. Static inspection of the student's fix.py (text + AST)
+  2. Dynamic execution of fix.py against a fresh tempdir
+  3. Execution of diagnose.py against the resulting lineage + corpus DBs
+  4. Direct inspection of the lineage DB for the previously-broken edge
+
+Exit codes:
+  0  PASS  (all 6 criteria satisfied)
+  1  FAIL  (one or more criteria failed; stderr lists which)
+
+Usage:
+  python rubric.py
+  python rubric.py --fix ./broken_pipeline.py   # negative-case self-check
+  python rubric.py --skip-runtime               # static-only grade
+
+Contract honored for smoke.py:
+  - rubric.py against the *broken* pipeline exits 1 (negative case)
+  - rubric.py against a correct fix.py exits 0 (positive case)
+"""
+</code></pre>
+<p>The grading process runs four phases. Static inspection reads your fix.py as text and AST. Dynamic execution runs fix.py in a fresh tempdir. Your diagnose.py runs against the resulting databases. The grader then inspects the lineage DB directly for the previously broken edge.</p>
+<p>The constants leave no room for ambiguity:</p>
+<pre><code class="language-python">DEFAULT_FIX = Path(__file__).resolve().parent / "fix.py"
+DEFAULT_DIAGNOSE = Path(__file__).resolve().parent / "diagnose.py"
+DEFAULT_LIB = Path(__file__).resolve().parent.parent / "lib"
+
+PASS = 0
+FAIL = 1
+</code></pre>
+<h2 id="the-smoke-test-proves-both-directions"><a class="header" href="#the-smoke-test-proves-both-directions">The Smoke Test Proves Both Directions</a></h2>
+<p>The smoke test is the orchestrator. It runs the broken pipeline, the fixed pipeline, the diagnostic queries, and the rubric in sequence. It exits zero only when every assertion holds, including the negative case.</p>
+<p>The negative assertion group runs first. It feeds <code>broken_pipeline.py</code> to the rubric and asserts the exit code is one. It runs <code>diagnose.py</code> against the broken output and asserts every finding is non-None. The defects must be detectable before you fix them.</p>
+<p>The positive assertion group runs second. It feeds <code>fix.py</code> to the rubric and asserts the exit code is zero. It runs <code>diagnose.py</code> against the clean output and asserts every finding is None. The fixes must be complete.</p>
+<p>The test suite pins this contract explicitly:</p>
+<pre><code class="language-python">"""
+  * rubric.py exits 1 on broken_pipeline.py and 0 on fix.py.
+  * smoke.py exits 0 (the negative case is itself part of the suite).
+"""
+</code></pre>
+<h2 id="run-the-full-suite"><a class="header" href="#run-the-full-suite">Run the Full Suite</a></h2>
+<pre><code>python smoke.py &amp;&amp; python rubric.py
+</code></pre>
+<p>If the smoke test passes, the rubric should pass. If the smoke test fails, fix the failure first.</p>
+<h2 id="core-concepts-32"><a class="header" href="#core-concepts-32">Core Concepts</a></h2>
+<ul>
+<li>The rubric exits zero when all six criteria are satisfied. It exits one otherwise. There is no third state.</li>
+<li>The smoke test asserts both directions: the broken pipeline must fail the rubric, and the fixed pipeline must pass it.</li>
+<li><code>diagnose.py</code> must return non-None findings against the broken artifacts and None findings against the fixed artifacts.</li>
+<li>The grader combines static inspection, dynamic execution, diagnostic queries, and direct lineage inspection across its four phases.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module8/the-graded-result/">
+**Build It in Claude Code** · Exercise · exercises/module8/the-graded-result/
+</div>
+
+<p>The pipeline either passes the rubric or it isn’t done, and for a Production AI Engineer that binary exit code is the only status report worth shipping.</p>
 
                     </main>
 

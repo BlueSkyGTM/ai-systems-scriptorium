@@ -1,0 +1,439 @@
+<!DOCTYPE HTML>
+<html lang="en" class="rust sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Reading a Real train.py - Weights and Measures</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/copy-to-claude-45921320.css">
+        <link rel="stylesheet" href="../theme/syntax-polish-a17e6a7e.css">
+        <link rel="stylesheet" href="../theme/readability-9f9ae6ec.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "rust";
+            const default_dark_theme = "ayu";
+            window.path_to_searchindex_js = "../searchindex-ba06a112.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-a81d0b07.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('rust')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Weights and Measures</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="reading-a-real-trainpy"><a class="header" href="#reading-a-real-trainpy">Reading a Real <code>train.py</code></a></h1>
+<p>You open an unfamiliar training script and it has 250 lines, three helper functions, and a
+scheduler you have never seen. There is no comment explaining which line matters most. The payoff
+of Module 1 is being able to walk that file and say, out loud, what every section is asserting
+about data and model, and knowing the one test to run before you let it chew through a GPU for
+an hour.</p>
+<h2 id="what-a-trainpy-is-asserting"><a class="header" href="#what-a-trainpy-is-asserting">What a <code>train.py</code> Is Asserting</a></h2>
+<p>Every training script makes a set of claims that must hold before the first epoch begins:</p>
+<ul>
+<li>Data is on the right device.</li>
+<li>The model has trainable parameters and is in training mode.</li>
+<li>Gradients are cleared before each forward pass, not accumulated from a previous batch.</li>
+<li>Loss flows backward and the optimizer updates weights.</li>
+<li>At evaluation time, the model switches mode and gradient tracking is off.</li>
+</ul>
+<p>These are not aspirations; they are invariants. When one breaks, training silently produces
+garbage. The script does not crash; the loss curve never moves, or moves in the wrong
+direction, or produces NaN at epoch 3.</p>
+<p>Reading a <code>train.py</code> is the practice of finding where each invariant is asserted and checking
+that nothing is missing.</p>
+<h2 id="reading-made-with-mls-trainpy"><a class="header" href="#reading-made-with-mls-trainpy">Reading <code>made-with-ml</code>’s <code>train.py</code></a></h2>
+<p>The made-with-ml production script (<code>madewithml/train.py</code>) is a real production training
+loop: Ray distributed, BERT-based, MLflow-logged. It is more script than you will usually
+write from scratch. Open it and locate two functions: <code>train_step</code> and <code>eval_step</code>. Everything
+else is orchestration.</p>
+<p><strong><code>train_step</code></strong> handles one full pass over the training batches:</p>
+<pre><code class="language-python">def train_step(ds, batch_size, model, num_classes, loss_fn, optimizer):
+    model.train()                                        # model mode: training
+    loss = 0.0
+    ds_generator = ds.iter_torch_batches(batch_size=batch_size, collate_fn=utils.collate_fn)
+    for i, batch in enumerate(ds_generator):
+        optimizer.zero_grad()                            # zero gradients
+        z = model(batch)                                 # forward
+        targets = F.one_hot(batch["targets"], num_classes=num_classes).float()
+        J = loss_fn(z, targets)                          # loss
+        J.backward()                                     # backward
+        optimizer.step()                                 # update
+        loss += (J.detach().item() - loss) / (i + 1)    # running mean
+    return loss
+</code></pre>
+<p>Every invariant from the list above is present. <code>model.train()</code> sets training mode.
+<code>optimizer.zero_grad()</code> runs before the forward pass: not after, not outside the loop. The
+five steps are in the canonical order: zero, forward, loss, backward, step. The
+<code>J.detach().item()</code> call before accumulating is deliberate: it pulls the scalar off the
+computational graph so the running-mean accumulator does not hold a reference that blocks
+garbage collection across hundreds of batches.</p>
+<p><strong><code>eval_step</code></strong> makes the invariants for inference explicit:</p>
+<pre><code class="language-python">def eval_step(ds, batch_size, model, num_classes, loss_fn):
+    model.eval()                                         # model mode: eval
+    loss = 0.0
+    y_trues, y_preds = [], []
+    ds_generator = ds.iter_torch_batches(batch_size=batch_size, collate_fn=utils.collate_fn)
+    with torch.inference_mode():                         # no gradient tracking
+        for i, batch in enumerate(ds_generator):
+            z = model(batch)
+            targets = F.one_hot(batch["targets"], num_classes=num_classes).float()
+            J = loss_fn(z, targets).item()
+            loss += (J - loss) / (i + 1)
+            y_trues.extend(batch["targets"].cpu().numpy())
+            y_preds.extend(torch.argmax(z, dim=1).cpu().numpy())
+    return loss, np.vstack(y_trues), np.vstack(y_preds)
+</code></pre>
+<p>Two lines do the verification work: <code>model.eval()</code> disables dropout and switches BatchNorm to
+use running statistics instead of batch statistics. <code>torch.inference_mode()</code> is a stronger
+form of <code>torch.no_grad()</code>: it disables gradient tracking entirely and signals to PyTorch that
+no tensor produced inside the block will participate in a backward pass. Omit <code>model.eval()</code>
+and dropout stays active at evaluation time, so each inference call returns a different result.
+Omit <code>torch.inference_mode()</code> and every forward pass builds a computational graph that is
+immediately discarded, wasting memory for the entire validation set.</p>
+<p>The <code>train_loop_per_worker</code> function in the same file shows the orchestration layer: it calls
+<code>train_step</code> and <code>eval_step</code> per epoch, feeds <code>val_loss</code> to <code>ReduceLROnPlateau</code>, and hands
+checkpoint artifacts to Ray’s <code>train.report</code>. Those are production wiring details. The
+invariants are in <code>train_step</code> and <code>eval_step</code>.</p>
+<h2 id="the-two-batch-smoke-test"><a class="header" href="#the-two-batch-smoke-test">The Two-Batch Smoke Test</a></h2>
+<p>Before running a full training loop, run two batches and assert the loop is wired. This is
+the test that catches the majority of training bugs in under a minute, before a GPU job runs
+for an hour.</p>
+<p>Copy <code>smoke_two_batches</code> verbatim from <code>trainer.py</code> (conductor-verified on torch 2.x CPU):</p>
+<pre><code class="language-python">def smoke_two_batches(
+    model: nn.Module,
+    loader: DataLoader,
+    optimizer: torch.optim.Optimizer,
+    loss_fn: nn.Module,
+    device: torch.device | str,
+) -&gt; list[float]:
+    """Run exactly two training batches and assert the loop is wired correctly.
+
+    Asserts:
+      - loss decreased batch-over-batch (gradient signal is flowing)
+      - at least one parameter has requires_grad=True (something is trainable)
+
+    Returns the two batch losses so the caller can inspect them.
+
+    Run this before scaling to hours of GPU. It catches:
+      - a broken zero_grad/backward/step hookup (loss won't decrease)
+      - a frozen model passed to a training loop (no trainable params)
+    """
+    # trainable-parameter check: count before the loop so it's visible in check_loop.py
+    trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+    model.train()
+    losses: list[float] = []
+
+    for i, (x, y) in enumerate(loader):
+        if i == 2:
+            break
+        x, y = x.to(device), y.to(device)
+        optimizer.zero_grad()
+        loss = loss_fn(model(x), y)
+        loss.backward()
+        optimizer.step()
+        losses.append(loss.item())
+
+    assert losses[1] &lt; losses[0], (
+        f"loss did not decrease over two batches ({losses[0]:.4f} -&gt; {losses[1]:.4f}); "
+        "check zero_grad / backward / optimizer.step order"
+    )
+    assert trainable &gt; 0, "no trainable params: check requires_grad or model freeze state"
+    return losses
+</code></pre>
+<p>The design is intentional: two batches of identical data (same samples, two copies), so the
+gradient from batch 1 is guaranteed to lower the loss on batch 2. With a fully random
+shuffled loader, one optimizer step does not reliably reduce loss on a different mini-batch.
+The assertion holds when you control the data; it fires spuriously when you do not.</p>
+<p>On a linearly-separable 4-class synthetic dataset, the verified result is:</p>
+<pre><code>smoke_two_batches: 1.4134 -&gt; 1.1398  [PASS]
+</code></pre>
+<p>Both asserts hold. The function returns the two losses so you can read them.</p>
+<h2 id="the-verify-checklist"><a class="header" href="#the-verify-checklist">The Verify Checklist</a></h2>
+<p>The smoke test is the first gate. Three more checks close the verification loop.</p>
+<p><strong>Overfit one batch.</strong> Take 8 to 32 samples. Train for 100 or more iterations on that one
+batch. Loss should go to approximately zero. If it does not, the loss function, the backward
+pass, or the optimizer call is broken. This catches the hookup problems the two-batch smoke
+might miss on stiff problems.</p>
+<p><strong>Silent failures to name before you trust a loop:</strong></p>
+<ul>
+<li>Missing <code>optimizer.zero_grad()</code>: gradients accumulate across batches by default. The model
+does update, but in the wrong direction. Loss decreases erratically or not at all.</li>
+<li>Missing <code>model.eval()</code> at test time: dropout keeps firing, BatchNorm uses batch statistics
+instead of running statistics. Eval loss varies across calls on the same batch.</li>
+<li>CPU/CUDA device mismatch: a tensor on CPU running into a model on CUDA raises <code>RuntimeError</code>
+immediately. Check <code>.device</code> on both before the forward pass if you hit this.</li>
+<li>Missing <code>torch.no_grad()</code> or <code>torch.inference_mode()</code> at inference: forward passes build
+graphs that are immediately discarded, wasting memory on every call.</li>
+</ul>
+<p><strong>NaN and Inf causes, in order of likelihood:</strong></p>
+<ul>
+<li>Learning rate too high: loss spikes then explodes. Halve the rate and rerun the smoke test.</li>
+<li><code>log(0)</code> in cross-entropy: a predicted probability of exactly zero produces negative
+infinity. Check that <code>CrossEntropyLoss</code> receives raw logits, not softmax outputs (it applies
+its own log-softmax internally). Passing softmax outputs to <code>CrossEntropyLoss</code> computes
+<code>log(softmax(x))</code>, which can produce large negative values and numeric instability.</li>
+<li>Division by zero in BatchNorm: a batch of size 1 has zero variance. BatchNorm divides by
+standard deviation, which is zero, which produces NaN. Drop the last batch if it is smaller
+than 2 samples (<code>drop_last=True</code> on the <code>DataLoader</code>).</li>
+</ul>
+<h2 id="the-10-epoch-trajectory"><a class="header" href="#the-10-epoch-trajectory">The 10-Epoch Trajectory</a></h2>
+<p>The smoke test clears. Now run a real training loop: Adam at <code>lr=1e-2</code>, 4-class separable
+data, 10 epochs. The verified loss trajectory on the conductor’s run:</p>
+<pre><code>epoch  mean_loss
+-----  ---------
+   1   1.1953
+   2   0.5941
+   3   0.3325
+   4   0.2097
+   5   0.1454
+   6   0.1087
+   7   0.0866
+   8   0.0720
+   9   0.0616
+  10   0.0534
+</code></pre>
+<p>Loss drops fast in the first few epochs and slows as the model approaches the optimum. That
+shape is the signal that the loop is wired correctly and the data is learnable. A flat line
+means the learning rate is too low or gradients are not flowing. A spike to NaN means the
+learning rate is too high or there is a numerical fault in the loss.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ul>
+<li>Every <code>train.py</code> asserts five invariants: data on the right device, model in training mode,
+gradients zeroed before each forward pass, loss computed and propagated backward, optimizer
+stepping after backward. Read the file as a checklist against these five, not as a sequence
+of commands to accept on trust.</li>
+<li><code>eval_step</code> requires both <code>model.eval()</code> and <code>torch.inference_mode()</code>: the first switches
+dropout and BatchNorm to inference behavior; the second disables graph construction.
+Omitting either produces validation numbers that do not reflect inference-time behavior.</li>
+<li>The two-batch smoke test (<code>smoke_two_batches</code>) runs in under a minute and catches the
+majority of training loop bugs: a frozen model, a missing <code>zero_grad</code>, a broken backward
+hookup. Run it before scaling to GPU hours.</li>
+<li>The four silent failures to name before trusting a loop: missing <code>zero_grad</code> (gradient
+accumulation), missing <code>model.eval()</code> at test, CPU/CUDA device mismatch, and missing
+<code>inference_mode</code> at inference.</li>
+<li>NaN during training has three common causes: learning rate too high, logits processed
+through softmax before <code>CrossEntropyLoss</code>, or batch size of 1 triggering BatchNorm division
+by zero.</li>
+<li>Debugging is verification: you are checking whether the loop satisfies known invariants, not
+guessing at what might be wrong. The invariants are checkable in a deterministic order.</li>
+</ul>
+<div class="claude-handoff" data-exercise="exercises/module1/reading-a-real-train-py/">
+<p><strong>Build It in Claude Code</strong>: Take the <code>train_one_epoch</code> loop from <code>trainer.py</code> and introduce a deliberate bug: remove <code>optimizer.zero_grad()</code> from inside the loop. Add <code>smoke_two_batches</code> to the file, wire it up to run against your broken loop, and observe the assertion fire. Then work through the verify checklist: note which silent-failure category the bug falls into, restore <code>zero_grad</code>, rerun the smoke to confirm it passes (<code>1.4134 -&gt; 1.1398</code>), and write a one-paragraph explanation of why gradient accumulation causes the loss-decrease assertion to fail.</p>
+</div>
+
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../module1/data-optimizers-checkpoints.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../module2/00-overview.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../module1/data-optimizers-checkpoints.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../module2/00-overview.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/copy-to-claude-f85f45e8.js"></script>
+
+
+
+    </div>
+    </body>
+</html>
