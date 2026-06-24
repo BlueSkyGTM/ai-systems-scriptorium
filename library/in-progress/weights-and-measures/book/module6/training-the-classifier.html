@@ -38,7 +38,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-ba06a112.js";
+            window.path_to_searchindex_js = "../searchindex-66d8e413.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a81d0b07.js"></script>
@@ -188,21 +188,28 @@ torch.manual_seed(SEED)
 </code></pre>
 <p>You place these calls at the top of <code>train.py</code>. A single unseeded initialization destroys your ability to debug a failing model or prove your results.</p>
 <h2 id="bundle-the-metadata"><a class="header" href="#bundle-the-metadata">Bundle the Metadata</a></h2>
-<p>Your checkpoint cannot be a dumb tensor dump. A production checkpoint carries its own metadata. The checkpoint format combines the <code>state_dict</code>, the hyperparameters, the current epoch, and the final <code>val_accuracy</code>. When <code>eval.py</code> loads the model, it expects a self-contained dictionary.</p>
-<pre><code class="language-python">{
-    "vocab":   Dict[str, int],         # word -&gt; id; must contain &lt;pad&gt;, &lt;unk&gt;
-    "label_map": Dict[str, int],       # label string -&gt; id (5 classes)
-    "config":  {embed_dim, hidden_dim, max_len, ...},
-    "state_dict": OrderedDict,         # TextClassifier weights
+<p>Your checkpoint cannot be a dumb tensor dump. A production checkpoint carries its own metadata. The checkpoint bundles the <code>state_dict</code>, the <code>vocab</code>, the <code>class_names</code>, the model <code>config</code>, and the training-set majority class. When <code>eval.py</code> loads the model, it expects a self-contained dictionary.</p>
+<pre><code class="language-python">checkpoint = {
+    "state_dict": model.state_dict(),
+    "vocab": vocab.stoi,
+    "class_names": CLASS_NAMES,
+    "config": {
+        "embed_dim": embed_dim,
+        "hidden_dim": hidden_dim,
+        "max_len": MAX_LEN,
+        "num_classes": NUM_CLASSES,
+    },
+    "train_majority_class": majority_class(train_data),
 }
+torch.save(checkpoint, checkpoint_path)
 </code></pre>
-<p>If you separate the weights from the configuration that generated them, you invite silent shape mismatches and deployment failures. The <code>config</code> stores the hyperparameters, ensuring the evaluation script can rebuild the architecture exactly.</p>
+<p>If you separate the weights from the configuration that generated them, you invite silent shape mismatches and deployment failures. The <code>config</code> stores the architecture hyperparameters so <code>eval.py</code> rebuilds the model exactly, and <code>train_majority_class</code> lets it reconstruct the baseline without re-parsing the training file.</p>
 <h2 id="respect-the-architecture"><a class="header" href="#respect-the-architecture">Respect the Architecture</a></h2>
 <p>The training loop must respect structural boundaries. You apply early stopping (covered in Module 2) to prevent overfitting on the synthetic dataset. You use the adapter pattern (covered in Module 4) to ensure raw text inputs map cleanly into the model’s expected tensor shapes. The loop trains the classifier, evaluates the validation accuracy, and writes the self-describing checkpoint.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
 <li>Fixed seeds (<code>SEED = 42</code>) must be applied to Python, PyTorch, and the environment hash before any RNG calls.</li>
-<li>A checkpoint must bundle the <code>state_dict</code> with its own metadata (hyperparameters, epoch, <code>val_accuracy</code>).</li>
+<li>A checkpoint must bundle the <code>state_dict</code> with its own metadata: <code>vocab</code>, <code>class_names</code>, model <code>config</code>, and <code>train_majority_class</code>.</li>
 <li>Training scripts must enforce determinism so downstream evaluation gates test the model, not the noise.</li>
 </ul>
 <div class="claude-handoff" data-exercise="exercises/module6/training-the-classifier/">

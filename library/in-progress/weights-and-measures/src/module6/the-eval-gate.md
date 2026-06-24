@@ -11,16 +11,16 @@ The gate loads a fine-tuned checkpoint and a held-out JSONL test set, then evalu
 ```python
 """eval.py — M6 Eval Gate for the tuned skill classifier.
 
-Loads a fine-tuned checkpoint and a held-out JSONL test set, then evaluates
-the tuned model against a majority-class baseline on two metrics:
+Loads a checkpoint and the held-out test set, then scores the tuned model against
+a majority-class baseline on two metrics:
 
   * exact-match accuracy
   * macro-F1
 
-The GATE passes (exit code 0) iff the tuned model beats the baseline by
-≥ 5 percentage points on BOTH metrics. Otherwise the gate BLOCKS (exit 1).
-
-Logging goes to MLflow with an offline sqlite backend.
+The GATE passes (exit 0) iff the tuned model beats the baseline by at least 5
+percentage points on BOTH metrics. Otherwise it BLOCKS (exit 1). The exit code is
+the deliverable: a tune that cannot prove it beats the cheapest possible model
+does not ship.
 """
 ```
 
@@ -30,50 +30,35 @@ Both metrics must clear the margin. "Both" does the work. A model that lifts acc
 
 The baseline predicts the most frequent label for every input. No training, no weights, no inference cost. It is the cheapest classifier that exists. If your fine-tuned model cannot beat it by five points on both metrics, you shipped nothing.
 
-The checkpoint carries everything `eval.py` needs to reconstruct that baseline without touching the training data:
+The checkpoint carries everything `eval.py` needs to reconstruct that baseline without touching the training data. The `train_majority_class` field is the baseline, frozen at training time:
 
 ```python
 Checkpoint contract (produced by train.py):
-    {
-        "vocab":   Dict[str, int],         # word -> id; must contain <pad>, <unk>
-        "label_map": Dict[str, int],       # label string -> id (5 classes)
-        "config":  {embed_dim, hidden_dim, max_len, ...},
-        "state_dict": OrderedDict,         # TextClassifier weights
-    }
+    state_dict, vocab (stoi), class_names, config, train_majority_class
 ```
 
 ## MLflow Without A Server
 
-The gate logs metrics, parameters, and artifacts to MLflow using an offline sqlite backend. No server, no network, no infrastructure to stand up. The import is optional and gated so CI does not break when MLflow is absent:
+The gate logs metrics and parameters to MLflow using an offline sqlite backend. No server, no network, no infrastructure to stand up. The import is optional, so CI does not break when MLflow is absent, and `--no-mlflow` skips logging entirely:
 
 ```python
 try:
-    import mlflow  # optional; gated by --mlflow-off flag for CI
+    import mlflow  # optional
     HAS_MLFLOW = True
-except ImportError:  # pragma: no cover
+except ImportError:  # pragma: no cover - exercised only when mlflow absent
     HAS_MLFLOW = False
 ```
 
 ## Disjoint Seeds
 
-Training and evaluation use separate, deterministic seeds. The held-out test set never overlaps with training data. From the `train.py` design notes:
+`train.py` generates both splits deterministically: the training set at `SEED = 42`, the held-out test set at `SEED + 1000`. The two never overlap, so the gate scores the model on data it never saw. From the `train.py` design notes:
 
 ```python
-All randomness is seeded (SEED = 42) so eval.py's held-out test set
-(seed = SEED + 1000) is deterministic and disjoint from training.
+All randomness is seeded (SEED = 42). The held-out test set uses a disjoint
+seed (SEED + 1000), so train and test never overlap.
 ```
 
-`eval.py` pins its own seeds at module load:
-
-```python
-# ---------------------------------------------------------------------------
-# Determinism
-# ---------------------------------------------------------------------------
-torch.manual_seed(42)
-random.seed(42)
-```
-
-This is the same gate pattern from Module 5, now pointed at a real model with a real baseline and real consequences.
+`eval.py` does not re-generate data; it reads the `test.jsonl` that `train.py` wrote. Determinism lives at the source, in `train.py`, not in the gate. This is the same gate pattern from Module 5, now pointed at a real model with a real baseline and real consequences.
 
 ## Core Concepts
 

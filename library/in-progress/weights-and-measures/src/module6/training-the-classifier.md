@@ -17,18 +17,25 @@ You place these calls at the top of `train.py`. A single unseeded initialization
 
 ## Bundle the Metadata
 
-Your checkpoint cannot be a dumb tensor dump. A production checkpoint carries its own metadata. The checkpoint format combines the `state_dict`, the hyperparameters, the current epoch, and the final `val_accuracy`. When `eval.py` loads the model, it expects a self-contained dictionary.
+Your checkpoint cannot be a dumb tensor dump. A production checkpoint carries its own metadata. The checkpoint bundles the `state_dict`, the `vocab`, the `class_names`, the model `config`, and the training-set majority class. When `eval.py` loads the model, it expects a self-contained dictionary.
 
 ```python
-{
-    "vocab":   Dict[str, int],         # word -> id; must contain <pad>, <unk>
-    "label_map": Dict[str, int],       # label string -> id (5 classes)
-    "config":  {embed_dim, hidden_dim, max_len, ...},
-    "state_dict": OrderedDict,         # TextClassifier weights
+checkpoint = {
+    "state_dict": model.state_dict(),
+    "vocab": vocab.stoi,
+    "class_names": CLASS_NAMES,
+    "config": {
+        "embed_dim": embed_dim,
+        "hidden_dim": hidden_dim,
+        "max_len": MAX_LEN,
+        "num_classes": NUM_CLASSES,
+    },
+    "train_majority_class": majority_class(train_data),
 }
+torch.save(checkpoint, checkpoint_path)
 ```
 
-If you separate the weights from the configuration that generated them, you invite silent shape mismatches and deployment failures. The `config` stores the hyperparameters, ensuring the evaluation script can rebuild the architecture exactly.
+If you separate the weights from the configuration that generated them, you invite silent shape mismatches and deployment failures. The `config` stores the architecture hyperparameters so `eval.py` rebuilds the model exactly, and `train_majority_class` lets it reconstruct the baseline without re-parsing the training file.
 
 ## Respect the Architecture
 
@@ -37,7 +44,7 @@ The training loop must respect structural boundaries. You apply early stopping (
 ## Core Concepts
 
 * Fixed seeds (`SEED = 42`) must be applied to Python, PyTorch, and the environment hash before any RNG calls.
-* A checkpoint must bundle the `state_dict` with its own metadata (hyperparameters, epoch, `val_accuracy`).
+* A checkpoint must bundle the `state_dict` with its own metadata: `vocab`, `class_names`, model `config`, and `train_majority_class`.
 * Training scripts must enforce determinism so downstream evaluation gates test the model, not the noise.
 
 <div class="claude-handoff" data-exercise="exercises/module6/training-the-classifier/">

@@ -29,12 +29,7 @@ The checkpoint it produces carries everything the evaluator needs:
 
 ```python
 Checkpoint contract (produced by train.py):
-    {
-        "vocab":   Dict[str, int],         # word -> id; must contain <pad>, <unk>
-        "label_map": Dict[str, int],       # label string -> id (5 classes)
-        "config":  {embed_dim, hidden_dim, max_len, ...},
-        "state_dict": OrderedDict,         # TextClassifier weights
-    }
+    state_dict, vocab (stoi), class_names, config, train_majority_class
 ```
 
 `eval.py` loads that checkpoint, runs the tuned model against a majority-class baseline on two metrics, and exits:
@@ -46,22 +41,22 @@ The GATE passes (exit code 0) iff the tuned model beats the baseline by
 
 Exit 0 means the model ships. Exit 1 means it stops. No middle ground, no warnings, no "close enough."
 
-`smoke.py` orchestrates the full loop on 50-sample train fixtures and 20-sample test fixtures. It asserts the trained model clears the gate (exit 0). Then it asserts the untrained model fails it (exit 1). Both assertions must hold. If a broken model passes or a good model blocks, `smoke.py` fails before your CI pipeline does.
+`smoke.py` orchestrates the full loop on a 300-sample train fixture and a 120-sample test fixture, running 20 assertions in a few seconds. It asserts the trained model clears the gate (exit 0). Then it asserts the untrained model fails it (exit 1). Both assertions must hold. If a broken model passes or a good model blocks, `smoke.py` fails before your CI pipeline does.
 
 ## The README Contract
 
 The README declares the artifact in plain terms:
 
 ```
-m6-artifact/
-├── train.py                  # Fine-tune a tiny text classifier → outputs/model.pt
+module6-classifier/
+├── train.py                  # Fine-tune a tiny text classifier -> outputs/checkpoint.pt
 ├── eval.py                   # Gated eval: tuned vs. majority-class baseline
 ├── smoke.py                  # End-to-end smoke test (incl. negative case)
 ├── tests/
 │   └── test_classifier.py    # pytest subset of the smoke assertions
-├── data/                     # Synthetic JSONL fixtures (train/val/test)
-├── outputs/                  # Checkpoints, MLflow runs, write-up
-│   └── skill-classifier.md   # P
+├── outputs/                  # checkpoint.pt, train.jsonl, test.jsonl, mlruns.db
+│   └── skill-classifier.md   # portfolio write-up
+└── README.md
 ```
 
 A reviewer clones the repo, runs one command, and watches the loop execute: train, evaluate, gate. The README frames the stakes without apology:

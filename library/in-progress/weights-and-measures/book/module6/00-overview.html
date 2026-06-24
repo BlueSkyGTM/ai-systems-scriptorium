@@ -38,7 +38,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-ba06a112.js";
+            window.path_to_searchindex_js = "../searchindex-66d8e413.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a81d0b07.js"></script>
@@ -196,7 +196,7 @@ os.environ.setdefault("PYTHONHASHSEED", str(SEED))
 random.seed(SEED)
 torch.manual_seed(SEED)
 </code></pre>
-<p>The checkpoint it writes is a contract. Vocab, label map, config, and state dict travel together so <code>eval.py</code> never re-parses training data.</p>
+<p>The checkpoint it writes is a contract. The <code>state_dict</code>, <code>vocab</code>, <code>class_names</code>, <code>config</code>, and <code>train_majority_class</code> travel together so <code>eval.py</code> never re-parses training data.</p>
 <p>The gate logs to MLflow with an offline sqlite backend, leaving a reviewer-readable trail. The README frames the discipline in one line:</p>
 <blockquote>
 <p>No model leaves the door without beating its baseline by a margin you pre-committed to.</p>
@@ -211,13 +211,9 @@ torch.manual_seed(SEED)
 <ul>
 <li>A loss curve reports training progress; only held-out evaluation against a baseline reports shipping readiness.</li>
 <li>The eval gate exits zero only if the tuned model beats baseline by at least 5 percentage points on both exact-match accuracy and macro-F1.</li>
-<li>A checkpoint is a contract: it carries vocab, label map, config, and weights so eval never re-parses training data.</li>
+<li>A checkpoint is a contract: it carries the <code>state_dict</code>, <code>vocab</code>, <code>class_names</code>, <code>config</code>, and <code>train_majority_class</code> so eval never re-parses training data.</li>
 <li>The artifact imports nothing from earlier modules but applies every principle from them: fixed seeds, disjoint test split, pre-committed margin, auditable trail.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module6/00-overview/">
-**Build It in Claude Code** · Exercise · exercises/module6/00-overview/
-</div>
-
 <p>A Production AI Engineer ships nothing a reviewer cannot re-run blind and reach the same verdict.</p>
 
                     </main>

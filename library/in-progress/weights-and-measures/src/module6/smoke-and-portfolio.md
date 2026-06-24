@@ -8,9 +8,9 @@ Your smoke test has two sides: a happy path and a negative case.
 
 The happy path proves the loop runs end to end:
 
-- Run `train.py` on a 50-sample fixture
-- Run `eval.py` on a 20-sample fixture
-- All 20+ assertions pass in < 30 seconds on CPU
+- Run `train.py` on a 300-sample fixture
+- Run `eval.py` on the 120-sample held-out fixture
+- All 20 assertions pass in a few seconds on CPU
 - Fixed random seeds
 
 The negative case is the assertion most candidates skip:
@@ -25,11 +25,11 @@ Feed an untrained model into the gate. It cannot beat the majority-class baselin
 The write-up turns those assertions into a story. Open `outputs/skill-classifier.md` and you find a structured stub:
 
 ```markdown
-# Skill Classifier — Tuned vs. Baseline
+# Skill Classifier: Tuned vs. Baseline
 
-**Artifact:** 5-class text classifier (sentiment/topic) with reproducible eval gate.
-**Status:** Stub — fill in the bracketed sections after your first successful `make smoke` run.
-**Module:** M6 — *Artifact: Tuned Classifier with Eval Gate* (`Weights and Measures`).
+**Artifact:** 5-class support-ticket classifier with a reproducible eval gate.
+**Status:** Stub. Fill in the bracketed sections after your first green `python smoke.py` run.
+**Module:** M6, Artifact: Tuned Classifier with Eval Gate (`Weights and Measures`).
 ```
 
 Section 1 frames the business cost before any result appears:
@@ -38,15 +38,15 @@ Section 1 frames the business cost before any result appears:
 ## 1. Problem Statement
 
 Customer support tickets arrive untagged into a shared inbox. Routing them by hand
-costs ~30 seconds per ticket and misroutes roughly 1 in 8. The goal of this artifact
-is to ship a **tiny, auditable classifier** that:
+costs roughly 30 seconds per ticket and misroutes about 1 in 8. The goal of this
+artifact is to ship a **tiny, auditable classifier** that:
 
-1. Beats a naive majority-class baseline by a meaningful margin (≥ 5pp on both
+1. Beats a naive majority-class baseline by a meaningful margin (at least 5pp on both
    exact-match accuracy and macro-F1).
-2. Refuses to ship if it can't prove it — the eval script exits non-zero and blocks
+2. Refuses to ship if it can't prove it: the eval script exits non-zero and blocks
    downstream pipelines.
-3. Runs end-to-end on a laptop CPU in under a minute, so the whole loop
-   (train → eval → gate) fits inside a CI step.
+3. Runs end-to-end on a laptop CPU in seconds, so the whole loop
+   (train, eval, gate) fits inside a CI step.
 ```
 
 Each bracketed TODO in the stub maps to a smoke assertion. You fill them in after a green run, not before. The write-up is evidence, not aspiration.
@@ -64,15 +64,15 @@ The smoke test covers the end-to-end loop. The pytest suite in `tests/test_class
 The directory structure mirrors the contract:
 
 ```
-m6-artifact/
-├── train.py                  # Fine-tune a tiny text classifier → outputs/model.pt
+module6-classifier/
+├── train.py                  # Fine-tune a tiny text classifier -> outputs/checkpoint.pt
 ├── eval.py                   # Gated eval: tuned vs. majority-class baseline
 ├── smoke.py                  # End-to-end smoke test (incl. negative case)
 ├── tests/
 │   └── test_classifier.py    # pytest subset of the smoke assertions
-├── data/                     # Synthetic JSONL fixtures (train/val/test)
-├── outputs/                  # Checkpoints, MLflow runs, write-up
-│   └── skill-classifier.md   # P
+├── outputs/                  # checkpoint.pt, train.jsonl, test.jsonl, mlruns.db
+│   └── skill-classifier.md   # portfolio write-up
+└── README.md
 ```
 
 ## Same Pattern, Different Domain

@@ -1,0 +1,7 @@
+# Generated run artifacts — reproduced by `python train.py` / `python smoke.py`.
+# The portfolio write-up (skill-classifier.md) is the only tracked file here.
+checkpoint.pt
+train.jsonl
+test.jsonl
+mlruns.db
+mlruns/

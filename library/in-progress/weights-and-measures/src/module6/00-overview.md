@@ -33,7 +33,7 @@ random.seed(SEED)
 torch.manual_seed(SEED)
 ```
 
-The checkpoint it writes is a contract. Vocab, label map, config, and state dict travel together so `eval.py` never re-parses training data.
+The checkpoint it writes is a contract. The `state_dict`, `vocab`, `class_names`, `config`, and `train_majority_class` travel together so `eval.py` never re-parses training data.
 
 The gate logs to MLflow with an offline sqlite backend, leaving a reviewer-readable trail. The README frames the discipline in one line:
 
@@ -55,11 +55,7 @@ Modules 1 through 5 complete. Python 3.11 or newer. PyTorch installed; CPU is en
 
 - A loss curve reports training progress; only held-out evaluation against a baseline reports shipping readiness.
 - The eval gate exits zero only if the tuned model beats baseline by at least 5 percentage points on both exact-match accuracy and macro-F1.
-- A checkpoint is a contract: it carries vocab, label map, config, and weights so eval never re-parses training data.
+- A checkpoint is a contract: it carries the `state_dict`, `vocab`, `class_names`, `config`, and `train_majority_class` so eval never re-parses training data.
 - The artifact imports nothing from earlier modules but applies every principle from them: fixed seeds, disjoint test split, pre-committed margin, auditable trail.
-
-<div class="claude-handoff" data-exercise="exercises/module6/00-overview/">
-**Build It in Claude Code** · Exercise · exercises/module6/00-overview/
-</div>
 
 A Production AI Engineer ships nothing a reviewer cannot re-run blind and reach the same verdict.

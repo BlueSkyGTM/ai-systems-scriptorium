@@ -38,7 +38,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-ba06a112.js";
+            window.path_to_searchindex_js = "../searchindex-66d8e413.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a81d0b07.js"></script>
@@ -183,9 +183,9 @@
 <p>Your smoke test has two sides: a happy path and a negative case.</p>
 <p>The happy path proves the loop runs end to end:</p>
 <ul>
-<li>Run <code>train.py</code> on a 50-sample fixture</li>
-<li>Run <code>eval.py</code> on a 20-sample fixture</li>
-<li>All 20+ assertions pass in &lt; 30 seconds on CPU</li>
+<li>Run <code>train.py</code> on a 300-sample fixture</li>
+<li>Run <code>eval.py</code> on the 120-sample held-out fixture</li>
+<li>All 20 assertions pass in a few seconds on CPU</li>
 <li>Fixed random seeds</li>
 </ul>
 <p>The negative case is the assertion most candidates skip:</p>
@@ -196,25 +196,25 @@
 <p>Feed an untrained model into the gate. It cannot beat the majority-class baseline by five points, so <code>eval.py</code> exits non-zero. Your smoke test catches that exit code and counts it as a pass. The artifact must fail when it should fail. That is the contract.</p>
 <h2 id="the-portfolio-translation"><a class="header" href="#the-portfolio-translation">The Portfolio Translation</a></h2>
 <p>The write-up turns those assertions into a story. Open <code>outputs/skill-classifier.md</code> and you find a structured stub:</p>
-<pre><code class="language-markdown"># Skill Classifier — Tuned vs. Baseline
+<pre><code class="language-markdown"># Skill Classifier: Tuned vs. Baseline
 
-**Artifact:** 5-class text classifier (sentiment/topic) with reproducible eval gate.
-**Status:** Stub — fill in the bracketed sections after your first successful `make smoke` run.
-**Module:** M6 — *Artifact: Tuned Classifier with Eval Gate* (`Weights and Measures`).
+**Artifact:** 5-class support-ticket classifier with a reproducible eval gate.
+**Status:** Stub. Fill in the bracketed sections after your first green `python smoke.py` run.
+**Module:** M6, Artifact: Tuned Classifier with Eval Gate (`Weights and Measures`).
 </code></pre>
 <p>Section 1 frames the business cost before any result appears:</p>
 <pre><code class="language-markdown">## 1. Problem Statement
 
 Customer support tickets arrive untagged into a shared inbox. Routing them by hand
-costs ~30 seconds per ticket and misroutes roughly 1 in 8. The goal of this artifact
-is to ship a **tiny, auditable classifier** that:
+costs roughly 30 seconds per ticket and misroutes about 1 in 8. The goal of this
+artifact is to ship a **tiny, auditable classifier** that:
 
-1. Beats a naive majority-class baseline by a meaningful margin (≥ 5pp on both
+1. Beats a naive majority-class baseline by a meaningful margin (at least 5pp on both
    exact-match accuracy and macro-F1).
-2. Refuses to ship if it can't prove it — the eval script exits non-zero and blocks
+2. Refuses to ship if it can't prove it: the eval script exits non-zero and blocks
    downstream pipelines.
-3. Runs end-to-end on a laptop CPU in under a minute, so the whole loop
-   (train → eval → gate) fits inside a CI step.
+3. Runs end-to-end on a laptop CPU in seconds, so the whole loop
+   (train, eval, gate) fits inside a CI step.
 </code></pre>
 <p>Each bracketed TODO in the stub maps to a smoke assertion. You fill them in after a green run, not before. The write-up is evidence, not aspiration.</p>
 <h2 id="run-both-layers"><a class="header" href="#run-both-layers">Run Both Layers</a></h2>
@@ -223,15 +223,15 @@ is to ship a **tiny, auditable classifier** that:
 </code></pre>
 <p>The smoke test covers the end-to-end loop. The pytest suite in <code>tests/test_classifier.py</code> is a focused subset of those assertions, checking individual components: model forward pass, dataset loading, gate logic, seed reproducibility. Together they give two independent signals that the artifact holds.</p>
 <p>The directory structure mirrors the contract:</p>
-<pre><code>m6-artifact/
-├── train.py                  # Fine-tune a tiny text classifier → outputs/model.pt
+<pre><code>module6-classifier/
+├── train.py                  # Fine-tune a tiny text classifier -&gt; outputs/checkpoint.pt
 ├── eval.py                   # Gated eval: tuned vs. majority-class baseline
 ├── smoke.py                  # End-to-end smoke test (incl. negative case)
 ├── tests/
 │   └── test_classifier.py    # pytest subset of the smoke assertions
-├── data/                     # Synthetic JSONL fixtures (train/val/test)
-├── outputs/                  # Checkpoints, MLflow runs, write-up
-│   └── skill-classifier.md   # P
+├── outputs/                  # checkpoint.pt, train.jsonl, test.jsonl, mlruns.db
+│   └── skill-classifier.md   # portfolio write-up
+└── README.md
 </code></pre>
 <h2 id="same-pattern-different-domain"><a class="header" href="#same-pattern-different-domain">Same Pattern, Different Domain</a></h2>
 <p>This artifact pattern, train then gate then write-up, is the same one you build in Module 6: Just Python. The domain shifts; the contract does not. A smoke test always asserts both directions: the artifact succeeds when it should, and it fails when it must.</p>
