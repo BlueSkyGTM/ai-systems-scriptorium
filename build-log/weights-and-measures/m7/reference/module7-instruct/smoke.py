@@ -1,30 +1,20 @@
-"""smoke.py — end-to-end smoke test for the Module 7 instruction-tuned artifact.
+"""smoke.py — end-to-end oracle for the Module 7 instruction-tuned artifact.
 
 Pipeline:
-  1. Build a 10-sample JSONL fixture.
-  2. Run tune.py on that fixture (must finish on CPU).
-  3. Run regress.py on the resulting adapter -> expects PASS (exit 0).
-  4. Swap the adapter file with random weights of identical shapes.
-  5. Run regress.py on the corrupted adapter -> expects BLOCK (exit 1).
-  6. Restore the real adapter.
+  1. Run tune.py: pretrain the base, LoRA-tune the new skill, save base + adapter.
+  2. Run regress.py on the real adapter -> expects PASS (exit 0).
+  3. Swap the adapter file with random weights of identical shapes.
+  4. Run regress.py on the corrupted adapter -> expects BLOCK (exit 1).
+  5. Restore the real adapter and confirm it is byte-for-byte intact.
 
-smoke.py exits 0 only if every one of those expected outcomes was observed,
-including the negative case (random adapter must BLOCK). The negative-case
-assertion is the regression-suite's "fuse": it proves regress.py is capable
-of failing, so a green run is meaningful.
+smoke.py exits 0 only if every expected outcome holds, including the negative case.
+The negative case is the regression suite's fuse: it proves regress.py can fail, so a
+green run means something.
 
-Constraints honored:
-  * stdlib + torch only (no HuggingFace, no sklearn needed here).
-  * Fixed seeds (random, torch).
-  * CPU-runnable, designed to finish in < 45 s on a laptop CPU.
-  * MLflow offline sqlite backend for child processes.
+Constraints: stdlib + torch only, fixed seeds, CPU-runnable in a few seconds.
 """
-
 from __future__ import annotations
 
-import json
-import os
-import random
 import shutil
 import subprocess
 import sys
@@ -33,183 +23,90 @@ from pathlib import Path
 
 import torch
 
-# ----------------------------------------------------------------------------
-# Paths and constants
-# ----------------------------------------------------------------------------
+import regress as regress_mod
+import tune as tune_mod
+
 ROOT = Path(__file__).resolve().parent
-OUTPUTS = ROOT / "outputs"
-ADAPTER_DIR = OUTPUTS / "adapter"
-ADAPTER_FILE = ADAPTER_DIR / "adapter.pt"
-DATA_DIR = ROOT / "data"
-FIXTURE = DATA_DIR / "smoke_fixture.jsonl"
+ADAPTER_FILE = ROOT / "outputs" / "adapter" / "adapter.pt"
+BASE_FILE = ROOT / "outputs" / "base.pt"
+BUDGET_S = 45.0
 
-MLFLOW_URI = "sqlite:///outputs/mlruns.db"
-SMOKE_BUDGET_SECONDS = 45.0
+_PASS = 0
+_FAIL = 0
 
 
-# ----------------------------------------------------------------------------
-# Seed control
-# ----------------------------------------------------------------------------
-def set_seeds() -> None:
-    random.seed(42)
-    torch.manual_seed(42)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(42)
-    try:
-        import numpy as np  # optional, only if available
-        np.random.seed(42)
-    except ImportError:
-        pass
+def check(label: str, cond: bool) -> None:
+    global _PASS, _FAIL
+    if cond:
+        _PASS += 1
+        print(f"  ok   {label}")
+    else:
+        _FAIL += 1
+        print(f"  FAIL {label}")
 
 
-# ----------------------------------------------------------------------------
-# Subprocess runner (inherits env so MLFLOW_TRACKING_URI flows downstream)
-# ----------------------------------------------------------------------------
-def run(cmd: list[str]) -> int:
-    env = os.environ.copy()
-    env.setdefault("CUDA_VISIBLE_DEVICES", "")  # force CPU
-    env.setdefault("TOKENIZERS_PARALLELISM", "false")
-    print(f"[smoke] $ {' '.join(cmd)}", flush=True)
-    proc = subprocess.run(
-        cmd,
-        cwd=str(ROOT),
-        env=env,
-        capture_output=True,
-        text=True,
-    )
-    if proc.stdout:
-        print(proc.stdout, end="", flush=True)
-    if proc.stderr:
-        print(proc.stderr, end="", file=sys.stderr, flush=True)
-    return proc.returncode
+def run(args: list[str]) -> int:
+    return subprocess.run(
+        [sys.executable, *args], cwd=str(ROOT), capture_output=True, text=True
+    ).returncode
 
 
-# ----------------------------------------------------------------------------
-# Fixture creation (deterministic 10-sample chat-format JSONL)
-# ----------------------------------------------------------------------------
-def build_fixture() -> Path:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    samples = [
-        {"instruction": "Say hello.", "response": "Hello there!"},
-        {"instruction": "What is 2+2?", "response": "4"},
-        {"instruction": "Name a primary color.", "response": "Blue"},
-        {"instruction": "Capitalize the word cat.", "response": "CAT"},
-        {"instruction": "What sound does a dog make?", "response": "Woof"},
-        {"instruction": "Say goodbye.", "response": "Goodbye!"},
-        {"instruction": "What is 1+1?", "response": "2"},
-        {"instruction": "Name a fruit.", "response": "Apple"},
-        {"instruction": "What is the opposite of hot?", "response": "Cold"},
-        {"instruction": "Spell the word red.", "response": "R-E-D"},
-    ]
-    assert len(samples) == 10, "smoke fixture must have exactly 10 samples"
-    with FIXTURE.open("w") as f:
-        for s in samples:
-            f.write(json.dumps(s) + "\n")
-    return FIXTURE
-
-
-# ----------------------------------------------------------------------------
-# Negative-case helpers: swap adapter with random weights of identical shapes
-# ----------------------------------------------------------------------------
-def corrupt_adapter_with_random_weights(path: Path) -> Path:
-    """Overwrite the LoRA adapter file with random tensors of identical
-    shapes/dtypes. Returns the backup path so the real adapter can be restored.
-    """
-    backup = path.with_suffix(".bak.pt")
-    shutil.copy2(path, backup)
-
-    state = torch.load(path, map_location="cpu")
-    corrupted: dict[str, object] = {}
-    for key, value in state.items():
-        if isinstance(value, torch.Tensor):
-            # randn_like preserves dtype/shape; LoRA deltas are small float tensors
-            corrupted[key] = torch.randn_like(value) * 0.1
-        else:
-            corrupted[key] = value
-    torch.save(corrupted, path)
-    return backup
-
-
-def restore_adapter(path: Path, backup: Path) -> None:
-    shutil.copy2(backup, path)
-    try:
-        backup.unlink()
-    except FileNotFoundError:
-        pass
-
-
-# ----------------------------------------------------------------------------
-# Main smoke flow
-# ----------------------------------------------------------------------------
 def main() -> int:
     t0 = time.time()
-    set_seeds()
 
-    OUTPUTS.mkdir(parents=True, exist_ok=True)
-    ADAPTER_DIR.mkdir(parents=True, exist_ok=True)
-    os.environ["MLFLOW_TRACKING_URI"] = MLFLOW_URI
+    # -- Step 1: tune (pretrain base + LoRA-tune the new skill) ---------------
+    print("[smoke] tuning...")
+    summary = tune_mod.build()
+    check("base checkpoint written", BASE_FILE.exists())
+    check("adapter written", ADAPTER_FILE.exists())
+    check("adapter is a small fraction of the model",
+          summary["adapter_params"] < summary["total_params"] // 10)
+    check("adapter has trainable params", summary["adapter_params"] > 0)
 
-    # -------- Step 1: build fixture --------
-    fixture = build_fixture()
-    assert fixture.exists() and fixture.stat().st_size > 0
-
-    # Clean slate: remove stale adapter if present so we test a fresh tune.
-    if ADAPTER_FILE.exists():
-        ADAPTER_FILE.unlink()
-
-    # -------- Step 2: tune on the 10-sample fixture --------
-    rc = run([
-        sys.executable, "tune.py",
-        "--data", str(fixture),
-        "--adapter-out", str(ADAPTER_FILE),
-        "--epochs", "1",
-    ])
-    assert rc == 0, f"tune.py exited with rc={rc} (expected 0)"
-    assert ADAPTER_FILE.exists(), "tune.py did not produce adapter.pt"
-
-    # Sanity: adapter must contain tensors, not be empty.
-    adapter_state = torch.load(ADAPTER_FILE, map_location="cpu")
+    adapter_state = torch.load(ADAPTER_FILE, weights_only=False)
     tensor_keys = [k for k, v in adapter_state.items() if isinstance(v, torch.Tensor)]
-    assert len(tensor_keys) > 0, "adapter.pt contains no tensors"
-    print(f"[smoke] tune.py OK ({len(tensor_keys)} tensor params)", flush=True)
+    check("adapter file holds LoRA tensors", len(tensor_keys) > 0)
 
-    # -------- Step 3: regress on real adapter -> must PASS --------
-    rc = run([sys.executable, "regress.py", "--adapter", str(ADAPTER_FILE)])
-    assert rc == 0, (
-        f"regress.py BLOCKED the real adapter (rc={rc}); expected PASS (0)"
-    )
-    print("[smoke] regress.py PASS on real adapter OK", flush=True)
+    # -- Step 2: behavioural evaluation (in-process) -------------------------
+    m = regress_mod.evaluate()
+    check("base fails at least one case (the new skill)", m["base_pass"] < m["n_cases"])
+    check("tuned passes every case", m["tuned_pass"] == m["n_cases"])
+    check("tuned improves on the base", m["improved"] > 0)
+    check("no behavioural regression", m["no_regression"])
+    check("gate result PASS", m["passed"] is True)
 
-    # -------- Step 4: negative case — random adapter must BLOCK --------
-    backup = corrupt_adapter_with_random_weights(ADAPTER_FILE)
+    # -- Step 3: regress.py PASS on real adapter -----------------------------
+    check("regress.py exits 0 on real adapter", run(["regress.py", "--no-mlflow"]) == 0)
+
+    # -- Step 4: negative case — random adapter must BLOCK -------------------
+    backup = ADAPTER_FILE.with_suffix(".bak.pt")
+    shutil.copy2(ADAPTER_FILE, backup)
     try:
-        rc = run([sys.executable, "regress.py", "--adapter", str(ADAPTER_FILE)])
-        assert rc == 1, (
-            f"regress.py PASSED a random-weight adapter (rc={rc}); "
-            "expected BLOCK (1) — regression suite is not sensitive enough"
-        )
-        print("[smoke] regress.py BLOCK on random adapter OK", flush=True)
+        corrupted = {
+            k: (torch.randn_like(v) if isinstance(v, torch.Tensor) else v)
+            for k, v in adapter_state.items()
+        }
+        torch.save(corrupted, ADAPTER_FILE)
+        check("regress.py exits 1 on random adapter", run(["regress.py", "--no-mlflow"]) == 1)
     finally:
-        restore_adapter(ADAPTER_FILE, backup)
+        shutil.copy2(backup, ADAPTER_FILE)
+        backup.unlink(missing_ok=True)
 
-    # -------- Final adapter sanity check --------
-    restored_state = torch.load(ADAPTER_FILE, map_location="cpu")
-    for k in tensor_keys:
-        assert torch.equal(
-            restored_state[k], adapter_state[k]
-        ), f"adapter param '{k}' changed during negative-case dance"
+    restored = torch.load(ADAPTER_FILE, weights_only=False)
+    check("real adapter restored intact",
+          all(torch.equal(restored[k], adapter_state[k]) for k in tensor_keys))
 
     elapsed = time.time() - t0
-    print(f"[smoke] ALL SMOKE CHECKS PASSED in {elapsed:.1f}s", flush=True)
-    assert elapsed < SMOKE_BUDGET_SECONDS, (
-        f"smoke exceeded budget: {elapsed:.1f}s > {SMOKE_BUDGET_SECONDS}s"
-    )
+    check(f"finished within budget ({elapsed:.1f}s < {BUDGET_S}s)", elapsed < BUDGET_S)
+
+    total = _PASS + _FAIL
+    print(f"\n[smoke] {_PASS}/{total} assertions passed")
+    if _FAIL:
+        print(f"[smoke] FAILED ({_FAIL} failures)")
+        return 1
+    print("[smoke] PASS")
     return 0
 
 
 if __name__ == "__main__":
-    try:
-        sys.exit(main())
-    except AssertionError as e:
-        print(f"[smoke] FAIL: {e}", file=sys.stderr, flush=True)
-        sys.exit(1)
+    sys.exit(main())

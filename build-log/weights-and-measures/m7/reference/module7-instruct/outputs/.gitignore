@@ -1,0 +1,7 @@
+# Generated run artifacts — reproduced by `python tune.py` / `python smoke.py`.
+# The skill card (skill-instruct.md) is the only tracked file here.
+base.pt
+adapter/
+instruct.jsonl
+mlruns.db
+mlruns/

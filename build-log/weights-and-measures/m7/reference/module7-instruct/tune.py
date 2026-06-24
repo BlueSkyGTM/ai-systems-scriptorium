@@ -1,431 +1,327 @@
-The user wants me to generate tune.py for Module 7. Let me think carefully about what this needs:
+"""tune.py — Module 7: Instruction-Tuning a Tiny LLM with LoRA.
 
-1. LoRA fine-tune a tiny model (synthetic 2-layer GPT-like Transformer)
-2. Small instruction-following dataset (20-50 examples, JSONL chat format)
-3. Must run on CPU in < 90 seconds
-4. Saves LoRA adapter to outputs/adapter/
-5. Fixed random seeds
-6. No HuggingFace transformers - stdlib + torch only
-7. MLflow sqlite backend
-8. Python 3.11+
+Builds a small from-scratch Transformer language model, pretrains it on a couple of
+"skills", then LoRA-fine-tunes it to add a new skill without retraining the base.
+Pure PyTorch (no HuggingFace). Runs on CPU in well under 90 seconds.
 
-Let me design this carefully:
+The point is the mechanics, not the scale:
+  - The base model is a real (if tiny) next-token Transformer. Pretraining teaches it
+    two response skills: `thank -> thanks` and `bye -> goodbye`.
+  - LoRA adds low-rank trainable matrices to the attention projections and freezes the
+    base. Instruction-tuning teaches a THIRD skill, `greet -> hello`, by training only
+    the adapter (a few hundred parameters), with a little replay of the old skills so
+    the new skill does not clobber them.
+  - The adapter saved to outputs/adapter/ is a small delta, not a retrained model.
 
-**Architecture:**
-- A tiny GPT-like Transformer with 2 transformer layers, small d_model (e.g., 64 or 128), small vocab
-- LoRA injected into attention weights (q, v projections)
-- Train on instruction data formatted as "INSTRUCTION: ... RESPONSE: ..."
+regress.py loads the base alone and the base+adapter, and checks the adapter added the
+new behaviour without regressing the old ones.
 
-**Dataset:**
-- Need to create a small JSONL dataset of 20-50 examples
-- Could generate a synthetic dataset programmatically (e.g., simple skill: reverse a string, count letters, etc.) since we don't have an external file
-- Actually, since this is a self-contained tune.py, I should probably bundle a tiny inline dataset OR generate one programmatically. Let me bundle 20-30 examples inline.
-
-Let me think about what skill to teach. To keep it deterministic and exact-match testable, a simple deterministic skill makes sense. E.g., "Uppercase the following: X" -> "X.upper()". Or "Echo the input: X" -> "X". Or arithmetic. 
-
-Actually, the dataset should be in JSONL chat format. Let me create a file like `data/instruct.jsonl` with examples. But the spec says tune.py should run - so either it reads a file or generates inline. To be safe and self-contained, let me have it generate the data inline AND optionally read from a file if present.
-
-Wait, re-reading: "on a small instruction-following dataset (20-50 examples, JSONL chat format)". So we need to write the JSONL file too. Let me have tune.py generate it to `data/instruct.jsonl` on first run if not present. That makes it self-contained.
-
-Let me design the skill: A simple "greet by name" task. "Greet the user: NAME" -> "Hello, NAME!". This is exact-match testable.
-
-Actually let me make it more interesting - multiple simple skills:
-- Reverse: "Reverse: abc" -> "cba"
-- Uppercase: "Uppercase: foo" -> "FOO"
-- Greet: "Greet: Alice" -> "Hello, Alice!"
-
-But that complicates things. For a small 2-layer model with limited training, let's pick one skill with high consistency. Let me go with: "Echo the input: X" -> "X". Or better, teach it to answer questions like "What is 2+2?" with "4".
-
-Let me keep it really simple: a copy/echo skill that the base model can't do well at zero-shot but learns quickly.
-
-Actually, for the regression test to work, we need the model to learn something the base model doesn't do. Let me use: "Translate to upper: <word>" -> "<WORD>". With a fixed vocabulary of words, the model can learn this mapping.
-
-Hmm but vocab is characters mostly. Let me use character-level tokenization. That keeps vocab small (~100 chars) and makes training fast.
-
-**Tokenization:**
-Character-level tokenizer. Vocab = printable ASCII chars + special tokens.
-
-**Model:**
-- 2 transformer layers
-- d_model = 128
-- n_heads = 4
-- d_ff = 256
-- max_seq_len = 64
-
-**LoRA:**
-Inject LoRA into query and value projections of each attention layer. Rank 4-8.
-
-**Training:**
-- AdamW, lr=1e-3
-- ~20-30 epochs on 30 examples
-- Loss only on response tokens
-
-Let me write this carefully.
-
-```python
-"""
-tune.py — LoRA fine-tune a tiny 2-layer GPT-like model on a small instruction dataset.
-
-CPU-runnable in < 90 seconds. Saves LoRA adapter weights to outputs/adapter/.
-Logs training metrics to MLflow (sqlite backend).
+Sequence format (fixed length 7):
+    <bos> VERB NAME <sep> RESPONSE NAME <eos>
+e.g. "<bos> greet alice <sep> hello alice <eos>"
 """
 from __future__ import annotations
 
 import argparse
 import json
-import math
-import os
 import random
-import time
-from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# MLflow (optional but required by spec)
-import mlflow
-
-# ----------------------------------------------------------------------------
-# Reproducibility
-# ----------------------------------------------------------------------------
 SEED = 42
 random.seed(SEED)
 torch.manual_seed(SEED)
-os.environ.setdefault("PYTHONHASHSEED", str(SEED))
-torch.set_num_threads(max(1, torch.get_num_threads() // 2))
 
-# ----------------------------------------------------------------------------
-# Paths
-# ----------------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parent
 OUTPUTS = ROOT / "outputs"
-DATA_DIR = ROOT / "data"
 ADAPTER_DIR = OUTPUTS / "adapter"
-MODEL_DIR = OUTPUTS / "base"
+BASE_PATH = OUTPUTS / "base.pt"
+ADAPTER_PATH = ADAPTER_DIR / "adapter.pt"
+DATA_PATH = OUTPUTS / "instruct.jsonl"
 
-OUTPUTS.mkdir(exist_ok=True)
-DATA_DIR.mkdir(exist_ok=True)
-ADAPTER_DIR.mkdir(parents=True, exist_ok=True)
-MODEL_DIR.mkdir(parents=True, exist_ok=True)
+# ---------------------------------------------------------------------------
+# Vocabulary and the synthetic skill data
+# ---------------------------------------------------------------------------
+SPECIALS = ["<pad>", "<bos>", "<sep>", "<eos>"]
+VERBS = ["greet", "thank", "bye"]
+RESPONSES = ["hello", "thanks", "goodbye"]
+NAMES = ["alice", "bob", "carol", "dave", "erin",
+         "frank", "grace", "heidi", "ivan", "judy"]
 
-# ----------------------------------------------------------------------------
-# MLflow
-# ----------------------------------------------------------------------------
-mlflow.set_tracking_uri(f"sqlite:///{OUTPUTS / 'mlruns.db'}")
-mlflow.set_experiment("module7-instruct-tune")
+VERB_TO_RESPONSE = {"greet": "hello", "thank": "thanks", "bye": "goodbye"}
 
-# ----------------------------------------------------------------------------
-# Character-level tokenizer
-# ----------------------------------------------------------------------------
-class CharTokenizer:
-    def __init__(self):
-        chars = sorted(set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,!?'-:"))
-        self.itos = ["<pad>", "<bos>", "<eos>", "<unk>"] + chars
-        self.stoi = {c: i for i, c in enumerate(self.itos)}
-        self.pad_id = 0
-        self.bos_id = 1
-        self.eos_id = 2
-        self.unk_id = 3
-
-    def encode(self, s: str) -> List[int]:
-        return [self.stoi.get(c, self.unk_id) for c in s]
-
-    def decode(self, ids: List[int]) -> str:
-        return "".join(self.itos[i] for i in ids if i >= 4)
-
-    def __len__(self):
-        return len(self.itos)
+VOCAB: List[str] = SPECIALS + VERBS + RESPONSES + NAMES
+STOI: Dict[str, int] = {tok: i for i, tok in enumerate(VOCAB)}
+ITOS: Dict[int, str] = {i: tok for tok, i in STOI.items()}
+PAD, BOS, SEP, EOS = (STOI[t] for t in ["<pad>", "<bos>", "<sep>", "<eos>"])
+SEQ_LEN = 7  # <bos> verb name <sep> resp name <eos>
 
 
-# ----------------------------------------------------------------------------
-# Tiny GPT-like model
-# ----------------------------------------------------------------------------
-@dataclass
-class ModelConfig:
-    vocab_size: int = 70
-    d_model: int = 128
-    n_heads: int = 4
-    d_ff: int = 256
-    n_layers: int = 2
-    max_seq_len: int = 64
-    dropout: float = 0.0
+def encode_example(verb: str, name: str) -> List[int]:
+    resp = VERB_TO_RESPONSE[verb]
+    return [BOS, STOI[verb], STOI[name], SEP, STOI[resp], STOI[name], EOS]
 
 
-class CausalSelfAttention(nn.Module):
-    def __init__(self, cfg: ModelConfig):
+def make_pairs(verbs: List[str], names: List[str]) -> List[Tuple[str, str]]:
+    return [(v, n) for v in verbs for n in names]
+
+
+def to_tensor(pairs: List[Tuple[str, str]]) -> torch.Tensor:
+    return torch.tensor([encode_example(v, n) for v, n in pairs], dtype=torch.long)
+
+
+# ---------------------------------------------------------------------------
+# A tiny Transformer LM, with LoRA-ready linear layers
+# ---------------------------------------------------------------------------
+class LoRALinear(nn.Module):
+    """A Linear whose base weight is frozen; a low-rank A,B delta is trainable.
+
+    y = base(x) + (alpha / r) * (x A^T) B^T
+    B is zero-initialised so the adapter is a no-op until trained.
+    """
+
+    def __init__(self, in_features: int, out_features: int, r: int = 8, alpha: int = 16) -> None:
         super().__init__()
-        assert cfg.d_model % cfg.n_heads == 0
-        self.n_heads = cfg.n_heads
-        self.head_dim = cfg.d_model // cfg.n_heads
-        self.qkv = nn.Linear(cfg.d_model, 3 * cfg.d_model, bias=False)
-        self.proj = nn.Linear(cfg.d_model, cfg.d_model, bias=False)
-        self.scale = 1.0 / math.sqrt(self.head_dim)
+        self.base = nn.Linear(in_features, out_features)
+        self.r = r
+        self.scale = alpha / r
+        self.A = nn.Parameter(torch.zeros(r, in_features))
+        self.B = nn.Parameter(torch.zeros(out_features, r))
+        nn.init.normal_(self.A, std=0.02)
+        self.lora_enabled = False
 
-    def forward(self, x):
-        B, T, C = x.shape
-        qkv = self.qkv(x)  # B, T, 3C
-        q, k, v = qkv.split(C, dim=-1)
-        q = q.view(B, T, self.n_heads, self.head_dim).transpose(1, 2)
-        k = k.view(B, T, self.n_heads, self.head_dim).transpose(1, 2)
-        v = v.view(B, T, self.n_heads, self.head_dim).transpose(1, 2)
-        att = (q @ k.transpose(-2, -1)) * self.scale
-        mask = torch.triu(torch.ones(T, T, device=x.device, dtype=torch.bool), diagonal=1)
-        att = att.masked_fill(mask, float("-inf"))
-        att = F.softmax(att, dim=-1)
-        y = att @ v
-        y = y.transpose(1, 2).contiguous().view(B, T, C)
-        return self.proj(y)
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        out = self.base(x)
+        if self.lora_enabled:
+            out = out + self.scale * (x @ self.A.t()) @ self.B.t()
+        return out
 
+    def enable_lora(self) -> None:
+        self.lora_enabled = True
 
-class MLP(nn.Module):
-    def __init__(self, cfg: ModelConfig):
-        super().__init__()
-        self.fc1 = nn.Linear(cfg.d_model, cfg.d_ff)
-        self.fc2 = nn.Linear(cfg.d_ff, cfg.d_model)
-
-    def forward(self, x):
-        return self.fc2(F.gelu(self.fc1(x)))
+    def freeze_base(self) -> None:
+        self.base.weight.requires_grad_(False)
+        self.base.bias.requires_grad_(False)
 
 
 class Block(nn.Module):
-    def __init__(self, cfg: ModelConfig):
+    def __init__(self, d_model: int, n_head: int, d_ff: int) -> None:
         super().__init__()
-        self.ln1 = nn.LayerNorm(cfg.d_model)
-        self.attn = CausalSelfAttention(cfg)
-        self.ln2 = nn.LayerNorm(cfg.d_model)
-        self.mlp = MLP(cfg)
+        self.n_head = n_head
+        self.d_head = d_model // n_head
+        self.q = LoRALinear(d_model, d_model)
+        self.k = nn.Linear(d_model, d_model)
+        self.v = LoRALinear(d_model, d_model)
+        self.proj = nn.Linear(d_model, d_model)
+        self.ln1 = nn.LayerNorm(d_model)
+        self.ln2 = nn.LayerNorm(d_model)
+        self.ff = nn.Sequential(
+            nn.Linear(d_model, d_ff), nn.ReLU(), nn.Linear(d_ff, d_model)
+        )
 
-    def forward(self, x):
-        x = x + self.attn(self.ln1(x))
-        x = x + self.mlp(self.ln2(x))
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        b, t, d = x.shape
+        h = self.ln1(x)
+        q = self.q(h).view(b, t, self.n_head, self.d_head).transpose(1, 2)
+        k = self.k(h).view(b, t, self.n_head, self.d_head).transpose(1, 2)
+        v = self.v(h).view(b, t, self.n_head, self.d_head).transpose(1, 2)
+        att = (q @ k.transpose(-2, -1)) / (self.d_head ** 0.5)
+        mask = torch.tril(torch.ones(t, t, device=x.device)).bool()
+        att = att.masked_fill(~mask, float("-inf"))
+        att = F.softmax(att, dim=-1)
+        out = (att @ v).transpose(1, 2).contiguous().view(b, t, d)
+        x = x + self.proj(out)
+        x = x + self.ff(self.ln2(x))
         return x
 
 
-class TinyGPT(nn.Module):
-    def __init__(self, cfg: ModelConfig):
+class TinyLM(nn.Module):
+    def __init__(self, vocab_size: int, d_model: int = 64, n_head: int = 4,
+                 d_ff: int = 128, n_layer: int = 2, seq_len: int = SEQ_LEN) -> None:
         super().__init__()
-        self.cfg = cfg
-        self.tok = nn.Embedding(cfg.vocab_size, cfg.d_model)
-        self.pos = nn.Embedding(cfg.max_seq_len, cfg.d_model)
-        self.blocks = nn.ModuleList([Block(cfg) for _ in range(cfg.n_layers)])
-        self.ln_f = nn.LayerNorm(cfg.d_model)
-        self.head = nn.Linear(cfg.d_model, cfg.vocab_size, bias=False)
-        # weight tying
-        self.head.weight = self.tok.weight
+        self.tok = nn.Embedding(vocab_size, d_model)
+        self.pos = nn.Embedding(seq_len, d_model)
+        self.blocks = nn.ModuleList([Block(d_model, n_head, d_ff) for _ in range(n_layer)])
+        self.ln = nn.LayerNorm(d_model)
+        self.head = nn.Linear(d_model, vocab_size)
+        self.seq_len = seq_len
 
-    def forward(self, idx, targets=None):
-        B, T = idx.shape
-        pos = torch.arange(T, device=idx.device)
-        x = self.tok(idx) + self.pos(pos)[None, :, :]
+    def forward(self, idx: torch.Tensor) -> torch.Tensor:
+        b, t = idx.shape
+        pos = torch.arange(t, device=idx.device).unsqueeze(0)
+        x = self.tok(idx) + self.pos(pos)
         for blk in self.blocks:
             x = blk(x)
-        x = self.ln_f(x)
-        logits = self.head(x)
-        loss = None
-        if targets is not None:
-            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=-100)
-        return logits, loss
+        return self.head(self.ln(x))
+
+    # -- LoRA control --------------------------------------------------------
+    def lora_layers(self) -> List[LoRALinear]:
+        return [m for m in self.modules() if isinstance(m, LoRALinear)]
+
+    def enable_lora(self) -> None:
+        for m in self.lora_layers():
+            m.enable_lora()
+
+    def freeze_for_lora(self) -> None:
+        """Freeze everything except the LoRA A,B parameters."""
+        for p in self.parameters():
+            p.requires_grad_(False)
+        for m in self.lora_layers():
+            m.A.requires_grad_(True)
+            m.B.requires_grad_(True)
+            m.enable_lora()
+
+    def adapter_state(self) -> Dict[str, torch.Tensor]:
+        state = {}
+        for i, m in enumerate(self.lora_layers()):
+            state[f"lora.{i}.A"] = m.A.detach().clone()
+            state[f"lora.{i}.B"] = m.B.detach().clone()
+        return state
+
+    def load_adapter(self, state: Dict[str, torch.Tensor]) -> None:
+        for i, m in enumerate(self.lora_layers()):
+            m.A.data.copy_(state[f"lora.{i}.A"])
+            m.B.data.copy_(state[f"lora.{i}.B"])
+            m.enable_lora()
 
 
-# ----------------------------------------------------------------------------
-# LoRA
-# ----------------------------------------------------------------------------
-class LoRALinear(nn.Module):
-    def __init__(self, base: nn.Linear, r: int = 4, alpha: float = 8.0):
-        super().__init__()
-        self.base = base
-        for p in self.base.parameters():
-            p.requires_grad = False
-        in_f = base.in_features
-        out_f = base.out_features
-        self.r = r
-        self.alpha = alpha
-        self.scaling = alpha / r
-        self.A = nn.Parameter(torch.zeros(r, in_f))
-        self.B = nn.Parameter(torch.zeros(out_f, r))
-        nn.init.kaiming_uniform_(self.A, a=math.sqrt(5))
-        # B stays zero -> initial LoRA contribution is 0
-
-    def forward(self, x):
-        return self.base(x) + (x @ self.A.t() @ self.B.t()) * self.scaling
+# ---------------------------------------------------------------------------
+# Training helpers
+# ---------------------------------------------------------------------------
+def lm_loss(model: TinyLM, batch: torch.Tensor) -> torch.Tensor:
+    """Next-token loss over the response span (positions 4..6 predicted from 3..5)."""
+    logits = model(batch[:, :-1])
+    targets = batch[:, 1:]
+    loss = F.cross_entropy(
+        logits.reshape(-1, logits.size(-1)), targets.reshape(-1), reduction="none"
+    ).view(targets.shape)
+    weight = torch.zeros_like(targets, dtype=torch.float)
+    weight[:, 3:] = 1.0  # response span
+    return (loss * weight).sum() / weight.sum()
 
 
-def inject_lora(model: TinyGPT, r: int = 4, alpha: float = 8.0) -> List[LoRALinear]:
-    """Inject LoRA into the qkv projection of every attention layer."""
-    adapters = []
-    for i, blk in enumerate(model.blocks):
-        original_qkv = blk.attn.qkv
-        # Wrap the whole qkv projection as one LoRA target (treat as a single Linear)
-        lora = LoRALinear(original_qkv, r=r, alpha=alpha)
-        blk.attn.qkv = lora
-        adapters.append(lora)
-    return adapters
+def train(model: TinyLM, data: torch.Tensor, epochs: int, lr: float,
+          params=None) -> float:
+    params = params if params is not None else [p for p in model.parameters() if p.requires_grad]
+    opt = torch.optim.Adam(params, lr=lr)
+    model.train()
+    final = 0.0
+    for _ in range(epochs):
+        opt.zero_grad()
+        loss = lm_loss(model, data)
+        loss.backward()
+        opt.step()
+        final = float(loss.item())
+    return final
 
 
-# ----------------------------------------------------------------------------
-# Data
-# ----------------------------------------------------------------------------
-def build_dataset() -> List[dict]:
-    """Generate a tiny instruction-following dataset for an 'upper' skill.
-
-    Format: instruction -> response, where response is the uppercased input.
-    This is exact-match testable.
-    """
-    rng = random.Random(SEED)
-    words = ["cat", "dog", "hello", "world", "fish", "moon", "star", "code",
-             "data", "train", "model", "loss", "grid", "byte", "file", "test",
-             "node", "edge", "wave", "leaf", "rain", "snow", "fire", "lake",
-             "rock", "ship", "kite", "drum", "tree", "book"]
-    rows = []
-    for w in words:
-        instr = f"UPPER: {w}"
-        resp = w.upper()
-        rows.append({"instruction": instr, "response": resp})
-    # Add a few noise examples so the model must read the instruction
-    for w in ["x", "y", "abc", "word"]:
-        rows.append({"instruction": f"UPPER: {w}", "response": w.upper()})
-    rng.shuffle(rows)
-    return rows
+def pretrain_base(model: TinyLM, epochs: int = 300, lr: float = 0.01) -> float:
+    """Teach the base two skills: thank->thanks and bye->goodbye (NOT greet)."""
+    pairs = make_pairs(["thank", "bye"], NAMES)
+    return train(model, to_tensor(pairs), epochs, lr)
 
 
-def write_jsonl(path: Path, rows: List[dict]) -> None:
-    with path.open("w") as f:
-        for r in rows:
-            f.write(json.dumps(r) + "\n")
+def lora_finetune(model: TinyLM, epochs: int = 300, lr: float = 0.01) -> float:
+    """Teach the new skill greet->hello via LoRA, with replay of the old skills so
+    the adapter does not regress them."""
+    model.freeze_for_lora()
+    new_skill = make_pairs(["greet"], NAMES)
+    replay = make_pairs(["thank", "bye"], NAMES[:4])  # a little replay
+    data = to_tensor(new_skill + replay)
+    trainable = [p for p in model.parameters() if p.requires_grad]
+    return train(model, data, epochs, lr, params=trainable)
 
 
-def load_jsonl(path: Path) -> List[dict]:
-    rows = []
-    with path.open() as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                rows.append(json.loads(line))
-    return rows
+# ---------------------------------------------------------------------------
+# Generation (greedy decode of the response span)
+# ---------------------------------------------------------------------------
+def generate_response(model: TinyLM, verb: str, name: str) -> List[str]:
+    """Greedy-decode the response tokens for a '<bos> verb name <sep>' prompt."""
+    model.eval()
+    seq = [BOS, STOI[verb], STOI[name], SEP]
+    with torch.no_grad():
+        for _ in range(3):  # resp, name, eos
+            idx = torch.tensor([seq], dtype=torch.long)
+            nxt = int(model(idx)[0, -1].argmax().item())
+            seq.append(nxt)
+            if nxt == EOS:
+                break
+    return [ITOS[i] for i in seq[4:] if i != EOS]
 
 
-def format_example(tok: CharTokenizer, row: dict, max_len: int) -> Tuple[List[int], List[int]]:
-    """Tokenize instruction + response, return (input_ids, labels with -100 mask on instruction)."""
-    instr = row["instruction"]
-    resp = row["response"]
-    # Format: <bos> {instr} | {resp} <eos>
-    instr_ids = [tok.bos_id] + tok.encode(instr) + tok.encode("|")
-    resp_ids = tok.encode(resp) + [tok.eos_id]
-    input_ids = instr_ids + resp_ids
-    labels = [-100] * len(instr_ids) + resp_ids[:]
-    # Truncate
-    if len(input_ids) > max_len:
-        input_ids = input_ids[:max_len]
-        labels = labels[:max_len]
-    # Pad
-    pad = max_len - len(input_ids)
-    input_ids = input_ids + [tok.pad_id] * pad
-    labels = labels + [-100] * pad
-    return input_ids, labels
+# ---------------------------------------------------------------------------
+# Persistence
+# ---------------------------------------------------------------------------
+def write_dataset() -> None:
+    DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with DATA_PATH.open("w", encoding="utf-8") as f:
+        for v, n in make_pairs(["greet"], NAMES):
+            row = {
+                "messages": [
+                    {"role": "user", "content": f"{v} {n}"},
+                    {"role": "assistant", "content": f"{VERB_TO_RESPONSE[v]} {n}"},
+                ]
+            }
+            f.write(json.dumps(row) + "\n")
 
 
-def collate(batch_ids, batch_labels):
-    return torch.tensor(batch_ids, dtype=torch.long), torch.tensor(batch_labels, dtype=torch.long)
-
-
-# ----------------------------------------------------------------------------
-# Train
-# ----------------------------------------------------------------------------
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--epochs", type=int, default=60)
-    parser.add_argument("--batch-size", type=int, default=8)
-    parser.add_argument("--lr", type=float, default=2e-3)
-    parser.add_argument("--lora-r", type=int, default=8)
-    parser.add_argument("--lora-alpha", type=float, default=16.0)
-    parser.add_argument("--limit", type=int, default=0, help="limit dataset size (smoke test)")
-    parser.add_argument("--out", type=str, default=str(ADAPTER_DIR))
-    parser.add_argument("--mlflow", action="store_true", default=True)
-    args = parser.parse_args()
-
-    t0 = time.time()
-    device = torch.device("cpu")
+def build(base_epochs: int = 300, lora_epochs: int = 300) -> dict:
+    """Full pipeline: pretrain base, save it, LoRA-tune, save the adapter."""
     torch.manual_seed(SEED)
+    random.seed(SEED)
+    OUTPUTS.mkdir(parents=True, exist_ok=True)
+    ADAPTER_DIR.mkdir(parents=True, exist_ok=True)
 
-    # --- Data ---
-    rows = build_dataset()
-    if args.limit > 0:
-        rows = rows[: args.limit]
-    write_jsonl(DATA_DIR / "instruct.jsonl", rows)
-    print(f"[tune] dataset: {len(rows)} examples -> {DATA_DIR / 'instruct.jsonl'}")
+    model = TinyLM(len(VOCAB))
+    base_loss = pretrain_base(model, epochs=base_epochs)
+    torch.save({"state_dict": model.state_dict(), "vocab": VOCAB}, BASE_PATH)
 
-    tok = CharTokenizer()
-    max_len = 48
-    cfg = ModelConfig(vocab_size=len(tok), max_seq_len=max_len)
+    lora_loss = lora_finetune(model, epochs=lora_epochs)
+    n_adapter = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    n_total = sum(p.numel() for p in model.parameters())
+    torch.save(model.adapter_state(), ADAPTER_PATH)
+    write_dataset()
 
-    examples = [format_example(tok, r, max_len) for r in rows]
-    input_ids = torch.stack([torch.tensor(e[0]) for e in examples])
-    labels = torch.stack([torch.tensor(e[1]) for e in examples])
+    return {
+        "base_loss": base_loss,
+        "lora_loss": lora_loss,
+        "adapter_params": n_adapter,
+        "total_params": n_total,
+        "base_path": str(BASE_PATH),
+        "adapter_path": str(ADAPTER_PATH),
+    }
 
-    # --- Base model ---
-    base = TinyGPT(cfg).to(device)
-    base.eval()
-    for p in base.parameters():
-        p.requires_grad = False
 
-    # Save base model so regress.py can load it
-    torch.save({"state_dict": base.state_dict(), "cfg": cfg.__dict__}, MODEL_DIR / "tiny_gpt.pt")
-    print(f"[tune] base model saved -> {MODEL_DIR / 'tiny_gpt.pt'}")
+def load_base() -> TinyLM:
+    blob = torch.load(BASE_PATH, weights_only=False)
+    model = TinyLM(len(blob["vocab"]))
+    model.load_state_dict(blob["state_dict"])
+    model.eval()
+    return model
 
-    # --- Inject LoRA ---
-    adapters = inject_lora(base, r=args.lora_r, alpha=args.lora_alpha)
-    trainable = [p for p in base.parameters() if p.requires_grad]
-    n_trainable = sum(p.numel() for p in trainable)
-    n_total = sum(p.numel() for p in base.parameters())
-    print(f"[tune] trainable params: {n_trainable} / {n_total} ({100*n_trainable/n_total:.2f}%)")
 
-    opt = torch.optim.AdamW(trainable, lr=args.lr, weight_decay=0.0)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=args.epochs)
+def load_tuned() -> TinyLM:
+    model = load_base()
+    model.load_adapter(torch.load(ADAPTER_PATH, weights_only=False))
+    model.eval()
+    return model
 
-    # --- Train loop ---
-    n = len(rows)
-    mlflow_active = args.mlflow
-    if mlflow_active:
-        mlflow.start_run(run_name=f"lora-r{args.lora_r}")
-        mlflow.log_params({
-            "epochs": args.epochs,
-            "batch_size": args.batch_size,
-            "lr": args.lr,
-            "lora_r": args.lora_r,
-            "lora_alpha": args.lora_alpha,
-            "n_examples": n,
-            "n_trainable_params": n_trainable,
-            "base_total_params": n_total,
-            "max_seq_len": max_len,
-            "seed": SEED,
-        })
 
-    step = 0
-    for epoch in range(args.epochs):
-        perm = torch.randperm(n)
-        epoch_loss = 0.0
-        nb = 0
-        for i in range(0, n, args.batch_size):
-            idx = perm[i : i + args.batch_size]
-            xb = input_ids[idx]
-            yb = labels[idx]
-            base.train()
-            opt.zero_grad()
-            _, loss = base(xb, yb)
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(trainable, 1.0)
-            opt.step()
-            epoch_loss += loss.item()
-            nb += 1
-            if mlflow_active:
-                mlflow.log_metric("train_loss_step", loss.item(), step=step)
-            step += 1
-        scheduler.step()
-        avg = epoch_loss / max(nb, 1)
-        if mlflow_active:
-            mlflow.log_metric("train_loss_epoch", avg, step=epoch)
-        if epoch % 5 == 0 or epoch == args.epochs - 1:
-            print(f
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Instruction-tune a tiny LM with LoRA.")
+    parser.add_argument("--base-epochs", type=int, default=300)
+    parser.add_argument("--lora-epochs", type=int, default=300)
+    args = parser.parse_args()
+    summary = build(args.base_epochs, args.lora_epochs)
+    print(
+        f"[tune] base_loss={summary['base_loss']:.4f} lora_loss={summary['lora_loss']:.4f} "
+        f"adapter_params={summary['adapter_params']} / {summary['total_params']} total"
+    )
+
+
+if __name__ == "__main__":
+    main()

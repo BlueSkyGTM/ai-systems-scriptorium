@@ -38,7 +38,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-66d8e413.js";
+            window.path_to_searchindex_js = "../searchindex-82ba56b1.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a81d0b07.js"></script>
@@ -180,16 +180,17 @@
                         <h1 id="the-instruct-artifact"><a class="header" href="#the-instruct-artifact">The Instruct Artifact</a></h1>
 <p>The instruction-tuning artifact uses the same three-script contract as M6, but it changes the definition of success. You do not maximize a new metric; you prove the fine-tune did not destroy existing behaviors.</p>
 <p>The contract remains identical. <code>tune.py</code> builds the model. <code>regress.py</code> enforces the gate. <code>smoke.py</code> checks the gate.</p>
-<p>Your dataset format shifts. You train on JSONL instruction-following data. Each record pairs an instruction with a canonical response. The model learns to map a prompt to a deterministic string prefix.</p>
-<pre><code>INSTRUCTION: &lt;verb phrase&gt;
-RESPONSE:
+<p>Your dataset format shifts. You train on JSONL instruction-following data. Each record pairs an instruction with a canonical response. The model learns to map a fixed prompt to a deterministic response string:</p>
+<pre><code>&lt;bos&gt; VERB NAME &lt;sep&gt; RESPONSE NAME &lt;eos&gt;
+e.g. "&lt;bos&gt; greet alice &lt;sep&gt; hello alice &lt;eos&gt;"
 </code></pre>
-<p><code>tune.py</code> applies LoRA to a synthetic Transformer. It writes a lightweight adapter to <code>outputs/adapter/</code>. The base weights stay frozen.</p>
-<p>The regression gate enforces a different rule than M6. A classifier cares about accuracy. An instruct model must prevent catastrophic forgetting. <code>regress.py</code> runs N prompts against both the base model and your tuned adapter.</p>
-<pre><code class="language-python">"""
-Runs N test prompts against the LoRA-tuned model and the base model.
-Passes (exit 0) iff tuned exact-match score &gt;= base exact-match score on ALL N cases.
-Otherwise blocks (exit 1).
+<p><code>tune.py</code> pretrains a tiny Transformer on two skills, then applies LoRA to teach a third. It writes a lightweight adapter to <code>outputs/adapter/</code>. The base weights stay frozen.</p>
+<p>The regression gate enforces a different rule than M6. A classifier cares about accuracy. An instruct model must prevent catastrophic forgetting. <code>regress.py</code> runs the suite against both the base model and your tuned adapter.</p>
+<pre><code class="language-python">"""regress.py — M7 Behavioral Regression Suite.
+
+  PASS (exit 0) iff the tuned model matches or beats the base on EVERY case (no
+  regression) AND strictly improves on at least one (the new skill was learned).
+  BLOCK (exit 1) otherwise.
 """
 </code></pre>
 <p>You must prove the gate can fail. <code>smoke.py</code> swaps your trained adapter with random weights. The random adapter must trigger a block. A green light means nothing if a broken adapter passes.</p>
@@ -199,8 +200,8 @@ Otherwise blocks (exit 1).
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
 <li>The artifact uses the same <code>tune.py</code>, <code>regress.py</code>, and <code>smoke.py</code> three-script contract as M6.</li>
-<li>The training data uses JSONL instruction-response pairs to teach deterministic prefix matches.</li>
-<li>The regression gate demands the tuned model scores equal to or greater than the base model on all known-good behaviors.</li>
+<li>The training data uses JSONL instruction-response pairs to teach a deterministic exact-match response.</li>
+<li>The regression gate demands the tuned model scores equal to or greater than the base model on all known-good behaviors, and strictly better on at least one.</li>
 <li>The smoke test validates the gate by swapping a trained adapter for random weights and asserting a block.</li>
 </ul>
 <div class="claude-handoff" data-exercise="exercises/module7/the-instruct-artifact/">

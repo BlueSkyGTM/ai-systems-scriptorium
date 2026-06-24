@@ -9,22 +9,22 @@ A smoke test is not a unit test. It exercises the entire chain end to end: fixtu
 The pipeline in `smoke.py` makes the contract explicit:
 
 ```python
-"""smoke.py — end-to-end smoke test for the Module 7 instruction-tuned artifact.
+"""smoke.py — end-to-end oracle for the Module 7 instruction-tuned artifact.
 
 Pipeline:
-  1. Build a 10-sample JSONL fixture.
-  2. Run tune.py on that fixture (must finish on CPU).
-  3. Run regress.py on the resulting adapter -> expects PASS (exit 0).
-  4. Swap the adapter file with random weights of identical shapes.
-  5. Run regress.py on the corrupted adapter -> expects BLOCK (exit 1).
-  6. Restore the real adapter.
+  1. Run tune.py: pretrain the base, LoRA-tune the new skill, save base + adapter.
+  2. Run regress.py on the real adapter -> expects PASS (exit 0).
+  3. Swap the adapter file with random weights of identical shapes.
+  4. Run regress.py on the corrupted adapter -> expects BLOCK (exit 1).
+  5. Restore the real adapter and confirm it is byte-for-byte intact.
+"""
 ```
 
-Steps one through three are the happy path. You build a fixture, tune, and confirm the regression gate returns zero. That alone proves the loop runs clean.
+Steps one and two are the happy path. You tune, then confirm the regression gate returns zero. That alone proves the loop runs clean.
 
 ## The Negative Case Is the Fuse
 
-Steps four and five are what make this a real test. You corrupt the adapter with random weights of identical shapes, then confirm regress.py exits one.
+Steps three and four are what make this a real test. You corrupt the adapter with random weights of identical shapes, then confirm regress.py exits one.
 
 ```python
 smoke.py exits 0 only if every one of those expected outcomes was observed,
@@ -66,13 +66,13 @@ A green smoke test is a fact. A hiring manager needs a story. `outputs/skill-ins
 
 The skill spec pins exactly what the model does:
 
-```python
+```
 | Field | Value |
 |---|---|
 | Skill name | `skill-instruct` |
 | Skill type | generative instruction-following |
-| Task family | single-turn prompt → short deterministic answer |
-| Output contract | string-prefix match on expected continuation |
+| Task family | single-turn prompt to short deterministic answer |
+| Output contract | exact-match on the decoded response |
 ```
 
 It tells the reader what the skill is and, more importantly, what it is not:

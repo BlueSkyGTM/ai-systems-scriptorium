@@ -24,16 +24,17 @@ Reversibility. To remove the skill, drop the adapter. The base is untouched, byt
 
 ## The Tune Pipeline
 
-The tune.py contract, verbatim from source:
+The delta lives in one method. `LoRALinear.forward` adds the low-rank term beside the frozen base, verbatim from `tune.py`:
 
-* LoRA fine-tune a tiny model (synthetic 2-layer GPT-like Transformer)
-* Small instruction-following dataset (20-50 examples, JSONL chat format)
-* Must run on CPU in < 90 seconds
-* Saves LoRA adapter to outputs/adapter/
-* Fixed random seeds
-* No HuggingFace transformers - stdlib + torch only
+```python
+def forward(self, x: torch.Tensor) -> torch.Tensor:
+    out = self.base(x)
+    if self.lora_enabled:
+        out = out + self.scale * (x @ self.A.t()) @ self.B.t()
+    return out
+```
 
-Three stages inside that file. Inject LoRA into the attention projections of the frozen base. Train the adapter against the instruction dataset. Serialize only the adapter weights.
+`B` is zero-initialised, so the adapter is a no-op until trained. Three stages run inside `tune.py`. Pretrain the base on two skills (`thank`, `bye`). Freeze it and LoRA-tune a third skill (`greet`), with a little replay of the old skills so the adapter does not clobber them. Serialize only the adapter weights to `outputs/adapter/`.
 
 The downstream contract, verbatim from the README:
 

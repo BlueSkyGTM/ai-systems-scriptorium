@@ -38,7 +38,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-66d8e413.js";
+            window.path_to_searchindex_js = "../searchindex-82ba56b1.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a81d0b07.js"></script>
@@ -198,16 +198,14 @@
 <p>Storage. A base model occupies tens of gigabytes. A rank-8 adapter measures in single-digit megabytes. You store, transfer, and roll back the delta, not the model.</p>
 <p>Reversibility. To remove the skill, drop the adapter. The base is untouched, byte for byte. To swap skills, hot-load a different adapter against the same base. Full fine-tune gives you neither property: the base dies the moment gradients touch it.</p>
 <h2 id="the-tune-pipeline"><a class="header" href="#the-tune-pipeline">The Tune Pipeline</a></h2>
-<p>The tune.py contract, verbatim from source:</p>
-<ul>
-<li>LoRA fine-tune a tiny model (synthetic 2-layer GPT-like Transformer)</li>
-<li>Small instruction-following dataset (20-50 examples, JSONL chat format)</li>
-<li>Must run on CPU in &lt; 90 seconds</li>
-<li>Saves LoRA adapter to outputs/adapter/</li>
-<li>Fixed random seeds</li>
-<li>No HuggingFace transformers - stdlib + torch only</li>
-</ul>
-<p>Three stages inside that file. Inject LoRA into the attention projections of the frozen base. Train the adapter against the instruction dataset. Serialize only the adapter weights.</p>
+<p>The delta lives in one method. <code>LoRALinear.forward</code> adds the low-rank term beside the frozen base, verbatim from <code>tune.py</code>:</p>
+<pre><code class="language-python">def forward(self, x: torch.Tensor) -&gt; torch.Tensor:
+    out = self.base(x)
+    if self.lora_enabled:
+        out = out + self.scale * (x @ self.A.t()) @ self.B.t()
+    return out
+</code></pre>
+<p><code>B</code> is zero-initialised, so the adapter is a no-op until trained. Three stages run inside <code>tune.py</code>. Pretrain the base on two skills (<code>thank</code>, <code>bye</code>). Freeze it and LoRA-tune a third skill (<code>greet</code>), with a little replay of the old skills so the adapter does not clobber them. Serialize only the adapter weights to <code>outputs/adapter/</code>.</p>
 <p>The downstream contract, verbatim from the README:</p>
 <pre><code>tune.py ──▶ outputs/adapter/ ──▶ regress.py ──▶ {PASS: exit 0, BLOCK: exit 1}
                                   │

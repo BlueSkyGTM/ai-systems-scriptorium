@@ -21,31 +21,28 @@ A PR that lands a new adapter without a green `regress.py` run is **blocked**, n
 The docstring states the contract:
 
 ```python
-"""
-regress.py — Behavioral regression suite for Module 7 instruct artifact.
+"""regress.py — M7 Behavioral Regression Suite.
 
-Runs N test prompts against the LoRA-tuned model and the base model.
-Passes (exit 0) iff tuned exact-match score >= base exact-match score on ALL N cases.
-Otherwise blocks (exit 1).
-
-MLflow logs per-prompt and aggregate metrics to sqlite:///outputs/mlruns.db.
+  PASS (exit 0) iff the tuned model matches or beats the base on EVERY case (no
+  regression) AND strictly improves on at least one (the new skill was learned).
+  BLOCK (exit 1) otherwise.
 """
 ```
 
-Read the word "ALL" literally. One failure blocks the release. No partial credit, no weighted average, no tolerance band. The exit code is binary: zero ships, one stops.
+Read the word "EVERY" literally. One regression blocks the release. No partial credit, no weighted average, no tolerance band. The exit code is binary: zero ships, one stops. The second clause matters too: an adapter that regresses nothing but also improves nothing is a no-op, and the gate blocks it.
 
 ## The Canonical Prompt
 
-From the skill spec, every test prompt takes this shape:
+Every test prompt takes the artifact's fixed shape:
 
 ```
-INSTRUCTION: <verb phrase>
-RESPONSE:
+<bos> VERB NAME <sep>   ->   RESPONSE NAME
+e.g. "<bos> greet alice <sep>"   ->   "hello alice"
 ```
 
-The tuned model must emit the canonical response string as a prefix of its continuation. The base model does not do this. That delta is the skill.
+The tuned model must decode the exact response string. The base model does not, because it never learned `greet`. That delta is the skill.
 
-The suite checks the other direction too. If the base model already handled a prompt, the tuned model must still handle it. The skill is additive or the suite fails.
+The suite checks the other direction too. If the base model already handled a prompt (`thank`, `bye`), the tuned model must still handle it. The skill is additive or the suite fails.
 
 ## Why String-Level Assertions
 
@@ -62,20 +59,18 @@ Readability. When the gate blocks, the failure names the exact prompt and the ex
 A suite that always passes is worthless. The smoke test corrupts the adapter with random weights and confirms the suite blocks:
 
 ```python
-"""
-smoke.py — end-to-end smoke test for the Module 7 instruction-tuned artifact.
+"""smoke.py — end-to-end oracle for the Module 7 instruction-tuned artifact.
 
 Pipeline:
-  1. Build a 10-sample JSONL fixture.
-  2. Run tune.py on that fixture (must finish on CPU).
-  3. Run regress.py on the resulting adapter -> expects PASS (exit 0).
-  4. Swap the adapter file with random weights of identical shapes.
-  5. Run regress.py on the corrupted adapter -> expects BLOCK (exit 1).
-  6. Restore the real adapter.
+  1. Run tune.py: pretrain the base, LoRA-tune the new skill, save base + adapter.
+  2. Run regress.py on the real adapter -> expects PASS (exit 0).
+  3. Swap the adapter file with random weights of identical shapes.
+  4. Run regress.py on the corrupted adapter -> expects BLOCK (exit 1).
+  5. Restore the real adapter and confirm it is byte-for-byte intact.
 """
 ```
 
-Step 4 is the fuse. If the suite cannot fail on garbage weights, a green run means nothing.
+Step 3 is the fuse. If the suite cannot fail on garbage weights, a green run means nothing.
 
 ## Core Concepts
 

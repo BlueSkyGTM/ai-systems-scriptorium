@@ -38,7 +38,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-66d8e413.js";
+            window.path_to_searchindex_js = "../searchindex-82ba56b1.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a81d0b07.js"></script>
@@ -186,33 +186,24 @@
 <p>You inject low-rank adapters into attention projections. You train on a tiny dataset of exact-match prompt and response pairs. The model learns the new skill while preserving its baseline capabilities.</p>
 <h2 id="the-regression-suite"><a class="header" href="#the-regression-suite">The Regression Suite</a></h2>
 <p>Capability means nothing if you break existing behavior. <code>regress.py</code> runs the tuned model and the base model against a fixed prompt set.</p>
-<pre><code class="language-python">"""
-regress.py — Behavioral regression suite for Module 7 instruct artifact.
+<pre><code class="language-python">"""regress.py — M7 Behavioral Regression Suite.
 
-Runs N test prompts against the LoRA-tuned model and the base model.
-Passes (exit 0) iff tuned exact-match score &gt;= base exact-match score on ALL N cases.
-Otherwise blocks (exit 1).
-
-MLflow logs per-prompt and aggregate metrics to sqlite:///outputs/mlruns.db.
+  PASS (exit 0) iff the tuned model matches or beats the base on EVERY case (no
+  regression) AND strictly improves on at least one (the new skill was learned).
+  BLOCK (exit 1) otherwise.
 """
 </code></pre>
-<p>If the tuned model drops below the base model on any single case, the script exits with a nonzero code and blocks the release.</p>
+<p>If the tuned model drops below the base on any single case, the script exits nonzero and blocks the release. It also blocks a no-op adapter that improves nothing.</p>
 <h2 id="smoke-and-portfolio"><a class="header" href="#smoke-and-portfolio">Smoke And Portfolio</a></h2>
 <p>A green test means nothing if the test suite cannot fail. You build a smoke test that runs the entire pipeline, including a negative control with random adapter weights.</p>
-<pre><code class="language-python">"""smoke.py — end-to-end smoke test for the Module 7 instruction-tuned artifact.
+<pre><code class="language-python">"""smoke.py — end-to-end oracle for the Module 7 instruction-tuned artifact.
 
 Pipeline:
-  1. Build a 10-sample JSONL fixture.
-  2. Run tune.py on that fixture (must finish on CPU).
-  3. Run regress.py on the resulting adapter -&gt; expects PASS (exit 0).
-  4. Swap the adapter file with random weights of identical shapes.
-  5. Run regress.py on the corrupted adapter -&gt; expects BLOCK (exit 1).
-  6. Restore the real adapter.
-
-smoke.py exits 0 only if every one of those expected outcomes was observed,
-including the negative case (random adapter must BLOCK). The negative-case
-assertion is the regression-suite's "fuse": it proves regress.py is capable
-of failing, so a green run is meaningful.
+  1. Run tune.py: pretrain the base, LoRA-tune the new skill, save base + adapter.
+  2. Run regress.py on the real adapter -&gt; expects PASS (exit 0).
+  3. Swap the adapter file with random weights of identical shapes.
+  4. Run regress.py on the corrupted adapter -&gt; expects BLOCK (exit 1).
+  5. Restore the real adapter and confirm it is byte-for-byte intact.
 """
 </code></pre>
 <p>The random weights must trigger a block.</p>
@@ -223,10 +214,6 @@ of failing, so a green run is meaningful.
 <li><code>regress.py</code> acts as a binary release gate by comparing tuned model behavior against the base model.</li>
 <li>A valid regression suite requires negative controls to prove the gate catches failures.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module7/00-overview/">
-**Build It in Claude Code** · Exercise · exercises/module7/00-overview/
-</div>
-
 <p>Ship the lock, not just the key: an adapter without a blocking regression suite is a liability your on-call engineer pays for at 3 AM.</p>
 
                     </main>

@@ -39,7 +39,7 @@
             const path_to_root = "";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-66d8e413.js";
+            window.path_to_searchindex_js = "searchindex-82ba56b1.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-a81d0b07.js"></script>
@@ -3342,33 +3342,24 @@ artifact is to ship a **tiny, auditable classifier** that:
 <p>You inject low-rank adapters into attention projections. You train on a tiny dataset of exact-match prompt and response pairs. The model learns the new skill while preserving its baseline capabilities.</p>
 <h2 id="the-regression-suite"><a class="header" href="#the-regression-suite">The Regression Suite</a></h2>
 <p>Capability means nothing if you break existing behavior. <code>regress.py</code> runs the tuned model and the base model against a fixed prompt set.</p>
-<pre><code class="language-python">"""
-regress.py — Behavioral regression suite for Module 7 instruct artifact.
+<pre><code class="language-python">"""regress.py — M7 Behavioral Regression Suite.
 
-Runs N test prompts against the LoRA-tuned model and the base model.
-Passes (exit 0) iff tuned exact-match score &gt;= base exact-match score on ALL N cases.
-Otherwise blocks (exit 1).
-
-MLflow logs per-prompt and aggregate metrics to sqlite:///outputs/mlruns.db.
+  PASS (exit 0) iff the tuned model matches or beats the base on EVERY case (no
+  regression) AND strictly improves on at least one (the new skill was learned).
+  BLOCK (exit 1) otherwise.
 """
 </code></pre>
-<p>If the tuned model drops below the base model on any single case, the script exits with a nonzero code and blocks the release.</p>
+<p>If the tuned model drops below the base on any single case, the script exits nonzero and blocks the release. It also blocks a no-op adapter that improves nothing.</p>
 <h2 id="smoke-and-portfolio-1"><a class="header" href="#smoke-and-portfolio-1">Smoke And Portfolio</a></h2>
 <p>A green test means nothing if the test suite cannot fail. You build a smoke test that runs the entire pipeline, including a negative control with random adapter weights.</p>
-<pre><code class="language-python">"""smoke.py — end-to-end smoke test for the Module 7 instruction-tuned artifact.
+<pre><code class="language-python">"""smoke.py — end-to-end oracle for the Module 7 instruction-tuned artifact.
 
 Pipeline:
-  1. Build a 10-sample JSONL fixture.
-  2. Run tune.py on that fixture (must finish on CPU).
-  3. Run regress.py on the resulting adapter -&gt; expects PASS (exit 0).
-  4. Swap the adapter file with random weights of identical shapes.
-  5. Run regress.py on the corrupted adapter -&gt; expects BLOCK (exit 1).
-  6. Restore the real adapter.
-
-smoke.py exits 0 only if every one of those expected outcomes was observed,
-including the negative case (random adapter must BLOCK). The negative-case
-assertion is the regression-suite's "fuse": it proves regress.py is capable
-of failing, so a green run is meaningful.
+  1. Run tune.py: pretrain the base, LoRA-tune the new skill, save base + adapter.
+  2. Run regress.py on the real adapter -&gt; expects PASS (exit 0).
+  3. Swap the adapter file with random weights of identical shapes.
+  4. Run regress.py on the corrupted adapter -&gt; expects BLOCK (exit 1).
+  5. Restore the real adapter and confirm it is byte-for-byte intact.
 """
 </code></pre>
 <p>The random weights must trigger a block.</p>
@@ -3379,25 +3370,22 @@ of failing, so a green run is meaningful.
 <li><code>regress.py</code> acts as a binary release gate by comparing tuned model behavior against the base model.</li>
 <li>A valid regression suite requires negative controls to prove the gate catches failures.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module7/00-overview/">
-**Build It in Claude Code** · Exercise · exercises/module7/00-overview/
-</div>
-
 <p>Ship the lock, not just the key: an adapter without a blocking regression suite is a liability your on-call engineer pays for at 3 AM.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="the-instruct-artifact-1"><a class="header" href="#the-instruct-artifact-1">The Instruct Artifact</a></h1>
 <p>The instruction-tuning artifact uses the same three-script contract as M6, but it changes the definition of success. You do not maximize a new metric; you prove the fine-tune did not destroy existing behaviors.</p>
 <p>The contract remains identical. <code>tune.py</code> builds the model. <code>regress.py</code> enforces the gate. <code>smoke.py</code> checks the gate.</p>
-<p>Your dataset format shifts. You train on JSONL instruction-following data. Each record pairs an instruction with a canonical response. The model learns to map a prompt to a deterministic string prefix.</p>
-<pre><code>INSTRUCTION: &lt;verb phrase&gt;
-RESPONSE:
+<p>Your dataset format shifts. You train on JSONL instruction-following data. Each record pairs an instruction with a canonical response. The model learns to map a fixed prompt to a deterministic response string:</p>
+<pre><code>&lt;bos&gt; VERB NAME &lt;sep&gt; RESPONSE NAME &lt;eos&gt;
+e.g. "&lt;bos&gt; greet alice &lt;sep&gt; hello alice &lt;eos&gt;"
 </code></pre>
-<p><code>tune.py</code> applies LoRA to a synthetic Transformer. It writes a lightweight adapter to <code>outputs/adapter/</code>. The base weights stay frozen.</p>
-<p>The regression gate enforces a different rule than M6. A classifier cares about accuracy. An instruct model must prevent catastrophic forgetting. <code>regress.py</code> runs N prompts against both the base model and your tuned adapter.</p>
-<pre><code class="language-python">"""
-Runs N test prompts against the LoRA-tuned model and the base model.
-Passes (exit 0) iff tuned exact-match score &gt;= base exact-match score on ALL N cases.
-Otherwise blocks (exit 1).
+<p><code>tune.py</code> pretrains a tiny Transformer on two skills, then applies LoRA to teach a third. It writes a lightweight adapter to <code>outputs/adapter/</code>. The base weights stay frozen.</p>
+<p>The regression gate enforces a different rule than M6. A classifier cares about accuracy. An instruct model must prevent catastrophic forgetting. <code>regress.py</code> runs the suite against both the base model and your tuned adapter.</p>
+<pre><code class="language-python">"""regress.py — M7 Behavioral Regression Suite.
+
+  PASS (exit 0) iff the tuned model matches or beats the base on EVERY case (no
+  regression) AND strictly improves on at least one (the new skill was learned).
+  BLOCK (exit 1) otherwise.
 """
 </code></pre>
 <p>You must prove the gate can fail. <code>smoke.py</code> swaps your trained adapter with random weights. The random adapter must trigger a block. A green light means nothing if a broken adapter passes.</p>
@@ -3407,8 +3395,8 @@ Otherwise blocks (exit 1).
 <h2 id="core-concepts-26"><a class="header" href="#core-concepts-26">Core Concepts</a></h2>
 <ul>
 <li>The artifact uses the same <code>tune.py</code>, <code>regress.py</code>, and <code>smoke.py</code> three-script contract as M6.</li>
-<li>The training data uses JSONL instruction-response pairs to teach deterministic prefix matches.</li>
-<li>The regression gate demands the tuned model scores equal to or greater than the base model on all known-good behaviors.</li>
+<li>The training data uses JSONL instruction-response pairs to teach a deterministic exact-match response.</li>
+<li>The regression gate demands the tuned model scores equal to or greater than the base model on all known-good behaviors, and strictly better on at least one.</li>
 <li>The smoke test validates the gate by swapping a trained adapter for random weights and asserting a block.</li>
 </ul>
 <div class="claude-handoff" data-exercise="exercises/module7/the-instruct-artifact/">
@@ -3438,16 +3426,14 @@ Otherwise blocks (exit 1).
 <p>Storage. A base model occupies tens of gigabytes. A rank-8 adapter measures in single-digit megabytes. You store, transfer, and roll back the delta, not the model.</p>
 <p>Reversibility. To remove the skill, drop the adapter. The base is untouched, byte for byte. To swap skills, hot-load a different adapter against the same base. Full fine-tune gives you neither property: the base dies the moment gradients touch it.</p>
 <h2 id="the-tune-pipeline"><a class="header" href="#the-tune-pipeline">The Tune Pipeline</a></h2>
-<p>The tune.py contract, verbatim from source:</p>
-<ul>
-<li>LoRA fine-tune a tiny model (synthetic 2-layer GPT-like Transformer)</li>
-<li>Small instruction-following dataset (20-50 examples, JSONL chat format)</li>
-<li>Must run on CPU in &lt; 90 seconds</li>
-<li>Saves LoRA adapter to outputs/adapter/</li>
-<li>Fixed random seeds</li>
-<li>No HuggingFace transformers - stdlib + torch only</li>
-</ul>
-<p>Three stages inside that file. Inject LoRA into the attention projections of the frozen base. Train the adapter against the instruction dataset. Serialize only the adapter weights.</p>
+<p>The delta lives in one method. <code>LoRALinear.forward</code> adds the low-rank term beside the frozen base, verbatim from <code>tune.py</code>:</p>
+<pre><code class="language-python">def forward(self, x: torch.Tensor) -&gt; torch.Tensor:
+    out = self.base(x)
+    if self.lora_enabled:
+        out = out + self.scale * (x @ self.A.t()) @ self.B.t()
+    return out
+</code></pre>
+<p><code>B</code> is zero-initialised, so the adapter is a no-op until trained. Three stages run inside <code>tune.py</code>. Pretrain the base on two skills (<code>thank</code>, <code>bye</code>). Freeze it and LoRA-tune a third skill (<code>greet</code>), with a little replay of the old skills so the adapter does not clobber them. Serialize only the adapter weights to <code>outputs/adapter/</code>.</p>
 <p>The downstream contract, verbatim from the README:</p>
 <pre><code>tune.py ──▶ outputs/adapter/ ──▶ regress.py ──▶ {PASS: exit 0, BLOCK: exit 1}
                                   │
@@ -3481,24 +3467,21 @@ Otherwise blocks (exit 1).
 <p>A PR that lands a new adapter without a green <code>regress.py</code> run is <strong>blocked</strong>, not delayed. The regression gate is the gate.</p>
 <h2 id="regresspy"><a class="header" href="#regresspy">regress.py</a></h2>
 <p>The docstring states the contract:</p>
-<pre><code class="language-python">"""
-regress.py — Behavioral regression suite for Module 7 instruct artifact.
+<pre><code class="language-python">"""regress.py — M7 Behavioral Regression Suite.
 
-Runs N test prompts against the LoRA-tuned model and the base model.
-Passes (exit 0) iff tuned exact-match score &gt;= base exact-match score on ALL N cases.
-Otherwise blocks (exit 1).
-
-MLflow logs per-prompt and aggregate metrics to sqlite:///outputs/mlruns.db.
+  PASS (exit 0) iff the tuned model matches or beats the base on EVERY case (no
+  regression) AND strictly improves on at least one (the new skill was learned).
+  BLOCK (exit 1) otherwise.
 """
 </code></pre>
-<p>Read the word “ALL” literally. One failure blocks the release. No partial credit, no weighted average, no tolerance band. The exit code is binary: zero ships, one stops.</p>
+<p>Read the word “EVERY” literally. One regression blocks the release. No partial credit, no weighted average, no tolerance band. The exit code is binary: zero ships, one stops. The second clause matters too: an adapter that regresses nothing but also improves nothing is a no-op, and the gate blocks it.</p>
 <h2 id="the-canonical-prompt"><a class="header" href="#the-canonical-prompt">The Canonical Prompt</a></h2>
-<p>From the skill spec, every test prompt takes this shape:</p>
-<pre><code>INSTRUCTION: &lt;verb phrase&gt;
-RESPONSE:
+<p>Every test prompt takes the artifact’s fixed shape:</p>
+<pre><code>&lt;bos&gt; VERB NAME &lt;sep&gt;   -&gt;   RESPONSE NAME
+e.g. "&lt;bos&gt; greet alice &lt;sep&gt;"   -&gt;   "hello alice"
 </code></pre>
-<p>The tuned model must emit the canonical response string as a prefix of its continuation. The base model does not do this. That delta is the skill.</p>
-<p>The suite checks the other direction too. If the base model already handled a prompt, the tuned model must still handle it. The skill is additive or the suite fails.</p>
+<p>The tuned model must decode the exact response string. The base model does not, because it never learned <code>greet</code>. That delta is the skill.</p>
+<p>The suite checks the other direction too. If the base model already handled a prompt (<code>thank</code>, <code>bye</code>), the tuned model must still handle it. The skill is additive or the suite fails.</p>
 <h2 id="why-string-level-assertions"><a class="header" href="#why-string-level-assertions">Why String-Level Assertions</a></h2>
 <p>Three reasons exact-match string comparison is the right tool.</p>
 <p>Determinism. String comparison produces the same result every run. No temperature, no sampling variance. Seeds pin the RNG state so generations are deterministic on CPU.</p>
@@ -3506,19 +3489,17 @@ RESPONSE:
 <p>Readability. When the gate blocks, the failure names the exact prompt and the exact string mismatch. No embedding similarity score to interpret. No judge model to argue with. The claim holds or it does not.</p>
 <h2 id="the-negative-case"><a class="header" href="#the-negative-case">The Negative Case</a></h2>
 <p>A suite that always passes is worthless. The smoke test corrupts the adapter with random weights and confirms the suite blocks:</p>
-<pre><code class="language-python">"""
-smoke.py — end-to-end smoke test for the Module 7 instruction-tuned artifact.
+<pre><code class="language-python">"""smoke.py — end-to-end oracle for the Module 7 instruction-tuned artifact.
 
 Pipeline:
-  1. Build a 10-sample JSONL fixture.
-  2. Run tune.py on that fixture (must finish on CPU).
-  3. Run regress.py on the resulting adapter -&gt; expects PASS (exit 0).
-  4. Swap the adapter file with random weights of identical shapes.
-  5. Run regress.py on the corrupted adapter -&gt; expects BLOCK (exit 1).
-  6. Restore the real adapter.
+  1. Run tune.py: pretrain the base, LoRA-tune the new skill, save base + adapter.
+  2. Run regress.py on the real adapter -&gt; expects PASS (exit 0).
+  3. Swap the adapter file with random weights of identical shapes.
+  4. Run regress.py on the corrupted adapter -&gt; expects BLOCK (exit 1).
+  5. Restore the real adapter and confirm it is byte-for-byte intact.
 """
 </code></pre>
-<p>Step 4 is the fuse. If the suite cannot fail on garbage weights, a green run means nothing.</p>
+<p>Step 3 is the fuse. If the suite cannot fail on garbage weights, a green run means nothing.</p>
 <h2 id="core-concepts-28"><a class="header" href="#core-concepts-28">Core Concepts</a></h2>
 <ul>
 <li>The regression suite encodes claims about base-model behavior. Each claim is one prompt with one expected response prefix.</li>
@@ -3537,19 +3518,19 @@ Pipeline:
 <h2 id="the-smoke-test-runs-the-full-loop"><a class="header" href="#the-smoke-test-runs-the-full-loop">The Smoke Test Runs the Full Loop</a></h2>
 <p>A smoke test is not a unit test. It exercises the entire chain end to end: fixture data, tune, adapter artifact, regression gate.</p>
 <p>The pipeline in <code>smoke.py</code> makes the contract explicit:</p>
-<pre><code class="language-python">"""smoke.py — end-to-end smoke test for the Module 7 instruction-tuned artifact.
+<pre><code class="language-python">"""smoke.py — end-to-end oracle for the Module 7 instruction-tuned artifact.
 
 Pipeline:
-  1. Build a 10-sample JSONL fixture.
-  2. Run tune.py on that fixture (must finish on CPU).
-  3. Run regress.py on the resulting adapter -&gt; expects PASS (exit 0).
-  4. Swap the adapter file with random weights of identical shapes.
-  5. Run regress.py on the corrupted adapter -&gt; expects BLOCK (exit 1).
-  6. Restore the real adapter.
+  1. Run tune.py: pretrain the base, LoRA-tune the new skill, save base + adapter.
+  2. Run regress.py on the real adapter -&gt; expects PASS (exit 0).
+  3. Swap the adapter file with random weights of identical shapes.
+  4. Run regress.py on the corrupted adapter -&gt; expects BLOCK (exit 1).
+  5. Restore the real adapter and confirm it is byte-for-byte intact.
+"""
 </code></pre>
-<p>Steps one through three are the happy path. You build a fixture, tune, and confirm the regression gate returns zero. That alone proves the loop runs clean.</p>
+<p>Steps one and two are the happy path. You tune, then confirm the regression gate returns zero. That alone proves the loop runs clean.</p>
 <h2 id="the-negative-case-is-the-fuse"><a class="header" href="#the-negative-case-is-the-fuse">The Negative Case Is the Fuse</a></h2>
-<p>Steps four and five are what make this a real test. You corrupt the adapter with random weights of identical shapes, then confirm regress.py exits one.</p>
+<p>Steps three and four are what make this a real test. You corrupt the adapter with random weights of identical shapes, then confirm regress.py exits one.</p>
 <pre><code class="language-python">smoke.py exits 0 only if every one of those expected outcomes was observed,
 including the negative case (random adapter must BLOCK). The negative-case
 assertion is the regression-suite's "fuse": it proves regress.py is capable
@@ -3576,12 +3557,12 @@ MLFLOW_URI = "sqlite:///outputs/mlruns.db"
 <h2 id="the-portfolio-translates-the-run"><a class="header" href="#the-portfolio-translates-the-run">The Portfolio Translates the Run</a></h2>
 <p>A green smoke test is a fact. A hiring manager needs a story. <code>outputs/skill-instruct.md</code> bridges that gap.</p>
 <p>The skill spec pins exactly what the model does:</p>
-<pre><code class="language-python">| Field | Value |
+<pre><code>| Field | Value |
 |---|---|
 | Skill name | `skill-instruct` |
 | Skill type | generative instruction-following |
-| Task family | single-turn prompt → short deterministic answer |
-| Output contract | string-prefix match on expected continuation |
+| Task family | single-turn prompt to short deterministic answer |
+| Output contract | exact-match on the decoded response |
 </code></pre>
 <p>It tells the reader what the skill is and, more importantly, what it is not:</p>
 <pre><code class="language-python">This is **not** a general chatbot. It is a *behaviorally pinned* skill: a small, auditable
