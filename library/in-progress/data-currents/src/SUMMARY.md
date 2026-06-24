@@ -61,3 +61,13 @@
 - [Capturing Lineage Automatically](module6/capturing-lineage-automatically.md)
 - [Querying the Lineage Store](module6/querying-the-lineage-store.md)
 - [Lineage as Governance: Purview](module6/lineage-as-governance-purview.md)
+
+---
+
+# Module 7: The Pipeline Artifact
+
+- [Overview](module7/00-overview.md)
+- [The Architecture](module7/the-architecture.md)
+- [Wiring the Legs](module7/wiring-the-legs.md)
+- [The Freshness-Lineage Proof](module7/the-freshness-lineage-proof.md)
+- [The Orchestrated Run](module7/the-orchestrated-run.md)
