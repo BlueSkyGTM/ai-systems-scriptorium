@@ -4,30 +4,24 @@
 
 ## Five Functions, Two Hard Gates
 
-The conductor wires five stages into one ordered script. Here is the flow, verbatim from the artifact:
+The conductor wires five stages into one ordered script. Here is the flow, from the artifact:
 
 ```
-curate_data() → train_model() → eval_gate() → regress() → log_artifact()
-                     │                │             │
-                     │                │             └── BLOCK if regression fails
-                     │                └── BLOCK if eval fails
-                     └── LoRA adapter (M4) + classifier head (M6)
+curate_data  -> m3_curate : validate, dedupe, split the raw tickets
+train_model  -> m6_train  : train the classifier (via the m4_tune loop)
+eval_gate    -> m5_eval   : accuracy + macro-F1 vs baseline; BLOCK if it fails
+regress      -> m7_regress: pinned golden tickets must route correctly; BLOCK if not
+log_artifact -> write outputs/manifest.json
 ```
 
 Five stages. Two hard gates. The pipeline never improvises a path around a failure.
 
 ## The Conductor Calls, It Does Not Reimplement
 
-Each stage comes from a prior module. Each is vendored into `lib/` as a read-only dependency. The pipeline imports them but never edits them:
+Each stage comes from a prior module. Each is vendored into `lib/` as a read-only dependency. The pipeline imports them but never edits them; `lib/__init__.py` lists them in order:
 
 ```python
-_VENDORED: Dict[str, str] = {
-    "m3_curate":  "lib.m3_curate",
-    "m4_tune":    "lib.m4_tune",
-    "m5_eval":    "lib.m5_eval",
-    "m6_train":   "lib.m6_train",
-    "m7_regress": "lib.m7_regress",
-}
+VENDORED = ("m3_curate", "m4_tune", "m6_train", "m5_eval", "m7_regress")
 ```
 
 The conductor does not rewrite curation logic. It does not reimplement the eval gate. It calls the function, checks the result, and either continues or stops.
@@ -36,16 +30,16 @@ The conductor does not rewrite curation logic. It does not reimplement the eval 
 
 A gate that logs a warning and continues is not a gate. It is a suggestion.
 
-When `eval_gate()` detects metric regression below threshold, the pipeline exits BLOCK. When `regress()` detects behavioral drift, the pipeline exits BLOCK. The rubric enforces this contract at the code level:
+When the eval gate finds the model failing to beat the baseline, the pipeline raises `PipelineBlocked`. When the regression check finds a misrouted golden ticket, the pipeline raises `PipelineBlocked`. The rubric enforces this contract at the code level:
 
 ```python
-CRITERIA: Tuple[str, ...] = (
-    "data_quality",
-    "train_reproducible",
-    "eval_gate_enforced",
-    "regression_gate_enforced",
-    "mlflow_logged",
-)
+criteria = {
+    "data_curated":        ...,
+    "model_trained":       ...,
+    "eval_gate_enforced":  ...,
+    "regression_enforced": ...,
+    "artifact_logged":     ...,
+}
 ```
 
 If the eval gate is skipped, the rubric returns `NEEDS WORK` (exit 1) and the artifact does not ship. Silent failure is structurally impossible because the conductor treats every gate as a hard stop, not a checkpoint to acknowledge and ignore.

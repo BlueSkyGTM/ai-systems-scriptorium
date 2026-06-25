@@ -1,122 +1,68 @@
-# Skill Pipeline — Module 8 Artifact
+# Skill Pipeline: Module 8 Artifact
 
-> The capstone. One script that composes dataset curation, LoRA fine-tune, the eval gate, the classifier, and the regression suite into a single reproducible loop. The pipeline either ships a READY artifact or BLOCKS. There is no third state.
+> The capstone. One conductor that composes dataset curation, the fine-tune loop, the
+> classifier, the eval gate, and the regression suite into a single reproducible run. The
+> run either grades READY or the rubric returns NEEDS WORK. There is no third state.
 
-## What this is
+## What This Is
 
-`module8-pipeline/` is the conductor for everything Modules 3–7 built in isolation. It wires five stages into an ordered script, enforces two hard gates, and logs the result to MLflow. The rubric grades the *code* — not the prose, not the vibes. If the pipeline skips the eval gate, the rubric returns `NEEDS WORK` and the artifact does not ship.
+`module8-pipeline/` is the conductor for everything Modules 3 through 7 built in isolation.
+It wires five vendored stages into an ordered run, enforces two hard gates, and writes a run
+manifest. The rubric grades the *manifest*, not the prose. If the pipeline skips the eval
+gate, the rubric returns NEEDS WORK and the artifact does not ship.
 
 ```
-curate_data() → train_model() → eval_gate() → regress() → log_artifact()
-                     │                │             │
-                     │                │             └── BLOCK if regression fails
-                     │                └── BLOCK if eval fails
-                     └── LoRA adapter (M4) + classifier head (M6)
+curate_data  -> m3_curate : validate, dedupe, split the raw tickets
+train_model  -> m6_train  : train the classifier (via the m4_tune loop)
+eval_gate    -> m5_eval   : accuracy + macro-F1 vs baseline; BLOCK if it fails
+regress      -> m7_regress: pinned golden tickets must route correctly; BLOCK if not
+log_artifact -> write outputs/manifest.json
 ```
 
 ## Stages
 
-### 1. `curate_data()` — Dataset curation (M3)
+1. **`curate_data` (M3).** Validate schema, drop duplicate texts, split into a disjoint
+   train/test set. Rejects malformed rows.
+2. **`train_model` (M4 + M6).** Train the support-ticket classifier with the reusable
+   `m4_tune.fit` loop; `torch.manual_seed(42)`, `random.seed(42)`. Checkpoint saved to
+   `outputs/checkpoint.pt`.
+3. **`eval_gate` (M5).** Exact-match accuracy + macro-F1 against the majority-class
+   baseline. Raises `PipelineBlocked` unless the model beats the baseline by at least 5pp on
+   both.
+4. **`regress` (M7).** Run pinned golden tickets through the model. Raises `PipelineBlocked`
+   if any one is misrouted.
+5. **`log_artifact`.** Write `outputs/manifest.json` (and MLflow if installed).
 
-- Input: raw JSONL fixtures.
-- Pattern: **validate → dedupe → split**.
-- Output: `outputs/train.jsonl`, `outputs/val.jsonl`, `outputs/test.jsonl`.
-- Rejects records missing required fields. Deduplicates on normalized text. 80/10/10 split with `random.seed(42)`.
+## Rubric (5 Criteria)
 
-### 2. `train_model()` — LoRA fine-tune (M4 + M6)
-
-- CPU-runnable toy model: a small `torch.nn.Module` with a LoRA-injected linear (rank 4, alpha 8).
-- Classifier head from M6 sits on top for the regression target.
-- `torch.manual_seed(42)` before init, before each optimizer step batch.
-- Checkpoint written to `outputs/adapter.pt`.
-
-### 3. `eval_gate()` — Exact-match + F1 (M5)
-
-- Computes exact-match accuracy and token-level F1 on the held-out validation split.
-- **Gate thresholds**: exact-match ≥ 0.60 *and* F1 ≥ 0.70 (synthetic fixtures).
-- Returns `BLOCK` exit code 2 on failure. No downstream stage runs.
-
-### 4. `regress()` — Behavioral regression (M7)
-
-- Re-runs the suite of canonical inputs from M7 against the freshly trained adapter.
-- Compares outputs to pinned golden vectors.
-- Drift > ε on any fixture → `BLOCK`, exit code 3.
-
-### 5. `log_artifact()` — MLflow manifest
-
-- `mlflow.set_tracking_uri("sqlite:///outputs/mlruns.db")` — offline sqlite backend, no network.
-- Logs: dataset hash, adapter path, eval metrics, regression status, git SHA, random seed.
-- Writes `outputs/manifest.json` mirroring the MLflow record for offline inspection.
-
-## Rubric (5 criteria)
-
-`rubric.py` is the deliverable. Each criterion is checked by code, not by reading prose.
+`rubric.py` reads the manifest and checks each criterion by code:
 
 | # | Criterion | Pass condition |
 |---|-----------|----------------|
-| 1 | Data quality gate | `curate_data()` ran; splits exist; dedupe count > 0 |
-| 2 | Train reproducibility | Two runs with `seed=42` produce bitwise-identical adapter weights |
-| 3 | Eval gate enforced | Pipeline with gate skipped → exit code != 0; with gate → metrics recorded |
-| 4 | Regression gate enforced | Pinned fixtures run; drift metric present and below threshold |
-| 5 | MLflow logged | `outputs/mlruns.db` contains a run with all 5 params + metrics |
+| 1 | `data_curated` | duplicates removed and the split is disjoint |
+| 2 | `model_trained` | training accuracy at or above 0.80 |
+| 3 | `eval_gate_enforced` | the eval gate ran and recorded PASS |
+| 4 | `regression_enforced` | every pinned golden case passed |
+| 5 | `artifact_logged` | the manifest was written |
 
-Exit codes:
-- `0` → **READY** (all 5 criteria pass)
-- `1` → **NEEDS WORK** (any criterion fails)
+Exit `0` = READY (all five pass); exit `1` = NEEDS WORK.
 
 ## Running
 
 ```bash
-# Full pipeline on synthetic fixtures
-python pipeline.py --fixtures fixtures/ --seed 42
-
-# Grade the result
-python rubric.py
-
-# Smoke (positive + negative case, < 60s CPU)
-python smoke.py
+python pipeline.py          # run all five stages -> outputs/manifest.json
+python rubric.py            # grade it: exit 0 = READY, 1 = NEEDS WORK
+python smoke.py             # positive + negative (deficient) case
 ```
 
-`smoke.py` runs the pipeline twice: once normally (must succeed), once with `--skip-eval-gate` (must BLOCK). Both assertions must pass for the smoke test to exit 0.
+`smoke.py` runs the pipeline twice: once normally (rubric READY), once with the eval gate
+skipped (rubric NEEDS WORK). Both assertions must hold.
 
-## Files
+## Failure Modes the Rubric Catches
 
-```
-module8-pipeline/
-├── pipeline.py              # conductor: curate → train → eval → regress → log
-├── rubric.py                # 5-criterion grader; exit 0 = READY, 1 = NEEDS WORK
-├── smoke.py                 # positive + negative case, < 60s on CPU
-├── lib/
-│   ├── m3_curate.py         # vendored
-│   ├── m4_tune.py           # vendored
-│   ├── m5_eval.py           # vendored
-│   ├── m6_train.py          # vendored
-│   └── m7_regress.py        # vendored
-├── tests/
-│   └── test_pipeline.py     # pytest suite
-├── outputs/
-│   ├── skill-pipeline.md    # this file
-│   ├── manifest.json
-│   ├── mlruns.db
-│   ├── train.jsonl
-│   ├── val.jsonl
-│   └── test.jsonl
-└── README.md
-```
+1. Eval gate skipped -> `eval_gate_enforced` fails.
+2. A retrain misroutes a golden ticket -> `regression_enforced` fails.
+3. Curation dedupe removed -> `data_curated` fails.
+4. Training collapses below the floor -> `model_trained` fails.
 
-## Design notes
-
-- **No HuggingFace.** The toy model exists to make gates runnable on CPU in under a minute, not to push SOTA. The *pipeline shape* is what matters.
-- **Vendored libs are read-only.** `pipeline.py` imports them; it never monkey-patches. If a vendored module needs a different behavior, the fix is upstream in M3–M7, not here.
-- **Two gates, two exit codes.** Eval gate failure is exit 2; regression failure is exit 3. The rubric distinguishes them so you can tell *which* gate blocked the ship without reading logs.
-- **MLflow is offline.** Sqlite backend, no tracking server required. The manifest is the source of truth; MLflow is the index.
-
-## Failure modes the rubric catches
-
-1. Eval gate commented out → criterion 3 fails.
-2. Regression skipped after eval passes → criterion 4 fails.
-3. Random seed not fixed → criterion 2 fails (non-deterministic weights).
-4. MLflow call removed → criterion 5 fails (no run recorded).
-5. Dedupe removed → criterion 1 fails (split sizes don't match expectations).
-
-Each of these is exercised by `smoke.py`'s negative case or by the pytest suite.
+Each is exercised by `smoke.py`'s deficient case or the pytest suite.

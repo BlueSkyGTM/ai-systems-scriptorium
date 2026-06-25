@@ -38,7 +38,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-82ba56b1.js";
+            window.path_to_searchindex_js = "../searchindex-cab6a446.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a81d0b07.js"></script>
@@ -183,32 +183,32 @@
 <p>Five vendored modules composed by <code>pipeline.py</code>, graded by <code>rubric.py</code>. The modules are sealed copies of prior work:</p>
 <ul>
 <li><code>m3_curate</code>: dataset curation (validate + dedupe + split)</li>
-<li><code>m4_tune</code>: LoRA adapter fine-tune</li>
-<li><code>m5_eval</code>: exact-match + F1 evaluation gate</li>
-<li><code>m6_train</code>: classifier / model training glue</li>
-<li><code>m7_regress</code>: behavioral regression suite</li>
+<li><code>m4_tune</code>: the reusable fine-tune loop</li>
+<li><code>m6_train</code>: the classifier model and its training</li>
+<li><code>m5_eval</code>: exact-match + macro-F1 evaluation gate</li>
+<li><code>m7_regress</code>: behavioral regression suite (pinned golden cases)</li>
 </ul>
 <p>The conductor calls them in order:</p>
-<pre><code>curate_data() → train_model() → eval_gate() → regress() → log_artifact()
+<pre><code>curate_data -&gt; train_model -&gt; eval_gate -&gt; regress -&gt; log_artifact
 </code></pre>
-<p>Two gates block mid-flight. <code>eval_gate()</code> exits BLOCK if the model scores below threshold. <code>regress()</code> exits BLOCK on behavioral drift. The pipeline ships READY or BLOCKS. No third state.</p>
+<p>Two gates block mid-flight. The eval gate raises <code>PipelineBlocked</code> if the model fails to beat the baseline. The regression gate raises <code>PipelineBlocked</code> if any pinned case fails. The pipeline ships READY or BLOCKS. No third state.</p>
 <h2 id="why-the-rubric-is-the-deliverable"><a class="header" href="#why-the-rubric-is-the-deliverable">Why The Rubric Is The Deliverable</a></h2>
 <p>A pipeline that runs is not a pipeline that passes. The rubric grades code, not prose:</p>
-<pre><code class="language-python">CRITERIA: Tuple[str, ...] = (
-    "data_quality",
-    "train_reproducible",
-    "eval_gate_enforced",
-    "regression_gate_enforced",
-    "mlflow_logged",
-)
+<pre><code class="language-python">criteria = {
+    "data_curated":        ...,  # duplicates removed and split disjoint
+    "model_trained":       ...,  # train accuracy cleared the floor
+    "eval_gate_enforced":  ...,  # the eval gate ran and passed
+    "regression_enforced": ...,  # every pinned golden case passed
+    "artifact_logged":     ...,  # the manifest was written
+}
 </code></pre>
 <p>Exit <code>0</code> means READY. Exit <code>1</code> means NEEDS WORK. Skip a gate and the rubric fails loudly.</p>
 <h2 id="the-vendoring-contract"><a class="header" href="#the-vendoring-contract">The Vendoring Contract</a></h2>
 <p>Same composition contract as DC M7, different domain. Vendor prior modules as read-only dependencies. Import from them. Never edit them. The rubric verifies the composition holds.</p>
 <h2 id="module-path"><a class="header" href="#module-path">Module Path</a></h2>
 <p><strong>Composition.</strong> You write <code>pipeline.py</code> to call each vendored module in sequence, thread outputs between stages, and enforce two blocking gates.</p>
-<p><strong>Training And Evaluation.</strong> M4 LoRA meets M6 classifier. M5 enforces the eval gate: exact-match must clear 0.50, F1 must clear 0.60.</p>
-<p><strong>Regression And Logging.</strong> M7 checks behavioral drift against fixed fixtures; drift above 0.10 blocks. Every artifact lands in MLflow with a sqlite backend.</p>
+<p><strong>Training And Evaluation.</strong> The M4 fine-tune loop trains the M6 classifier. M5 enforces the eval gate: the tuned model must beat the majority-class baseline by at least 5 percentage points on both exact-match accuracy and macro-F1.</p>
+<p><strong>Regression And Logging.</strong> M7 checks a set of pinned golden tickets; one misrouted case blocks. The run manifest lands on disk (and in MLflow if installed).</p>
 <p><strong>The Rubric.</strong> You write <code>rubric.py</code> to grade the pipeline on five criteria with binary exit codes. A smoke test exercises both paths: happy, where rubric exits <code>0</code>, and deficient, where rubric exits <code>1</code>.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
@@ -218,9 +218,6 @@
 <li>The composition contract mirrors DC M7: vendor prior modules as read-only dependencies.</li>
 </ul>
 <p>The rubric pattern is what separates a script you ran once from a pipeline you can hand to another engineer and defend in review.</p>
-<div class="claude-handoff" data-exercise="exercises/module8/00-overview/">
-**Build It in Claude Code** · Exercise · exercises/module8/00-overview/
-</div>
 
                     </main>
 

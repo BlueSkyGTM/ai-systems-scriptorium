@@ -7,15 +7,13 @@ A smoke test that only checks the happy path proves nothing. You need two assert
 The contract is documented in the entrypoint.
 
 ```python
-"""smoke.py — end-to-end smoke test for the Module 8 pipeline.
+"""smoke.py — end-to-end oracle for the Module 8 pipeline artifact.
 
-Runs ``pipeline.py`` on synthetic fixtures, then ``rubric.py``.
-
-Two scenarios are exercised and BOTH outcomes are asserted:
-  1. Happy path     : full pipeline (data → train → eval gate → regress → log)
-                      rubric.py MUST exit 0 (READY).
-  2. Deficient path : eval gate skipped.
-                      rubric.py MUST exit 1 (NEEDS WORK).
+Proves the composition and the grader, in both directions:
+  1. Full pipeline run: every stage produces its summary; the manifest is written.
+  2. rubric.py grades that run READY (all five criteria pass).
+  3. Deficient run (eval gate skipped): the pipeline still completes...
+  4. ...but rubric.py grades it NEEDS WORK, tripping exactly the eval-gate criterion.
 """
 ```
 
@@ -25,14 +23,14 @@ Run the full validation suite in a single chain.
 python smoke.py && python -m pytest tests/ -v && python rubric.py
 ```
 
-The happy path exercises every stage in order. The pipeline composes curation, training, the eval gate, the classifier, and the regression suite into a single loop.
+The happy path exercises every stage in order. The pipeline composes curation, training, the eval gate, and the regression suite into a single loop.
 
-```python
-curate_data() → train_model() → eval_gate() → regress() → log_artifact()
-                     │                │             │
-                     │                │             └── BLOCK if regression fails
-                     │                └── BLOCK if eval fails
-                     └── LoRA adapter (M4) + classifier head (M6)
+```
+curate_data  -> m3_curate : validate, dedupe, split the raw tickets
+train_model  -> m6_train  : train the classifier (via the m4_tune loop)
+eval_gate    -> m5_eval   : accuracy + macro-F1 vs baseline; BLOCK if it fails
+regress      -> m7_regress: pinned golden tickets must route correctly; BLOCK if not
+log_artifact -> write outputs/manifest.json
 ```
 
 The deficient path sabotages the loop by skipping the eval gate. The rubric grades the code, detects the missing gate, and exits with a failure status.

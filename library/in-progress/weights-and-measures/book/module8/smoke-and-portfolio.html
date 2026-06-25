@@ -38,7 +38,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-82ba56b1.js";
+            window.path_to_searchindex_js = "../searchindex-cab6a446.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a81d0b07.js"></script>
@@ -181,26 +181,24 @@
 <p>The pipeline is not finished when it runs. It is finished when the smoke test proves the rubric passes a clean run and fails a broken one.</p>
 <p>A smoke test that only checks the happy path proves nothing. You need two assertions: the full pipeline earns a passing grade, and a sabotaged pipeline earns a failing grade. Both outcomes must hold.</p>
 <p>The contract is documented in the entrypoint.</p>
-<pre><code class="language-python">"""smoke.py — end-to-end smoke test for the Module 8 pipeline.
+<pre><code class="language-python">"""smoke.py — end-to-end oracle for the Module 8 pipeline artifact.
 
-Runs ``pipeline.py`` on synthetic fixtures, then ``rubric.py``.
-
-Two scenarios are exercised and BOTH outcomes are asserted:
-  1. Happy path     : full pipeline (data → train → eval gate → regress → log)
-                      rubric.py MUST exit 0 (READY).
-  2. Deficient path : eval gate skipped.
-                      rubric.py MUST exit 1 (NEEDS WORK).
+Proves the composition and the grader, in both directions:
+  1. Full pipeline run: every stage produces its summary; the manifest is written.
+  2. rubric.py grades that run READY (all five criteria pass).
+  3. Deficient run (eval gate skipped): the pipeline still completes...
+  4. ...but rubric.py grades it NEEDS WORK, tripping exactly the eval-gate criterion.
 """
 </code></pre>
 <p>Run the full validation suite in a single chain.</p>
 <pre><code>python smoke.py &amp;&amp; python -m pytest tests/ -v &amp;&amp; python rubric.py
 </code></pre>
-<p>The happy path exercises every stage in order. The pipeline composes curation, training, the eval gate, the classifier, and the regression suite into a single loop.</p>
-<pre><code class="language-python">curate_data() → train_model() → eval_gate() → regress() → log_artifact()
-                     │                │             │
-                     │                │             └── BLOCK if regression fails
-                     │                └── BLOCK if eval fails
-                     └── LoRA adapter (M4) + classifier head (M6)
+<p>The happy path exercises every stage in order. The pipeline composes curation, training, the eval gate, and the regression suite into a single loop.</p>
+<pre><code>curate_data  -&gt; m3_curate : validate, dedupe, split the raw tickets
+train_model  -&gt; m6_train  : train the classifier (via the m4_tune loop)
+eval_gate    -&gt; m5_eval   : accuracy + macro-F1 vs baseline; BLOCK if it fails
+regress      -&gt; m7_regress: pinned golden tickets must route correctly; BLOCK if not
+log_artifact -&gt; write outputs/manifest.json
 </code></pre>
 <p>The deficient path sabotages the loop by skipping the eval gate. The rubric grades the code, detects the missing gate, and exits with a failure status.</p>
 <pre><code class="language-python">    0 = READY         (all 5 criteria pass)

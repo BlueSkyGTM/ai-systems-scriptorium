@@ -38,7 +38,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-82ba56b1.js";
+            window.path_to_searchindex_js = "../searchindex-cab6a446.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a81d0b07.js"></script>
@@ -180,35 +180,29 @@
                         <h1 id="the-conductor"><a class="header" href="#the-conductor">The Conductor</a></h1>
 <p><code>pipeline.py</code> is not a reimplementation. It is a conductor that calls five vendored functions and enforces their sequence. Each gate either passes or exits BLOCK; there is no third state.</p>
 <h2 id="five-functions-two-hard-gates"><a class="header" href="#five-functions-two-hard-gates">Five Functions, Two Hard Gates</a></h2>
-<p>The conductor wires five stages into one ordered script. Here is the flow, verbatim from the artifact:</p>
-<pre><code>curate_data() → train_model() → eval_gate() → regress() → log_artifact()
-                     │                │             │
-                     │                │             └── BLOCK if regression fails
-                     │                └── BLOCK if eval fails
-                     └── LoRA adapter (M4) + classifier head (M6)
+<p>The conductor wires five stages into one ordered script. Here is the flow, from the artifact:</p>
+<pre><code>curate_data  -&gt; m3_curate : validate, dedupe, split the raw tickets
+train_model  -&gt; m6_train  : train the classifier (via the m4_tune loop)
+eval_gate    -&gt; m5_eval   : accuracy + macro-F1 vs baseline; BLOCK if it fails
+regress      -&gt; m7_regress: pinned golden tickets must route correctly; BLOCK if not
+log_artifact -&gt; write outputs/manifest.json
 </code></pre>
 <p>Five stages. Two hard gates. The pipeline never improvises a path around a failure.</p>
 <h2 id="the-conductor-calls-it-does-not-reimplement"><a class="header" href="#the-conductor-calls-it-does-not-reimplement">The Conductor Calls, It Does Not Reimplement</a></h2>
-<p>Each stage comes from a prior module. Each is vendored into <code>lib/</code> as a read-only dependency. The pipeline imports them but never edits them:</p>
-<pre><code class="language-python">_VENDORED: Dict[str, str] = {
-    "m3_curate":  "lib.m3_curate",
-    "m4_tune":    "lib.m4_tune",
-    "m5_eval":    "lib.m5_eval",
-    "m6_train":   "lib.m6_train",
-    "m7_regress": "lib.m7_regress",
-}
+<p>Each stage comes from a prior module. Each is vendored into <code>lib/</code> as a read-only dependency. The pipeline imports them but never edits them; <code>lib/__init__.py</code> lists them in order:</p>
+<pre><code class="language-python">VENDORED = ("m3_curate", "m4_tune", "m6_train", "m5_eval", "m7_regress")
 </code></pre>
 <p>The conductor does not rewrite curation logic. It does not reimplement the eval gate. It calls the function, checks the result, and either continues or stops.</p>
 <h2 id="why-each-gate-exits-block"><a class="header" href="#why-each-gate-exits-block">Why Each Gate Exits BLOCK</a></h2>
 <p>A gate that logs a warning and continues is not a gate. It is a suggestion.</p>
-<p>When <code>eval_gate()</code> detects metric regression below threshold, the pipeline exits BLOCK. When <code>regress()</code> detects behavioral drift, the pipeline exits BLOCK. The rubric enforces this contract at the code level:</p>
-<pre><code class="language-python">CRITERIA: Tuple[str, ...] = (
-    "data_quality",
-    "train_reproducible",
-    "eval_gate_enforced",
-    "regression_gate_enforced",
-    "mlflow_logged",
-)
+<p>When the eval gate finds the model failing to beat the baseline, the pipeline raises <code>PipelineBlocked</code>. When the regression check finds a misrouted golden ticket, the pipeline raises <code>PipelineBlocked</code>. The rubric enforces this contract at the code level:</p>
+<pre><code class="language-python">criteria = {
+    "data_curated":        ...,
+    "model_trained":       ...,
+    "eval_gate_enforced":  ...,
+    "regression_enforced": ...,
+    "artifact_logged":     ...,
+}
 </code></pre>
 <p>If the eval gate is skipped, the rubric returns <code>NEEDS WORK</code> (exit 1) and the artifact does not ship. Silent failure is structurally impossible because the conductor treats every gate as a hard stop, not a checkpoint to acknowledge and ignore.</p>
 <h2 id="the-same-pattern-as-dc-module-7"><a class="header" href="#the-same-pattern-as-dc-module-7">The Same Pattern as DC Module 7</a></h2>

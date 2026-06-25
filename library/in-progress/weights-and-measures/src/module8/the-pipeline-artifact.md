@@ -4,81 +4,66 @@ Five vendored modules form the body. One conductor script wires them into an ord
 
 ## The Five-Step Loop
 
-The pipeline composes Modules 3 through 7 into a single script. Each stage maps to a function call:
+The pipeline composes Modules 3 through 7 into a single script. Each stage is a vendored module, mapped in `pipeline.py`:
 
 ```
-curate_data() → train_model() → eval_gate() → regress() → log_artifact()
-                     │                │             │
-                     │                │             └── BLOCK if regression fails
-                     │                └── BLOCK if eval fails
-                     └── LoRA adapter (M4) + classifier head (M6)
+curate_data  -> m3_curate : validate, dedupe, split the raw tickets
+train_model  -> m6_train  : train the classifier (via the m4_tune loop)
+eval_gate    -> m5_eval   : accuracy + macro-F1 vs baseline; BLOCK if it fails
+regress      -> m7_regress: pinned golden tickets must route correctly; BLOCK if not
+log_artifact -> write outputs/manifest.json
 ```
 
-Two gates sit in the middle. If eval fails, the pipeline exits BLOCK. If regression fails, the pipeline exits BLOCK. There is no soft pass. The README defines completion with one sentence:
+Two gates sit in the middle. If eval fails, the pipeline raises `PipelineBlocked`. If regression fails, it raises `PipelineBlocked`. There is no soft pass. The README defines completion with one sentence:
 
 > The pipeline is not "complete" when it runs; it is complete when `rubric.py` exits `0`.
 
 ## Vendoring Under lib/
 
-You do not rewrite Modules 3 through 7. You copy them, read-only, into `lib/`. The vendoring contract treats these files as sealed dependencies: the pipeline imports from them but never edits them. The registry in `lib/__init__.py` maps each stage:
+You do not rewrite Modules 3 through 7. You copy them, read-only, into `lib/`. The vendoring contract treats these files as sealed dependencies: the pipeline imports from them but never edits them. `lib/__init__.py` records the registry in pipeline order:
 
 ```python
-_VENDORED: Dict[str, str] = {
-    "m3_curate":  "lib.m3_curate",
-    "m4_tune":    "lib.m4_tune",
-    "m5_eval":    "lib.m5_eval",
-    "m6_train":   "lib.m6_train",
-    "m7_regress": "lib.m7_regress",
-}
+VENDORED = ("m3_curate", "m4_tune", "m6_train", "m5_eval", "m7_regress")
 ```
 
 Five entries. Five submodules. The conductor is the only new code you write in this module. Everything else is frozen output from prior modules.
 
 ## What the Rubric Grades
 
-The rubric is the deliverable. It grades code, not prose. Five hard criteria:
+The rubric is the deliverable. It grades code, not prose. Five hard criteria, keyed in a dict:
 
 ```python
-CRITERIA: Tuple[str, ...] = (
-    "data_quality",
-    "train_reproducible",
-    "eval_gate_enforced",
-    "regression_gate_enforced",
-    "mlflow_logged",
-)
+criteria = {
+    "data_curated":        bool(curated.get("dupes_removed", 0) > 0 and curated.get("disjoint")),
+    "model_trained":       bool(trained.get("train_acc", 0.0) >= TRAIN_ACC_FLOOR),
+    "eval_gate_enforced":  bool(eval_s is not None and eval_s.get("passed")),
+    "regression_enforced": bool(regress is not None and regress.get("passed")),
+    "artifact_logged":     bool(manifest.get("logged")),
+}
 ```
 
-Exit codes are binary:
+Exit codes are binary: `0` = READY (all five pass), `1` = NEEDS WORK (one or more failed).
+
+Skip the eval gate and the rubric catches it. The thresholds are pinned and non-negotiable: the rubric requires training accuracy at or above the floor, and the eval gate (in `m5_eval`) requires the tuned model to beat the baseline by at least the margin on both metrics:
 
 ```python
-#    0 = READY         (all 5 criteria pass)
-#    1 = NEEDS WORK    (one or more criteria failed)
-```
-
-Skip the eval gate and the rubric catches it. Skip regression and the rubric catches that too. The threshold constants are pinned and non-negotiable:
-
-```python
-EVAL_EM_THRESHOLD = 0.50
-EVAL_F1_THRESHOLD = 0.60
-REGRESSION_MAX_DELTA = 0.10  # abs drift allowed vs baseline
+TRAIN_ACC_FLOOR = 0.80   # rubric.py: training accuracy must clear this
+MARGIN_PP = 0.05         # m5_eval.py: beat the baseline by >= 5pp on both metrics
 ```
 
 ## One Command to Run
 
-The smoke test exercises two scenarios on synthetic fixtures: a happy path where the rubric exits 0, and a deficient path where the eval gate is skipped and the rubric exits 1. Both assertions must hold. Determinism is set before anything else runs:
+The smoke test exercises two scenarios on synthetic fixtures: a happy path where the rubric exits 0, and a deficient path where the eval gate is skipped and the rubric exits 1. Both assertions must hold. Determinism is pinned inside the vendored modules, so every run reproduces; `m6_train` seeds before it builds:
 
 ```python
-SEED = 42
-random.seed(SEED)
 torch.manual_seed(SEED)
-os.environ.setdefault("PYTHONHASHSEED", str(SEED))
+random.seed(SEED)
 ```
 
-MLflow points at a local sqlite backend so no external service is needed:
+MLflow, when installed, points at a local sqlite backend so no external service is needed:
 
 ```python
-MLFLOW_URI = "sqlite:///outputs/mlruns.db"
-os.environ.setdefault("MLFLOW_TRACKING_URI", MLFLOW_URI)
+mlflow.set_tracking_uri(f"sqlite:///{MLFLOW_DB}")
 ```
 
 You run the pipeline. You run the rubric. The rubric tells you whether you are done.

@@ -1,202 +1,85 @@
-"""smoke.py — end-to-end smoke test for the Module 8 pipeline.
+"""smoke.py — end-to-end oracle for the Module 8 pipeline artifact.
 
-Runs ``pipeline.py`` on synthetic fixtures, then ``rubric.py``.
+Proves the composition and the grader, in both directions:
+  1. Full pipeline run: every stage produces its summary; the manifest is written.
+  2. rubric.py grades that run READY (all five criteria pass).
+  3. Deficient run (eval gate skipped): the pipeline still completes...
+  4. ...but rubric.py grades it NEEDS WORK, tripping exactly the eval-gate criterion.
 
-Two scenarios are exercised and BOTH outcomes are asserted:
-  1. Happy path     : full pipeline (data → train → eval gate → regress → log)
-                      rubric.py MUST exit 0 (READY).
-  2. Deficient path : eval gate skipped.
-                      rubric.py MUST exit 1 (NEEDS WORK).
-
-The smoke test itself exits 0 iff both assertions hold.
-
-CPU-only, < 60s total, fixed seeds. No HuggingFace.
+A green run means the conductor composes the vendored modules correctly AND the rubric
+catches a deficient run. Exits 0 only if every assertion holds.
 """
-
 from __future__ import annotations
 
-import json
-import os
-import random
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
-import torch
-
-# ---------------------------------------------------------------------------
-# Determinism — set BEFORE any work happens.
-# ---------------------------------------------------------------------------
-SEED = 42
-random.seed(SEED)
-torch.manual_seed(SEED)
-os.environ.setdefault("PYTHONHASHSEED", str(SEED))
-
 ROOT = Path(__file__).resolve().parent
-OUTPUTS = ROOT / "outputs"
-OUTPUTS.mkdir(parents=True, exist_ok=True)
+sys.path.insert(0, str(ROOT))
 
-MLFLOW_URI = "sqlite:///outputs/mlruns.db"
-os.environ.setdefault("MLFLOW_TRACKING_URI", MLFLOW_URI)
+import pipeline as pipeline_mod
+import rubric as rubric_mod
 
-PIPELINE = ROOT / "pipeline.py"
-RUBRIC = ROOT / "rubric.py"
-
-
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-def write_synthetic_fixtures(fixture_dir: Path, n_train: int = 24,
-                             n_val: int = 8) -> Path:
-    """Write tiny JSONL train/val fixtures understood by M3 curate + M5 eval.
-
-    Each record carries ``text``, ``label``, and ``answer`` so the same fixture
-    can serve the classifier head (M6) and the exact-match eval gate (M5).
-    """
-    fixture_dir.mkdir(parents=True, exist_ok=True)
-    rng = random.Random(SEED)
-
-    def make_records(k: int, prefix: str) -> list[dict]:
-        rows = []
-        for i in range(k):
-            label = "A" if i % 2 == 0 else "B"
-            text = f"{prefix} sample {i} token {rng.randint(0, 99)} marker {label.lower()}"
-            rows.append({
-                "id": f"{prefix}-{i:03d}",
-                "text": text,
-                "label": label,
-                "answer": label.lower(),
-            })
-        return rows
-
-    train = make_records(n_train, "train")
-    val = make_records(n_val, "val")
-    (fixture_dir / "train.jsonl").write_text(
-        "\n".join(json.dumps(r) for r in train), encoding="utf-8")
-    (fixture_dir / "val.jsonl").write_text(
-        "\n".join(json.dumps(r) for r in val), encoding="utf-8")
-    return fixture_dir
+_PASS = 0
+_FAIL = 0
 
 
-# ---------------------------------------------------------------------------
-# Subprocess helpers
-# ---------------------------------------------------------------------------
-def build_env(extra: dict[str, str] | None = None) -> dict[str, str]:
-    env = dict(os.environ)
-    env["PYTHONHASHSEED"] = str(SEED)
-    env["MLFLOW_TRACKING_URI"] = MLFLOW_URI
-    if extra:
-        env.update(extra)
-    return env
+def check(label: str, cond: bool) -> None:
+    global _PASS, _FAIL
+    if cond:
+        _PASS += 1
+        print(f"  ok   {label}")
+    else:
+        _FAIL += 1
+        print(f"  FAIL {label}")
 
 
-def run(cmd: list[str], env: dict[str, str], timeout: int = 90) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        cmd,
-        cwd=str(ROOT),
-        env=env,
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-    )
+def run(args: list[str]) -> int:
+    return subprocess.run([sys.executable, *args], cwd=str(ROOT),
+                          capture_output=True, text=True).returncode
 
 
-# ---------------------------------------------------------------------------
-# Scenarios
-# ---------------------------------------------------------------------------
-def scenario_happy(tmp_root: Path) -> None:
-    """Full pipeline runs end-to-end; rubric returns 0 (READY)."""
-    fixtures = write_synthetic_fixtures(tmp_root / "fixtures_happy")
-    workdir = tmp_root / "run_happy"
-    workdir.mkdir(parents=True, exist_ok=True)
-
-    env = build_env({
-        "M8_FIXTURE_DIR": str(fixtures),
-        "M8_WORKDIR": str(workdir),
-        "M8_SKIP_EVAL_GATE": "0",
-        "M8_SKIP_REGRESS": "0",
-        "M8_EPOCHS": "1",
-        "M8_BATCH": "4",
-        "M8_SEED": str(SEED),
-    })
-
-    proc = run([sys.executable, str(PIPELINE)], env)
-    assert proc.returncode == 0, (
-        f"[happy] pipeline.py exited {proc.returncode}\n"
-        f"--- STDOUT ---\n{proc.stdout}\n"
-        f"--- STDERR ---\n{proc.stderr}\n"
-    )
-
-    manifest = workdir / "manifest.json"
-    assert manifest.exists(), f"[happy] manifest missing: {manifest}"
-
-    rub = run([sys.executable, str(RUBRIC), str(workdir)], env)
-    assert rub.returncode == 0, (
-        f"[happy] rubric.py should exit 0 (READY) but exited {rub.returncode}\n"
-        f"--- STDOUT ---\n{rub.stdout}\n"
-        f"--- STDERR ---\n{rub.stderr}\n"
-    )
-    print(f"[smoke] happy path OK  (rubric exit 0)  -> {workdir}")
-
-
-def scenario_deficient(tmp_root: Path) -> None:
-    """Eval gate skipped -> rubric MUST return 1 (NEEDS WORK)."""
-    fixtures = write_synthetic_fixtures(tmp_root / "fixtures_bad")
-    workdir = tmp_root / "run_bad"
-    workdir.mkdir(parents=True, exist_ok=True)
-
-    env = build_env({
-        "M8_FIXTURE_DIR": str(fixtures),
-        "M8_WORKDIR": str(workdir),
-        "M8_SKIP_EVAL_GATE": "1",   # the deficient behavior under test
-        "M8_SKIP_REGRESS": "0",
-        "M8_EPOCHS": "1",
-        "M8_BATCH": "4",
-        "M8_SEED": str(SEED),
-    })
-
-    proc = run([sys.executable, str(PIPELINE)], env)
-    # Pipeline may legitimately block on the skipped gate; accept 0 or 1.
-    assert proc.returncode in (0, 1), (
-        f"[bad] pipeline.py unexpected exit {proc.returncode}\n"
-        f"--- STDOUT ---\n{proc.stdout}\n"
-        f"--- STDERR ---\n{proc.stderr}\n"
-    )
-
-    rub = run([sys.executable, str(RUBRIC), str(workdir)], env)
-    assert rub.returncode == 1, (
-        f"[bad] rubric.py should exit 1 (NEEDS WORK) but exited {rub.returncode}\n"
-        f"--- STDOUT ---\n{rub.stdout}\n"
-        f"--- STDERR ---\n{rub.stderr}\n"
-    )
-    print(f"[smoke] deficient path OK  (rubric exit 1)  -> {workdir}")
-
-
-# ---------------------------------------------------------------------------
-# Driver
-# ---------------------------------------------------------------------------
 def main() -> int:
-    # Re-seed deterministically at the top of each driver invocation.
-    random.seed(SEED)
-    torch.manual_seed(SEED)
+    print("[smoke] full pipeline run...")
+    result = pipeline_mod.run_pipeline()
+    m = result["manifest"]
 
-    # Pre-flight: required files exist.
-    for required in (PIPELINE, RUBRIC):
-        assert required.exists(), f"[smoke] missing required file: {required}"
+    # -- Composition: every stage produced its summary -----------------------
+    check("curation removed duplicates", m["curated"]["dupes_removed"] > 0)
+    check("train/test split is disjoint", m["curated"]["disjoint"] is True)
+    check("model trained above the floor", m["trained"]["train_acc"] >= 0.80)
+    check("eval gate ran and passed", m["eval"] is not None and m["eval"]["passed"])
+    check("eval beats the baseline", m["eval"]["tuned_acc"] > m["eval"]["baseline_acc"])
+    check("every golden case passed", m["regress"]["n_passed"] == m["regress"]["n_cases"])
+    check("manifest marked logged", m["logged"] is True)
+    check("manifest.json written", (ROOT / "outputs" / "manifest.json").exists())
+    check("checkpoint written", (ROOT / "outputs" / "checkpoint.pt").exists())
 
-    with tempfile.TemporaryDirectory(prefix="m8_smoke_") as td:
-        tmp_root = Path(td)
+    # -- Rubric grades the good run READY ------------------------------------
+    graded = rubric_mod.run_rubric()
+    check("rubric: all five criteria pass", graded["score"] == graded["total"])
+    check("rubric verdict READY", graded["ready"] is True)
+    check("rubric.py exits 0 on a good run", run(["rubric.py"]) == 0)
 
-        scenario_happy(tmp_root)
+    # -- Deficient run: eval gate skipped ------------------------------------
+    print("[smoke] deficient run (eval gate skipped)...")
+    deficient = pipeline_mod.run_pipeline(skip_eval=True)
+    check("deficient manifest has no eval", deficient["manifest"]["eval"] is None)
 
-        # Reset RNG between scenarios so the two runs are independent.
-        random.seed(SEED)
-        torch.manual_seed(SEED)
+    bad_grade = rubric_mod.grade(deficient["manifest"])
+    check("rubric fails the eval-gate criterion",
+          bad_grade["criteria"]["eval_gate_enforced"] is False)
+    check("rubric verdict NEEDS WORK", bad_grade["ready"] is False)
+    check("rubric.py exits 1 on the deficient run (via written manifest)",
+          run(["rubric.py"]) == 1)
 
-        scenario_deficient(tmp_root)
-
-    print("[smoke] ALL ASSERTIONS PASSED  (happy=READY, deficient=NEEDS WORK)")
+    total = _PASS + _FAIL
+    print(f"\n[smoke] {_PASS}/{total} assertions passed")
+    if _FAIL:
+        print(f"[smoke] FAILED ({_FAIL} failures)")
+        return 1
+    print("[smoke] PASS")
     return 0
 
 

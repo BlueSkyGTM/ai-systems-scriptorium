@@ -1,0 +1,6 @@
+# Generated run artifacts — reproduced by `python pipeline.py` / `python smoke.py`.
+# The portfolio write-up (skill-pipeline.md) is the only tracked file here.
+checkpoint.pt
+manifest.json
+mlruns.db
+mlruns/
