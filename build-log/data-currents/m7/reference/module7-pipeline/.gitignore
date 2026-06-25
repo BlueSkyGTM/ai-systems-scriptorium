@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+*.db
+*.duckdb
+*.duckdb.wal
+corpus_delta/
+.prefect/
+target/
+logs/
+dbt_packages/

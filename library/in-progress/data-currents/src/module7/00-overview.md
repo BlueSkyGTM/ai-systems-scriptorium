@@ -31,7 +31,7 @@ The Architecture establishes the Prefect flow structure mapping dependencies bet
 
 Wiring the Legs connects the SQLite batch target and the Kafka-simulated stream into a unified Delta Lake.
 
-The Freshness Lineage Proof executes the 28-assertion smoke oracle validating SLO thresholds and source-to-verdict traces.
+The Freshness Lineage Proof executes the 21-assertion smoke oracle validating SLO thresholds and source-to-verdict traces.
 
 The Orchestrated Run triggers the complete pipeline locally and verifies artifact generation.
 
@@ -45,7 +45,7 @@ all of the above               -> freshness_gate
 
 ## The Artifact
 
-You build `module7-pipeline/`. This directory contains a Prefect flow composing five vendored modules, a 28-assertion smoke oracle, and a dual freshness gate. Reuse is real here. You import modules, never restate them.
+You build `module7-pipeline/`. This directory contains a Prefect flow composing five vendored modules, a 21-assertion smoke oracle, and a dual freshness gate. Reuse is real here. You import modules, never restate them.
 
 ## Who This Is For
 

@@ -38,7 +38,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-b9a3fdf7.js";
+            window.path_to_searchindex_js = "../searchindex-b4164df2.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-481f3bf2.js"></script>
@@ -202,7 +202,7 @@ from lib.m6_lineage import LineageCapture, trace_answer_to_sources, impact_of_ve
 <h2 id="what-this-module-covers"><a class="header" href="#what-this-module-covers">What This Module Covers</a></h2>
 <p>The Architecture establishes the Prefect flow structure mapping dependencies between batch and stream paths.</p>
 <p>Wiring the Legs connects the SQLite batch target and the Kafka-simulated stream into a unified Delta Lake.</p>
-<p>The Freshness Lineage Proof executes the 28-assertion smoke oracle validating SLO thresholds and source-to-verdict traces.</p>
+<p>The Freshness Lineage Proof executes the 21-assertion smoke oracle validating SLO thresholds and source-to-verdict traces.</p>
 <p>The Orchestrated Run triggers the complete pipeline locally and verifies artifact generation.</p>
 <h2 id="the-diagram"><a class="header" href="#the-diagram">The Diagram</a></h2>
 <pre><code class="language-text">batch_ingest   -&gt; stream_apply -&gt; land_lakehouse
@@ -210,7 +210,7 @@ from lib.m6_lineage import LineageCapture, trace_answer_to_sources, impact_of_ve
 all of the above               -&gt; freshness_gate
 </code></pre>
 <h2 id="the-artifact"><a class="header" href="#the-artifact">The Artifact</a></h2>
-<p>You build <code>module7-pipeline/</code>. This directory contains a Prefect flow composing five vendored modules, a 28-assertion smoke oracle, and a dual freshness gate. Reuse is real here. You import modules, never restate them.</p>
+<p>You build <code>module7-pipeline/</code>. This directory contains a Prefect flow composing five vendored modules, a 21-assertion smoke oracle, and a dual freshness gate. Reuse is real here. You import modules, never restate them.</p>
 <h2 id="who-this-is-for"><a class="header" href="#who-this-is-for">Who This Is For</a></h2>
 <p>You finished M2 through M6. Now you compose them.</p>
 <h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
