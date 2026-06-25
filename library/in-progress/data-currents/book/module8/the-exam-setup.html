@@ -38,7 +38,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-b4164df2.js";
+            window.path_to_searchindex_js = "../searchindex-d9366046.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-481f3bf2.js"></script>
@@ -178,19 +178,38 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="the-exam-setup"><a class="header" href="#the-exam-setup">The Exam Setup</a></h1>
-<p>Retrieval quality dropped overnight. Three defects sit inside the pipeline you built in Module 7, and you have until standup.</p>
+<p>Retrieval quality dropped overnight. Three defects sit inside the pipeline, and you have until standup.</p>
 <h2 id="the-incident"><a class="header" href="#the-incident">The Incident</a></h2>
 <p>It is 03:14 on a Tuesday morning. The on-call pager is yours.</p>
 <p>A junior analyst filed a ticket at 22:47 last night: the retrieval system that powers the internal compliance Q&amp;A tool has been returning stale answers for the past two batches.</p>
 <p>One of those answers was shown to a regulator yesterday afternoon. Legal is aware. You have until standup.</p>
-<p>The system is the multi-source corpus pipeline you built in Module 7 (<code>pipeline_flow.py</code>). Someone modified it. The diff was merged with three reviewers, all of whom approved it because the unit tests went green.</p>
+<p>The system is <code>broken_pipeline.py</code>, a distilled version of the multi-source corpus pipeline you built in Module 7: ingest, freshness check, lineage capture, freshness gate, over a SQLite corpus store. Someone modified it. The diff was merged with three reviewers, all of whom approved it because the unit tests went green.</p>
 <p>The unit tests were wrong.</p>
 <h2 id="three-defects-one-diff"><a class="header" href="#three-defects-one-diff">Three Defects, One Diff</a></h2>
-<p>Three lines changed in <code>broken_pipeline.py</code>. Each degrades the pipeline silently:</p>
+<p>Three changes degrade the pipeline silently. You are not told their names; you get symptoms.</p>
 <ol>
-<li><code>batch_now_ts</code> hardcoded to <code>"2099-01-01"</code>: batch freshness breach always fires.</li>
-<li>`capture</li>
+<li>The freshness check measures staleness against a hardcoded <code>"2099-01-01"</code> “now”. Every source looks ancient, so the check fires even right after a successful load. Freshness against the wrong clock measures nothing.</li>
+<li><code>capture_lineage</code> never records the eval verdict. The chain from an answer back to the verdict that graded it stops short, so no one can explain why a document was admitted.</li>
+<li>The freshness gate swallows the breach. It logs a warning and returns instead of raising, so the pipeline reports success on a stale corpus. The gate does not fail loud.</li>
 </ol>
+<h2 id="what-you-produce"><a class="header" href="#what-you-produce">What You Produce</a></h2>
+<p>You receive <code>broken_pipeline.py</code>, read-only. You write two files:</p>
+<ul>
+<li><code>diagnose.py</code>: six checks (<code>q1</code> through <code>q6</code>) that turn the symptoms into findings, reading the data the pipeline emitted, not its source.</li>
+<li><code>fix.py</code>: the corrected pipeline that restores all three contracts.</li>
+</ul>
+<p>Then <code>rubric.py</code> grades your fix: six criteria, one point each, exit 0 (PASS) or 1 (FAIL). The same grader run against <code>broken_pipeline.py</code> exits 1, which is how you know it has teeth.</p>
+<h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
+<ol>
+<li>A production incident gives you symptoms, not a defect list; the job is turning symptoms into located faults.</li>
+<li>The three defects each break a contract: freshness against a real clock, a complete lineage chain, and a gate that fails loud.</li>
+<li>Unit tests can pass while contracts break; the exam grades contract restoration, not test passage.</li>
+</ol>
+<div class="claude-handoff" data-exercise="exercises/module8/the-exam-setup/">
+**Build It in Claude Code** · Exercise · exercises/module8/the-exam-setup/
+</div>
+
+<p>The pager does not hand you a diff at 03:14; it hands you a database full of clues and a deadline.</p>
 
                     </main>
 

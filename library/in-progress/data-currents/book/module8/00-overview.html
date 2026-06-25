@@ -38,7 +38,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-b4164df2.js";
+            window.path_to_searchindex_js = "../searchindex-d9366046.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-481f3bf2.js"></script>
@@ -198,7 +198,7 @@
 </code></pre>
 <h2 id="the-diagnostic-queries"><a class="header" href="#the-diagnostic-queries">The Diagnostic Queries</a></h2>
 <p>You prove the breakage from the data the system emitted, then confirm it in code. No source-diving first.</p>
-<p><code>diagnose.py</code> exposes at least six <code>find_*</code> functions. Each returns a non-None finding when run against the broken artifacts, and <code>None</code> against the fixed artifacts. Six queries, three defects, two angles each.</p>
+<p><code>diagnose.py</code> exposes six checks (<code>q1</code> through <code>q6</code>). Each returns a finding dict whose <code>found</code> flag is <code>True</code> against the broken run and <code>False</code> against the fixed one. Six queries, three defects, two angles each.</p>
 <h2 id="the-fix"><a class="header" href="#the-fix">The Fix</a></h2>
 <p>You produce <code>fix.py</code>: the full corrected pipeline, not a patch. Restore the real batch timestamp. Complete the lineage chain. Fail loud at the freshness gate.</p>
 <p>The rubric runs your fix from scratch in a tempdir, checks the output databases, and inspects your code statically. Every defect must disappear.</p>
@@ -209,13 +209,10 @@
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ul>
 <li>The exam provides a broken pipeline with three injected defects and grades you on diagnosis and repair.</li>
-<li>You write <code>diagnose.py</code> (six SQL-based <code>find_*</code> functions) and <code>fix.py</code> (the corrected pipeline); <code>rubric.py</code> grades both.</li>
+<li>You write <code>diagnose.py</code> (six checks <code>q1</code> through <code>q6</code>) and <code>fix.py</code> (the corrected pipeline); <code>rubric.py</code> grades the result.</li>
 <li>The rubric exits 0 on a correct fix and 1 on the broken pipeline, with no partial credit.</li>
 <li><code>smoke.py</code> asserts both cases: the broken pipeline fails, the fixed pipeline passes, and the whole suite exits 0.</li>
 </ul>
-<div class="claude-handoff" data-exercise="exercises/module8/00-overview/">
-**Build It in Claude Code** · Exercise · exercises/module8/00-overview/
-</div>
 
                     </main>
 

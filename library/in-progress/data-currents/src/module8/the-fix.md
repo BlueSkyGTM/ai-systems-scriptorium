@@ -4,74 +4,73 @@
 
 Every defect breaks a contract the pipeline owes its consumers. A patch makes the symptom disappear. A fix restores the promise.
 
-The broken pipeline from Module 7 (`pipeline_flow.py`) has three defects. Each one violates a specific guarantee. Your `fix.py` must restore all three. The rubric checks for contract restoration, not test passage.
+The broken pipeline has three defects. Each one violates a specific guarantee. Your `fix.py` must restore all three. The rubric checks for contract restoration, not test passage.
 
 ## Three Broken Contracts
 
 ### The Freshness Contract
 
-The pipeline guarantees data is current as of the batch timestamp. The broken pipeline hardcodes `batch_now_ts` to `"2099-01-01"`. Nothing can be stale relative to the year 2099. Every freshness check passes. The contract is dead: the timestamp no longer reflects when the data was processed.
+The pipeline guarantees data is current as of a real processing time. The broken pipeline measures staleness against a hardcoded `"2099-01-01"` "now". Nothing can be stale relative to the year 2099, so every freshness check passes. The contract is dead: the timestamp no longer reflects when the data was processed.
 
-The fix replaces the hardcoded value with the actual processing timestamp. The freshness gate measures real staleness against real time. This matches M7's `pipeline_flow.py`, which reads the timestamp from the environment at batch start.
+The fix uses the real `now_ts` passed into the run. The freshness gate measures real staleness against real time.
+
+```python
+def freshness_check(db_path, now_ts):
+    now = now_ts  # FIX 1: use the real 'now', not a hardcoded date
+    loaded = store.last_load(db_path)
+    age = store.hours_between(loaded, now)
+    return {"is_stale": age > store.MAX_AGE_HOURS, ...}
+```
 
 ### The Lineage Contract
 
-The pipeline guarantees every derived document traces back to its source through an unbroken chain. The broken pipeline's `capture_lineage` skips `record_verdict`, the edge that connects a quality verdict to the document it evaluates. The audit trail has a gap. A consumer asking what verdict was reached on a given document hits a dead end.
+The pipeline guarantees every answer traces back to its source through an unbroken chain, ending in the verdict that admitted it. The broken `capture_lineage` skips the verdict insert. The audit trail has a gap: a consumer asking what verdict was reached on a given answer hits a dead end.
 
-The fix restores `record_verdict` in the lineage capture. The chain is complete again, matching M7's implementation.
+The fix records the verdict, completing the chain:
+
+```python
+# FIX 2: record the verdict so the answer -> verdict chain is complete.
+conn.execute("INSERT INTO eval_verdicts VALUES (?, ?, ?)", (answer_id, "groundedness", "pass"))
+```
 
 ### The Fail-Loud Contract
 
-The freshness gate exists to halt the pipeline on stale data. The broken pipeline sets `retries=2` on the gate. The gate retries twice before failing, masking persistent breaches behind transient retry windows. The contract says stop on breach. Retries add a grace period nobody authorized.
+The freshness gate exists to halt the pipeline on stale data. The broken gate swallows the breach: it logs a warning and returns instead of raising, so the run reports success on a stale corpus. The contract says stop on breach; the broken gate downgrades it to a log line.
 
-The fix sets `retries=0`. The gate fails on first contact with stale data.
+The fix raises, so the gate fails loud:
+
+```python
+def freshness_gate(fresh):
+    if fresh["is_stale"]:
+        raise FreshnessBreach(...)  # FIX 3: a stale corpus must stop the pipeline
+    return {"blocked": False}
+```
 
 ## Why The Unit Tests Lied
 
-The unit tests passed because they tested implementation details, not contracts. A test that checks whether `batch_now_ts` exists passes on `"2099-01-01"`. A test that checks whether `capture_lineage` runs passes even when it skips `record_verdict`. Tests validate behavior. They do not validate intent.
+The unit tests passed because they tested whether functions ran, not whether contracts held. A test that checks `capture_lineage` runs passes even when it skips the verdict. Tests validate behaviour; they do not validate intent.
 
-The rubric validates intent. Six criteria, each worth one point:
+The rubric validates intent. It runs your `fix.py` from scratch, runs `diagnose.py` against the result, and checks that a stale corpus actually raises:
 
 ```python
-"""
-rubric.py
 The Module 8 grader. Six criteria, each worth one point.
-"""
 ```
 
-It runs `fix.py` in a fresh tempdir, executes the pipeline, and inspects the resulting lineage and corpus DBs. It also runs your `diagnose.py` queries against the output. If any diagnostic query returns a non-None finding, the rubric fails.
+If any diagnostic check still reports `found=True`, or the stale run fails to raise, the rubric fails.
 
-## Your Fix Against The Original
+## Your Fix Against The Broken Pipeline
 
-Your `fix.py` is not a new pipeline. It is M7's `pipeline_flow.py` with three contracts restored. Every other line should match the M7 reference.
+Your `fix.py` is not a new pipeline. It is the broken pipeline with three contracts restored: the real clock, the recorded verdict, the raising gate. If you find yourself rewriting pipeline logic, you are patching. Go back to the three defects.
 
-Three changes, three contracts:
-
-1. `batch_now_ts` reads the real timestamp from the processing environment.
-2. `capture_lineage` includes `record_verdict` edges.
-3. `freshness_gate` runs with `retries=0`.
-
-If you find yourself rewriting pipeline logic, you are patching. Go back to the diff.
-
-The negative case proves the rubric has teeth. The test suite pins both outcomes:
-
-```python
-# From tests/test_exam.py
-BROKEN_PIPELINE = EXAM_DIR / "broken_pipeline.py"
-FIX = EXAM_DIR / "fix.py"
-RUBRIC = EXAM_DIR / "rubric.py"
-SMOKE = EXAM_DIR / "smoke.py"
-```
-
-Run the rubric against the broken pipeline:
+The negative case proves the rubric has teeth. Run the grader against the broken pipeline:
 
 ```bash
-python rubric.py --fix ./broken_pipeline.py
+python rubric.py --pipeline broken_pipeline
 ```
 
-It exits `1`. The broken pipeline fails because it breaks contracts, regardless of what unit tests report.
+It exits `1`. The broken pipeline fails because it breaks contracts, regardless of what its unit tests reported.
 
-Run the rubric against your fix:
+Run the grader against your fix:
 
 ```bash
 python rubric.py
@@ -82,9 +81,9 @@ It exits `0` when `fix.py` restores all three contracts.
 ## Core Concepts
 
 1. A fix restores a broken contract. A patch silences the alarm without repairing the system.
-2. A hardcoded `batch_now_ts` breaks the freshness contract by creating a fake reference point that makes real staleness invisible.
-3. A skipped `record_verdict` edge breaks the lineage contract by leaving a gap in the provenance chain that consumers cannot traverse.
-4. A retry-configured freshness gate breaks the fail-loud contract by masking persistent breaches behind transient retry windows.
+2. A hardcoded "now" breaks the freshness contract by creating a fake reference point that makes real staleness invisible.
+3. A skipped verdict breaks the lineage contract by leaving a gap consumers cannot traverse.
+4. A gate that swallows a breach breaks the fail-loud contract by downgrading a hard stop to a log line.
 
 <div class="claude-handoff" data-exercise="exercises/module8/the-fix/">
 **Build It in Claude Code** · Exercise · exercises/module8/the-fix/

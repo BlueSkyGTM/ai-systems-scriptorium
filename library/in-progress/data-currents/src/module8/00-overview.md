@@ -31,7 +31,7 @@ Exit codes:
 
 You prove the breakage from the data the system emitted, then confirm it in code. No source-diving first.
 
-`diagnose.py` exposes at least six `find_*` functions. Each returns a non-None finding when run against the broken artifacts, and `None` against the fixed artifacts. Six queries, three defects, two angles each.
+`diagnose.py` exposes six checks (`q1` through `q6`). Each returns a finding dict whose `found` flag is `True` against the broken run and `False` against the fixed one. Six queries, three defects, two angles each.
 
 ## The Fix
 
@@ -50,10 +50,6 @@ When the pager fires at 03:14, no one hands you a diff; you get a database full 
 ## Core Concepts
 
 - The exam provides a broken pipeline with three injected defects and grades you on diagnosis and repair.
-- You write `diagnose.py` (six SQL-based `find_*` functions) and `fix.py` (the corrected pipeline); `rubric.py` grades both.
+- You write `diagnose.py` (six checks `q1` through `q6`) and `fix.py` (the corrected pipeline); `rubric.py` grades the result.
 - The rubric exits 0 on a correct fix and 1 on the broken pipeline, with no partial credit.
 - `smoke.py` asserts both cases: the broken pipeline fails, the fixed pipeline passes, and the whole suite exits 0.
-
-<div class="claude-handoff" data-exercise="exercises/module8/00-overview/">
-**Build It in Claude Code** · Exercise · exercises/module8/00-overview/
-</div>

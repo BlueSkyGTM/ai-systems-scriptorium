@@ -38,7 +38,7 @@
             const path_to_root = "../";
             const default_light_theme = "rust";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-b4164df2.js";
+            window.path_to_searchindex_js = "../searchindex-d9366046.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-481f3bf2.js"></script>
@@ -178,43 +178,36 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="the-diagnostic-queries"><a class="header" href="#the-diagnostic-queries">The Diagnostic Queries</a></h1>
-<p>Each defect leaves a SQL-queryable trace. Finding it is the diagnostic skill every prior module pointed toward.</p>
-<h2 id="the-three-defects-read-as-symptoms"><a class="header" href="#the-three-defects-read-as-symptoms">The Three Defects, Read As Symptoms</a></h2>
-<p>The broken pipeline ships three faults, and you are never told their names. You get symptoms: stale answers, a lineage chain that stops short, a gate that should scream but stays quiet. Six queries turn those symptoms into findings. The grader holds them to a fixed bar, verbatim from the reference suite:</p>
-<pre><code>* diagnose.py exposes &gt;= 6 find_* functions, each returning a non-None
-    finding when run against the *broken* artifacts, and None against the
-    *fixed* artifacts.
+<p>Each defect leaves a trace in the data the pipeline produced. Finding it is the diagnostic skill every prior module pointed toward.</p>
+<h2 id="symptoms-not-names"><a class="header" href="#symptoms-not-names">Symptoms, Not Names</a></h2>
+<p>The broken pipeline ships three faults, and you are never told their names. You get symptoms: a source flagged stale right after a load, a lineage chain that stops short, a gate that should scream but stays quiet. Six checks turn those symptoms into findings. Each returns a finding dict, and its <code>found</code> flag is what the grader reads:</p>
+<pre><code class="language-python">def diagnose(db_path: str, result: dict) -&gt; list[dict]:
+    return [check(db_path, result) for check in ALL_CHECKS]
 </code></pre>
-<p>Each <code>find_*</code> function reads one table, asks one question, returns one finding or <code>None</code>. None of them read source code. They read the artifacts the code produced.</p>
-<h2 id="defect-one-the-future-dated-batch"><a class="header" href="#defect-one-the-future-dated-batch">Defect One: The Future-Dated Batch</a></h2>
-<p>The pipeline hardcodes <code>batch_now_ts</code> to a date in 2099. Every freshness check measures against that anchor and reports nothing real. Two queries catch it.</p>
-<h3 id="query-one-read-the-batch-timestamp"><a class="header" href="#query-one-read-the-batch-timestamp">Query One: Read The Batch Timestamp</a></h3>
-<p>You select the <code>batch_now_ts</code> value from the corpus store. A finding looks like a timestamp decades ahead of the wall clock. Why it traces to a defect: no real batch runs in 2099. The value is a literal, not a call to <code>datetime.now()</code>. This is the failure Module 2 warned you about when it defined the freshness SLO. A gate measured against the wrong “now” measures nothing.</p>
-<h3 id="query-two-read-the-freshness-breach-count"><a class="header" href="#query-two-read-the-freshness-breach-count">Query Two: Read The Freshness Breach Count</a></h3>
-<p>You count rows in the freshness verdict table where the verdict is a breach. A finding looks like a count frozen at zero, or pinned at full, regardless of how stale the source actually is. Why it traces to a defect: a breach count that never moves means the comparison anchor is fixed. The hardcoded timestamp locks the verdict in place.</p>
-<h2 id="defect-two-the-missing-verdict-edge"><a class="header" href="#defect-two-the-missing-verdict-edge">Defect Two: The Missing Verdict Edge</a></h2>
-<p><code>capture_lineage</code> skips <code>record_verdict</code>, so the lineage chain renders incomplete. Two queries catch it.</p>
-<h3 id="query-three-walk-the-lineage-chain"><a class="header" href="#query-three-walk-the-lineage-chain">Query Three: Walk The Lineage Chain</a></h3>
-<p>This is the Module 1 lineage walk, now used as a diagnostic. You start at a derived document and follow edges back to source. A finding looks like a chain that terminates at the derivation step and never reaches a verdict node. Why it traces to a defect: a complete chain must include the verdict that admitted the document. A chain with no verdict edge cannot explain why the document passed the gate.</p>
-<h3 id="query-four-count-edge-types"><a class="header" href="#query-four-count-edge-types">Query Four: Count Edge Types</a></h3>
-<p>You group edges by kind in the Module 6 lineage store and tally. A finding looks like a <code>record_verdict</code> count of zero. Why it traces to a defect: if no verdict edge exists, the function that writes it never ran. The zero is the proof.</p>
+<p><code>found=True</code> means the defect is present. Run the six against a broken run and all three defects light up; run them against a fixed run and they go dark. None of them read source code. They read the artifacts the code produced.</p>
+<h2 id="defect-one-the-future-dated-clock"><a class="header" href="#defect-one-the-future-dated-clock">Defect One: The Future-Dated Clock</a></h2>
+<p>The freshness check measures against a hardcoded <code>"2099-01-01"</code> “now”. Two checks catch it.</p>
+<p><code>q1_future_now</code> reads the timestamp the freshness check used and compares it to a sane threshold. A finding looks like a “now” decades ahead of the wall clock. It traces to a defect because no real batch runs in 2099: the value is a literal, not the real processing time. This is the failure Module 2 warned about when it defined the freshness SLO. A gate measured against the wrong “now” measures nothing.</p>
+<p><code>q2_stale_despite_load</code> confirms the symptom: the source reports stale even though <code>corpus_loads</code> shows a load moments ago. A freshly loaded source that reads ancient is the proof the comparison anchor is wrong.</p>
+<h2 id="defect-two-the-missing-verdict"><a class="header" href="#defect-two-the-missing-verdict">Defect Two: The Missing Verdict</a></h2>
+<p><code>capture_lineage</code> skips recording the eval verdict, so the lineage chain renders incomplete. Two checks catch it.</p>
+<p><code>q3_missing_verdict</code> runs the Module 1 lineage idea as a diagnostic: a left join from <code>answers</code> to <code>eval_verdicts</code> finds answers with no verdict row. A finding is any answer id with a null verdict. If no verdict edge exists, the function that writes it never ran.</p>
+<p><code>q4_chain_incomplete</code> walks the full chain, answer to retrieval to chunk to source, and looks for the verdict at the end. A finding is a chain that reaches the source document but never reaches a verdict. A complete chain must explain why the document was admitted; one with no verdict cannot.</p>
 <h2 id="defect-three-the-quiet-gate"><a class="header" href="#defect-three-the-quiet-gate">Defect Three: The Quiet Gate</a></h2>
-<p><code>freshness_gate</code> ships with <code>retries=2</code> instead of <code>retries=0</code>, so it swallows failures and retries instead of halting. Two queries catch it.</p>
-<h3 id="query-five-read-the-retry-configuration"><a class="header" href="#query-five-read-the-retry-configuration">Query Five: Read The Retry Configuration</a></h3>
-<p>You read the <code>retries</code> field for the freshness gate from its metadata or configuration table. A finding looks like a value greater than zero. Why it traces to a defect: a freshness gate is a hard stop. Module 2 set retries to zero so a breach halts the batch. A nonzero retry count converts a hard stop into a soft warning.</p>
-<h3 id="query-six-read-the-gate-execution-log"><a class="header" href="#query-six-read-the-gate-execution-log">Query Six: Read The Gate Execution Log</a></h3>
-<p>You scan the gate execution table for retry rows after a breach. A finding looks like retry attempts that should not exist. Why it traces to a defect: if the gate retried, it ran more than once on the same batch. A gate that retries on a freshness breach is a gate that tolerates staleness.</p>
-<h2 id="what-the-six-queries-share"><a class="header" href="#what-the-six-queries-share">What The Six Queries Share</a></h2>
-<p>Every query follows the same shape: pick one table, ask one question, return one finding or nothing. The grader applies its six criteria, and the contract is plain, verbatim from its own header:</p>
-<pre><code>Six criteria, each worth one point.
+<p>The freshness gate swallows the breach. It logs a warning and returns instead of raising, so a stale corpus ships in silence.</p>
+<p><code>q5_silent_gate</code> compares the freshness verdict to the gate’s behaviour: the source is stale, yet the gate reported <code>blocked=False</code> and the run continued. A finding is exactly that mismatch. A gate that tolerates a stale source is not a gate; it is a log line.</p>
+<p><code>q6_summary</code> rolls the targeted defects into a count, so a single call answers “is this pipeline defective at all.”</p>
+<h2 id="what-the-six-checks-share"><a class="header" href="#what-the-six-checks-share">What The Six Checks Share</a></h2>
+<p>Every check follows the same shape: read one trace, ask one question, return one finding. The grader applies its six criteria, and the contract is plain:</p>
+<pre><code class="language-python">The Module 8 grader. Six criteria, each worth one point.
 </code></pre>
-<p>The pipeline lied in its unit tests. The artifacts do not lie. The queries read the artifacts.</p>
+<p>The pipeline lied in its unit tests. The artifacts do not lie. The checks read the artifacts.</p>
 <h2 id="core-concepts"><a class="header" href="#core-concepts">Core Concepts</a></h2>
 <ol>
-<li>A defect leaves its trace in the data it produces, not in the code that produced it.</li>
-<li>A freshness gate measured against a hardcoded timestamp reports nothing useful about real staleness.</li>
-<li>A lineage chain missing its verdict edge cannot explain why a document was admitted.</li>
-<li>A gate configured to retry converts a hard failure into a soft warning the batch survives.</li>
+<li>A defect leaves its trace in the data it produced, not in the code that produced it.</li>
+<li>A freshness check measured against a hardcoded clock reports nothing useful about real staleness.</li>
+<li>A lineage chain missing its verdict cannot explain why a document was admitted.</li>
+<li>A gate that swallows a breach instead of raising converts a hard failure into a silent one the batch survives.</li>
 </ol>
 <div class="claude-handoff" data-exercise="exercises/module8/the-diagnostic-queries/">
 **Build It in Claude Code** · Exercise · exercises/module8/the-diagnostic-queries/

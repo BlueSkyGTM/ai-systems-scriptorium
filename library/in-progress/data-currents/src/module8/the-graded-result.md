@@ -4,78 +4,63 @@ The rubric is the final examiner. Its exit code is the verdict.
 
 ## The Grader Refuses to Lie
 
-The grader inspects your work across six criteria. Each criterion is worth one point. There are no partial credits and no style points. The exit code tells the truth: zero means pass, one means fail.
+The grader inspects your work across six criteria. Each is worth one point. There are no partial credits and no style points. The exit code tells the truth: zero means pass, one means fail.
 
 ```python
-"""
-rubric.py
-The Module 8 grader. Six criteria, each worth one point.
+"""rubric.py — the Module 8 grader. Six criteria, each worth one point.
 
-The grader works by:
-  1. Static inspection of the student's fix.py (text + AST)
-  2. Dynamic execution of fix.py against a fresh tempdir
-  3. Execution of diagnose.py against the resulting lineage + corpus DBs
-  4. Direct inspection of the lineage DB for the previously-broken edge
+Grades the submitted fix by running it and diagnosing the result:
+  1. Defect 1 fixed   - the freshness check uses the real 'now', not a future date.
+  2. Defect 2 fixed   - capture_lineage records the eval verdict.
+  3. Defect 3 fixed   - the freshness gate fails loud (raises) on a stale source.
+  4. Lineage complete - the answer -> verdict chain can be walked end to end.
+  5. Healthy run      - a freshly loaded corpus passes the gate and runs clean.
+  6. Stale run blocks - a stale corpus raises FreshnessBreach (no silent success).
 
-Exit codes:
-  0  PASS  (all 6 criteria satisfied)
-  1  FAIL  (one or more criteria failed; stderr lists which)
-
-Usage:
-  python rubric.py
-  python rubric.py --fix ./broken_pipeline.py   # negative-case self-check
-  python rubric.py --skip-runtime               # static-only grade
-
-Contract honored for smoke.py:
-  - rubric.py against the *broken* pipeline exits 1 (negative case)
-  - rubric.py against a correct fix.py exits 0 (positive case)
+Exit 0 = PASS (all six), 1 = FAIL. The grade is the deliverable.
 """
 ```
 
-The grading process runs four phases. Static inspection reads your fix.py as text and AST. Dynamic execution runs fix.py in a fresh tempdir. Your diagnose.py runs against the resulting databases. The grader then inspects the lineage DB directly for the previously broken edge.
-
-The constants leave no room for ambiguity:
+The grader does not read your explanation. It runs the candidate pipeline twice, on a fresh corpus and a stale one, runs `diagnose.py` against the result, and checks all six criteria. Two of them are behavioural: a healthy corpus must run clean, and a stale corpus must raise.
 
 ```python
-DEFAULT_FIX = Path(__file__).resolve().parent / "fix.py"
-DEFAULT_DIAGNOSE = Path(__file__).resolve().parent / "diagnose.py"
-DEFAULT_LIB = Path(__file__).resolve().parent.parent / "lib"
-
-PASS = 0
-FAIL = 1
+LOADED = "2026-06-24 12:00:00"
+NOW_FRESH = "2026-06-24 12:05:00"   # 5 minutes later -> fresh
+NOW_STALE = "2026-06-26 18:00:00"   # ~54 hours later -> stale (> 25h SLO)
 ```
 
 ## The Smoke Test Proves Both Directions
 
-The smoke test is the orchestrator. It runs the broken pipeline, the fixed pipeline, the diagnostic queries, and the rubric in sequence. It exits zero only when every assertion holds, including the negative case.
+The smoke test is the orchestrator. It runs the broken pipeline, the fixed pipeline, the diagnostic checks, and the rubric in sequence. It exits zero only when every assertion holds, including the negative cases.
 
-The negative assertion group runs first. It feeds `broken_pipeline.py` to the rubric and asserts the exit code is one. It runs `diagnose.py` against the broken output and asserts every finding is non-None. The defects must be detectable before you fix them.
-
-The positive assertion group runs second. It feeds `fix.py` to the rubric and asserts the exit code is zero. It runs `diagnose.py` against the clean output and asserts every finding is None. The fixes must be complete.
-
-The test suite pins this contract explicitly:
+The negative group runs the broken pipeline and asserts `diagnose.py` reports `found=True` on all three defects, and that the grader fails it:
 
 ```python
-"""
-  * rubric.py exits 1 on broken_pipeline.py and 0 on fix.py.
-  * smoke.py exits 0 (the negative case is itself part of the suite).
-"""
+check("rubric.py exits 1 on broken_pipeline", _run("rubric.py", "--pipeline", "broken_pipeline") == 1)
 ```
+
+The positive group runs `fix.py`, asserts every check goes dark (`found=False`), the stale corpus raises, and the grader passes:
+
+```python
+check("rubric.py exits 0 on the fix", _run("rubric.py") == 0)
+```
+
+The defects must be detectable before you fix them, and gone after.
 
 ## Run the Full Suite
 
-```
-python smoke.py && python rubric.py
+```bash
+python smoke.py && python -m pytest tests/ -q && python rubric.py
 ```
 
-If the smoke test passes, the rubric should pass. If the smoke test fails, fix the failure first.
+If the smoke test passes, the rubric passes. If it fails, fix the failure first.
 
 ## Core Concepts
 
-- The rubric exits zero when all six criteria are satisfied. It exits one otherwise. There is no third state.
-- The smoke test asserts both directions: the broken pipeline must fail the rubric, and the fixed pipeline must pass it.
-- `diagnose.py` must return non-None findings against the broken artifacts and None findings against the fixed artifacts.
-- The grader combines static inspection, dynamic execution, diagnostic queries, and direct lineage inspection across its four phases.
+- The rubric exits zero when all six criteria are satisfied and one otherwise. There is no third state.
+- The smoke test asserts both directions: the broken pipeline must fail the grade, and the fixed pipeline must pass it.
+- `diagnose.py` reports `found=True` against the broken run and `found=False` against the fixed one; the grader reads those flags plus the run's behaviour.
+- Two criteria are behavioural: a healthy corpus runs clean, a stale corpus raises rather than shipping in silence.
 
 <div class="claude-handoff" data-exercise="exercises/module8/the-graded-result/">
 **Build It in Claude Code** · Exercise · exercises/module8/the-graded-result/
