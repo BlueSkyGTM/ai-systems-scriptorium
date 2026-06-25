@@ -71,3 +71,14 @@
 - [Wiring the Legs](module7/wiring-the-legs.md)
 - [The Freshness-Lineage Proof](module7/the-freshness-lineage-proof.md)
 - [The Orchestrated Run](module7/the-orchestrated-run.md)
+
+---
+
+# Module 8: The Diagnostic Exam
+
+- [Module 8 Overview](module8/00-overview.md)
+- [The Exam Setup](module8/the-exam-setup.md)
+- [The Diagnostic Queries](module8/the-diagnostic-queries.md)
+- [The Fix](module8/the-fix.md)
+- [The Graded Result](module8/the-graded-result.md)
+
