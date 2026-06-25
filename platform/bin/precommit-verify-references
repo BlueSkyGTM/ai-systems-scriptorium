@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# precommit-verify-references — the green gate.
+#
+# Blocks a commit if any staged reference artifact (build-log/**/reference/**.py) fails
+# to compile or fails its own smoke.py. This is the gate the GLM-generated modules slipped
+# past in 2026-06: code was committed without ever being run. Never again.
+#
+# Install as a git hook:
+#     ln -sf ../../platform/bin/precommit-verify-references .git/hooks/pre-commit
+# (or copy it there). It is a no-op unless a reference .py is staged.
+set -u
+
+ROOT=$(git rev-parse --show-toplevel) || exit 0
+cd "$ROOT" || exit 0
+
+staged=$(git diff --cached --name-only --diff-filter=ACM \
+         | grep -E '^build-log/.*/reference/.*\.py$' || true)
+[ -z "$staged" ] && exit 0
+
+echo "[precommit] verifying staged reference artifacts..."
+fail=0
+
+# 1. Every staged reference .py must compile.
+for f in $staged; do
+  if ! python -m py_compile "$f" 2>/dev/null; then
+    echo "[precommit] py_compile FAIL: $f"
+    fail=1
+  fi
+done
+
+# 2. Each affected reference dir's smoke.py must exit 0.
+checked=""
+for f in $staged; do
+  cur=$(dirname "$f")
+  while [ "$cur" != "." ] && [ "$cur" != "/" ]; do
+    if [ -f "$cur/smoke.py" ]; then
+      case " $checked " in
+        *" $cur "*) ;;
+        *)
+          checked="$checked $cur"
+          echo "[precommit] smoke: $cur"
+          if ! ( cd "$cur" && python smoke.py >/dev/null 2>&1 ); then
+            echo "[precommit] smoke FAIL: $cur/smoke.py"
+            fail=1
+          fi
+          ;;
+      esac
+      break
+    fi
+    cur=$(dirname "$cur")
+  done
+done
+
+if [ "$fail" -ne 0 ]; then
+  echo "[precommit] BLOCKED — a staged reference artifact does not run. Fix it before committing."
+  echo "[precommit] (bypass only if you know why: git commit --no-verify)"
+  exit 1
+fi
+
+echo "[precommit] reference artifacts green."
+exit 0
