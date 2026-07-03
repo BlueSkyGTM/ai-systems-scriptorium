@@ -4,21 +4,25 @@
 
 > Most courses teach you everything and prepare you for nothing. These books are built the other way around: each one teaches a single job, cuts everything that doesn't serve it, and ends every lesson in runnable, tested code.
 
+**Read them online → [ai-systems-scriptorium.vercel.app](https://ai-systems-scriptorium.vercel.app)** — a landing page you arrive on and pick from, with each book at its own path.
+
 This is a working library, not a course platform. Seven books are finished and shipped — from your first model call to a governed multi-agent fleet running in production. Each is self-contained (built with [mdBook](https://rust-lang.github.io/mdBook/)), each pairs its lessons with portfolio artifacts you can actually run, and each was written to one spec: clarity is the feature, clutter is a defect.
 
 ---
 
 ## The library
 
-| Book | What it teaches | What you build |
-|---|---|---|
-| **[Sans Python](library/completed/sans-python)** — Production AI Engineering | The whole production stack, in the right order: LLMs → agents → multi-agent systems → deploy & performance | A governed multi-agent fleet, turned loose to build a system as your final exam |
-| **[Just Python](library/completed/just-python)** | The applied Python you actually write: NumPy, Pandas, vectorization, idioms at interview speed | An evaluation engine (per-class P/R/F1 in pure NumPy) + a code-graded integrated exam |
-| **[Machine Math](library/completed/machine-math)** | Classic ML paired with the exact math each fundamental needs — built from scratch | Your own `ml` package; a real model built, evaluated, and graded with a model card |
-| **[Weights and Measures](library/completed/weights-and-measures)** | PyTorch and model training, with quality as the throughline | A full fine-tune pipeline gated against a baseline it has to beat |
-| **[Data Currents](library/completed/data-currents)** | Data engineering for AI: SQL → ingestion → orchestration → streaming → lineage | One tested pipeline that every module extends, source doc to eval verdict |
-| **[Local Metal](library/completed/local-metal)** | A home production rig and local models, wired into Claude Code | An MCP server spine: local client → router → Claude Code |
-| **[Answer Engineering](library/completed/answer-engineering)** | Interview answers as an engineering discipline, not memorization | A calibration scorer and a dossier grader that only exit `READY` when you are |
+| Book | Read online | What it teaches | What you build |
+|---|---|---|---|
+| **Sans Python** — Production AI Engineering | [Read](https://ai-systems-scriptorium.vercel.app/sans-python) · [src](library/completed/sans-python) | The whole production stack, in the right order: LLMs → agents → multi-agent systems → deploy & performance | A governed multi-agent fleet, turned loose to build a system as your final exam |
+| **Just Python** | [Read](https://ai-systems-scriptorium.vercel.app/just-python) · [src](library/completed/just-python) | The applied Python you actually write: NumPy, Pandas, vectorization, idioms at interview speed | An evaluation engine (per-class P/R/F1 in pure NumPy) + a code-graded integrated exam |
+| **Machine Math** | [Read](https://ai-systems-scriptorium.vercel.app/machine-math) · [src](library/completed/machine-math) | Classic ML paired with the exact math each fundamental needs, built from scratch | Your own `ml` package; a real model built, evaluated, and graded with a model card |
+| **Weights and Measures** | [Read](https://ai-systems-scriptorium.vercel.app/weights-and-measures) · [src](library/completed/weights-and-measures) | PyTorch and model training, with quality as the throughline | A full fine-tune pipeline gated against a baseline it has to beat |
+| **Data Currents** | [Read](https://ai-systems-scriptorium.vercel.app/data-currents) · [src](library/completed/data-currents) | Data engineering for AI: SQL → ingestion → orchestration → streaming → lineage | One tested pipeline that every module extends, source doc to eval verdict |
+| **Local Metal** | [Read](https://ai-systems-scriptorium.vercel.app/local-metal) · [src](library/completed/local-metal) | A home production rig and local models, wired into Claude Code | An MCP server spine: local client → router → Claude Code |
+| **Answer Engineering** | [Read](https://ai-systems-scriptorium.vercel.app/answer-engineering) · [src](library/completed/answer-engineering) | Interview answers as an engineering discipline, not memorization | A calibration scorer and a dossier grader that only exit `READY` when you are |
+
+> The public URL is the Vercel default; a custom subdomain can be pointed at the same deploy without changing anything here. Full status and provenance for each book live in [`CATALOG.md`](CATALOG.md).
 
 ---
 
@@ -78,10 +82,12 @@ The books are produced by an AI-engineering-specialized build system: an `AUTHOR
 
 - **Read the flagship:** [`library/completed/sans-python`](library/completed/sans-python) — the roadmap the other books branch from.
 - **Browse everything:** [`CATALOG.md`](CATALOG.md) — the full index and status of every book.
-- **Build a book locally:**
+- **Build the whole site locally:**
 
   ```bash
-  mdbook build library/completed/sans-python   # static site -> library/completed/sans-python/book
+  # Build every completed book into public/<slug>/ plus the landing page.
+  # Needs mdbook on PATH, or point MDBOOK at a binary. This is what Vercel deploys (see vercel.json).
+  bash platform/bin/build-site
   python platform/bin/route-lint               # verify the routing layer is sound
   ```
 

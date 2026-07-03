@@ -19,3 +19,7 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# Multi-book site output: platform/bin/build-site regenerates public/ from the
+# committed per-book book/ dirs on every Vercel deploy. Duplicate, not source.
+/public/

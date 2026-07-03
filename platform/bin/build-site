@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# build-site — build every completed book into one deployable site.
+#
+# Produces public/<slug>/ for each completed book (mdBook static output) plus a
+# public/index.html landing page that links to them. This is what Vercel serves;
+# see vercel.json. Run locally with mdbook on PATH, or point MDBOOK at a binary:
+#   MDBOOK=./bin/mdbook bash platform/bin/build-site
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+OUT="$ROOT/public"
+MDBOOK="${MDBOOK:-mdbook}"
+
+# The completed lineup, in reading order. Keep in sync with library/completed/
+# and the landing page (platform/web/index.html).
+BOOKS="sans-python just-python machine-math data-currents weights-and-measures answer-engineering local-metal"
+
+rm -rf "$OUT"
+mkdir -p "$OUT"
+
+for slug in $BOOKS; do
+  book_dir="$ROOT/library/completed/$slug"
+  if [ ! -f "$book_dir/book.toml" ]; then
+    echo "build-site: missing book.toml for $slug ($book_dir)" >&2
+    exit 1
+  fi
+  echo "build-site: building $slug"
+  "$MDBOOK" build "$book_dir" --dest-dir "$OUT/$slug"
+done
+
+cp "$ROOT/platform/web/index.html" "$OUT/index.html"
+echo "build-site: wrote landing page -> public/index.html"
+echo "build-site: done ($(echo "$BOOKS" | wc -w) books)"
