@@ -4,6 +4,14 @@
   "buildCommand": "mkdir -p bin && curl -sSL https://github.com/rust-lang/mdBook/releases/download/v0.5.3/mdbook-v0.5.3-x86_64-unknown-linux-gnu.tar.gz | tar -xz -C bin && MDBOOK=./bin/mdbook bash platform/bin/build-site",
   "outputDirectory": "public",
   "framework": null,
-  "cleanUrls": true,
-  "trailingSlash": true
+  "cleanUrls": false,
+  "redirects": [
+    { "source": "/sans-python", "destination": "/sans-python/", "permanent": true },
+    { "source": "/just-python", "destination": "/just-python/", "permanent": true },
+    { "source": "/machine-math", "destination": "/machine-math/", "permanent": true },
+    { "source": "/data-currents", "destination": "/data-currents/", "permanent": true },
+    { "source": "/weights-and-measures", "destination": "/weights-and-measures/", "permanent": true },
+    { "source": "/answer-engineering", "destination": "/answer-engineering/", "permanent": true },
+    { "source": "/local-metal", "destination": "/local-metal/", "permanent": true }
+  ]
 }
