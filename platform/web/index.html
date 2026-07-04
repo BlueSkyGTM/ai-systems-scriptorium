@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AI Systems Scriptorium: A Library Built by an Engine</title>
-  <meta name="description" content="Seven technical books on production AI engineering, written not by hand but by a governed AI system that routes, verifies, and test-gates every page. Built by Raymond Fenton." />
+  <title>AI Systems Scriptorium</title>
+  <meta name="description" content="Seven technical books on production AI engineering, produced by a pipeline that routes, verifies, and test-gates every page before it ships. By Raymond Fenton." />
   <meta property="og:title" content="AI Systems Scriptorium" />
-  <meta property="og:description" content="Seven technical books on AI engineering, produced by an AI system built to write them under production-grade quality gates." />
+  <meta property="og:description" content="Seven technical books on AI engineering, produced by a pipeline built to write them under a fixed set of quality gates." />
   <style>
     /* Palette inherits the books' rust / Ayu theme (see theme/DESIGN-NOTES.md). */
     :root {
@@ -116,10 +116,10 @@
 
     <header class="hero">
       <p class="kicker">AI Systems Scriptorium · Raymond Fenton</p>
-      <h1>A Library of AI Engineering Books, <span class="thin">Written by a System I Built to Write Them.</span></h1>
-      <p class="lede">Most people take the course. I built the factory. Seven technical books on
-        production AI engineering, each ending in runnable portfolio code, all produced by a governed
-        pipeline that routes, verifies, and test-gates every page before it ships.</p>
+      <h1>Seven Books on Production AI Engineering, <span class="thin">Produced by a Pipeline I Built.</span></h1>
+      <p class="lede">Each book ends in runnable portfolio code, not just reading. They were produced by a
+        pipeline that routes the work through the repo, checks every draft against a written style
+        contract, and gates each book before it ships.</p>
       <a class="cta" href="#books">Browse the Library</a>
 
       <div class="stats">
@@ -132,11 +132,11 @@
     </header>
 
     <section id="books">
-      <p class="eyebrow">The Output</p>
+      <p class="eyebrow">The Books</p>
       <h2>Seven Books, One Curriculum</h2>
-      <p class="section-lede">Each book is self-contained, built with mdBook, and ends in employer-grade
-        portfolio artifacts: a governed multi-agent fleet, an evaluation engine, a graded model
-        pipeline, a full fine-tune pipeline, a local inference server wired into Claude Code.</p>
+      <p class="section-lede">Each book is self-contained, built with mdBook, and ends in a runnable
+        portfolio artifact: a multi-agent fleet, an evaluation engine, a graded model pipeline, a
+        fine-tune pipeline, a local inference server wired into Claude Code.</p>
       <div class="grid">
         <a class="book" href="./sans-python/">
           <p class="b-title">Sans Python</p>
@@ -178,28 +178,27 @@
 
     <section>
       <p class="eyebrow">The Engine</p>
-      <h2>Built by a System, Not Typed Out by Hand</h2>
-      <p class="section-lede">The hard part was never the writing; it was building something that could write
-        at this scale without turning into AI slop. So the real project is the engine: a production
-        pipeline where the folder tree is a routing system, a written contract governs the prose, and
-        nothing ships until it passes a gate. The books are what it produces. This is why they hold up.</p>
+      <h2>How the Books Are Produced</h2>
+      <p class="section-lede">The books are output of a pipeline, not free-hand writing: the folder
+        structure routes the work, a written contract governs the prose, and each stage has to pass a
+        check before it ships.</p>
 
       <div class="pillars">
         <div class="pillar">
           <h3>A Routing System</h3>
-          <p>Every folder carries a contract that tells an arriving AI agent what to load, what to skip, and where to hand off. The tree navigates itself, and a linter fails the build if a route breaks.</p>
+          <p>Every folder carries a contract describing what to load, what to skip, and where to hand off next. A linter checks the routes and fails the build if one is broken.</p>
         </div>
         <div class="pillar">
           <h3>A Writing Contract</h3>
-          <p>A single style spec governs voice across all seven books: one consistent tone, no AI tells, enforced mechanically. If a draft and the contract disagree, the contract wins.</p>
+          <p>A shared style spec governs voice across all seven books, checked mechanically rather than left to review. If a draft and the contract disagree, the contract wins.</p>
         </div>
         <div class="pillar">
           <h3>Human Gates</h3>
-          <p>The system does the routine work on its own and stops at named decision points that need a person: what to name a book, what to publish. Autonomy with a hand on the wheel.</p>
+          <p>The pipeline does the routine work on its own and stops at a fixed list of decisions that need a person, such as naming or publishing a book.</p>
         </div>
         <div class="pillar">
           <h3>Green Gates</h3>
-          <p>Every code artifact runs behind a passing test before it ships, and every technical claim is grounded in a live source citation. Nothing reaches the page unverified.</p>
+          <p>Every code artifact runs behind a passing test before it ships, and technical claims are checked against a live source before they're used.</p>
         </div>
       </div>
 
@@ -212,8 +211,8 @@
     </section>
 
     <footer>
-      Built and written by <strong>Raymond Fenton</strong>. The full source, including the engine that
-      produced these books, lives in the
+      Built and written by <strong>Raymond Fenton</strong>. The source, including the pipeline that
+      produced these books, is in the
       <a href="https://github.com/BlueSkyGTM/ai-systems-scriptorium">AI Systems Scriptorium</a> repository.
     </footer>
 
