@@ -36,7 +36,7 @@ And underneath all four: most courses teach everything and prepare you for nothi
 
 | Book | Read online | What it teaches | What you build |
 |---|---|---|---|
-| **Sans Python**, Production AI Engineering | [Read](https://ai-systems-scriptorium.vercel.app/sans-python/) · [Source](library/completed/sans-python) | The whole production stack, in the right order: LLMs → agents → multi-agent systems → deploy and performance | A governed multi-agent fleet, turned loose to build a system as your final exam |
+| **Sans Python** | [Read](https://ai-systems-scriptorium.vercel.app/sans-python/) · [Source](library/completed/sans-python) | The whole production stack, in the right order: LLMs → agents → multi-agent systems → deploy and performance | A governed multi-agent fleet, turned loose to build a system as your final exam |
 | **Just Python** | [Read](https://ai-systems-scriptorium.vercel.app/just-python/) · [Source](library/completed/just-python) | The applied Python you actually write: NumPy, Pandas, vectorization, idioms at interview speed | An evaluation engine (per-class P/R/F1 in pure NumPy) plus a code-graded integrated exam |
 | **Machine Math** | [Read](https://ai-systems-scriptorium.vercel.app/machine-math/) · [Source](library/completed/machine-math) | Classic ML paired with the exact math each fundamental needs, built from scratch | Your own `ml` package; a real model built, evaluated, and graded with a model card |
 | **Weights and Measures** | [Read](https://ai-systems-scriptorium.vercel.app/weights-and-measures/) · [Source](library/completed/weights-and-measures) | PyTorch and model training, with quality as the throughline | A full fine-tune pipeline gated against a baseline it has to beat |
@@ -50,11 +50,13 @@ And underneath all four: most courses teach everything and prepare you for nothi
 
 ## The Books, in More Depth
 
-### Sans Python, Production AI Engineering: the Flagship
+### Sans Python: the Flagship
 
-The thesis: **the bottleneck is sequencing, not content.** You start on day one with the work itself: call a model, ground it in your data, wrap it in an agent, put that agent into production.
+The name carries the argument for the whole library, not just this book. The standard path front-loads a wall: math, then ML theory, then deep learning, then, many months in, something you can ship. Sans Python refuses that wall and starts on day one with the work itself: call a model, ground it in your data, wrap it in an agent, put that agent into production. Python arrives late, once you are past the gate, as read-literacy plus a narrow write-track (eval scripts, serving glue). That is the name: not *without* Python, but *get started without it.*
 
-The production stack is **TypeScript** for the product layer and **Rust** for the serving layer, each taught the moment you first need it. Python is read-literacy plus a narrow write-track (eval scripts, serving glue) that arrives late, once you are past the gate. That is the name: not *without* Python, but *get started without it.*
+Every other book in this library inherits that same refusal under a different name: find the piece of the curriculum a reader is told to master before starting, prove it is optional at the start, and let the reader ship first. Sans Python said it loudest and first, so its name doubles as the mission statement for the whole Scriptorium: the entry barrier is manufactured, and the fix is to remove it, not to explain it better.
+
+The production stack is **TypeScript** for the product layer and **Rust** for the serving layer, each taught the moment you first need it.
 
 Eight modules; five teach (foundations, LLM engineering, single agents, multi-agent systems, deploy and performance) and three are proof. You build single agents, compose them into a governed team, and turn the team loose to build a production system as your final systems exam. Every artifact is a portfolio piece that solves a real problem.
 
