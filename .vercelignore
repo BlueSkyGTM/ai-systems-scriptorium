@@ -1,0 +1,20 @@
+# Keep the Vercel upload small: the site build only needs the completed books'
+# src/theme/book.toml plus platform/bin/build-site and platform/web. Everything
+# below is either huge (the vault ore) or irrelevant to the deployed site.
+vault/
+archive/
+ingredients/
+build-log/
+extra-credit/
+progression/
+library/in-progress/
+library/planned/
+
+# Regenerable / not needed to serve the site.
+public/
+**/book/
+**/draft/
+.claude/
+.gstack/
+.pytest_cache/
+**/__pycache__/
