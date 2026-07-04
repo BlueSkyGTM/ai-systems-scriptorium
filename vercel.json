@@ -5,5 +5,5 @@
   "outputDirectory": "public",
   "framework": null,
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": true
 }
